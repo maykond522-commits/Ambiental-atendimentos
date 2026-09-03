@@ -2371,13 +2371,16 @@ init().catch(e=>{console.error("Falha na inicialização:",e);toast("Erro ao ini
 
 document.addEventListener("click",e=>{const o=e.target.closest(".cid-option");if(o?.dataset?.cidCode)selectCID(o.dataset.cidCode);if(!e.target.closest(".cid-wrap")){$("cidSuggestions")?.classList.remove("show");}});
 
+</script>
+</div> <!-- Fecha a div .app -->
+
 <!-- Modal Customizado para Alertas e Confirmações (BLINDADO CONTRA CONFLITOS) -->
 <style>
   #customDialogOverlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(9,24,45,.45);
     z-index: 99999;
-    display: none; /* Escondido por padrão */
+    display: none;
     align-items: center;
     justify-content: center;
     padding: 20px;

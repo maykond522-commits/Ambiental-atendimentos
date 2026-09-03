@@ -629,22 +629,29 @@ def _ai_context_hash(endpoint: str, payload: dict[str, Any]) -> str:
     canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(f"{endpoint}|{canonical}".encode("utf-8")).hexdigest()
 
-def _generate_cached(endpoint: str, payload: dict[str, Any], instruction: str, schema):
+def _generate_cached(endpoint: str, payload: dict[str, Any], instruction: str, schema, force_refresh: bool = False):
     context_hash = _ai_context_hash(endpoint, payload)
     db = get_db()
     cur = db.cursor()
-    cur.execute(
-        "SELECT resultado_json FROM cache_ia WHERE endpoint=%s AND context_hash=%s",
-        (endpoint, context_hash),
-    )
-    cached = cur.fetchone()
-    if cached:
-        try:
-            cur.close()
-            return schema.model_validate(cached["resultado_json"] if isinstance(cached["resultado_json"], dict) else json.loads(cached["resultado_json"])), True, context_hash
-        except Exception:
-            cur.execute("DELETE FROM cache_ia WHERE endpoint=%s AND context_hash=%s", (endpoint, context_hash))
-            db.commit()
+    
+    # Se forçado, deleta o cache antigo antes de tentar buscar
+    if force_refresh:
+        cur.execute("DELETE FROM cache_ia WHERE endpoint=%s AND context_hash=%s", (endpoint, context_hash))
+        db.commit()
+    else:
+        # Busca normal...
+        cur.execute(
+            "SELECT resultado_json FROM cache_ia WHERE endpoint=%s AND context_hash=%s",
+            (endpoint, context_hash),
+        )
+        cached = cur.fetchone()
+        if cached:
+            try:
+                cur.close()
+                return schema.model_validate(cached["resultado_json"] if isinstance(cached["resultado_json"], dict) else json.loads(cached["resultado_json"])), True, context_hash
+            except Exception:
+                cur.execute("DELETE FROM cache_ia WHERE endpoint=%s AND context_hash=%s", (endpoint, context_hash))
+                db.commit()
     cur.close()
     result = _generate_structured(instruction, schema)
     now = _utc_now()
@@ -874,9 +881,13 @@ def api_ai_documento():
 def api_ai_esisla():
     try:
         raw = _json_body()
+        # Captura o sinal do frontend
+        force = bool(raw.pop("force_refresh", False))
         payload = _minimal_ai_context(raw)
         instruction = _task_instruction("esisla", payload)
-        result, cached, _ = _generate_cached("esisla", payload, instruction, EsislaResult)
+        
+        # Passa a variável force_refresh para a função do cache
+        result, cached, _ = _generate_cached("esisla", payload, instruction, EsislaResult, force_refresh=force)
         return jsonify({
             "ficha_esisla": result.ficha_esisla,
             "meta": {"cached": bool(cached), "endpoint": "esisla"}

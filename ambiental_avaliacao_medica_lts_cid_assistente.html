@@ -2371,18 +2371,45 @@ init().catch(e=>{console.error("Falha na inicialização:",e);toast("Erro ao ini
 
 document.addEventListener("click",e=>{const o=e.target.closest(".cid-option");if(o?.dataset?.cidCode)selectCID(o.dataset.cidCode);if(!e.target.closest(".cid-wrap")){$("cidSuggestions")?.classList.remove("show");}});
 
-</script>
-</div>
-  <!-- Modal Customizado para Alertas e Confirmações -->
-<div id="customDialogOverlay" class="modal" style="z-index: 99999;">
-  <div class="dialog" style="width: min(420px, 100%);">
-    <div class="dialog-head" style="padding: 16px 20px;">
-      <div><strong id="customDialogTitle" style="font-size: 16px; color: #073F87;">Aviso</strong></div>
+<!-- Modal Customizado para Alertas e Confirmações (BLINDADO CONTRA CONFLITOS) -->
+<style>
+  #customDialogOverlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(9,24,45,.45);
+    z-index: 99999;
+    display: none; /* Escondido por padrão */
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+  }
+  #customDialogOverlay.open {
+    display: flex;
+    animation: fadeInDialog .2s ease;
+  }
+  #customDialogBox {
+    width: min(420px, 100%);
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 24px 80px rgba(10,25,48,.28);
+    border: 1px solid #DFE7F0;
+    overflow: hidden;
+  }
+  @keyframes fadeInDialog { 
+    from { opacity: 0; transform: translateY(10px); } 
+    to { opacity: 1; transform: translateY(0); } 
+  }
+</style>
+
+<div id="customDialogOverlay">
+  <div id="customDialogBox">
+    <div style="padding: 16px 20px; border-bottom: 1px solid #EEF2F7; background: linear-gradient(180deg,#FFFFFF,#FBFCFE);">
+      <strong id="customDialogTitle" style="font-size: 16px; color: #073F87;">Aviso</strong>
     </div>
     <div style="padding: 20px; font-size: 13px; color: #162033; line-height: 1.5;" id="customDialogMessage">
       <!-- Mensagem aparecerá aqui -->
     </div>
-    <div style="padding: 14px 20px; border-top: 1px solid #DFE7F0; display: flex; justify-content: flex-end; gap: 8px; background: #F8FAFC; border-bottom-left-radius: 18px; border-bottom-right-radius: 18px;">
+    <div style="padding: 14px 20px; border-top: 1px solid #EEF2F7; display: flex; justify-content: flex-end; gap: 8px; background: #F8FAFC;">
       <button id="customDialogCancel" class="btn btn-outline" style="border: 1px solid #C7D6E5; background: #fff; color: #29435F;" onclick="CustomDialog.cancel()">Cancelar</button>
       <button id="customDialogConfirm" class="btn btn-primary" onclick="CustomDialog.confirmAction()">OK</button>
     </div>
@@ -2390,7 +2417,7 @@ document.addEventListener("click",e=>{const o=e.target.closest(".cid-option");if
 </div>
 
 <script>
-// Sistema global para sobrescrever os alertas feios do navegador
+// Sistema global para sobrescrever os alertas nativos do navegador
 const CustomDialog = {
   resolve: null,
   open(title, message, isConfirm = false) {
@@ -2412,7 +2439,6 @@ const CustomDialog = {
   }
 };
 
-// Sobrescreve as funções nativas para usarem a nossa interface
 window.alert = (msg) => CustomDialog.open("Aviso do Sistema", msg, false);
 window.confirm = (msg) => CustomDialog.open("Confirmação", msg, true);
 </script>

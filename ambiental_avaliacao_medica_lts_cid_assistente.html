@@ -1627,7 +1627,62 @@ function registryWrite(record){ try{const reg=registryRead(); const id=record.at
 function syncToRegistry(){ try{const snapshot=JSON.parse(JSON.stringify(state)); snapshot.__registryAt=new Date().toISOString(); snapshot.__status=snapshot.finalizado?"FINALIZADO":(snapshot.workflowStatus||"RASCUNHO"); registryWrite(snapshot);}catch(error){console.error("Falha ao registrar atendimento:",error);} }
 function workflowStatus(){return String(state.workflowStatus||(state.finalizado?"FINALIZADO":"RASCUNHO")).toUpperCase();}
 function setPersistStatus(kind,text){if($("saveDot"))$("saveDot").className=`save-dot ${kind||""}`;if($("saveText"))$("saveText").textContent=text;}
-async function syncToServer(manual=false){if(!navigator.onLine){setPersistStatus("","Offline — salvo localmente");return {ok:false,offline:true};}try{const payload=JSON.parse(JSON.stringify(state));payload.quesitos=QuesitoService.get();payload.validation=ValidationEngine.get();delete payload.__serverSyncedAt;delete payload.__serverId;const hasServerId=!!state.__serverId;let url=hasServerId?`${getApiBase()}/api/atendimentos/${encodeURIComponent(state.__serverId)}`:`${getApiBase()}/api/atendimentos`;let method=hasServerId?"PUT":"POST";let r=await fetch(url,{method,headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});let d=await r.json().catch(()=>null);if(!r.ok&&r.status===404&&hasServerId){r=await fetch(`${getApiBase()}/api/atendimentos`,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});d=await r.json().catch(()=>null);}if(!r.ok&&!hasServerId&&r.status===409&&d?.error?.code==="DUPLICATE_ATENDIMENTO"){r=await fetch(`${getApiBase()}/api/atendimentos/${encodeURIComponent(state.atendimento)}`,{method:"PUT",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});d=await r.json().catch(()=>null);}if(!r.ok||!d?.success){const msg=d?.error?.message||d?.detail||"Falha na persistência no servidor";throw new Error(msg);}state.__serverSyncedAt=new Date().toISOString();state.__serverId=d?.data?.id||state.__serverId;state.workflowStatus=d?.data?.status||workflowStatus();state.finalizado=state.workflowStatus==="FINALIZADO";setPersistStatus("ok",manual?"Sincronizado com o servidor":`Salvo às ${timeNow()}`);return {ok:true,data:d.data};}catch(e){console.warn("Persistência API indisponível",e);setPersistStatus("","Falha ao sincronizar");if(manual)toast(e.message||"Falha ao salvar no servidor.");return {ok:false,error:e};}}
+async function syncToServer(manual=false){
+  // 1. Trava de segurança para impedir erro 409 em laudos finalizados
+  if(isFinalizedReadOnly()){
+    console.log("Atendimento em modo leitura. Sincronização de background ignorada.");
+    return {ok: true, readonly: true};
+  }
+
+  if(!navigator.onLine){
+    setPersistStatus("","Offline — salvo localmente");
+    return {ok:false,offline:true};
+  }
+  
+  try{
+    const payload=JSON.parse(JSON.stringify(state));
+    payload.quesitos=QuesitoService.get();
+    payload.validation=ValidationEngine.get();
+    delete payload.__serverSyncedAt;
+    delete payload.__serverId;
+    
+    const hasServerId=!!state.__serverId;
+    let url=hasServerId?`${getApiBase()}/api/atendimentos/${encodeURIComponent(state.__serverId)}`:`${getApiBase()}/api/atendimentos`;
+    let method=hasServerId?"PUT":"POST";
+    
+    let r=await fetch(url,{method,headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});
+    let d=await r.json().catch(()=>null);
+    
+    if(!r.ok&&r.status===404&&hasServerId){
+      r=await fetch(`${getApiBase()}/api/atendimentos`,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});
+      d=await r.json().catch(()=>null);
+    }
+    
+    if(!r.ok&&!hasServerId&&r.status===409&&d?.error?.code==="DUPLICATE_ATENDIMENTO"){
+      r=await fetch(`${getApiBase()}/api/atendimentos/${encodeURIComponent(state.atendimento)}`,{method:"PUT",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});
+      d=await r.json().catch(()=>null);
+    }
+    
+    if(!r.ok||!d?.success){
+      const msg=d?.error?.message||d?.detail||"Falha na persistência no servidor";
+      throw new Error(msg);
+    }
+    
+    state.__serverSyncedAt=new Date().toISOString();
+    state.__serverId=d?.data?.id||state.__serverId;
+    state.workflowStatus=d?.data?.status||workflowStatus();
+    state.finalizado=state.workflowStatus==="FINALIZADO";
+    setPersistStatus("ok",manual?"Sincronizado com o servidor":`Salvo às ${timeNow()}`);
+    
+    return {ok:true,data:d.data};
+    
+  } catch(e) {
+    console.warn("Persistência API indisponível",e);
+    setPersistStatus("","Falha ao sincronizar");
+    if(manual)toast(e.message||"Falha ao salvar no servidor.");
+    return {ok:false,error:e};
+  }
+}
 function autoSave(){if(isFinalizedReadOnly())return;syncState();QuesitoService.get();updateProgress();setPersistStatus("saving","Salvando...");clearTimeout(window.__saveTimer);window.__saveTimer=setTimeout(()=>persistNow(true),650);invalidateAICache();}
 async function persistNow(updateStatus=false){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));syncToRegistry();if(updateStatus){setPersistStatus("saving","Sincronizando...");return await syncToServer(false);}if(navigator.onLine){clearTimeout(window.__serverSaveTimer);window.__serverSaveTimer=setTimeout(()=>syncToServer(false),50);}return {ok:true,local:true};}catch(error){console.error("Falha no LocalStorage:",error);setPersistStatus("","Erro ao salvar");return {ok:false,error};}}
 async function saveNow(){if(isFinalizedReadOnly()){toast("Atendimento finalizado: edição bloqueada. Use a Gestão para reabrir.");return false;}syncState();setPersistStatus("saving","Salvando...");const result=await persistNow(true);if(result?.ok)toast("Atendimento sincronizado com o servidor.");return !!result?.ok;}

@@ -1127,11 +1127,6 @@ body::before{
           </div>
         </div>
 
-        <div class="subpanel">
-          <h4>Sugestões de justificativa</h4>
-          <div class="model-list" id="modelList"></div>
-        </div>
-
         <!-- Substitua apenas a div da Justificativa detalhada na Seção 8 -->
         <div class="field" style="margin-top:15px">
           <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:7px; gap:8px; flex-wrap:wrap">
@@ -1271,14 +1266,6 @@ const examItems = [
   ["Sensopercepção","Sem sinais diretos ou indiretos que possam indicar comprometimento","Com sinais de comprometimento","sem sinais diretos ou indiretos de comprometimento"],
   ["Psicomotricidade","Sem comprometimento","Com comprometimento","sem comprometimento"],
   ["Juízo","Preservado","Comprometido","preservado"]
-];
-
-const justificationModels = [
-"Capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol, em razão de limitações funcionais identificadas neste ato pericial.",
-"Cabendo avaliação por Junta Médica para fins de readaptação funcional.",
-"A redução dos dias solicitados se deu, em razão de término de tratamento com remissão de sintomas incapacitantes e ou limitações funcionais incapacitantes.",
-"Apesar de se encontrar readaptado, constato que apresenta agudização do quadro clínico, com limitações que repercutem para o exercer qualquer atividade laborativa no momento.",
-"Capacidade laborativa preservada, a doença apresentada no momento não produz limitações funcionais incapacitantes que sustente um parecer diferente deste."
 ];
 
 const state = {
@@ -1768,7 +1755,6 @@ function go(n){
   $("section-"+n).classList.add("active");
   updateProgress();
   if(n===5) renderExam();
-  if(n===8) renderModels();
   if(n===9){ try{ renderReview(); }catch(error){ console.error("Falha ao renderizar revisão:",error); const rs=$("reviewStatus"); if(rs){rs.className="review-status error";rs.innerHTML='<span class="review-symbol">🔴</span><span>Não foi possível montar a revisão. Recarregue o atendimento e tente novamente.</span>'; } } }
   window.scrollTo({top:0,behavior:"smooth"});
   autoSave();
@@ -1815,7 +1801,7 @@ function applyState(){
   $("exameFisicoTipo") && ($("exameFisicoTipo").value=state.exameFisicoTipo||"");
   $("alteracoesClinicasExames") && ($("alteracoesClinicasExames").value=state.alteracoesClinicasExames||"");
   setRadio("readaptado",state.readaptado);setRadio("outrasDoencas",state.outrasDoencas);setRadio("alteracaoMed",state.alteracaoMed);setRadio("limitacaoFuncional",state.limitacaoFuncional);setRadio("limitacaoRol",state.limitacaoRol);setRadio("parecer",state.parecer);setRadio("capacidade",state.capacidade); $("psicoterapia").checked=!!state.psicoterapia;$("fisioterapia").checked=!!state.fisioterapia;
-  togglePanelsOnly(); updateLimitacaoStatus(); renderMedications();renderConditions();renderDocumentRecords();renderQuesitos();renderExam();renderModels();renderParecerHint();applyFinalizedLock(); if($("cid").value)renderCIDAssist(findCID($("cid").value)||null); go(Math.min(9,Math.max(1,Number(state.current)||1)));
+  togglePanelsOnly(); updateLimitacaoStatus(); renderMedications();renderConditions();renderDocumentRecords();renderQuesitos();renderExam();renderParecerHint();applyFinalizedLock(); if($("cid").value)renderCIDAssist(findCID($("cid").value)||null); go(Math.min(9,Math.max(1,Number(state.current)||1)));
 }
 function togglePanelsOnly(){ $("readaptadoPanel").classList.toggle("hidden",getRadio("readaptado")!=="Sim");$("alteracaoPanel").classList.toggle("hidden",getRadio("alteracaoMed")!=="Sim");$("doencasPanel").classList.toggle("hidden",getRadio("outrasDoencas")!=="Sim");$("limitacao1Panel").classList.toggle("hidden",getRadio("limitacaoFuncional")!=="Sim");$("limitacao2Panel").classList.toggle("hidden",getRadio("limitacaoRol")!=="Sim"); }
 const REGISTRY_KEY="ambiental_atendimentos_v1";
@@ -2092,16 +2078,6 @@ function focusValidationItem(step,label){
   if(label==="Quesitos"){setTimeout(()=>$("quesitos")?.scrollIntoView({block:"center",behavior:"smooth"}),80);}
 }
 
-function renderModels(){
-  $("modelList").innerHTML=justificationModels.map((m,i)=>`
-    <div class="model"><div class="model-text">${esc(m)}</div><div class="model-actions"><button class="btn btn-outline" onclick="useModel(${i})">Usar este modelo</button></div></div>`).join("");
-}
-function useModel(i){
-  if(isFinalizedReadOnly()){toast("Atendimento finalizado: não é possível alterar a justificativa.");return;}
-  const current=$("justificativa").value.trim();
-  $("justificativa").value=current?current+"\\n\\n"+justificationModels[i]:justificationModels[i];
-  autoSave();toast("Modelo inserido na justificativa.");
-}
 function renderParecerHint(){
   const p=getRadio("parecer");
   $("parecerHint").textContent=p==="CONTRÁRIO"?"Parecer CONTRÁRIO selecionado. Garanta que a justificativa esteja preenchida e coerente com os achados.":p==="FAVORÁVEL"?"Parecer FAVORÁVEL selecionado. Garanta que a justificativa esteja preenchida e coerente com os achados.":"Selecione o parecer definido pelo médico.";

@@ -1473,17 +1473,22 @@ async function deleteAtendimento() {
                 })
             });
             
-            if (!res.ok) throw new Error("Não foi possível excluir no servidor.");
+            // Ignora erro 404 (caso seja um rascunho local que nunca subiu pro banco)
+            if (!res.ok && res.status !== 404) {
+                throw new Error("Não foi possível excluir no servidor.");
+            }
         }
         
-        // Limpa o armazenamento local
+        // Limpa o armazenamento local principal do formulário
         localStorage.removeItem("ambiental_lts_v2");
         localStorage.removeItem("ambiental_lts_v1"); 
         
+        // CORREÇÃO: Em vez de só mudar o status, removemos o "fantasma" local.
+        // Assim, a Gestão será obrigada a ler a verdade direto do banco de dados!
         let reg = {};
         try { reg = JSON.parse(localStorage.getItem("ambiental_atendimentos_v1") || "{}"); } catch(e){}
         if (reg[state.atendimento]) {
-            reg[state.atendimento].workflowStatus = "ARQUIVADO";
+            delete reg[state.atendimento]; // Remove completamente da memória do navegador
             localStorage.setItem("ambiental_atendimentos_v1", JSON.stringify(reg));
         }
         

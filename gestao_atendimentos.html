@@ -425,4 +425,49 @@ document.getElementById('filter').addEventListener('change',()=>fetchServer().th
 ['periodoInicio','periodoFim'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{if(document.getElementById('periodoInicio').value&&document.getElementById('periodoFim').value&&document.getElementById('periodoInicio').value>document.getElementById('periodoFim').value){alert('O período inicial não pode ser posterior ao período final.');return;} fetchServer().then(refresh)}));
 ['medico','cid','unidade'].forEach(id=>document.getElementById(id).addEventListener('change',()=>fetchServer().then(refresh)));
 (async()=>{await fetchServer();toastLocalStorage();refresh()})();
-</script></body></html>
+</script>
+<!-- Modal Customizado para Alertas e Confirmações -->
+<div id="customDialogOverlay" class="modal" style="z-index: 99999;">
+  <div class="dialog" style="width: min(420px, 100%);">
+    <div class="dialog-head" style="padding: 16px 20px;">
+      <div><strong id="customDialogTitle" style="font-size: 16px; color: #073F87;">Aviso</strong></div>
+    </div>
+    <div style="padding: 20px; font-size: 13px; color: #162033; line-height: 1.5;" id="customDialogMessage">
+      <!-- Mensagem aparecerá aqui -->
+    </div>
+    <div style="padding: 14px 20px; border-top: 1px solid #DFE7F0; display: flex; justify-content: flex-end; gap: 8px; background: #F8FAFC; border-bottom-left-radius: 18px; border-bottom-right-radius: 18px;">
+      <button id="customDialogCancel" class="btn btn-outline" style="border: 1px solid #C7D6E5; background: #fff; color: #29435F;" onclick="CustomDialog.cancel()">Cancelar</button>
+      <button id="customDialogConfirm" class="btn btn-primary" onclick="CustomDialog.confirmAction()">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Sistema global para sobrescrever os alertas feios do navegador
+const CustomDialog = {
+  resolve: null,
+  open(title, message, isConfirm = false) {
+    document.getElementById('customDialogTitle').textContent = title;
+    document.getElementById('customDialogMessage').innerHTML = message;
+    document.getElementById('customDialogCancel').style.display = isConfirm ? 'inline-flex' : 'none';
+    document.getElementById('customDialogConfirm').textContent = isConfirm ? 'Confirmar' : 'OK';
+    document.getElementById('customDialogOverlay').classList.add('open');
+    return new Promise(res => { this.resolve = res; });
+  },
+  close() {
+    document.getElementById('customDialogOverlay').classList.remove('open');
+    if(this.resolve) this.resolve(false);
+  },
+  cancel() { this.close(); },
+  confirmAction() {
+    document.getElementById('customDialogOverlay').classList.remove('open');
+    if(this.resolve) this.resolve(true);
+  }
+};
+
+// Sobrescreve as funções nativas para usarem a nossa interface
+window.alert = (msg) => CustomDialog.open("Aviso do Sistema", msg, false);
+window.confirm = (msg) => CustomDialog.open("Confirmação", msg, true);
+</script>
+</body>
+</html>

@@ -264,24 +264,29 @@ def _status_from_payload(payload):
     return _normalize_workflow_state(payload.get("workflowStatus"), "RASCUNHO")
 
 def _sync_child_tables(db, rid, payload):
-    now=_utc_now()
-    db.execute("DELETE FROM documentos WHERE atendimento_id=%s", (rid,))
-    db.execute("DELETE FROM quesitos WHERE atendimento_id=%s", (rid,))
+    now = _utc_now()
+    cur = db.cursor()
+    cur.execute("DELETE FROM documentos WHERE atendimento_id=%s", (rid,))
+    cur.execute("DELETE FROM quesitos WHERE atendimento_id=%s", (rid,))
     for doc in payload.get("documentosComplementares") or []:
-        db.execute("INSERT INTO documentos(atendimento_id, payload_json, criado_em) VALUES(%s, %s, %s)", (rid, json.dumps(doc, ensure_ascii=False), now))
-    for i,q in enumerate((payload.get("quesitos") or [])[:3],1):
-        db.execute("INSERT INTO quesitos(atendimento_id, numero, pergunta, resposta, atualizado_em) VALUES(%s, %s, %s, %s, %s) ON CONFLICT (atendimento_id, numero) DO UPDATE SET pergunta=EXCLUDED.pergunta, resposta=EXCLUDED.resposta, atualizado_em=EXCLUDED.atualizado_em", (rid, i, str(q.get("pergunta") or ""), str(q.get("resposta") or ""), now))
+        cur.execute("INSERT INTO documentos(atendimento_id, payload_json, criado_em) VALUES(%s, %s, %s)", (rid, json.dumps(doc, ensure_ascii=False), now))
+    for i, q in enumerate((payload.get("quesitos") or [])[:3], 1):
+        cur.execute("INSERT INTO quesitos(atendimento_id, numero, pergunta, resposta, atualizado_em) VALUES(%s, %s, %s, %s, %s) ON CONFLICT (atendimento_id, numero) DO UPDATE SET pergunta=EXCLUDED.pergunta, resposta=EXCLUDED.resposta, atualizado_em=EXCLUDED.atualizado_em", (rid, i, str(q.get("pergunta") or ""), str(q.get("resposta") or ""), now))
+    cur.close()
 
-def _audit_record(db,rid,old,new,origin="MANUAL"):
+def _audit_record(db, rid, old, new, origin="MANUAL"):
+    cur = db.cursor()
     if not old:
-        db.execute("INSERT INTO historico_atendimento(atendimento_id,usuario_id,usuario_nome,campo,valor_anterior,novo_valor,origem,criado_em) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)",(rid,None,request.user_name,"__ATENDIMENTO__","",json.dumps(new,ensure_ascii=False),origin,_utc_now()))
+        cur.execute("INSERT INTO historico_atendimento(atendimento_id, usuario_id, usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em) VALUES(%s, %s, %s, %s, %s, %s, %s, %s)", (rid, None, request.user_name, "__ATENDIMENTO__", "", json.dumps(new, ensure_ascii=False), origin, _utc_now()))
+        cur.close()
         return
-    keys=sorted(set(old.keys())|set(new.keys()))
+    keys = sorted(set(old.keys()) | set(new.keys()))
     for k in keys:
-        ov=json.dumps(old.get(k),ensure_ascii=False,sort_keys=True); nv=json.dumps(new.get(k),ensure_ascii=False,sort_keys=True)
-        if ov!=nv:
-            db.execute("INSERT INTO historico_atendimento(atendimento_id,usuario_id,usuario_nome,campo,valor_anterior,novo_valor,origem,criado_em) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)",(rid,None,request.user_name,k,ov[:8000],nv[:8000],origin,_utc_now()))
-
+        ov = json.dumps(old.get(k), ensure_ascii=False, sort_keys=True)
+        nv = json.dumps(new.get(k), ensure_ascii=False, sort_keys=True)
+        if ov != nv:
+            cur.execute("INSERT INTO historico_atendimento(atendimento_id, usuario_id, usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em) VALUES(%s, %s, %s, %s, %s, %s, %s, %s)", (rid, None, request.user_name, k, ov[:8000], nv[:8000], origin, _utc_now()))
+    cur.close()
 
 class AIResult(BaseModel):
     model_config = ConfigDict(extra="ignore")

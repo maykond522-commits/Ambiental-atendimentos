@@ -431,14 +431,15 @@ document.getElementById('filter').addEventListener('change',()=>fetchServer().th
 ['periodoInicio','periodoFim'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{if(document.getElementById('periodoInicio').value&&document.getElementById('periodoFim').value&&document.getElementById('periodoInicio').value>document.getElementById('periodoFim').value){alert('O período inicial não pode ser posterior ao período final.');return;} fetchServer().then(refresh)}));
 ['medico','cid','unidade'].forEach(id=>document.getElementById(id).addEventListener('change',()=>fetchServer().then(refresh)));
 (async()=>{await fetchServer();toastLocalStorage();refresh()})();
+</script>
 
-  <!-- Modal Customizado para Alertas e Confirmações (BLINDADO CONTRA CONFLITOS) -->
+<!-- Modal Customizado para Alertas e Confirmações (BLINDADO CONTRA CONFLITOS) -->
 <style>
   #customDialogOverlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(9,24,45,.45);
     z-index: 99999;
-    display: none; /* Escondido por padrão */
+    display: none;
     align-items: center;
     justify-content: center;
     padding: 20px;

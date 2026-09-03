@@ -1018,12 +1018,11 @@ def api_save_atendimento(rid=None):
     try:
         _sync_child_tables(db,real_id,payload); _audit_record(db,real_id,old,payload,"MANUAL"); db.commit()
         cur.close()
-    except psycopg2.IntegrityError as exc:
+    except psycopg2.IntegrityError as exc: # <--- Corrigido para Postgres
         db.rollback()
         cur.close()
         return _error("DUPLICATE_ATENDIMENTO", "O atendimento já existe no servidor. Recarregue o registro oficial antes de salvar novamente.", False, 409)
-    return _ok({"id":real_id,"atendimento":number,"status":status,"completude":completeness,"atualizado_em":now},201 if oldrow is None else 200)
-
+        
 def _finalization_blockers(payload: dict[str, Any]) -> list[dict[str, str]]:
     a = payload.get("aux") or {}
     blockers = []

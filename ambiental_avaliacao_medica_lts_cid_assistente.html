@@ -1451,9 +1451,7 @@ async function deleteAtendimento() {
         return;
     }
     
-    if (!confirm("Tem certeza que deseja excluir este atendimento? Ele será arquivado e fechado.")) {
-        return;
-    }
+    if (!(await confirm("Tem certeza que deseja excluir este atendimento? Ele será arquivado e fechado."))) { return; }
     
     const btn = document.querySelector('button[onclick="deleteAtendimento()"]');
     if(btn) { btn.disabled = true; btn.textContent = "Excluindo..."; }
@@ -1630,7 +1628,7 @@ async function apiAI(path, payload, action, label, target = "aiOutput") {
 }
 function getJustificativaContext(){const v=values();const limitacoes=[v.descLimitacao,v.atividadesComprometidas,v.sintomasLimitacao,v.alteracoesClinicasExames].filter(x=>String(x||"").trim()).join(" | ");return {atendimento:v.atendimento,cargo:v.cargo,idade:v.idade,cid:v.cid,limitacoes,capacidade:v.capacidade};}
 function invalidateAICache(){aiClientCache.clear();}
-function applyAIText(mode){if(isFinalizedReadOnly()){toast("Atendimento finalizado: a sugestão pode ser analisada, mas não aplicada.");return;}const text=String(aiLastResult?.justificativa||"").trim();if(!text)return toast("Não há sugestão de IA disponível.");const f=$("justificativa"),cur=f.value.trim();if(mode==="replace"){if(cur&&!window.confirm("Substituir o texto atual pela sugestão da IA?"))return;f.value=text;}else f.value=cur?cur+"\n\n"+text:text;invalidateAICache();autoSave();toast(mode==="replace"?"Justificativa substituída após confirmação.":"Sugestão adicionada abaixo do texto existente.");}
+async function applyAIText(mode) {if(isFinalizedReadOnly()){toast("Atendimento finalizado: a sugestão pode ser analisada, mas não aplicada.");return;}const text=String(aiLastResult?.justificativa||"").trim();if(!text)return toast("Não há sugestão de IA disponível.");const f=$("justificativa"),cur=f.value.trim();if(mode==="replace"){if (cur && !(await confirm("Substituir o texto atual pela sugestão da IA?"))) return;f.value=text;}else f.value=cur?cur+"\n\n"+text:text;invalidateAICache();autoSave();toast(mode==="replace"?"Justificativa substituída após confirmação.":"Sugestão adicionada abaixo do texto existente.");}
 async function gerarJustificativaIA(){return apiAI("/api/ai/justificativa",getJustificativaContext(),"justificativa","Gerando justificativa...");}
 async function verSugestaoJustificativaIA(){go(8);return gerarJustificativaIA();}
 const EXAME_FISICO_OPTIONS=["Exame Físico Geral","Tecido celular subcutâneo","Pele e Fâneros","Aparelho Circulatório","Aparelho Respiratório","Aparelho Hemolinfopoiético","Aparelho Digestivo","Aparelho Genitourinário","Aparelho Osteomuscular e Tecido Conjutivo","Aparelho Endócrino","Sistema Nervoso","Órgãos dos Sentidos","Exame Mental","Outros"];
@@ -1650,7 +1648,7 @@ function renderFillSuggestion(result){
   box.innerHTML=`<div class="fill-suggestion review-ai-fill"><h4>Preenchimento assistido — revisão humana obrigatória</h4>${rows.map(r=>`<div class="suggestion-row"><div class="suggestion-label">${esc(r[0])}</div><div class="suggestion-value">${esc(r[1])}</div></div>`).join("")}${docs.length?`<div class="suggestion-row"><div class="suggestion-label">Documentos / exames</div><div class="suggestion-value">${docs.map(d=>esc([d.tipo,d.data,d.resultado].filter(Boolean).join(" — "))).join("<br>")}</div></div>`:""}${qs.length?`<div class="suggestion-row"><div class="suggestion-label">Quesitos sugeridos</div><div class="suggestion-value">${qs.map(q=>`Q${esc(q.numero||"")}: ${esc(q.resposta||"—")}${q.justificativa?` — ${esc(q.justificativa)}`:""}`).join("<br>")}</div></div>`:""}<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-outline" type="button" onclick="applyFillSuggestions()">Aplicar sugestões aos campos vazios</button><button class="btn btn-outline" type="button" onclick='$("reviewFillOutput").innerHTML=""'>Descartar</button></div></div>`;
   window.__aiFillResult=result;
 }
-function applyFillSuggestions(){
+async function applyFillSuggestions(){
   if(isFinalizedReadOnly()){toast("Atendimento finalizado: sugestões não podem ser aplicadas sem reabertura.");return;}
   const r=window.__aiFillResult||{}; const s=r.sugestoes_preenchimento||{};
   if(!confirm("Aplicar somente sugestões da IA aos campos vazios? Os dados já preenchidos não serão substituídos."))return;
@@ -1660,7 +1658,7 @@ function applyFillSuggestions(){
   if(!$("alteracoesClinicasExames").value.trim()&&s.alteracoes_clinicas_exames)$("alteracoesClinicasExames").value=s.alteracoes_clinicas_exames;
   if(!$("descLimitacao").value.trim()&&s.limitacoes_fisicas_mentais)$("descLimitacao").value=s.limitacoes_fisicas_mentais;
   if(!$("justificativa").value.trim()&&s.justificativa_parecer_final)$("justificativa").value=s.justificativa_parecer_final;
-  syncState();autoSave();renderReview();toast("Sugestões aplicadas somente aos campos que estavam vazios.");
+  if (!(await confirm("Aplicar somente sugestões da IA aos campos vazios?"))) return;
 }
 async function sugerirPreenchimentoIA(){
   const c=getFormContext(); const r=await apiAI("/api/ai/preenchimento",c,"preenchimento","Revisando e sugerindo preenchimento..."); if(r){renderFillSuggestion(r);setAIState("Revisão assistida concluída",r?.nivel_atencao==="baixo"?"success":"attention");} return r;
@@ -1693,7 +1691,7 @@ function renderFinalReportAI(result){
 // Mantém apenas uma implementação da ação de conteúdo final.
 // A rota dedicada /api/ai/documento usa prompt específico e cache por contexto.
 
-function applyFinalReportAI(){
+async function applyFinalReportAI(){
   if(isFinalizedReadOnly()){toast("Atendimento finalizado: a minuta pode ser revisada, mas não aplicada.");return;}
   const r=window.__aiFinalReport||{};
   if(!confirm("Aplicar a minuta da IA somente aos campos vazios? Os dados já preenchidos não serão substituídos."))return;
@@ -1713,7 +1711,7 @@ function applyFinalReportAI(){
     state.quesitos=r.quesitos_sugeridos.slice(0,3).map((q,i)=>({pergunta:p[i],resposta:["Sim","Não"].includes(q.resposta)?q.resposta:"",justificativa:q.justificativa||""}));
     renderQuesitos();
   }
-  syncState();autoSave();renderReview();toast("Minuta final aplicada apenas aos campos vazios.");
+  if (!(await confirm("Aplicar a minuta da IA somente aos campos vazios?"))) return;
 }
 
 function getApiBase(){return location.protocol==="file:"?API_FALLBACK:location.origin;}

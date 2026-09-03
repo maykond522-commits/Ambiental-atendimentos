@@ -410,7 +410,79 @@ DADOS DO ATENDIMENTO:
     "documento": "TAREFA: GERAR O RELATÓRIO FINAL DO ATENDIMENTO.",
     "revisao_texto": "TAREFA: REVISAR TEXTO INFORMADO PELO PROFISSIONAL.",
     "preenchimento": "TAREFA: SUGERIR PREENCHIMENTO ASSISTIDO.",
-    "esisla": "TAREFA: FORMATAR DADOS NO PADRÃO E-SISLA (DPME)."
+    "esisla": """
+TAREFA: FORMATAR DADOS NO PADRÃO E-SISLA (DPME).
+
+Atue como um Médico Perito do Estado de São Paulo. Sua tarefa é receber os dados do atendimento e formatá-los EXATAMENTE no padrão exigido pelo sistema e-sisla.
+
+DIRETRIZES:
+1. Mantenha os títulos dos campos exatamente como no modelo abaixo, com os asteriscos (*).
+2. Redija em terceira pessoa (ex: "Periciado(a) de X anos...").
+3. Pressão Arterial padrão: Sistólica 120, Diastólica 80, Pulso 100 (salvo se informado diferente).
+4. "(*) Justificativa Parecer Final" DEVE ser: "Parecer emitido pelo Coordenador de Ingresso, Licenças, Readaptação e Aposentadoria, à vista do que prevê o artigo 32, do Decreto nº 69.234, de 23/12/2024 c/c o artigo 95, da Resolução SGGD 25, de 16/05/2025."
+5. Crie um texto coeso substituindo as variáveis pelos dados reais informados.
+
+ESTRUTURA DE TEXTO ESPERADA (Retorne todo esse bloco preenchido):
+Registro da perícia Médica para Licença
+
+(*) Queixa e Duração:
+[Preencher com idade, cargo, tempo na função, doença/motivo, sintomas e medicações]
+
+Antecedentes Mórbidos:
+[Preencher doenças prévias e tratamentos]
+
+Atestado/Relatório/Exames Complementares (Tipo-Data-Resultado):
+[Preencher com emissor, CID, data e dias]
+
+Pressão Arterial
+Sistólica (mmHg):
+120
+Diastólica (mmHg):
+80
+Pulso (bpm):
+100
+
+(*)Exame Físico Geral
+[Preencher com os aparelhos comprometidos / tipo de exame]
+
+Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:
+[Preencher achados clínicos do exame]
+
+(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):
+[Preencher limitações com base no exame pericial]
+
+(*)Parecer Médico
+[FAVORÁVEL OU CONTRÁRIO]
+Nº Dias: [Dias]
+Data Início: [Data de início]
+CID 10: [CID]
+Descrição: [Descrição do CID]
+Médico Perito: [Nome do Médico responsável] CRM: [CRM]
+Dt/Hr Perícia: [Data e Hora do Atendimento]
+
+(*)Resposta aos quesitos
+1) Há doença(s) ou sequela(s) de doença(s) prévia(s)?
+[Sim/Não]
+2) A(s) doença(s) ou sequela(s) de doença(s) prévia(s) gera(m) limitação(ões) para periciando(a)?
+[Sim/Não]
+3) A(s) limitação(ões) impede(m) o(a) periciando(a) de exercer alguma atividade do rol?
+[Sim/Não]
+
+(*)Justificativa Parecer Médico
+[Sintetizar justificativa pericial final]
+
+(*) Parecer Final
+[FAVORÁVEL OU CONTRÁRIO]
+Nº Dias: [Dias]
+Data Início: [Data de início]
+CID 10: [CID]
+Descrição: [Descrição do CID]
+Diretor DPME: [Nome] CRM: [CRM]
+Data P.F.: [Data/Hora]
+
+(*) Justificativa Parecer Final
+Parecer emitido pelo Coordenador de Ingresso, Licenças, Readaptação e Aposentadoria, à vista do que prevê o artigo 32, do Decreto nº 69.234, de 23/12/2024 c/c o artigo 95, da Resolução SGGD 25, de 16/05/2025.
+""".strip()
 }
 
 def _task_instruction(task: str, payload: dict[str, Any]) -> str:

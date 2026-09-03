@@ -1458,21 +1458,30 @@ async function deleteAtendimento() {
     const btn = document.querySelector('button[onclick="deleteAtendimento()"]');
     if(btn) { btn.disabled = true; btn.textContent = "Excluindo..."; }
     
+    // Aborta salvamentos automáticos pendentes (Evita o erro PUT 409)
+    clearTimeout(window.__saveTimer);
+    clearTimeout(window.__serverSaveTimer);
+    
     try {
-        // Tenta excluir no servidor (se já estiver sincronizado)
-        if (state.__serverId) {
-            const res = await fetch(`${getApiBase()}/api/atendimentos/${encodeURIComponent(state.__serverId)}`, {
-                method: 'DELETE',
-                headers: { 'Accept': 'application/json' }
+        // Usando a rota POST /state em vez de DELETE para evitar bloqueios HTTP
+        const idToArchive = state.__serverId || state.atendimento;
+        if (idToArchive) {
+            const res = await fetch(`${getApiBase()}/api/atendimentos/${encodeURIComponent(idToArchive)}/state`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({
+                    estado: "ARQUIVADO",
+                    motivo: "Excluído pelo usuário no painel de edição"
+                })
             });
+            
             if (!res.ok) throw new Error("Não foi possível excluir no servidor.");
         }
         
-        // Remove do cache de rascunho de tela (v1 e v2)
+        // Limpa o armazenamento local
         localStorage.removeItem("ambiental_lts_v2");
         localStorage.removeItem("ambiental_lts_v1"); 
         
-        // Marca como ARQUIVADO no registro geral de todos os atendimentos
         let reg = {};
         try { reg = JSON.parse(localStorage.getItem("ambiental_atendimentos_v1") || "{}"); } catch(e){}
         if (reg[state.atendimento]) {
@@ -1482,7 +1491,7 @@ async function deleteAtendimento() {
         
         toast("Atendimento excluído com sucesso!");
         
-        // Redireciona para a central de gestão após 1.5s
+        // Redireciona para a central após o arquivamento
         setTimeout(() => { location.href = "/gestao"; }, 1500);
         
     } catch (e) {

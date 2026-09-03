@@ -1,0 +1,416 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ambiental — Gestão de Atendimentos</title>
+<style>
+:root {
+  --blue: #073F87;
+  --blue-2: #0B58A8;
+  --blue-3: #EEF5FC;
+  --green: #00C95A;
+  --green-2: #00AE50;
+  --green-soft: #ECFBF2;
+  --text: #162033;
+  --muted: #64748B;
+  --line: #DFE7F0;
+  --bg: #F2F6FA;
+  --card: #FFFFFF;
+  --shadow: 0 16px 45px rgba(19,44,78,.075);
+  --shadow-soft: 0 8px 26px rgba(19,44,78,.055);
+  --amber: #D97706;
+  --amber-bg: #FFFBEB;
+  --red: #DC2626;
+  --red-bg: #FEF2F2;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  background: 
+    radial-gradient(circle at 8% 0%, rgba(7,63,135,.035), transparent 28%),
+    radial-gradient(circle at 92% 7%, rgba(0,201,90,.025), transparent 24%),
+    var(--bg);
+  line-height: 1.45;
+}
+
+/* Barra Superior e Marca */
+.top {
+  position: sticky; top: 0; z-index: 20;
+  background: rgba(255,255,255,.91);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(219,228,238,.88);
+  box-shadow: 0 5px 25px rgba(18,44,75,.045);
+}
+.top::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+  background: linear-gradient(90deg, var(--blue) 0 70%, var(--green) 70% 100%);
+}
+.top-in { max-width: 1440px; margin: auto; padding: 16px 24px; display: flex; align-items: center; gap: 18px; }
+.brand { display: flex; align-items: center; gap: 14px; flex: 1; }
+.brand img { 
+  width: 48px; height: 48px; object-fit: contain; border-radius: 12px;
+  padding: 4px; background: #fff; border: 1px solid #E6EDF5; box-shadow: 0 5px 16px rgba(7,63,135,.09);
+}
+.brand strong { display: block; color: var(--blue); font-size: 16px; font-weight: 800; letter-spacing: .02em; }
+.brand span { display: block; color: var(--muted); font-size: 11px; margin-top: 3px; }
+
+/* Botões Globais */
+.top-actions { display: flex; gap: 10px; }
+.btn {
+  border: 1px solid #C7D6E5; background: #fff; color: #29435F; padding: 10px 14px; 
+  border-radius: 11px; font-size: 12px; font-weight: 800; cursor: pointer; transition: all .2s ease;
+}
+.btn:hover { border-color: #7FAAD5; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(7,63,135,.05); }
+.btn-primary { background: linear-gradient(135deg, var(--blue), var(--blue-2)); color: #fff; border: none; box-shadow: 0 8px 20px rgba(7,63,135,.18); }
+.btn-primary:hover { background: linear-gradient(135deg, var(--blue-2), var(--blue)); box-shadow: 0 10px 24px rgba(7,63,135,.25); }
+.btn-esisla { background: linear-gradient(135deg, var(--green), var(--green-2)); color: #fff; border: none; box-shadow: 0 8px 20px rgba(0,174,80,.15); }
+.btn-esisla:hover { background: linear-gradient(135deg, var(--green-2), #009645); box-shadow: 0 10px 24px rgba(0,174,80,.22); }
+.btn-quiet { background: #F7FAFC; border-color: transparent; }
+
+/* Layout e Cabeçalhos */
+.layout { max-width: 1440px; margin: 0 auto; padding: 28px 24px; }
+.headline { display: flex; justify-content: space-between; gap: 14px; align-items: end; margin-bottom: 24px; }
+.headline h1 { margin: 0; font-size: 26px; color: var(--blue); letter-spacing: -.5px; }
+.headline p { margin: 6px 0 0; color: var(--muted); font-size: 13px; max-width: 600px; line-height: 1.5; }
+
+/* Estatísticas */
+.stats { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 14px; margin-bottom: 24px; }
+.stat {
+  background: linear-gradient(180deg, #FFFFFF, #FCFDFE);
+  border: 1px solid var(--line); border-radius: 18px; padding: 18px;
+  box-shadow: var(--shadow-soft); transition: all .2s ease;
+}
+.stat:hover { transform: translateY(-2px); box-shadow: var(--shadow); border-color: #C5D7E9; }
+.stat span { font-size: 10px; color: var(--muted); font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+.stat b { display: block; font-size: 26px; color: var(--blue); margin-top: 6px; font-weight: 800; }
+
+/* Painel Principal (Filtros e Tabela) */
+.panel { background: #fff; border: 1px solid #DDE6EF; border-radius: 20px; box-shadow: var(--shadow); overflow: hidden; }
+.tabs { display: flex; gap: 8px; padding: 14px 18px; border-bottom: 1px solid var(--line); background: #FCFDFE; }
+.tab {
+  border: 1px solid transparent; background: transparent; padding: 8px 14px; border-radius: 9px;
+  font-size: 12px; font-weight: 800; color: var(--muted); cursor: pointer; transition: all .2s ease;
+}
+.tab:hover { background: #F3F8FD; color: var(--blue-2); }
+.tab.active { background: var(--blue-3); color: var(--blue); border-color: #DCEAF8; }
+
+.filters { padding: 16px 18px; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr auto; gap: 10px; border-bottom: 1px solid var(--line); }
+.input, .select {
+  width: 100%; border: 1px solid #D9E3ED; border-radius: 10px; padding: 10px 12px;
+  font-size: 12px; color: var(--text); background: #FCFDFE; outline: none; transition: .2s ease;
+}
+.input:focus, .select:focus { border-color: #7FAAD5; box-shadow: 0 0 0 4px rgba(7,63,135,.07); background: #fff; }
+
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 14px 18px; border-bottom: 1px solid #EDF2F6; font-size: 12px; vertical-align: middle; }
+th { color: #64748B; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; background: linear-gradient(180deg, #F7FAFD, #F2F6FA); font-weight: 800; }
+tbody tr { transition: background .15s ease; }
+tbody tr:hover { background: #F9FBFD; }
+.main-id { font-weight: 900; color: var(--blue); font-size: 13px; }
+.sub { display: block; color: var(--muted); font-size: 11px; margin-top: 4px; }
+
+/* Badges (Emblemas de Status) */
+.badge {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px;
+  border-radius: 999px; font-size: 10px; font-weight: 900;
+  background: #F3F6F9; color: #546474; box-shadow: inset 0 0 0 1px #E5EBF2;
+}
+.badge.done { background: var(--green-soft); color: #0A7D40; box-shadow: inset 0 0 0 1px #DDF3E6; }
+.badge.review { background: #EDF5FD; color: var(--blue-2); box-shadow: inset 0 0 0 1px #DCEAF8; }
+.badge.reopened { background: var(--amber-bg); color: var(--amber); box-shadow: inset 0 0 0 1px #FDE68A; }
+.badge.archived { background: #F1F5F9; color: #475569; box-shadow: inset 0 0 0 1px #E2E8F0; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* Ações e Menus */
+.row-actions { display: flex; justify-content: flex-end; gap: 8px; align-items: center; }
+.icon-btn { border: 1px solid #D6E0E9; background: #fff; border-radius: 9px; padding: 8px 12px; font-size: 11px; font-weight: 800; cursor: pointer; transition: .2s; }
+.icon-btn:hover { background: #F3F8FD; border-color: #B9D0E6; color: var(--blue); }
+.icon-btn.primary { background: linear-gradient(135deg, var(--blue), var(--blue-2)); color: #fff; border: none; }
+.icon-btn.primary:hover { transform: translateY(-1px); box-shadow: 0 6px 15px rgba(7,63,135,.15); }
+
+details.more { position: relative; }
+details.more summary { list-style: none; cursor: pointer; border: 1px solid #D6E0E9; background: #fff; border-radius: 9px; padding: 8px 12px; font-weight: 900; color: #475569; transition: .2s; }
+details.more summary:hover { background: #F4F7FA; border-color: #CBD5E1; }
+.more-menu {
+  position: absolute; right: 0; top: 42px; width: 190px; background: #fff; border: 1px solid var(--line);
+  border-radius: 12px; box-shadow: 0 16px 40px rgba(16,42,67,.12); padding: 8px; z-index: 10;
+}
+.more-menu button { display: block; width: 100%; text-align: left; border: 0; background: #fff; padding: 10px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; color: #334155; transition: .15s; }
+.more-menu button:hover { background: #F4F7FA; color: var(--blue); }
+
+.empty { padding: 48px; text-align: center; color: var(--muted); font-size: 13px; background: #FCFDFE; }
+
+/* Modais e Detalhes */
+.modal { position: fixed; inset: 0; background: rgba(9,24,45,.45); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 50; backdrop-filter: blur(4px); }
+.modal.open { display: flex; animation: fadeIn .2s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.dialog { width: min(980px, 100%); max-height: 90vh; overflow: auto; background: #fff; border-radius: 20px; box-shadow: 0 28px 80px rgba(9,24,45,.3); }
+.dialog-head { position: sticky; top: 0; background: rgba(255,255,255,.95); backdrop-filter: blur(8px); z-index: 2; padding: 20px 24px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 14px; align-items: center; }
+.dialog-head strong { font-size: 18px; color: var(--blue); letter-spacing: -.2px; }
+.dialog-head span { display: block; color: var(--muted); font-size: 11px; margin-top: 4px; }
+
+.detail { padding: 24px; background: #FCFDFE; }
+.detail-hero { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.chip, .field { border: 1px solid #E0E7EE; border-radius: 14px; padding: 14px; background: #fff; box-shadow: 0 4px 15px rgba(20,47,77,.02); }
+.chip b, .field label { display: block; font-size: 10px; text-transform: uppercase; color: var(--muted); font-weight: 800; letter-spacing: .05em; }
+.chip span, .field div { display: block; margin-top: 6px; font-size: 13px; color: var(--text); white-space: pre-wrap; line-height: 1.5; }
+
+.section { border: 1px solid #E4EBF1; border-radius: 16px; padding: 16px; margin-bottom: 14px; background: #fff; }
+.section h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; font-size: 14px; color: var(--blue); }
+.section h3::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: linear-gradient(135deg, var(--blue), var(--green)); }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.full { grid-column: 1 / -1; }
+
+.qrow { padding: 12px 0; border-bottom: 1px solid #EEF2F5; font-size: 13px; display: flex; gap: 14px; justify-content: space-between; align-items: center; }
+.qrow:last-child { border-bottom: 0; }
+.ans { font-weight: 900; padding: 4px 10px; border-radius: 8px; font-size: 11px; }
+.ans.sim { color: #176B3B; background: var(--green-soft); }
+.ans.nao { color: var(--red); background: var(--red-bg); }
+
+/* Ficha eSisla e Histórico */
+.esisla-toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.esisla-text { width: 100%; min-height: 520px; resize: vertical; border: 1px solid #CFDBE7; border-radius: 14px; padding: 18px; font: 13px/1.65 Consolas, "Courier New", monospace; color: #17324D; background: #F8FAFC; white-space: pre-wrap; outline: none; }
+.esisla-text:focus { border-color: #7FAAD5; box-shadow: 0 0 0 4px rgba(7,63,135,.07); background: #fff; }
+.esisla-help { margin: 0 0 12px 0; color: var(--muted); font-size: 12px; }
+
+.history { padding: 24px; }
+.timeline { border-left: 2px solid #DCE5ED; margin-left: 12px; padding-left: 20px; }
+.event { margin: 0 0 20px; position: relative; }
+.event::before { content: ""; position: absolute; left: -25px; top: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--blue); border: 2px solid #fff; box-shadow: 0 0 0 2px var(--line); }
+.event b { font-size: 13px; color: var(--blue); font-weight: 800; }
+.event span { display: block; color: var(--muted); font-size: 11px; margin-top: 4px; }
+.event p { margin: 6px 0 0; font-size: 12px; color: var(--text); line-height: 1.5; }
+
+.dialog-foot { padding: 16px 24px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 10px; background: #FCFDFE; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
+.reason-wrap { padding: 24px; }
+.reason-wrap label { font-size: 12px; font-weight: 800; color: var(--blue); }
+.reason { width: 100%; min-height: 120px; margin-top: 8px; border: 1px solid #CFDBE7; border-radius: 12px; padding: 14px; font: inherit; font-size: 13px; outline: none; transition: .2s; }
+.reason:focus { border-color: #7FAAD5; box-shadow: 0 0 0 4px rgba(7,63,135,.07); }
+.notice { margin: 18px 24px; padding: 14px 18px; border-radius: 12px; background: #F4F7FB; border: 1px solid #DCE5ED; color: #50657A; font-size: 12px; line-height: 1.5; }
+
+/* Responsividade */
+@media(max-width: 1100px) {
+  .stats { grid-template-columns: repeat(4, 1fr); }
+  .filters { grid-template-columns: repeat(3, 1fr); }
+  .detail-hero { grid-template-columns: repeat(2, 1fr); }
+}
+@media(max-width: 720px) {
+  .top-in, .headline { align-items: flex-start; flex-direction: column; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .filters { grid-template-columns: 1fr; }
+  .row-actions { justify-content: flex-start; }
+  .grid { grid-template-columns: 1fr; }
+  .detail-hero { grid-template-columns: 1fr; }
+  table, thead, tbody, tr, th, td { display: block; }
+  thead { display: none; }
+  tbody tr { padding: 16px; border-bottom: 1px solid var(--line); border-radius: 12px; margin-bottom: 12px; border: 1px solid var(--line); }
+  td { border: 0; padding: 8px 12px; }
+  td:last-child { padding-top: 14px; }
+  .layout { padding: 16px; }
+
+  /* =========================================================
+   FICHA E-SISLA (DESIGN PREMIUM)
+   ========================================================= */
+.esisla-body { padding: 24px; background: #FCFDFE; }
+
+.esisla-editor-container {
+  background: #FFFFFF; 
+  border: 1px solid #CFDBE7; 
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(20,47,77,.06); 
+  overflow: hidden; 
+  display: flex; 
+  flex-direction: column;
+}
+
+.esisla-editor-header {
+  background: #F4F7FB; 
+  border-bottom: 1px solid #CFDBE7; 
+  padding: 12px 18px;
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center;
+  font-size: 11px; 
+  font-weight: 800; 
+  color: #64748B; 
+  text-transform: uppercase; 
+  letter-spacing: .05em;
+}
+
+.btn-copy-mini {
+  background: #FFFFFF; 
+  border: 1px solid #CFDBE7; 
+  border-radius: 8px; 
+  padding: 6px 12px;
+  font-size: 11px; 
+  font-weight: 800; 
+  color: var(--blue); 
+  cursor: pointer; 
+  transition: .2s;
+  display: flex; 
+  align-items: center; 
+  gap: 6px;
+}
+
+.btn-copy-mini:hover { 
+  background: #EEF5FC; 
+  border-color: #B9D0E6; 
+  transform: translateY(-1px); 
+}
+
+.esisla-text {
+  width: 100%; 
+  min-height: 480px; 
+  resize: vertical; 
+  border: none; 
+  padding: 22px;
+  font: 13px/1.75 Consolas, "Cascadia Code", "Courier New", monospace; 
+  color: #1B2B3D;
+  background: #FFFFFF; 
+  white-space: pre-wrap; 
+  outline: none;
+}
+
+.esisla-text:focus { 
+  background: #FAFCFF; 
+  box-shadow: inset 0 4px 12px rgba(7,63,135,.03); 
+}
+
+/* Scrollbar estilizado para o texto da ficha */
+.esisla-text::-webkit-scrollbar { width: 10px; height: 10px; }
+.esisla-text::-webkit-scrollbar-track { background: #F4F7FB; }
+.esisla-text::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 5px; border: 2px solid #F4F7FB; }
+.esisla-text::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+}
+</style>
+</head><body>
+<header class="top"><div class="top-in"><div class="brand"><div><strong>Ambiental — Gestão de Avaliações</strong><span>Central operacional · estado oficial controlado pelo backend</span></div></div><div class="top-actions"><button class="btn btn-quiet" onclick="location.href='/?novo=1'">Novo atendimento</button><button class="btn btn-primary" onclick="carregarLocalStorage()">Atualizar LocalStorage</button></div></div></header>
+<main class="layout"><div class="headline"><div><h1>Central de atendimentos</h1><p>Pesquise, revise, acompanhe o workflow e acesse o histórico sem editar o estado diretamente no navegador.</p></div></div>
+<section class="stats"><div class="stat"><span>Total</span><b id="statTotal">—</b></div><div class="stat"><span>Rascunhos</span><b id="statDraft">—</b></div><div class="stat"><span>Em revisão</span><b id="statReview">—</b></div><div class="stat"><span>Finalizados</span><b id="statDone">—</b></div><div class="stat"><span>Arquivados</span><b id="statArchived">—</b></div><div class="stat"><span>Pendências</span><b id="statPending">—</b></div><div class="stat"><span>Atualizados hoje</span><b id="statRecent">—</b></div></section>
+<section class="panel"><div class="tabs"><button class="tab active" data-tab="all" onclick="setTab('all')">Todos</button><button class="tab" data-tab="draft" onclick="setTab('draft')">Rascunhos</button><button class="tab" data-tab="review" onclick="setTab('review')">Em revisão</button><button class="tab" data-tab="done" onclick="setTab('done')">Finalizados</button><button class="tab" data-tab="archived" onclick="setTab('archived')">Arquivados</button></div><div class="filters"><input class="input" id="search" placeholder="Buscar atendimento, médico, CID ou conteúdo..." oninput="refresh()"><select class="select" id="filter"><option value="all">Todos os status</option><option value="RASCUNHO">Rascunho</option><option value="EM_REVISÃO">Em revisão</option><option value="REABERTO">Reaberto</option><option value="FINALIZADO">Finalizado</option><option value="ARQUIVADO">Arquivado</option></select><input class="input" id="medico" placeholder="Médico" oninput="refresh()"><input class="input" id="cid" placeholder="CID" oninput="refresh()"><input class="input" id="unidade" placeholder="Unidade" oninput="refresh()"><input class="input" id="periodoInicio" type="date" title="Data inicial" aria-label="Data inicial"><input class="input" id="periodoFim" type="date" title="Data final" aria-label="Data final"><select class="select" id="sort" onchange="refresh()"><option value="updated">Última atualização</option><option value="date">Data do atendimento</option><option value="id">Atendimento</option></select></div><table><thead><tr><th>Atendimento</th><th>Data</th><th>Profissional</th><th>Dados</th><th>Status</th><th>Atualizado</th><th></th></tr></thead><tbody id="tbody"></tbody></table><div class="empty" id="empty" style="display:none">Nenhum atendimento encontrado para os filtros atuais.</div></section>
+<div class="notice">Fonte atual da Gestão: <strong>LocalStorage do navegador</strong>. Enquanto o banco não for a fonte principal, os atendimentos salvos neste navegador aparecem imediatamente aqui. O backend continua sendo consultado quando disponível.</div></main>
+<div class="modal" id="detailModal"><div class="dialog"><div class="dialog-head"><div><strong id="detailTitle">Atendimento</strong><span id="detailSub"></span></div><div class="esisla-toolbar"><button class="btn btn-esisla" id="generateEsislaBtn">Gerar ficha eSisla</button><button class="btn" onclick="closeModal('detailModal')">Fechar</button></div></div><div id="detailBody" class="detail"></div><div class="dialog-foot"><button class="btn" id="openEvalBtn">Abrir atendimento</button><button class="btn" id="historyBtn">Histórico</button></div></div></div>
+<div class="modal" id="esislaModal">
+  <div class="dialog" style="width:min(900px,100%)">
+    
+    <div class="dialog-head">
+      <div>
+        <strong style="display:flex; align-items:center; gap:8px; font-size: 18px;">
+          📋 Ficha e-Sisla (DPME)
+        </strong>
+        <span id="esislaSub" style="font-size: 12px;">Prontuário estruturado para preenchimento</span>
+      </div>
+      <button class="btn btn-quiet" onclick="closeModal('esislaModal')">✕ Fechar</button>
+    </div>
+
+    <div class="esisla-body">
+      <div class="notice" style="margin: 0 0 18px 0; border-left: 3px solid var(--blue);">
+        <strong>Atenção:</strong> Revise o conteúdo gerado antes de transferir. A formatação abaixo segue o padrão textual exato exigido pelo sistema do Estado.
+      </div>
+      
+      <div class="esisla-editor-container">
+        <div class="esisla-editor-header">
+          <span>Formato de Exportação (TXT)</span>
+          <button class="btn-copy-mini" onclick="copyEsisla()">📄 Copiar texto</button>
+        </div>
+        <textarea id="esislaText" class="esisla-text" spellcheck="false" aria-label="Ficha eSisla gerada"></textarea>
+      </div>
+    </div>
+
+    <div class="dialog-foot">
+      <button class="btn" id="downloadEsislaBtn" onclick="downloadEsisla()">Baixar Arquivo (.txt)</button>
+      <button class="btn btn-outline" id="regenerateEsislaBtn" onclick="document.getElementById('generateEsislaBtn').click()">🔄 Gerar Novamente</button>
+      <button class="btn btn-esisla" id="copyEsislaBtn" onclick="copyEsisla()">Copiar Ficha Completa</button>
+    </div>
+
+  </div>
+</div>
+<div class="modal" id="historyModal"><div class="dialog"><div class="dialog-head"><div><strong>Histórico de auditoria</strong><span id="historySub"></span></div><button class="btn" onclick="closeModal('historyModal')">Fechar</button></div><div class="history" id="historyBody"></div></div></div>
+<div class="modal" id="reasonModal"><div class="dialog" style="width:min(560px,100%)"><div class="dialog-head"><div><strong id="reasonTitle">Justificativa</strong><span>A ação será registrada no histórico do atendimento.</span></div><button class="btn" onclick="closeModal('reasonModal')">Fechar</button></div><div class="reason-wrap"><label for="reasonInput">Motivo obrigatório</label><textarea id="reasonInput" class="reason"></textarea></div><div class="dialog-foot"><button class="btn" onclick="closeModal('reasonModal')">Cancelar</button><button class="btn btn-primary" id="reasonConfirm">Confirmar</button></div></div></div>
+<script>
+const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); const arr=v=>Array.isArray(v)?v:[]; const REGISTRY_KEY='ambiental_atendimentos_v1'; let tab='all',serverItems=[],localItems=[];
+const stateLabel={RASCUNHO:'RASCUNHO',EM_REVISÃO:'EM REVISÃO',REABERTO:'REABERTO',FINALIZADO:'FINALIZADO',ARQUIVADO:'ARQUIVADO'};
+function date(v){if(!v)return'—';const p=String(v).slice(0,10).split('-');return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:'—'}function dt(v){try{return new Date(v).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}catch{return'—'}}
+function values(r){const a=r.aux||{};return{atd:r.atendimento||'—',date:a.dataAtd||'',doctor:r.medico||'—',crm:a.crmResponsavel||'',cargo:a.cargo||'—',idade:a.idade||'',cid:a.cid||'',unidade:a.unidade||'',dias:a.diasSolicitados||'',q:r.queixaDuracao||a.queixaDuracao||'',doenca:a.doencaMotivo||'',hist:a.historicoPregresso||'',sint:a.sintomasLimitacao||'',examType:r.exameFisicoTipo||'',exam:r.alteracoesClinicasExames||'',lim:r.descLimitacao||a.descLimitacao||'',ativ:r.atividadesComprometidas||'',cap:r.capacidade||'—',parecer:r.parecer||'—',just:a.justificativa||'',docs:arr(r.documentosComplementares),meds:arr(r.medications),conds:arr(r.conditions),ques:arr(r.quesitos),updated:r.__registryAt||r.atualizado_em||''}}
+function statusOf(r){return String(r?.status||r?.workflowStatus||'RASCUNHO').toUpperCase().replace('REVISÃO','EM_REVISÃO').replace('EM_PREENCHIMENTO','RASCUNHO')}
+function hay(r,q){if(!q)return true;return JSON.stringify(values(r)).toLowerCase().includes(q.toLowerCase())}
+function lerLocalStorage(){try{const raw=localStorage.getItem(REGISTRY_KEY);const reg=raw?JSON.parse(raw):{};if(!reg||typeof reg!=="object")return [];return Object.values(reg).filter(r=>r&&typeof r==="object"&&r.atendimento).map(r=>({...r,__source:"local"}));}catch(e){console.warn("Falha ao ler LocalStorage",e);return [];}}
+function mergeAtendimentos(server,local){const map=new Map();server.forEach(r=>map.set(String(r.atendimento),r));local.forEach(r=>map.set(String(r.atendimento),{...map.get(String(r.atendimento)),...r,__source:"local"}));return [...map.values()];}
+function localStats(items){const count=s=>items.filter(r=>statusOf(r)===s).length;return {total:items.length,rascunhos:count('RASCUNHO'),revisao:count('EM_REVISÃO'),finalizados:count('FINALIZADO'),arquivados:count('ARQUIVADO'),pendentes:items.filter(r=>['RASCUNHO','EM_REVISÃO','REABERTO'].includes(statusOf(r))).length,atualizados_recentes:items.filter(r=>{const t=Date.parse(r.__registryAt||r.atualizado_em||'');return t&&!Number.isNaN(t)&&(Date.now()-t)<=7*864e5;}).length};}
+function carregarLocalStorage(){localItems=lerLocalStorage();serverItems=mergeAtendimentos(serverItems.filter(r=>r.__source!=="local"),localItems);renderStats(localStats(serverItems));refresh();document.getElementById('empty').textContent=serverItems.length?'':'Nenhum atendimento salvo neste navegador.';toastLocalStorage();}
+function toastLocalStorage(){const el=document.getElementById('localCount');if(el)el.textContent=`${localItems.length} atendimento(s) local(is)`;}
+async function fetchServer(){localItems=lerLocalStorage();let remote=[];try{const params=new URLSearchParams();const status=document.getElementById('filter').value;if(status!=='all')params.set('status',status);const medico=document.getElementById('medico').value.trim();const cid=document.getElementById('cid').value.trim();const unidade=document.getElementById('unidade').value.trim();const ini=document.getElementById('periodoInicio').value;const fim=document.getElementById('periodoFim').value;if(medico)params.set('medico',medico);if(cid)params.set('cid',cid);if(unidade)params.set('unidade',unidade);if(ini)params.set('data_inicio',ini);if(fim)params.set('data_fim',fim);const q=document.getElementById('search').value.trim();if(q)params.set('q',q);const r=await fetch('/api/atendimentos?'+params.toString(),{cache:'no-store'});const d=await r.json();if(r.ok&&d.success)remote=d.data.items||[];}catch(e){console.warn('Gestão: backend indisponível, usando LocalStorage.',e);}
+serverItems=mergeAtendimentos(remote,localItems);renderStats(localStats(serverItems));const empty=document.getElementById('empty');if(!serverItems.length)empty.textContent='Nenhum atendimento encontrado no LocalStorage ou no backend.';else empty.textContent='';return remote.length>0||localItems.length>0;}
+function setTab(v){tab=v;document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===v));const f=document.getElementById('filter');f.value=v==='all'?'all':({draft:'RASCUNHO',review:'EM_REVISÃO',done:'FINALIZADO',archived:'ARQUIVADO'}[v]||'all');fetchServer().then(refresh)}
+function refresh(){const q=document.getElementById('search').value.trim().toLowerCase();const medico=document.getElementById('medico').value.trim().toLowerCase();const cid=document.getElementById('cid').value.trim().toLowerCase();const unidade=document.getElementById('unidade').value.trim().toLowerCase();const ini=document.getElementById('periodoInicio').value;const fim=document.getElementById('periodoFim').value;const sort=document.getElementById('sort').value;let list=serverItems.filter(r=>{const v=values(r),st=statusOf(r),d=String(v.date||'');if(tab==='draft'&&st!=='RASCUNHO')return false;if(tab==='review'&&st!=='EM_REVISÃO')return false;if(tab==='done'&&st!=='FINALIZADO')return false;if(tab==='archived'&&st!=='ARQUIVADO')return false;if(document.getElementById('filter').value!=='all'&&st!==document.getElementById('filter').value)return false;if(medico&&!String(v.doctor).toLowerCase().includes(medico))return false;if(cid&&!String(v.cid).toLowerCase().includes(cid))return false;if(unidade&&!String(v.unidade).toLowerCase().includes(unidade))return false;if(ini&&d<ini)return false;if(fim&&d>fim)return false;return !q||hay(r,q)});list.sort((a,b)=>sort==='id'?String(a.atendimento).localeCompare(String(b.atendimento)):sort==='date'?String(b.aux?.dataAtd||'').localeCompare(String(a.aux?.dataAtd||'')):String(b.__registryAt||b.atualizado_em||'').localeCompare(String(a.__registryAt||a.atualizado_em||'')));document.getElementById('empty').style.display=list.length?'none':'block';document.getElementById('tbody').innerHTML=list.map(row).join('')}
+function renderStats(s){document.getElementById('statTotal').textContent=s.total??0;document.getElementById('statDraft').textContent=s.rascunhos??0;document.getElementById('statReview').textContent=s.revisao??0;document.getElementById('statDone').textContent=s.finalizados??0;document.getElementById('statArchived').textContent=s.arquivados??0;document.getElementById('statPending').textContent=s.pendentes??0;document.getElementById('statRecent').textContent=s.atualizados_recentes??0}
+function row(r){const v=values(r),st=statusOf(r),cls=st==='FINALIZADO'?'done':st==='EM_REVISÃO'?'review':st==='REABERTO'?'reopened':st==='ARQUIVADO'?'archived':'';let more='';if(st==='RASCUNHO')more+=`<button onclick="openEval('${encodeURIComponent(v.atd)}')">Continuar</button><button onclick="openReason('archive','${encodeURIComponent(v.atd)}')">Arquivar</button>`;if(st==='EM_REVISÃO'||st==='REABERTO')more+=`<button onclick="openEval('${encodeURIComponent(v.atd)}')">Continuar</button><button onclick="openReason('archive','${encodeURIComponent(v.atd)}')">Arquivar</button>`;if(st==='FINALIZADO')more+=`<button onclick="openReason('reopen','${encodeURIComponent(v.atd)}')">Reabrir</button><button onclick="openDocument('${encodeURIComponent(v.atd)}')">Visualizar documento</button><button onclick="openReason('archive','${encodeURIComponent(v.atd)}')">Arquivar</button>`;if(st==='ARQUIVADO')more+=`<button onclick="openReason('restore','${encodeURIComponent(v.atd)}')">Restaurar</button>`;return`<tr><td><span class="main-id">${esc(v.atd)}</span><span class="sub">${esc(v.doenca||'Avaliação médico-pericial')}</span></td><td>${date(v.date)}</td><td>${esc(v.doctor)}<span class="sub">${esc(v.crm)}</span></td><td><b>${esc(v.cargo)}</b><span class="sub">CID: ${esc(v.cid||'—')} · ${esc(v.idade||'—')} anos</span></td><td><span class="badge ${cls}"><span class="dot"></span>${esc(stateLabel[st]||st)}</span></td><td>${dt(v.updated)}</td><td><div class="row-actions"><button class="icon-btn primary" onclick="view('${encodeURIComponent(v.atd)}')">Visualizar</button><details class="more"><summary>⋮</summary><div class="more-menu">${more}<button onclick="openHistory('${encodeURIComponent(v.atd)}')">Histórico</button></div></details></div></td></tr>`}
+function find(id){return serverItems.find(x=>String(x.atendimento)===id)}
+function view(enc){const id=decodeURIComponent(enc),r=find(id);if(!r)return;const v=values(r);document.getElementById('detailTitle').textContent='Atendimento '+v.atd;document.getElementById('detailSub').textContent=`${stateLabel[statusOf(r)]||statusOf(r)} · atualizado em ${dt(r.atualizado_em)}`;document.getElementById('detailBody').innerHTML=detail(r);document.getElementById('openEvalBtn').onclick=()=>openEval(enc);document.getElementById('historyBtn').onclick=()=>openHistory(enc);document.getElementById('generateEsislaBtn').onclick=()=>generateEsisla(enc);document.getElementById('detailModal').classList.add('open')}
+function detail(r){const v=values(r);const docs=v.docs.filter(x=>x?.tipo||x?.data||x?.resultado).map(x=>`<div class="field full"><label>${esc(x.tipo||'Documento')} · ${date(x.data)}</label><div>${esc(x.resultado||'—')}</div></div>`).join('');const qs=(v.ques.length?v.ques:[]).slice(0,3).map((q,i)=>`<div class="qrow"><div><b>${i+1}. </b>${esc(q.pergunta||'')}</div><span class="ans ${q.resposta==='Sim'?'sim':q.resposta==='Não'?'nao':''}">${esc(q.resposta||'Não respondido')}</span></div>`).join('');return`<div class="detail-hero"><div class="chip"><b>Profissional</b><span>${esc(v.doctor)}</span></div><div class="chip"><b>Idade</b><span>${esc(v.idade||'—')}</span></div><div class="chip"><b>CID</b><span>${esc(v.cid||'—')}</span></div><div class="chip"><b>Parecer</b><span>${esc(v.parecer)}</span></div></div><section class="section"><h3>Identificação e contexto</h3><div class="grid">${field('Fonte',r.__source==='local'?'LocalStorage':'Backend')}${field('Data do atendimento',date(v.date))}${field('Cargo',v.cargo)}${field('CRM/CRO',v.crm)}${field('Dias solicitados',v.dias)}${field('Unidade',v.unidade)}${field('Doença / motivo',v.doenca)}${field('Queixa e duração',v.q,true)}${field('Antecedentes mórbidos',v.hist,true)}${field('Sintomas / limitações',v.sint,true)}</div></section><section class="section"><h3>Atestado / relatório / exames</h3><div class="grid">${docs||field('Registro','Sem documentos complementares registrados.',true)}</div></section><section class="section"><h3>Exame e limitações</h3><div class="grid">${field('Categoria',v.examType)}${field('Achados',v.exam,true)}${field('Limitação funcional',v.lim,true)}${field('Atividades comprometidas',v.ativ,true)}</div></section><section class="section"><h3>Quesitos</h3>${qs||'<div class="field">Nenhum quesito registrado.</div>'}</section><section class="section"><h3>Capacidade e parecer</h3><div class="grid">${field('Capacidade',v.cap)}${field('Parecer',v.parecer)}${field('Justificativa',v.just,true)}</div></section>`}
+function field(label,value,full=false){return`<div class="field ${full?'full':''}"><label>${esc(label)}</label><div>${esc(String(value||'—'))}</div></div>`}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+function openEval(enc){location.href='/?atendimento='+enc}
+function openDocument(enc){location.href='/?atendimento='+enc+'&documento=1'}
+function normalizeRecordPayload(r){return r?.payload&&typeof r.payload==='object'?{...r.payload,atendimento:r.atendimento||r.payload.atendimento}:({...r,atendimento:r?.atendimento||r?.payload?.atendimento});}
+function currentRecord(enc){return find(decodeURIComponent(enc));}
+async function generateEsisla(enc){
+    const id = decodeURIComponent(enc);
+    const r = currentRecord(enc);
+    if(!r){alert('Atendimento não encontrado.');return;}
+    
+    const btn = document.getElementById('generateEsislaBtn');
+    const regen = document.getElementById('regenerateEsislaBtn');
+    const target = document.getElementById('esislaText');
+    const sub = document.getElementById('esislaSub');
+    const old = btn?.textContent;
+    
+    try {
+        if(btn){btn.disabled=true;btn.textContent='Gerando ficha...';}
+        if(regen)regen.disabled=true;
+        if(sub)sub.textContent='A IA está estruturando a ficha com base exclusivamente nos dados registrados.';
+        
+        const payload = normalizeRecordPayload(r);
+        payload.data_hora_atual = new Date().toISOString();
+        
+        const response = await fetch('/api/ai/esisla', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','Accept':'application/json'},
+            body: JSON.stringify(payload),
+            cache: 'no-store'
+        });
+        
+        let data = {};
+        try { data = await response.json() } catch {}
+        
+        // CORREÇÃO AQUI: Lendo 'data.ficha_esisla' em vez de 'data.ficha'
+        if(!response.ok || !data?.ficha_esisla) {
+            throw new Error(data?.detail || data?.error?.detail || data?.error?.message || 'Não foi possível gerar a ficha eSisla.');
+        }
+        
+        // Injeta a resposta correta no textarea do modal
+        target.value = data.ficha_esisla;
+        sub.textContent = 'Atendimento ' + id + ' · ' + (data?.meta?.cached ? 'resultado em cache' : 'gerado agora');
+        
+        document.getElementById('esislaModal').classList.add('open');
+        
+    } catch(e) {
+        alert(e.message || 'Falha ao gerar a ficha eSisla.');
+    } finally {
+        if(btn){btn.disabled=false;btn.textContent=old||'Gerar ficha eSisla';}
+        if(regen)regen.disabled=false;
+    }
+}
+
+async function copyEsisla(){const el=document.getElementById('esislaText');if(!el?.value)return;try{await navigator.clipboard.writeText(el.value);alert('Ficha eSisla copiada para a área de transferência.');}catch{el.select();document.execCommand('copy');alert('Ficha eSisla copiada para a área de transferência.');}}
+function downloadEsisla(){const text=document.getElementById('esislaText')?.value||'';if(!text)return;const sub=document.getElementById('esislaSub')?.textContent||'';const id=(sub.match(/Atendimento\s+([^·]+)/i)||[])[1]?.trim()||'atendimento';const blob=new Blob([text],{type:'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`Ficha-eSisla-${id}.txt`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);}
+async function openHistory(enc){const id=decodeURIComponent(enc);const localRecord=localItems.find(x=>String(x.atendimento)===id);if(localRecord){const rows=Array.isArray(localRecord.statusHistory)?localRecord.statusHistory:[];document.getElementById('historySub').textContent='Atendimento '+id+' · LocalStorage';document.getElementById('historyBody').innerHTML=rows.length?`<div class="timeline">${rows.map(x=>`<div class="event"><b>${esc(x.campo||x.estado||'Evento')}</b><span>${dt(x.criadoEm||x.criado_em)} · ${esc(x.usuario_nome||'Sistema local')}</span><p>${esc(x.motivo||x.novo_valor||'')}</p></div>`).join('')}</div>`:'<div class="empty">Sem eventos registrados no LocalStorage.</div>';document.getElementById('historyModal').classList.add('open');return;}try{const r=await fetch('/api/atendimentos/'+encodeURIComponent(id)+'/historico',{cache:'no-store'});const d=await r.json();if(!r.ok||!d.success)throw new Error(d?.error?.message||'Falha no histórico');document.getElementById('historySub').textContent='Atendimento '+id;const rows=d.data.items||[];document.getElementById('historyBody').innerHTML=rows.length?`<div class="timeline">${rows.map(x=>`<div class="event"><b>${esc(x.campo)}</b><span>${dt(x.criado_em)} · ${esc(x.usuario_nome||'Usuário')}</span><p>${esc(x.valor_anterior||'')} ${x.novo_valor?'→ '+esc(String(x.novo_valor).slice(0,280)):''}</p></div>`).join('')}</div>`:'<div class="empty">Sem eventos registrados.</div>';document.getElementById('historyModal').classList.add('open')}catch(e){alert(e.message)}}
+let pendingAction=null;function openReason(action,enc){pendingAction={action,id:decodeURIComponent(enc)};document.getElementById('reasonInput').value='';document.getElementById('reasonTitle').textContent=action==='reopen'?'Reabrir atendimento':action==='restore'?'Restaurar atendimento':'Arquivar atendimento';document.getElementById('reasonInput').placeholder=action==='archive'?'Informe o motivo do arquivamento...':'Informe o motivo da ação...';document.getElementById('reasonModal').classList.add('open')}
+function updateLocalState(id,target,motivo){const raw=localStorage.getItem(REGISTRY_KEY);const reg=raw?JSON.parse(raw):{};const rec=reg[id];if(!rec)return false;rec.workflowStatus=target;rec.finalizado=target==='FINALIZADO';rec.__status=target;rec.__registryAt=new Date().toISOString();rec.statusHistory=Array.isArray(rec.statusHistory)?rec.statusHistory:[];rec.statusHistory.push({estado:target,motivo,criadoEm:new Date().toISOString()});reg[id]=rec;localStorage.setItem(REGISTRY_KEY,JSON.stringify(reg));return true;}
+document.getElementById('reasonConfirm').onclick=async()=>{if(!pendingAction)return;const motivo=document.getElementById('reasonInput').value.trim();if(!motivo){alert('Informe uma justificativa.');return;}const a=pendingAction;let target=a.action==='reopen'||a.action==='restore'?'REABERTO':'ARQUIVADO';const localRecord=localItems.find(x=>String(x.atendimento)===a.id);try{if(localRecord){updateLocalState(a.id,target,motivo);closeModal('reasonModal');await fetchServer();refresh();return;}const r=await fetch('/api/atendimentos/'+encodeURIComponent(a.id)+'/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({estado:target,motivo})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d?.error?.message||'A operação foi recusada pelo backend.');closeModal('reasonModal');await fetchServer();refresh();}catch(e){alert(e.message)}};
+document.getElementById('filter').addEventListener('change',()=>fetchServer().then(refresh));
+['periodoInicio','periodoFim'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{if(document.getElementById('periodoInicio').value&&document.getElementById('periodoFim').value&&document.getElementById('periodoInicio').value>document.getElementById('periodoFim').value){alert('O período inicial não pode ser posterior ao período final.');return;} fetchServer().then(refresh)}));
+['medico','cid','unidade'].forEach(id=>document.getElementById(id).addEventListener('change',()=>fetchServer().then(refresh)));
+(async()=>{await fetchServer();toastLocalStorage();refresh()})();
+</script></body></html>

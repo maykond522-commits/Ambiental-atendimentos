@@ -1,0 +1,144 @@
+﻿codigo_cid,nome_doenca,grupo_codigo,grupo_doenca,prioridade_saude_ocupacional,aplicacao_ocupacional,ordem_grupo,letra_cid
+A09,Diarreia e gastroenterite de origem infecciosa presumível,A-B,Doenças infecciosas e parasitárias,Alta,Condição aguda com potencial de afastamento,1,A
+A90,Dengue,A-B,Doenças infecciosas e parasitárias,Alta,Condição infecciosa com potencial de afastamento,1,A
+C18,Neoplasia maligna do cólon,C-D,Neoplasias (tumores),Alta,Doença grave; pode envolver afastamento prolongado,2,C
+C19,Neoplasia maligna da junção retossigmoide,C-D,Neoplasias (tumores),Alta,Doença grave; pode envolver afastamento prolongado,2,C
+C20,Neoplasia maligna do reto,C-D,Neoplasias (tumores),Alta,Doença grave; pode envolver afastamento prolongado,2,C
+C34,Neoplasia maligna dos brônquios e pulmões,C-D,Neoplasias (tumores),Alta,Doença grave; pode envolver afastamento prolongado,2,C
+C43,Melanoma maligno da pele,C-D,Neoplasias (tumores),Alta,Doença grave; pode envolver afastamento,2,C
+C50,Neoplasia maligna da mama,C-D,Neoplasias (tumores),Alta,Doença grave; pode envolver afastamento prolongado,2,C
+C61,Neoplasia maligna da próstata,C-D,Neoplasias (tumores),Alta,Doença grave; pode envolver afastamento prolongado,2,C
+C90,Mieloma múltiplo e neoplasias malignas de plasmócitos,C-D,Neoplasias (tumores),Alta,Doença grave; pode envolver afastamento prolongado,2,C
+E10.9,Diabetes mellitus insulinodependente sem complicações,E,"Doenças endócrinas, nutricionais e metabólicas",Alta,Condição crônica; afastamento conforme complicações,4,E
+E11.4,Diabetes mellitus não-insulinodependente com complicações neurológicas,E,"Doenças endócrinas, nutricionais e metabólicas",Alta,Potencial de incapacidade conforme complicações,4,E
+E11.5,Diabetes mellitus não-insulinodependente com complicações circulatórias,E,"Doenças endócrinas, nutricionais e metabólicas",Alta,Potencial de incapacidade conforme complicações,4,E
+E11.9,Diabetes mellitus não-insulinodependente sem complicações,E,"Doenças endócrinas, nutricionais e metabólicas",Alta,Condição crônica; afastamento conforme complicações,4,E
+F10.2,Transtornos mentais e comportamentais devidos ao uso de álcool - síndrome de dependência,F,Transtornos mentais e comportamentais,Alta,Saúde mental e capacidade laboral,5,F
+F32.0,Episódio depressivo leve,F,Transtornos mentais e comportamentais,Alta,Saúde mental; potencial de afastamento,5,F
+F32.1,Episódio depressivo moderado,F,Transtornos mentais e comportamentais,Alta,Saúde mental; potencial de afastamento,5,F
+F32.2,Episódio depressivo grave sem sintomas psicóticos,F,Transtornos mentais e comportamentais,Alta,Saúde mental; potencial de afastamento prolongado,5,F
+F32.3,Episódio depressivo grave com sintomas psicóticos,F,Transtornos mentais e comportamentais,Alta,Saúde mental; potencial de afastamento prolongado,5,F
+F33.0,"Transtorno depressivo recorrente, episódio atual leve",F,Transtornos mentais e comportamentais,Alta,Saúde mental; potencial de afastamento,5,F
+F33.1,"Transtorno depressivo recorrente, episódio atual moderado",F,Transtornos mentais e comportamentais,Alta,Saúde mental; potencial de afastamento,5,F
+F33.2,"Transtorno depressivo recorrente, episódio atual grave sem sintomas psicóticos",F,Transtornos mentais e comportamentais,Alta,Saúde mental; potencial de afastamento prolongado,5,F
+F41.0,Transtorno de pânico (ansiedade paroxística episódica),F,Transtornos mentais e comportamentais,Alta,Saúde mental; potencial de afastamento,5,F
+F41.1,Transtorno de ansiedade generalizada,F,Transtornos mentais e comportamentais,Alta,Saúde mental; potencial de afastamento,5,F
+F41.2,Transtorno misto ansioso e depressivo,F,Transtornos mentais e comportamentais,Alta,Saúde mental; potencial de afastamento,5,F
+F43.0,Reação aguda ao stress,F,Transtornos mentais e comportamentais,Alta,Saúde mental; potencial de afastamento,5,F
+F43.1,Estado de stress pós-traumático,F,Transtornos mentais e comportamentais,Alta,Saúde mental; potencial de afastamento,5,F
+F43.2,Transtornos de adaptação,F,Transtornos mentais e comportamentais,Alta,Saúde mental; potencial de afastamento,5,F
+G43.0,Enxaqueca sem aura,G,Doenças do sistema nervoso,Alta,Pode impedir temporariamente a atividade laboral,6,G
+G43.1,Enxaqueca com aura,G,Doenças do sistema nervoso,Alta,Pode impedir temporariamente a atividade laboral,6,G
+G47.0,Distúrbios do início e da manutenção do sono (insônias),G,Doenças do sistema nervoso,Alta,Pode comprometer desempenho e segurança,6,G
+G56.0,Síndrome do túnel do carpo,G,Doenças do sistema nervoso,Alta,LER/DORT e incapacidade funcional,6,G
+G56.1,Outras lesões do nervo mediano,G,Doenças do sistema nervoso,Alta,LER/DORT e incapacidade funcional,6,G
+G56.2,Lesão do nervo cubital (ulnar),G,Doenças do sistema nervoso,Alta,LER/DORT e incapacidade funcional,6,G
+H90.3,Perda de audição bilateral neurossensorial,H,Doenças do ouvido e da apófise mastoide,Alta,Relevante em vigilância de saúde auditiva,7,H
+H90.4,Perda de audição unilateral neurossensorial,H,Doenças do ouvido e da apófise mastoide,Alta,Relevante em vigilância de saúde auditiva,7,H
+I10,Hipertensão essencial (primária),I,Doenças do aparelho circulatório,Alta,Doença crônica e fator de risco cardiovascular,8,I
+I11.9,Doença cardíaca hipertensiva sem insuficiência cardíaca,I,Doenças do aparelho circulatório,Alta,Doença cardiovascular com potencial de incapacidade,8,I
+I20.9,"Angina pectoris, não especificada",I,Doenças do aparelho circulatório,Alta,Condição cardiovascular potencialmente incapacitante,8,I
+I21.9,Infarto agudo do miocárdio não especificado,I,Doenças do aparelho circulatório,Alta,Importante potencial de afastamento prolongado,8,I
+I25.1,Doença aterosclerótica do coração,I,Doenças do aparelho circulatório,Alta,Doença cardiovascular crônica,8,I
+I50.9,Insuficiência cardíaca não especificada,I,Doenças do aparelho circulatório,Alta,Potencial de incapacidade laboral,8,I
+I63.9,Infarto cerebral não especificado,I,Doenças do aparelho circulatório,Alta,Potencial de incapacidade e reabilitação,8,I
+I64,"Acidente vascular cerebral, não especificado como hemorrágico ou isquêmico",I,Doenças do aparelho circulatório,Alta,Potencial de incapacidade e reabilitação,8,I
+J06.9,"Infecção aguda das vias aéreas superiores, não especificada",J,Doenças do aparelho respiratório,Alta,Condição aguda frequente,9,J
+J11.1,"Influenza com outras manifestações respiratórias, vírus não identificado",J,Doenças do aparelho respiratório,Alta,Condição infecciosa com potencial de afastamento,9,J
+J18.9,Pneumonia não especificada,J,Doenças do aparelho respiratório,Alta,Pode gerar afastamento prolongado,9,J
+J44.9,Doença pulmonar obstrutiva crônica não especificada,J,Doenças do aparelho respiratório,Alta,Doença crônica com potencial de incapacidade,9,J
+J45.9,Asma não especificada,J,Doenças do aparelho respiratório,Alta,Pode limitar atividade laboral,9,J
+J60,Pneumoconiose dos mineiros de carvão,J,Doenças do aparelho respiratório,Alta,Doença respiratória ocupacional,9,J
+J62.8,Pneumoconiose devida a outras poeiras contendo sílica,J,Doenças do aparelho respiratório,Alta,Doença respiratória ocupacional,9,J
+K35.9,"Apendicite aguda, não especificada",K,Doenças do aparelho digestivo,Alta,Condição aguda com necessidade frequente de afastamento,10,K
+K80.0,Cálculo da vesícula biliar com colecistite aguda,K,Doenças do aparelho digestivo,Alta,Condição aguda potencialmente incapacitante,10,K
+L23.9,Dermatite de contato alérgica de causa não especificada,L,Doenças da pele e do tecido subcutâneo,Alta,Relevante em dermatose ocupacional,11,L
+M15.0,Osteoartrose primária generalizada,M,Doenças do sistema osteomuscular,Alta,Potencial de limitação funcional,12,M
+M16.0,Coxartrose primária bilateral,M,Doenças do sistema osteomuscular,Alta,Pode limitar mobilidade,12,M
+M17.0,Gonartrose primária bilateral,M,Doenças do sistema osteomuscular,Alta,Pode limitar mobilidade e carga,12,M
+M18.0,"Artrose primária das articulações carpometacarpianas do primeiro dedo, bilateral",M,Doenças do sistema osteomuscular,Alta,Potencial de limitação funcional das mãos,12,M
+M19.9,Artrose não especificada,M,Doenças do sistema osteomuscular,Alta,Potencial de limitação funcional,12,M
+M25.5,Dor articular,M,Doenças do sistema osteomuscular,Alta,Queixa frequente com potencial de afastamento,12,M
+M50.0,Transtorno do disco cervical com mielopatia,M,Doenças do sistema osteomuscular,Alta,Potencial de incapacidade,12,M
+M50.1,Transtorno do disco cervical com radiculopatia,M,Doenças do sistema osteomuscular,Alta,LER/DORT; potencial de afastamento,12,M
+M51.1,Transtornos de discos lombares e de outros discos intervertebrais com radiculopatia,M,Doenças do sistema osteomuscular,Alta,LER/DORT; potencial de afastamento,12,M
+M51.2,Outros deslocamentos especificados de disco intervertebral,M,Doenças do sistema osteomuscular,Alta,Potencial de afastamento,12,M
+M54.2,Cervicalgia,M,Doenças do sistema osteomuscular,Alta,LER/DORT; dor cervical,12,M
+M54.4,Lumbago com ciática,M,Doenças do sistema osteomuscular,Alta,LER/DORT; potencial de afastamento,12,M
+M54.5,Dor lombar baixa,M,Doenças do sistema osteomuscular,Alta,Queixa frequente; potencial de afastamento,12,M
+M54.9,Dorsalgia não especificada,M,Doenças do sistema osteomuscular,Alta,Queixa frequente; potencial de afastamento,12,M
+M62.8,Outros transtornos musculares especificados,M,Doenças do sistema osteomuscular,Alta,Potencial de limitação funcional,12,M
+M65.3,Dedo em gatilho,M,Doenças do sistema osteomuscular,Alta,LER/DORT; limitação das mãos,12,M
+M65.4,Tenossinovite estilóide radial (de Quervain),M,Doenças do sistema osteomuscular,Alta,LER/DORT,12,M
+M65.9,Sinovite e tenossinovite não especificadas,M,Doenças do sistema osteomuscular,Alta,LER/DORT,12,M
+M70.0,Sinovite crepitante crônica da mão e punho,M,Doenças do sistema osteomuscular,Alta,LER/DORT,12,M
+M70.2,Bursite do olécrano,M,Doenças do sistema osteomuscular,Alta,Pode estar associada a sobrecarga/pressão local,12,M
+M70.4,Bursite pré-patelar,M,Doenças do sistema osteomuscular,Alta,Pode estar associada a trabalho ajoelhado,12,M
+M75.1,Síndrome do manguito rotador,M,Doenças do sistema osteomuscular,Alta,LER/DORT; ombro,12,M
+M75.2,Tendinite bicipital,M,Doenças do sistema osteomuscular,Alta,LER/DORT; ombro,12,M
+M75.5,Bursite do ombro,M,Doenças do sistema osteomuscular,Alta,LER/DORT; ombro,12,M
+M77.0,Epicondilite medial,M,Doenças do sistema osteomuscular,Alta,LER/DORT,12,M
+M77.1,Epicondilite lateral,M,Doenças do sistema osteomuscular,Alta,LER/DORT,12,M
+M79.6,Dor em membro,M,Doenças do sistema osteomuscular,Alta,Potencial de limitação funcional,12,M
+M79.7,Fibromialgia,M,Doenças do sistema osteomuscular,Alta,Condição crônica com potencial de afastamento,12,M
+O20.9,"Hemorragia do início da gravidez, não especificada",O,"Gravidez, parto e puerpério",Alta,Condição obstétrica com possível afastamento,14,O
+O60.0,Trabalho de parto pré-termo sem parto,O,"Gravidez, parto e puerpério",Alta,Condição obstétrica com possível afastamento,14,O
+O99.3,Transtornos mentais e doenças do sistema nervoso complicando a gravidez,O,"Gravidez, parto e puerpério",Alta,Condição obstétrica com possível afastamento,14,O
+S06.0,Concussão cerebral,S-T,Lesões e envenenamentos,Alta,Trauma com possível afastamento,15,S
+S09.9,"Traumatismo da cabeça, não especificado",S-T,Lesões e envenenamentos,Alta,Acidente/trauma,15,S
+S13.4,Entorse e distensão da coluna cervical,S-T,Lesões e envenenamentos,Alta,Acidente/trauma,15,S
+S22.3,Fratura de costela,S-T,Lesões e envenenamentos,Alta,Trauma; possível afastamento,15,S
+S32.0,Fratura de vértebra lombar,S-T,Lesões e envenenamentos,Alta,Trauma; potencial de afastamento prolongado,15,S
+S42.2,Fratura da extremidade superior do úmero,S-T,Lesões e envenenamentos,Alta,Trauma; limitação funcional,15,S
+S52.5,Fratura da extremidade inferior do rádio,S-T,Lesões e envenenamentos,Alta,Trauma; limitação funcional,15,S
+S62.0,Fratura do osso navicular (escafoide) da mão,S-T,Lesões e envenenamentos,Alta,Trauma; limitação funcional,15,S
+S62.6,Fratura de outro(s) dedo(s),S-T,Lesões e envenenamentos,Alta,Trauma; limitação funcional,15,S
+S72.0,Fratura do colo do fêmur,S-T,Lesões e envenenamentos,Alta,Trauma grave; potencial de afastamento prolongado,15,S
+S82.0,Fratura da rótula,S-T,Lesões e envenenamentos,Alta,Trauma; limitação funcional,15,S
+S82.8,Fraturas de outras partes da perna,S-T,Lesões e envenenamentos,Alta,Trauma; limitação funcional,15,S
+S83.5,Entorse e distensão envolvendo ligamento cruzado do joelho,S-T,Lesões e envenenamentos,Alta,Trauma; potencial de afastamento,15,S
+S83.6,Entorse e distensão de outras partes do joelho,S-T,Lesões e envenenamentos,Alta,Trauma; potencial de afastamento,15,S
+S93.4,Entorse e distensão do tornozelo,S-T,Lesões e envenenamentos,Alta,Trauma; causa frequente de afastamento,15,S
+W01,"Queda no mesmo nível por escorregão, tropeção ou desmaio",V-Y,Causas externas de morbidade e mortalidade,Alta,Acidente típico/causa externa,16,W
+W10,Queda em/de escadas e degraus,V-Y,Causas externas de morbidade e mortalidade,Alta,Acidente típico/causa externa,16,W
+W19,Queda sem especificação,V-Y,Causas externas de morbidade e mortalidade,Alta,Acidente típico/causa externa,16,W
+W54,Mordedura ou golpe provocado por cão,V-Y,Causas externas de morbidade e mortalidade,Alta,Acidente típico/exposição,16,W
+Y96,Circunstância relativa às condições de trabalho,V-Y,Causas externas de morbidade e mortalidade,Alta,Relacionada diretamente ao trabalho,16,Y
+Z56.3,Pressão e tensão de trabalho,Z,Fatores que influenciam o estado de saúde,Alta,Fator psicossocial relacionado ao trabalho,17,Z
+Z56.6,Outras dificuldades físicas e mentais relacionadas ao trabalho,Z,Fatores que influenciam o estado de saúde,Alta,Fator psicossocial/ocupacional,17,Z
+Z57.0,Exposição ocupacional à poeira mineral,Z,Fatores que influenciam o estado de saúde,Alta,Exposição ocupacional,17,Z
+Z57.1,Exposição ocupacional a metais,Z,Fatores que influenciam o estado de saúde,Alta,Exposição ocupacional,17,Z
+Z57.3,Exposição ocupacional a outros contaminantes do ar,Z,Fatores que influenciam o estado de saúde,Alta,Exposição ocupacional,17,Z
+Z57.4,Exposição ocupacional a agentes tóxicos na agricultura,Z,Fatores que influenciam o estado de saúde,Alta,Exposição ocupacional,17,Z
+Z57.5,Exposição ocupacional a agentes tóxicos em outras indústrias,Z,Fatores que influenciam o estado de saúde,Alta,Exposição ocupacional,17,Z
+Z57.8,Exposição ocupacional a outros fatores de risco,Z,Fatores que influenciam o estado de saúde,Alta,Exposição ocupacional,17,Z
+Z73.0,Esgotamento (Burnout),Z,Fatores que influenciam o estado de saúde,Alta,Indicador relevante para saúde mental ocupacional,17,Z
+B34,Infecção viral de localização não especificada,A-B,Doenças infecciosas e parasitárias,Média,Condição aguda com potencial de afastamento,1,B
+D50.9,Anemia por deficiência de ferro não especificada,D,Doenças do sangue e órgãos hematopoéticos,Média,Pode reduzir capacidade laboral conforme gravidade,3,D
+E66.0,Obesidade devida a excesso de calorias,E,"Doenças endócrinas, nutricionais e metabólicas",Média,Fator associado a agravos osteomusculares e metabólicos,4,E
+E78.0,Hipercolesterolemia pura,E,"Doenças endócrinas, nutricionais e metabólicas",Média,Fator de risco cardiovascular,4,E
+F48.0,Neurastenia,F,Transtornos mentais e comportamentais,Média,Saúde mental; pode afetar capacidade laboral,5,F
+G44.2,Cefaleia tensional,G,Doenças do sistema nervoso,Média,Pode limitar desempenho conforme intensidade,6,G
+H65.9,"Otite média não-supurativa, não especificada",H,Doenças do ouvido e da apófise mastoide,Média,Condição aguda com potencial de afastamento,7,H
+H91.9,Perda de audição não especificada,H,Doenças do ouvido e da apófise mastoide,Média,Relevante em vigilância ocupacional,7,H
+I83.9,Varizes dos membros inferiores sem úlcera ou inflamação,I,Doenças do aparelho circulatório,Média,Pode limitar atividades conforme gravidade,8,I
+J00,Nasofaringite aguda (resfriado comum),J,Doenças do aparelho respiratório,Média,Condição aguda com potencial de afastamento,9,J
+J01.9,Sinusite aguda não especificada,J,Doenças do aparelho respiratório,Média,Condição aguda com potencial de afastamento,9,J
+J03.9,Amigdalite aguda não especificada,J,Doenças do aparelho respiratório,Média,Condição aguda com potencial de afastamento,9,J
+K21.9,Doença de refluxo gastroesofágico sem esofagite,K,Doenças do aparelho digestivo,Média,Pode limitar atividades conforme sintomas,10,K
+K29.7,Gastrite não especificada,K,Doenças do aparelho digestivo,Média,Condição frequente; potencial de afastamento em crises,10,K
+L20.9,Dermatite atópica não especificada,L,Doenças da pele e do tecido subcutâneo,Média,Pode ser agravada por exposições ocupacionais,11,L
+L30.9,Dermatite não especificada,L,Doenças da pele e do tecido subcutâneo,Média,Pode estar associada a exposição ocupacional,11,L
+L50.9,Urticária não especificada,L,Doenças da pele e do tecido subcutâneo,Média,Pode exigir afastamento conforme gravidade,11,L
+M54.6,Dor na coluna torácica,M,Doenças do sistema osteomuscular,Média,Potencial de limitação funcional,12,M
+M70.5,Outras bursites do joelho,M,Doenças do sistema osteomuscular,Média,Potencial de limitação funcional,12,M
+M71.9,Transtorno da bursa não especificado,M,Doenças do sistema osteomuscular,Média,Potencial de limitação funcional,12,M
+M79.1,Mialgia,M,Doenças do sistema osteomuscular,Média,Sintoma musculoesquelético com potencial de afastamento,12,M
+M79.2,Nevralgia e neurite não especificadas,M,Doenças do sistema osteomuscular,Média,Pode limitar função,12,M
+N39.0,Infecção do trato urinário de localização não especificada,N,Doenças do aparelho geniturinário,Média,Condição aguda com potencial de afastamento,13,N
+S00.9,"Traumatismo superficial da cabeça, não especificado",S-T,Lesões e envenenamentos,Média,Acidente/trauma,15,S
+X50,"Excesso de exercícios, movimentos vigorosos ou repetitivos",V-Y,Causas externas de morbidade e mortalidade,Média,Sobrecarga/causa externa,16,X
+Z57.2,Exposição ocupacional ao pó de tabaco,Z,Fatores que influenciam o estado de saúde,Média,Exposição ocupacional,17,Z
+Z73.2,Falta de repouso e lazer,Z,Fatores que influenciam o estado de saúde,Média,Fator relacionado à recuperação/saúde,17,Z
+Z00.0,"Exame médico geral (admissional, periódico, demissional)",Z,Fatores que influenciam o estado de saúde,Informativa,Exame ocupacional; não é doença,17,Z
+Z02.1,Exame pré-emprego,Z,Fatores que influenciam o estado de saúde,Informativa,Exame ocupacional; não é doença,17,Z

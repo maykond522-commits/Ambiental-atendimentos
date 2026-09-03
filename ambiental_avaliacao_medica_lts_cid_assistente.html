@@ -805,7 +805,12 @@ body::before{
       <div class="save-status"><span id="saveDot" class="save-dot"></span><span id="saveText">Rascunho não iniciado</span></div>
     </div>
     <div class="header-actions">
-      <button class="btn btn-outline optional" onclick="openManagement()">Gestão</button><button class="btn btn-outline optional" onclick="saveNow()">Salvar</button>
+      <button class="btn btn-outline optional" onclick="openManagement()">Gestão</button>
+      
+      <!-- NOVO BOTÃO AQUI -->
+      <button class="btn btn-danger optional" onclick="deleteAtendimento()">Excluir</button>
+      
+      <button class="btn btn-outline optional" onclick="saveNow()">Salvar</button>
       <button class="btn btn-green" onclick="finalizeFromHeader()">Finalizar</button>
     </div>
   </div>
@@ -1308,6 +1313,17 @@ function findCID(code){
   return cidLibrary.find(x=>x.c===c) || cidLibrary.find(x=>x.c.startsWith(c) && c.length>=2) || null;
 }
 
+function discardAIJustificativa() {
+    const out = document.getElementById("aiJustificativaOutput");
+    if (out) out.style.display = "none";
+    document.getElementById("aiOutput").textContent = "";
+    
+    aiLastResult = null;
+    invalidateAICache(); // Limpa o cache para forçar a IA a pensar de novo na próxima chamada
+    
+    toast("Sugestão descartada. Clique em 'Rascunhar justificativa' para gerar outra.");
+}
+
 // NOVA FUNÇÃO: Lê o CSV e insere os dados no cidLibrary
 async function loadCIDs(){
   cidLoadStatus={status:"loading",count:0,detail:"Carregando CSV..."};
@@ -1401,6 +1417,53 @@ function onCidInput(value){
   else if(normalizeCID(value).length>=1) renderCIDAssist(null);
   autoSave();
 }
+
+async function deleteAtendimento() {
+    if (isFinalizedReadOnly()) {
+        toast("Atendimentos finalizados não podem ser excluídos por aqui. Use a Gestão.");
+        return;
+    }
+    
+    if (!confirm("Tem certeza que deseja excluir este atendimento? Ele será arquivado e fechado.")) {
+        return;
+    }
+    
+    const btn = document.querySelector('button[onclick="deleteAtendimento()"]');
+    if(btn) { btn.disabled = true; btn.textContent = "Excluindo..."; }
+    
+    try {
+        // Tenta excluir no servidor (se já estiver sincronizado)
+        if (state.__serverId) {
+            const res = await fetch(`${getApiBase()}/api/atendimentos/${encodeURIComponent(state.__serverId)}`, {
+                method: 'DELETE',
+                headers: { 'Accept': 'application/json' }
+            });
+            if (!res.ok) throw new Error("Não foi possível excluir no servidor.");
+        }
+        
+        // Remove do cache de rascunho de tela (v1 e v2)
+        localStorage.removeItem("ambiental_lts_v2");
+        localStorage.removeItem("ambiental_lts_v1"); 
+        
+        // Marca como ARQUIVADO no registro geral de todos os atendimentos
+        let reg = {};
+        try { reg = JSON.parse(localStorage.getItem("ambiental_atendimentos_v1") || "{}"); } catch(e){}
+        if (reg[state.atendimento]) {
+            reg[state.atendimento].workflowStatus = "ARQUIVADO";
+            localStorage.setItem("ambiental_atendimentos_v1", JSON.stringify(reg));
+        }
+        
+        toast("Atendimento excluído com sucesso!");
+        
+        // Redireciona para a central de gestão após 1.5s
+        setTimeout(() => { location.href = "/gestao"; }, 1500);
+        
+    } catch (e) {
+        toast(e.message || "Erro ao excluir o atendimento.");
+        if(btn) { btn.disabled = false; btn.textContent = "Excluir"; }
+    }
+}
+  
 function selectCID(code){
   $("cid").value=code;
   $("cidSuggestions").classList.remove("show");

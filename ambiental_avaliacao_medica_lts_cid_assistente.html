@@ -338,7 +338,43 @@ a{color:inherit}
   50% { opacity: 1; }
   100% { opacity: 0.6; }
 }
+/* Efeito de Shimmer/Skeleton para carregamento da IA */
+.skeleton-loader {
+  background: linear-gradient(90deg, #EDF2F7 25%, #E2E8F0 50%, #EDF2F7 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+  border-radius: 6px;
+  height: 12px;
+  margin-bottom: 8px;
+}
+.skeleton-title { width: 30%; height: 16px; margin-bottom: 14px; }
+.skeleton-line-1 { width: 100%; }
+.skeleton-line-2 { width: 92%; }
+.skeleton-line-3 { width: 96%; }
+.skeleton-line-4 { width: 75%; }
 
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Spinner giratório para botões */
+.spinner-ai {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin-ai 0.8s ease-in-out infinite;
+}
+@keyframes spin-ai { to { transform: rotate(360deg); } }
+
+/* Trava visual para botões carregando */
+.btn-ai.loading {
+  opacity: 0.85;
+  pointer-events: none;
+  box-shadow: none;
+}
 /* =========================================================
    AMBIENTAL VISUAL OVERHAUL — V2
    ========================================================= */
@@ -1101,9 +1137,13 @@ body::before{
           <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:7px; gap:8px; flex-wrap:wrap">
             <label class="required" style="margin-bottom:0">Justificativa Parecer Final</label>
             <div style="display:flex;gap:7px;flex-wrap:wrap">
-              <button class="btn-ai" type="button" id="btnAiJustificativa" onclick="gerarJustificativaIA()">Rascunhar justificativa</button>
-              <button class="btn btn-outline" type="button" id="btnVerSugestaoIA" onclick="verSugestaoJustificativaIA()">Ver Sugestão de Justificativa com IA</button>
-            </div>
+              <button class="btn-ai" type="button" id="btnAiJustificativa" onclick="gerarJustificativaIA()">
+                ✨ Rascunhar com IA
+              </button>
+              <button class="btn btn-outline" type="button" id="btnVerSugestaoIA" onclick="verSugestaoJustificativaIA()">
+                ✨ Ver Sugestão Completa
+              </button>
+          </div>
           </div>
           <textarea class="textarea" id="justificativa" style="min-height:190px" placeholder="Registre a justificativa do parecer final com base nos fatos e achados efetivamente documentados."></textarea>
           <div class="help" style="margin-top:7px">Parecer emitido pelo Coordenador de Ingresso, Licenças, Readaptação e Aposentadoria, à vista do que prevê o artigo 32, do Decreto nº 69.234, de 23/12/2024 c/c o artigo 95, da Resolução SGGD 25, de 16/05/2025.</div>
@@ -1499,7 +1539,99 @@ function setAIState(text,kind=""){const el=$("aiState");if(el){el.className=`ai-
 function stableHash(value){let str="";try{const stable=v=>Array.isArray(v)?v.map(stable):v&&typeof v==="object"?Object.keys(v).sort().reduce((o,k)=>(o[k]=stable(v[k]),o),{}):v;str=JSON.stringify(stable(value));}catch{str=String(value)}let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h+=(h<<1)+(h<<4)+(h<<7)+(h<<8)+(h<<24);}return (h>>>0).toString(16);}
 function renderAIResult(result,target="aiOutput"){const box=$(target),out=$("aiJustificativaOutput");if(!box)return;const text=String(result?.justificativa||"").trim();box.textContent=text||"A IA não retornou uma sugestão válida.";if(out)out.style.display=text?"block":"none";}
 function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
-async function apiAI(path,payload,action,label,target="aiOutput"){if(!navigator.onLine){setAIState("Sem conexão","error");toast("Sem conexão. A sugestão de IA requer conexão com o serviço configurado.");return null;}if(aiInFlight){toast("Já existe uma sugestão de IA em andamento.");return null;}const contextHash=stableHash(payload);const cacheKey=`${path}:${contextHash}`;if(aiClientCache.has(cacheKey)){const cached=aiClientCache.get(cacheKey);aiLastResult=cached;aiLastAction=action||"";renderAIResult(cached,target);setAIState("Sugestão reutilizada","success");return cached;}aiController=new AbortController();aiInFlight=true;const timer=setTimeout(()=>aiController.abort(),45000);setAIState(label||"Gerando sugestão...","loading");try{const r=await fetch(`${getApiBase()}${path}`,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload),signal:aiController.signal});const d=await r.json().catch(()=>null);if(!r.ok){throw new Error(formatApiError(d,r.status));}aiLastResult=d;aiLastAction=action||"";aiClientCache.set(cacheKey,d);renderAIResult(d,target);setAIState("Sugestão pronta — revise antes de usar","success");return d;}catch(e){if(e?.name==="AbortError")toast("A geração da sugestão excedeu o tempo limite.");else toast(e.message||"Não foi possível gerar a sugestão.");setAIState("Falha ao gerar sugestão","error");return null;}finally{clearTimeout(timer);aiController=null;aiInFlight=false;}}
+async function apiAI(path, payload, action, label, target = "aiOutput") {
+  if (!navigator.onLine) {
+    setAIState("Sem conexão", "error");
+    toast("Sem conexão. A sugestão de IA requer conexão com a internet.");
+    return null;
+  }
+  if (aiInFlight) {
+    toast("Já existe uma sugestão de IA em andamento.");
+    return null;
+  }
+
+  const contextHash = stableHash(payload);
+  const cacheKey = `${path}:${contextHash}`;
+  
+  if (aiClientCache.has(cacheKey)) {
+    const cached = aiClientCache.get(cacheKey);
+    aiLastResult = cached;
+    aiLastAction = action || "";
+    renderAIResult(cached, target);
+    setAIState("Sugestão reutilizada", "success");
+    return cached;
+  }
+
+  aiController = new AbortController();
+  aiInFlight = true;
+  const timer = setTimeout(() => aiController.abort(), 45000);
+  setAIState(label || "Processando contexto...", "loading");
+
+  // --- UP VISUAL: Ativar Shimmer e Spinner ---
+  const box = document.getElementById(target);
+  const outBox = document.getElementById("aiJustificativaOutput");
+  const aiButtons = document.querySelectorAll('.btn-ai');
+
+  // Trava os botões e mostra o spinner
+  aiButtons.forEach(btn => {
+    if (!btn.dataset.originalText) btn.dataset.originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-ai"></span> Gerando...';
+    btn.classList.add('loading');
+  });
+
+  // Mostra a caixa e injeta o Shimmer (esqueleto animado)
+  if (outBox) outBox.style.display = "block";
+  if (box) {
+    box.innerHTML = `
+      <div class="skeleton-loader skeleton-title"></div>
+      <div class="skeleton-loader skeleton-line-1"></div>
+      <div class="skeleton-loader skeleton-line-2"></div>
+      <div class="skeleton-loader skeleton-line-3"></div>
+      <div class="skeleton-loader skeleton-line-4"></div>
+    `;
+  }
+  // ------------------------------------------
+
+  try {
+    const r = await fetch(`${getApiBase()}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify(payload),
+      signal: aiController.signal
+    });
+    
+    const d = await r.json().catch(() => null);
+    if (!r.ok) {
+      throw new Error(formatApiError(d, r.status));
+    }
+    
+    aiLastResult = d;
+    aiLastAction = action || "";
+    aiClientCache.set(cacheKey, d);
+    renderAIResult(d, target);
+    setAIState("Sugestão pronta — revise antes de usar", "success");
+    return d;
+
+  } catch (e) {
+    if (e?.name === "AbortError") toast("A geração da sugestão excedeu o tempo limite.");
+    else toast(e.message || "Não foi possível gerar a sugestão.");
+    
+    setAIState("Falha ao gerar sugestão", "error");
+    if (box) box.innerHTML = '<span style="color: #A12626;">Erro: A inteligência artificial não conseguiu processar este pedido. Tente novamente.</span>';
+    return null;
+
+  } finally {
+    clearTimeout(timer);
+    aiController = null;
+    aiInFlight = false;
+    
+    // --- UP VISUAL: Restaurar Botões ---
+    aiButtons.forEach(btn => {
+      if (btn.dataset.originalText) btn.innerHTML = btn.dataset.originalText;
+      btn.classList.remove('loading');
+    });
+  }
+}
 function getJustificativaContext(){const v=values();const limitacoes=[v.descLimitacao,v.atividadesComprometidas,v.sintomasLimitacao,v.alteracoesClinicasExames].filter(x=>String(x||"").trim()).join(" | ");return {atendimento:v.atendimento,cargo:v.cargo,idade:v.idade,cid:v.cid,limitacoes,capacidade:v.capacidade};}
 function invalidateAICache(){aiClientCache.clear();}
 function applyAIText(mode){if(isFinalizedReadOnly()){toast("Atendimento finalizado: a sugestão pode ser analisada, mas não aplicada.");return;}const text=String(aiLastResult?.justificativa||"").trim();if(!text)return toast("Não há sugestão de IA disponível.");const f=$("justificativa"),cur=f.value.trim();if(mode==="replace"){if(cur&&!window.confirm("Substituir o texto atual pela sugestão da IA?"))return;f.value=text;}else f.value=cur?cur+"\n\n"+text:text;invalidateAICache();autoSave();toast(mode==="replace"?"Justificativa substituída após confirmação.":"Sugestão adicionada abaixo do texto existente.");}

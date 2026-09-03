@@ -290,79 +290,76 @@ def _audit_record(db, rid, old, new, origin="MANUAL"):
 
 class AIResult(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    resumo: str = ""
-    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
-    evidence: list[str] = Field(default_factory=list)
-    warnings: list[str] = Field(default_factory=list)
-    justificativa: str = ""
-    pontos_relevantes: list[str] = Field(default_factory=list)
-    inconsistencias: list[str] = Field(default_factory=list)
-    informacoes_ausentes: list[str] = Field(default_factory=list)
-    perguntas_sugeridas: list[str] = Field(default_factory=list)
-    nivel_atencao: Literal["baixo", "medio", "alto"] = "baixo"
-
+    resumo: str
+    confidence: float = Field(ge=0.0, le=1.0)
+    evidence: list[str]
+    warnings: list[str]
+    justificativa: str
+    pontos_relevantes: list[str]
+    inconsistencias: list[str]
+    informacoes_ausentes: list[str]
+    perguntas_sugeridas: list[str]
+    nivel_atencao: Literal["baixo", "medio", "alto"]
+    
 class EsislaResult(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    ficha_esisla: str = ""
+    ficha_esisla: str
 
 class JustificationResult(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    justificativa: str = ""
+    justificativa: str
 
 
 class DocumentSuggestion(BaseModel):
-    tipo: str = ""
-    data: str = ""
-    resultado: str = ""
-
+    tipo: str
+    data: str
+    resultado: str
 
 class QuesitoSuggestion(BaseModel):
-    numero: int = 0
-    resposta: Literal["Sim", "Não", ""] = ""
-    justificativa: str = ""
-    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
-    evidence: list[str] = Field(default_factory=list)
-    requires_human_review: bool = True
+    numero: int
+    resposta: Literal["Sim", "Não", ""]
+    justificativa: str
+    confidence: float = Field(ge=0.0, le=1.0)
+    evidence: list[str]
+    requires_human_review: bool
 
 
 class FillSuggestionFields(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    queixa_e_duracao: str = ""
-    antecedentes_morbidos: str = ""
-    exame_fisico_mental: str = ""
-    alteracoes_clinicas_exames: str = ""
-    limitacoes_fisicas_mentais: str = ""
-    justificativa_parecer_final: str = ""
-    atestado_relatorio_exames: list[DocumentSuggestion] = Field(default_factory=list)
-
+    queixa_e_duracao: str
+    antecedentes_morbidos: str
+    exame_fisico_mental: str
+    alteracoes_clinicas_exames: str
+    limitacoes_fisicas_mentais: str
+    justificativa_parecer_final: str
+    atestado_relatorio_exames: list[DocumentSuggestion]
 
 class FillSuggestionResult(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    sugestoes_preenchimento: FillSuggestionFields = Field(default_factory=FillSuggestionFields)
-    quesitos_sugeridos: list[QuesitoSuggestion] = Field(default_factory=list)
-    inconsistencias: list[str] = Field(default_factory=list)
-    informacoes_ausentes: list[str] = Field(default_factory=list)
-    nivel_atencao: Literal["baixo", "medio", "alto"] = "baixo"
+    sugestoes_preenchimento: FillSuggestionFields
+    quesitos_sugeridos: list[QuesitoSuggestion]
+    inconsistencias: list[str]
+    informacoes_ausentes: list[str]
+    nivel_atencao: Literal["baixo", "medio", "alto"]
 
 
 class FinalReportResult(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    queixa_e_duracao: str = ""
-    antecedentes_morbidos: str = ""
-    atestado_relatorio_exames: list[DocumentSuggestion] = Field(default_factory=list)
-    exame_fisico_mental: str = ""
-    alteracoes_clinicas_exames: str = ""
-    limitacoes_fisicas_mentais: str = ""
-    quesitos_sugeridos: list[QuesitoSuggestion] = Field(default_factory=list)
-    justificativa_parecer_final: str = ""
-    inconsistencias: list[str] = Field(default_factory=list)
-    informacoes_ausentes: list[str] = Field(default_factory=list)
-    nivel_atencao: Literal["baixo", "medio", "alto"] = "baixo"
-
+    queixa_e_duracao: str
+    antecedentes_morbidos: str
+    atestado_relatorio_exames: list[DocumentSuggestion]
+    exame_fisico_mental: str
+    alteracoes_clinicas_exames: str
+    limitacoes_fisicas_mentais: str
+    quesitos_sugeridos: list[QuesitoSuggestion]
+    justificativa_parecer_final: str
+    inconsistencias: list[str]
+    informacoes_ausentes: list[str]
+    nivel_atencao: Literal["baixo", "medio", "alto"]
 
 class FinalReportTextResult(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    relatorio: str = ""
+    relatorio: str
 
 
 SYSTEM_PROMPT = """
@@ -985,49 +982,74 @@ def api_get_atendimento(rid):
 @app.post("/api/atendimentos")
 @app.put("/api/atendimentos/<rid>")
 def api_save_atendimento(rid=None):
-    denied=_require_permission("edit" if rid else "create")
-    if denied: return denied
-    try: payload=_json_body()
-    except ValueError as exc: return _error("VALIDATION_ERROR",str(exc),False,400)
-    number=str(payload.get("atendimento") or rid or "").strip()
-    if not number: return _error("VALIDATION_ERROR","Número do atendimento é obrigatório.",False,400)
-    payload["atendimento"]=number
-    id_for_number,_=_record_id(payload); rid=rid or id_for_number
-    now=_utc_now(); a=payload.get("aux") or {}
-    db=get_db(); cur = db.cursor()
-    cur.execute("SELECT * FROM atendimentos WHERE id=%s OR numero=%s", (rid, number))
-    oldrow = cur.fetchone()
-    old = (oldrow["payload_json"] if isinstance(oldrow["payload_json"], dict) else json.loads(oldrow["payload_json"])) if oldrow else None
-    incoming=_normalize_workflow_state(payload.get("workflowStatus"), "RASCUNHO")
-    if oldrow:
-        current=_normalize_workflow_state(oldrow["status"], "RASCUNHO")
-        if current in {"FINALIZADO","ARQUIVADO"} and incoming != current:
-            cur.close()
-            return _error("WORKFLOW_LOCKED","O estado do atendimento é controlado pela Gestão/backend. Use a ação de reabertura/restauração.",False,409,{"estado_oficial":current})
-        if current in {"FINALIZADO","ARQUIVADO"}:
-            cur.close()
-            return _error("READ_ONLY","Atendimento encerrado/arquivado está em modo leitura.",False,409,{"estado_oficial":current})
-        status=current if current in WORKFLOW_STATES else incoming
-    else:
-        status="RASCUNHO"
-    payload["workflowStatus"]=status
-    payload["finalizado"]=(status=="FINALIZADO")
-    if status=="FINALIZADO": payload["finalizadoEm"]=payload.get("finalizadoEm") or now
-    completeness=_calc_completeness(payload)
-    if oldrow:
-        cur.execute("UPDATE atendimentos SET numero=%s, payload_json=%s, status=%s, paciente_nome_hash=%s, medico=%s, cid=%s, unidade=%s, completude=%s, alertas=%s, inconsistencias=%s, atualizado_em=%s, finalizado_em=%s WHERE id=%s", (number, json.dumps(payload, ensure_ascii=False), status, _patient_hash(payload), str(payload.get("medico") or ""), str(a.get("cid") or ""), str(a.get("unidade") or ""), completeness, int(len(payload.get("aiAlertas") or [])), int(len(payload.get("inconsistencias") or [])), now, oldrow["finalizado_em"], oldrow["id"]))
-        real_id=oldrow["id"]
-    else:
-        real_id=rid
-        cur.execute("INSERT INTO atendimentos(id, numero, payload_json, status, paciente_nome_hash, medico, cid, unidade, completude, alertas, inconsistencias, criado_em, atualizado_em, finalizado_em) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (real_id, number, json.dumps(payload, ensure_ascii=False), status, _patient_hash(payload), str(payload.get("medico") or ""), str(a.get("cid") or ""), str(a.get("unidade") or ""), completeness, int(len(payload.get("aiAlertas") or [])), int(len(payload.get("inconsistencias") or [])), now, now, payload.get("finalizadoEm") or None))
+    denied = _require_permission("edit" if rid else "create")
+    if denied:
+        return denied
     try:
-        _sync_child_tables(db,real_id,payload); _audit_record(db,real_id,old,payload,"MANUAL"); db.commit()
-        cur.close()
-    except psycopg2.IntegrityError as exc: # <--- Corrigido para Postgres
-        db.rollback()
-        cur.close()
-        return _error("DUPLICATE_ATENDIMENTO", "O atendimento já existe no servidor. Recarregue o registro oficial antes de salvar novamente.", False, 409)
+        payload = _json_body()
+        number = str(payload.get("atendimento") or rid or "").strip()
+        if not number:
+            return _error("VALIDATION_ERROR", "Número do atendimento é obrigatório.", False, 400)
+        payload["atendimento"] = number
+        id_for_number, _ = _record_id(payload)
+        rid = rid or id_for_number
+        now = _utc_now()
+        a = payload.get("aux") or {}
         
+        db = get_db()
+        cur = db.cursor()
+        cur.execute("SELECT * FROM atendimentos WHERE id=%s OR numero=%s", (rid, number))
+        oldrow = cur.fetchone()
+        old = (oldrow["payload_json"] if isinstance(oldrow["payload_json"], dict) else json.loads(oldrow["payload_json"])) if oldrow else None
+        incoming = _normalize_workflow_state(payload.get("workflowStatus"), "RASCUNHO")
+        
+        if oldrow:
+            current = _normalize_workflow_state(oldrow["status"], "RASCUNHO")
+            if current in {"FINALIZADO", "ARQUIVADO"} and incoming != current:
+                cur.close()
+                return _error("WORKFLOW_LOCKED", "O estado do atendimento é controlado pela Gestão/backend.", False, 409, {"estado_oficial": current})
+            if current in {"FINALIZADO", "ARQUIVADO"}:
+                cur.close()
+                return _error("READ_ONLY", "Atendimento encerrado/arquivado está em modo leitura.", False, 409, {"estado_oficial": current})
+            status = current if current in WORKFLOW_STATES else incoming
+        else:
+            status = "RASCUNHO"
+            
+        payload["workflowStatus"] = status
+        payload["finalizado"] = (status == "FINALIZADO")
+        if status == "FINALIZADO":
+            payload["finalizadoEm"] = payload.get("finalizadoEm") or now
+        completeness = _calc_completeness(payload)
+        
+        if oldrow:
+            cur.execute(
+                "UPDATE atendimentos SET numero=%s, payload_json=%s, status=%s, paciente_nome_hash=%s, medico=%s, cid=%s, unidade=%s, completude=%s, alertas=%s, inconsistencias=%s, atualizado_em=%s, finalizado_em=%s WHERE id=%s",
+                (number, json.dumps(payload, ensure_ascii=False), status, _patient_hash(payload), str(payload.get("medico") or ""), str(a.get("cid") or ""), str(a.get("unidade") or ""), completeness, int(len(payload.get("aiAlertas") or [])), int(len(payload.get("inconsistencias") or [])), now, oldrow["finalizado_em"], oldrow["id"])
+            )
+            real_id = oldrow["id"]
+        else:
+            real_id = rid
+            cur.execute(
+                "INSERT INTO atendimentos(id, numero, payload_json, status, paciente_nome_hash, medico, cid, unidade, completude, alertas, inconsistencias, criado_em, atualizado_em, finalizado_em) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (real_id, number, json.dumps(payload, ensure_ascii=False), status, _patient_hash(payload), str(payload.get("medico") or ""), str(a.get("cid") or ""), str(a.get("unidade") or ""), completeness, int(len(payload.get("aiAlertas") or [])), int(len(payload.get("inconsistencias") or [])), now, now, payload.get("finalizadoEm") or None)
+            )
+            
+        _sync_child_tables(db, real_id, payload)
+        _audit_record(db, real_id, old, payload, "MANUAL")
+        db.commit()
+        cur.close()
+        return _ok({"id": real_id, "atendimento": number, "status": status, "completude": completeness, "atualizado_em": now}, 201 if oldrow is None else 200)
+        
+    except psycopg2.IntegrityError as exc:
+        if 'db' in locals() and db:
+            db.rollback()
+        return _error("DUPLICATE_ATENDIMENTO", "O atendimento já existe no servidor.", False, 409)
+    except Exception as exc:
+        if 'db' in locals() and db:
+            db.rollback()
+        app.logger.error("Erro interno ao salvar atendimento: %s", str(exc))
+        return _error("INTERNAL_ERROR", f"Erro interno: {str(exc)}", True, 500)
+
 def _finalization_blockers(payload: dict[str, Any]) -> list[dict[str, str]]:
     a = payload.get("aux") or {}
     blockers = []

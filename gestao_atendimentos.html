@@ -390,7 +390,8 @@ async function generateEsisla(enc, forceRefresh = false){
         // Se o botão forçado foi clicado, envia a flag de limpar cache
         if (forceRefresh) {
             payload.force_refresh = true;
-            toast("Limpando cache do servidor e processando...");
+            // AQUI ESTÁ A CORREÇÃO: trocamos toast por alert
+            alert("Limpando cache do servidor e processando...");
         }
         
         const response = await fetch('/api/ai/esisla', {

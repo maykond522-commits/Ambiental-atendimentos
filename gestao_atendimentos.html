@@ -320,8 +320,7 @@ details.more summary:hover { background: #F4F7FA; border-color: #CBD5E1; }
 
     <div class="dialog-foot">
       <button class="btn" id="downloadEsislaBtn" onclick="downloadEsisla()">Baixar Arquivo (.txt)</button>
-      <button class="btn btn-outline" id="regenerateEsislaBtn" onclick="document.getElementById('generateEsislaBtn').click()">🔄 Gerar Novamente</button>
-      <button class="btn btn-esisla" id="copyEsislaBtn" onclick="copyEsisla()">Copiar Ficha Completa</button>
+      <button class="btn btn-outline" id="regenerateEsislaBtn" onclick="generateEsisla(window.currentEsislaEnc, true)">🔄 Apagar Cache e Refazer</button>      <button class="btn btn-esisla" id="copyEsislaBtn" onclick="copyEsisla()">Copiar Ficha Completa</button>
     </div>
 
   </div>
@@ -367,7 +366,9 @@ async function carregarAtendimentosDoBanco() {
         console.error("Erro ao carregar do banco:", err);
     }
 }
-async function generateEsisla(enc){
+// Adicione o parâmetro forceRefresh
+async function generateEsisla(enc, forceRefresh = false){
+    window.currentEsislaEnc = enc; // Salva o ID globalmente para o botão "Refazer" poder usar
     const id = decodeURIComponent(enc);
     const r = currentRecord(enc);
     if(!r){alert('Atendimento não encontrado.');return;}
@@ -386,6 +387,12 @@ async function generateEsisla(enc){
         const payload = normalizeRecordPayload(r);
         payload.data_hora_atual = new Date().toISOString();
         
+        // Se o botão forçado foi clicado, envia a flag de limpar cache
+        if (forceRefresh) {
+            payload.force_refresh = true;
+            toast("Limpando cache do servidor e processando...");
+        }
+        
         const response = await fetch('/api/ai/esisla', {
             method: 'POST',
             headers: {'Content-Type':'application/json','Accept':'application/json'},
@@ -396,12 +403,10 @@ async function generateEsisla(enc){
         let data = {};
         try { data = await response.json() } catch {}
         
-        // CORREÇÃO AQUI: Lendo 'data.ficha_esisla' em vez de 'data.ficha'
         if(!response.ok || !data?.ficha_esisla) {
             throw new Error(data?.detail || data?.error?.detail || data?.error?.message || 'Não foi possível gerar a ficha eSisla.');
         }
         
-        // Injeta a resposta correta no textarea do modal
         target.value = data.ficha_esisla;
         sub.textContent = 'Atendimento ' + id + ' · ' + (data?.meta?.cached ? 'resultado em cache' : 'gerado agora');
         

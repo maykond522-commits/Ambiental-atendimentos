@@ -1628,7 +1628,6 @@ function syncToRegistry(){ try{const snapshot=JSON.parse(JSON.stringify(state));
 function workflowStatus(){return String(state.workflowStatus||(state.finalizado?"FINALIZADO":"RASCUNHO")).toUpperCase();}
 function setPersistStatus(kind,text){if($("saveDot"))$("saveDot").className=`save-dot ${kind||""}`;if($("saveText"))$("saveText").textContent=text;}
 async function syncToServer(manual=false){
-  // 1. Trava de segurança para impedir erro 409 em laudos finalizados
   if(isFinalizedReadOnly()){
     console.log("Atendimento em modo leitura. Sincronização de background ignorada.");
     return {ok: true, readonly: true};
@@ -1663,10 +1662,27 @@ async function syncToServer(manual=false){
       d=await r.json().catch(()=>null);
     }
     
-    if(!r.ok||!d?.success){
+    // --- NOVO BLOCO: AUTO-CORREÇÃO DE CONFLITO ---
+    if(!r.ok || !d?.success){
+      // Se o banco retornar 409 avisando que o estado oficial é outro (ex: já está finalizado)
+      if(r.status === 409 && d?.error?.details?.estado_oficial) {
+         const estadoReal = d.error.details.estado_oficial;
+         
+         // Atualiza o localStorage forçadamente para combinar com a nuvem
+         state.workflowStatus = estadoReal;
+         state.finalizado = (estadoReal === "FINALIZADO");
+         
+         applyFinalizedLock(); // Trava a interface do usuário
+         renderReview(); // Remove os avisos de pendência
+         toast(`Sincronizado: o atendimento já consta como ${estadoReal} no banco de dados.`);
+         
+         return {ok: true, readonly: true};
+      }
+      
       const msg=d?.error?.message||d?.detail||"Falha na persistência no servidor";
       throw new Error(msg);
     }
+    // ----------------------------------------------
     
     state.__serverSyncedAt=new Date().toISOString();
     state.__serverId=d?.data?.id||state.__serverId;

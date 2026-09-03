@@ -915,22 +915,27 @@ def gerar_relatorio_final():
 
 @app.get("/api/atendimentos")
 def api_list_atendimentos():
-    denied=_require_permission("view")
-    if denied: return denied
-    q=str(request.args.get("q","")).strip().lower()
-    status=str(request.args.get("status","")).strip().upper()
-    medico=str(request.args.get("medico","")).strip()
-    cid=str(request.args.get("cid","")).strip()
-    unidade=str(request.args.get("unidade","")).strip()
-    data_inicio=str(request.args.get("data_inicio","")).strip()
-    data_fim=str(request.args.get("data_fim","")).strip()
-    db=get_db(); clauses=[]; params=[]
+    denied = _require_permission("view")
+    if denied:
+        return denied
+    q = str(request.args.get("q", "")).strip().lower()
+    status = str(request.args.get("status", "")).strip().upper()
+    medico = str(request.args.get("medico", "")).strip()
+    cid = str(request.args.get("cid", "")).strip()
+    unidade = str(request.args.get("unidade", "")).strip()
+    data_inicio = str(request.args.get("data_inicio", "")).strip()
+    data_fim = str(request.args.get("data_fim", "")).strip()
+    
+    db = get_db()
+    clauses = []
+    params = []
+    
     if q:
-        like=f"%{q}%"
+        like = f"%{q}%"
         clauses.append("(lower(numero) LIKE %s OR lower(medico) LIKE %s OR lower(cid) LIKE %s OR lower(payload_json::text) LIKE %s)")
-        params += [like,like,like,like]
+        params += [like, like, like, like]
     if status:
-        clauses.append("status=%s")
+        clauses.append("status = %s")
         params.append(status)
     if medico:
         clauses.append("lower(medico) LIKE lower(%s)")
@@ -942,30 +947,64 @@ def api_list_atendimentos():
         clauses.append("lower(unidade) LIKE lower(%s)")
         params.append(f"%{unidade}%")
     if data_inicio:
-        clauses.append("COALESCE(payload_json->'aux'->>'dataAtd', criado_em) >= %s")
+        clauses.append("COALESCE(payload_json->'aux'->>'dataAtd', criado_em::text) >= %s")
         params.append(data_inicio)
     if data_fim:
-        clauses.append("COALESCE(payload_json->'aux'->>'dataAtd', criado_em) <= %s")
+        clauses.append("COALESCE(payload_json->'aux'->>'dataAtd', criado_em::text) <= %s")
         params.append(data_fim)
-    where=(" WHERE "+" AND ".join(clauses)) if clauses else ""
+        
+    where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
     cur = db.cursor()
-    cur.execute(f"SELECT id,numero,payload_json,status,medico,cid,unidade,completude,alertas,inconsistencias,criado_em,atualizado_em,finalizado_em FROM atendimentos{where} ORDER BY atualizado_em DESC", params)
+    cur.execute(f"SELECT id, numero, payload_json, status, medico, cid, unidade, completude, alertas, inconsistencias, criado_em, atualizado_em, finalizado_em FROM atendimentos{where} ORDER BY atualizado_em DESC", params)
     rows = cur.fetchall()
-    items=[]
+    
+    items = []
     for r in rows:
         p = r["payload_json"] if isinstance(r["payload_json"], dict) else json.loads(r["payload_json"])
-        official=_normalize_workflow_state(r["status"], "RASCUNHO")
+        official = _normalize_workflow_state(r["status"], "RASCUNHO")
         if official != r["status"]:
-            p["workflowStatus"]=official
-        items.append({"id":r["id"],"atendimento":r["numero"],"status":official,"medico":r["medico"],"cid":r["cid"],"unidade":r["unidade"],"completude":r["completude"],"alertas":r["alertas"],"inconsistencias":r["inconsistencias"],"criado_em":r["criado_em"],"atualizado_em":r["atualizado_em"],"finalizado_em":r["finalizado_em"],"payload":p})
+            p["workflowStatus"] = official
+        items.append({
+            "id": r["id"],
+            "atendimento": r["numero"],
+            "status": official,
+            "medico": r["medico"],
+            "cid": r["cid"],
+            "unidade": r["unidade"],
+            "completude": r["completude"],
+            "alertas": r["alertas"],
+            "inconsistencias": r["inconsistencias"],
+            "criado_em": str(r["criado_em"]) if r["criado_em"] else None,
+            "atualizado_em": str(r["atualizado_em"]) if r["atualizado_em"] else None,
+            "finalizado_em": str(r["finalizado_em"]) if r["finalizado_em"] else None,
+            "payload": p
+        })
     
-    cur.execute("SELECT status,completude,alertas,inconsistencias,atualizado_em FROM atendimentos")
+    cur.execute("SELECT status, completude, alertas, inconsistencias, atualizado_em FROM atendimentos")
     all_rows = cur.fetchall()
     cur.close()
     
-    all_items=[{"status":_normalize_workflow_state(x["status"],"RASCUNHO"),"completude":x["completude"] or 0,"alertas":x["alertas"] or 0,"inconsistencias":x["inconsistencias"] or 0,"atualizado_em":x["atualizado_em"]} for x in all_rows]
-    stats={"total":len(all_items),"rascunhos":sum(x["status"]=="RASCUNHO" for x in all_items),"revisao":sum(x["status"]=="EM_REVISÃO" for x in all_items),"pendentes":sum((x["alertas"]>0 or x["inconsistencias"]>0 or x["completude"]<100) for x in all_items),"finalizados":sum(x["status"]=="FINALIZADO" for x in all_items),"arquivados":sum(x["status"]=="ARQUIVADO" for x in all_items),"alertas":sum(x["alertas"] for x in all_items),"inconsistencias":sum(x["inconsistencias"] for x in all_items),"atualizados_recentes":sum((x["atualizado_em"] or "") >= (_utc_now()[:10] + "T00:00:00") for x in all_items)}
-    return _ok({"items":items,"stats":stats})
+    all_items = [{
+        "status": _normalize_workflow_state(x["status"], "RASCUNHO"),
+        "completude": x["completude"] or 0,
+        "alertas": x["alertas"] or 0,
+        "inconsistencias": x["inconsistencias"] or 0,
+        "atualizado_em": str(x["atualizado_em"]) if x["atualizado_em"] else ""
+    } for x in all_rows]
+    
+    today_prefix = _utc_now()[:10]
+    stats = {
+        "total": len(all_items),
+        "rascunhos": sum(x["status"] == "RASCUNHO" for x in all_items),
+        "revisao": sum(x["status"] == "EM_REVISÃO" for x in all_items),
+        "pendentes": sum((x["alertas"] > 0 or x["inconsistencias"] > 0 or x["completude"] < 100) for x in all_items),
+        "finalizados": sum(x["status"] == "FINALIZADO" for x in all_items),
+        "arquivados": sum(x["status"] == "ARQUIVADO" for x in all_items),
+        "alertas": sum(x["alertas"] for x in all_items),
+        "inconsistencias": sum(x["inconsistencias"] for x in all_items),
+        "atualizados_recentes": sum(str(x["atualizado_em"]).startswith(today_prefix) for x in all_items)
+    }
+    return _ok({"items": items, "stats": stats})
 
 @app.get("/api/atendimentos/<rid>")
 def api_get_atendimento(rid):

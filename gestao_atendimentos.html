@@ -355,6 +355,18 @@ function openEval(enc){location.href='/?atendimento='+enc}
 function openDocument(enc){location.href='/?atendimento='+enc+'&documento=1'}
 function normalizeRecordPayload(r){return r?.payload&&typeof r.payload==='object'?{...r.payload,atendimento:r.atendimento||r.payload.atendimento}:({...r,atendimento:r?.atendimento||r?.payload?.atendimento});}
 function currentRecord(enc){return find(decodeURIComponent(enc));}
+async function carregarAtendimentosDoBanco() {
+    try {
+        const res = await fetch('/api/atendimentos');
+        if (res.ok) {
+            const data = await res.json();
+            // Preenche o painel com os dados vindos do Supabase
+            atualizarTabelaGestao(data.data || data);
+        }
+    } catch (err) {
+        console.error("Erro ao carregar do banco:", err);
+    }
+}
 async function generateEsisla(enc){
     const id = decodeURIComponent(enc);
     const r = currentRecord(enc);

@@ -1,24 +1,5 @@
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ambiental — Gestão de Atendimentos</title>
 <style>
-:root {
-  --blue: #073F87;
-  --blue-2: #0B58A8;
-  --blue-3: #EEF5FC;
-  --green: #00C95A;
-  --green-2: #00AE50;
-  --green-soft: #ECFBF2;
-  --text: #162033;
-  --muted: #64748B;
-  --line: #DFE7F0;
-  --bg: #F2F6FA;
-  --card: #FFFFFF;
-  --shadow: 0 16px 45px rgba(19,44,78,.075);
-  --shadow-soft: 0 8px 26px rgba(19,44,78,.055);
-  --amber: #D97706;
-  --amber-bg: #FFFBEB;
-  --red: #DC2626;
-  --red-bg: #FEF2F2;
-}
 
 * { box-sizing: border-box; }
 
@@ -55,7 +36,9 @@ body {
 .brand span { display: block; color: var(--muted); font-size: 11px; margin-top: 3px; }
 
 /* Botões Globais */
-.top-actions { display: flex; gap: 10px; }
+.top-actions { display: flex; gap: 10px; align-items:center; flex-wrap:wrap; }
+.session-chip{display:flex;align-items:center;gap:9px;background:#F7FAFC;border:1px solid #DFE7F0;border-radius:13px;padding:7px 8px 7px 10px;min-width:185px}
+.session-chip>span:nth-child(2){display:flex;flex-direction:column;line-height:1.15;min-width:0}.session-chip b{font-size:11px;color:#1E3650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}.session-chip small{font-size:9px;color:#6B7A8F;margin-top:3px}.session-dot{width:8px;height:8px;border-radius:50%;background:#00AE50;box-shadow:0 0 0 4px rgba(0,174,80,.09);flex:0 0 auto}.session-logout{border:0;background:#fff;color:#A13A3A;border:1px solid #E7CECE;border-radius:9px;padding:7px 9px;font-size:10px;font-weight:800;cursor:pointer}.session-logout:hover{background:#FFF6F6}
 .btn {
   border: 1px solid #C7D6E5; background: #fff; color: #29435F; padding: 10px 14px; 
   border-radius: 11px; font-size: 12px; font-weight: 800; cursor: pointer; transition: all .2s ease;
@@ -283,14 +266,347 @@ details.more summary:hover { background: #F4F7FA; border-color: #CBD5E1; }
 .esisla-text::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 
 }
+
+/* ===================== PAINEL ADMINISTRATIVO ===================== */
+.admin-welcome{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:18px}
+.admin-kicker{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:#EEF5FC;border:1px solid #DCEAF8;color:var(--blue);font-size:10px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+.admin-kicker .dot{width:7px;height:7px;background:var(--green);box-shadow:0 0 0 4px rgba(0,201,90,.10)}
+.admin-actions{display:flex;gap:8px;flex-wrap:wrap}
+.admin-btn{border:1px solid #D7E2EC;background:#fff;color:#31506D;border-radius:10px;padding:9px 12px;font-size:11px;font-weight:900;cursor:pointer;transition:.2s}
+.admin-btn:hover{border-color:#AFC8DF;background:#F8FBFE;transform:translateY(-1px)}
+.admin-btn.primary{border:none;color:#fff;background:linear-gradient(135deg,var(--blue),var(--blue-2));box-shadow:0 8px 20px rgba(7,63,135,.15)}
+.dashboard{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(310px,.9fr);gap:16px;margin-bottom:18px}
+.dash-card{background:#fff;border:1px solid #DCE6EF;border-radius:18px;box-shadow:0 12px 34px rgba(18,44,75,.055);overflow:hidden}
+.dash-card-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 18px;border-bottom:1px solid #EDF2F6;background:linear-gradient(180deg,#fff,#FBFCFE)}
+.dash-card-head strong{font-size:13px;color:#17324D}.dash-card-head span{font-size:10px;color:#7A8999;font-weight:700}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:14px 16px 16px}
+.kpi{min-height:105px;padding:14px;border:1px solid #E1E9F0;border-radius:14px;background:linear-gradient(180deg,#fff,#FBFCFD);position:relative;overflow:hidden}
+.kpi::after{content:"";position:absolute;left:0;top:0;right:0;height:3px;background:linear-gradient(90deg,var(--blue),#75A9DA)}
+.kpi.green::after{background:linear-gradient(90deg,var(--green-2),var(--green))}.kpi.warn::after{background:linear-gradient(90deg,#C8891E,#E7B04A)}.kpi.red::after{background:linear-gradient(90deg,#C94141,#ED7676)}
+.kpi label{display:block;font-size:9px;line-height:1.25;text-transform:uppercase;letter-spacing:.06em;color:#748397;font-weight:900}.kpi b{display:block;margin-top:7px;font-size:25px;line-height:1;color:#17324D}.kpi small{display:block;margin-top:7px;font-size:10px;color:#8996A5}
+.mini-bars{padding:16px 18px 18px}.bar-row{display:grid;grid-template-columns:112px minmax(0,1fr) 46px;align-items:center;gap:10px;margin:11px 0}.bar-label{font-size:10px;color:#52657A;font-weight:800}.bar-track{height:9px;border-radius:99px;background:#EEF3F7;overflow:hidden}.bar-fill{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--blue),#4B83C5);transition:width .5s ease}.bar-fill.green{background:linear-gradient(90deg,var(--green-2),var(--green))}.bar-fill.red{background:linear-gradient(90deg,#C43C3C,#E46767)}.bar-fill.gray{background:linear-gradient(90deg,#94A3B8,#CBD5E1)}.bar-value{text-align:right;font-size:10px;font-weight:900;color:#42566B}
+.doctor-table-wrap{padding:4px 16px 14px;overflow:auto}.doctor-mini{width:100%;border-collapse:collapse}.doctor-mini th,.doctor-mini td{padding:9px 8px;border-bottom:1px solid #EEF2F6;font-size:10px}.doctor-mini th{font-size:9px;color:#78889A;background:transparent;text-transform:uppercase}.doctor-mini td:first-child{font-weight:800;color:#17324D}.doctor-num{text-align:right;font-weight:900}.doctor-rate{font-size:9px;color:#7890A5}
+.search-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 18px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#FBFCFE,#F7FAFD)}
+.search-toolbar-left{display:flex;gap:8px;align-items:center;min-width:0}.search-toolbar-title{font-size:11px;font-weight:900;color:#52657A;text-transform:uppercase;letter-spacing:.06em}.filter-count{font-size:10px;color:#8090A1;background:#fff;border:1px solid #E0E7EE;padding:5px 8px;border-radius:999px;font-weight:800}
+@media(max-width:1180px){.dashboard{grid-template-columns:1fr}.kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:760px){.admin-welcome{align-items:flex-start;flex-direction:column}.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.search-toolbar{align-items:flex-start;flex-direction:column}.search-toolbar-left{width:100%}}
+<style>
+/* ===== SIDEBAR ADMIN PREMIUM ===== */
+:root{--side:#062e63;--side2:#073f87;--sideText:#D9E7F7;--sideMuted:#8EABCB;--accent:#00C95A}
+body.admin-shell{background:linear-gradient(180deg,#f6f9fc 0%,#eef3f8 100%)}
+.admin-sidebar{position:fixed;z-index:1200;left:0;top:0;bottom:0;width:248px;background:linear-gradient(180deg,#05295a 0%,#073f87 62%,#062f67 100%);color:#fff;display:flex;flex-direction:column;box-shadow:18px 0 45px rgba(4,35,76,.16);overflow:hidden}
+.admin-sidebar::before{content:"";position:absolute;inset:auto -80px 130px auto;width:210px;height:210px;border-radius:50%;background:radial-gradient(circle,rgba(0,201,90,.18),transparent 68%);pointer-events:none}
+.sidebar-brand{display:flex;align-items:center;gap:11px;padding:22px 18px 18px;border-bottom:1px solid rgba(255,255,255,.10);position:relative}
+.sidebar-brand img{width:42px;height:42px;object-fit:contain;background:#fff;border-radius:12px;padding:3px;box-shadow:0 6px 18px rgba(0,0,0,.16)}
+.sidebar-brand div{min-width:0}.sidebar-brand strong{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sidebar-brand span{display:block;font-size:9px;color:#9fb8d5;margin-top:2px;white-space:nowrap}
+.sidebar-section{padding:18px 12px 8px;color:#7fa4cd;font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:900}
+.sidebar-nav{padding:0 10px;display:flex;flex-direction:column;gap:5px}
+.sidebar-link{position:relative;display:flex;align-items:center;gap:11px;padding:11px 12px;color:var(--sideText);text-decoration:none;border-radius:11px;font-size:11px;font-weight:800;transition:.18s ease;border:1px solid transparent}
+.sidebar-link:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.08);transform:translateX(2px)}
+.sidebar-link.active{background:linear-gradient(90deg,rgba(255,255,255,.14),rgba(255,255,255,.07));border-color:rgba(255,255,255,.10);box-shadow:inset 3px 0 0 var(--accent),0 8px 20px rgba(0,0,0,.08)}
+.sidebar-link svg{width:17px;height:17px;stroke:currentColor;stroke-width:1.8;fill:none;flex:0 0 auto}.sidebar-link .badge{margin-left:auto;padding:3px 7px;border-radius:999px;background:rgba(0,201,90,.16);color:#72f3a9;font-size:8px;font-weight:900}
+.sidebar-spacer{flex:1}.sidebar-user{margin:12px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);border-radius:14px;padding:11px 12px;display:flex;gap:9px;align-items:center}.sidebar-avatar{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#fff,#d8e8f8);color:#073f87;display:grid;place-items:center;font-size:12px;font-weight:900}.sidebar-user strong{display:block;font-size:10px;max-width:155px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sidebar-user small{display:block;color:#9fb8d5;font-size:8px;margin-top:2px}.sidebar-bottom{padding:8px 10px 14px}
+.admin-main-shell{margin-left:248px;min-height:100vh}
+.admin-main-shell .top{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.92);backdrop-filter:blur(16px);border-bottom:1px solid #dbe5ef;box-shadow:0 4px 18px rgba(25,53,82,.05)}
+.admin-main-shell .top-in{max-width:none;padding:10px 22px}.admin-main-shell .layout{max-width:none;padding:24px 24px 34px}
+.admin-mobile-toggle{display:none;position:fixed;left:12px;top:12px;z-index:1300;width:40px;height:40px;border:1px solid #d8e3ee;background:#fff;border-radius:11px;box-shadow:0 8px 24px rgba(20,40,70,.12);font-size:18px;color:#073f87}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(2,24,49,.38);z-index:1100}
+.anchor-target{scroll-margin-top:90px}
+@media(max-width:1000px){.admin-sidebar{transform:translateX(-102%);transition:transform .24s ease}.admin-sidebar.open{transform:translateX(0)}.admin-main-shell{margin-left:0}.admin-mobile-toggle{display:block}.sidebar-overlay.open{display:block}.admin-main-shell .top{padding-left:58px}.admin-main-shell .top-in{padding-left:14px}.admin-main-shell .layout{padding:20px 14px 28px}.brand div{display:none}}
+
+/* Melhorias de leitura para visualização e histórico */
+.detail-modal-dialog{width:min(1120px,100%);max-height:92vh}
+.detail-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.detail-context{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:14px}
+.context-card{border:1px solid #dfe8f1;background:linear-gradient(180deg,#fff,#fbfdff);border-radius:15px;padding:14px 16px;box-shadow:0 5px 18px rgba(18,44,75,.04)}
+.context-card .label{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.08em;font-weight:900;color:#8090a1}
+.context-card .value{display:block;margin-top:5px;font-size:14px;font-weight:800;color:#17324d;line-height:1.4}
+.context-card .muted{display:block;margin-top:3px;font-size:10px;color:#718196}
+.section h3{margin-bottom:12px}
+.section .section-sub{display:block;color:#7b8a9a;font-size:11px;margin:-7px 0 12px}
+.field .field-value-empty{color:#9aa8b6;font-style:italic}
+.qrow{align-items:flex-start}
+.qrow > div:first-child{flex:1}
+.qrow .ans{flex:0 0 auto}
+.history-dialog{width:min(1040px,100%);max-height:90vh}
+.history-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:18px 24px;border-bottom:1px solid #e6edf3;background:#fbfdff}
+.history-kpi{border:1px solid #e0e8f0;border-radius:13px;padding:12px 14px;background:#fff}
+.history-kpi span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.07em;font-weight:900;color:#8190a0}
+.history-kpi b{display:block;margin-top:4px;font-size:16px;color:#17324d}
+.history{padding:20px 24px 26px}
+.timeline{border-left:2px solid #d9e4ed;margin-left:8px;padding-left:25px}
+.event{background:#fff;border:1px solid #e0e8f0;border-radius:14px;padding:14px 16px;margin:0 0 13px;box-shadow:0 6px 18px rgba(18,44,75,.035);position:relative}
+.event::before{left:-31px;top:17px;width:9px;height:9px;background:linear-gradient(135deg,#0a478f,#00ae50);box-shadow:0 0 0 3px #edf4f9}
+.event-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.event-title{font-size:12px;font-weight:900;color:#17324d}
+.event-time{font-size:10px;color:#7d8b9a;white-space:nowrap}
+.event-user{display:inline-flex;align-items:center;gap:6px;margin-top:5px;font-size:10px;color:#5f7185}
+.event-user::before{content:"";width:5px;height:5px;border-radius:50%;background:#00ae50}
+.event-change{margin-top:10px;padding:10px 12px;border-radius:10px;background:#f7fafc;border:1px solid #e7edf2;font-size:11px;color:#334155;line-height:1.55}
+.event-change strong{color:#17324d}
+.event-note{margin-top:8px;font-size:11px;color:#5b6e82;line-height:1.5}
+.event-toggle{margin-top:9px;border:0;background:transparent;padding:0;color:#0a5cab;font-size:10px;font-weight:800;cursor:pointer}
+.history-empty{padding:34px;text-align:center;border:1px dashed #ccd8e3;border-radius:14px;color:#75879b;background:#fbfdff}
+@media(max-width:800px){.detail-context{grid-template-columns:1fr}.history-summary{grid-template-columns:1fr 1fr}.event-head{display:block}.event-time{display:block;margin-top:5px}}
+
 </style>
-</head><body>
-<header class="top"><div class="top-in"><div class="brand"><div><strong>Ambiental — Gestão de Avaliações</strong><span>Central operacional · estado oficial controlado pelo backend</span></div></div><div class="top-actions"><button class="btn btn-quiet" onclick="location.href='/?novo=1'">Novo atendimento</button><button class="btn btn-primary" onclick="carregarLocalStorage()">Atualizar LocalStorage</button></div></div></header>
-<main class="layout"><div class="headline"><div><h1>Central de atendimentos</h1><p>Pesquise, revise, acompanhe o workflow e acesse o histórico sem editar o estado diretamente no navegador.</p></div></div>
-<section class="stats"><div class="stat"><span>Total</span><b id="statTotal">—</b></div><div class="stat"><span>Rascunhos</span><b id="statDraft">—</b></div><div class="stat"><span>Em revisão</span><b id="statReview">—</b></div><div class="stat"><span>Finalizados</span><b id="statDone">—</b></div><div class="stat"><span>Arquivados</span><b id="statArchived">—</b></div><div class="stat"><span>Pendências</span><b id="statPending">—</b></div><div class="stat"><span>Atualizados hoje</span><b id="statRecent">—</b></div></section>
-<section class="panel"><div class="tabs"><button class="tab active" data-tab="all" onclick="setTab('all')">Todos</button><button class="tab" data-tab="draft" onclick="setTab('draft')">Rascunhos</button><button class="tab" data-tab="review" onclick="setTab('review')">Em revisão</button><button class="tab" data-tab="done" onclick="setTab('done')">Finalizados</button><button class="tab" data-tab="archived" onclick="setTab('archived')">Arquivados</button></div><div class="filters"><input class="input" id="search" placeholder="Buscar atendimento, médico, CID ou conteúdo..." oninput="refresh()"><select class="select" id="filter"><option value="all">Todos os status</option><option value="RASCUNHO">Rascunho</option><option value="EM_REVISÃO">Em revisão</option><option value="REABERTO">Reaberto</option><option value="FINALIZADO">Finalizado</option><option value="ARQUIVADO">Arquivado</option></select><input class="input" id="medico" placeholder="Médico" oninput="refresh()"><input class="input" id="cid" placeholder="CID" oninput="refresh()"><input class="input" id="unidade" placeholder="Unidade" oninput="refresh()"><input class="input" id="periodoInicio" type="date" title="Data inicial" aria-label="Data inicial"><input class="input" id="periodoFim" type="date" title="Data final" aria-label="Data final"><select class="select" id="sort" onchange="refresh()"><option value="updated">Última atualização</option><option value="date">Data do atendimento</option><option value="id">Atendimento</option></select></div><table><thead><tr><th>Atendimento</th><th>Data</th><th>Profissional</th><th>Dados</th><th>Status</th><th>Atualizado</th><th></th></tr></thead><tbody id="tbody"></tbody></table><div class="empty" id="empty" style="display:none">Nenhum atendimento encontrado para os filtros atuais.</div></section>
-<div class="notice">Fonte atual da Gestão: <strong>LocalStorage do navegador</strong>. Enquanto o banco não for a fonte principal, os atendimentos salvos neste navegador aparecem imediatamente aqui. O backend continua sendo consultado quando disponível.</div></main>
-<div class="modal" id="detailModal"><div class="dialog"><div class="dialog-head"><div><strong id="detailTitle">Atendimento</strong><span id="detailSub"></span></div><div class="esisla-toolbar"><button class="btn btn-esisla" id="generateEsislaBtn">Gerar ficha eSisla</button><button class="btn" onclick="closeModal('detailModal')">Fechar</button></div></div><div id="detailBody" class="detail"></div><div class="dialog-foot"><button class="btn" id="openEvalBtn">Abrir atendimento</button><button class="btn" id="historyBtn">Histórico</button></div></div></div>
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/auth.js"></script><link rel="stylesheet" href="/global.css">
+<script src="/utils.js"></script>
+
+<style>
+/* ===== DASHBOARD ADMIN 2.0 ===== */
+body.admin-shell{background:radial-gradient(circle at 18% 0%,rgba(7,63,135,.065),transparent 26%),radial-gradient(circle at 92% 8%,rgba(0,201,90,.05),transparent 22%),linear-gradient(180deg,#f7faff 0%,#eef4f9 100%)}
+.admin-main-shell{animation:pageIn .55s ease both}
+@keyframes pageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.admin-sidebar{background:linear-gradient(180deg,#052a5d 0%,#073f87 52%,#052b5e 100%);}
+.admin-sidebar::after{content:"";position:absolute;inset:18% -30% auto auto;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(0,201,90,.13),transparent 67%);pointer-events:none;animation:orbFloat 7s ease-in-out infinite}
+@keyframes orbFloat{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(-16px,18px,0)}}
+.sidebar-link{isolation:isolate}
+.sidebar-link.active::after{content:"";position:absolute;right:10px;width:6px;height:6px;border-radius:50%;background:#71f3a6;box-shadow:0 0 0 5px rgba(113,243,166,.09);animation:activePulse 2s ease-in-out infinite}
+@keyframes activePulse{0%,100%{transform:scale(.9);opacity:.8}50%{transform:scale(1.15);opacity:1}}
+.dashboard{position:relative}
+.dashboard::before{content:"";position:absolute;inset:-18px -10px auto;height:110px;border-radius:28px;background:linear-gradient(90deg,rgba(7,63,135,.05),rgba(0,201,90,.025),transparent);pointer-events:none}
+.dash-card,.stat,.panel{animation:riseIn .5s ease both}
+.dash-card:nth-child(2){animation-delay:.06s}.stats .stat:nth-child(2){animation-delay:.04s}.stats .stat:nth-child(3){animation-delay:.08s}.stats .stat:nth-child(4){animation-delay:.12s}.stats .stat:nth-child(5){animation-delay:.16s}.stats .stat:nth-child(6){animation-delay:.20s}.stats .stat:nth-child(7){animation-delay:.24s}
+@keyframes riseIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.kpi{transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}.kpi:hover{transform:translateY(-4px) scale(1.005);box-shadow:0 18px 34px rgba(16,46,78,.10)}
+.kpi b{transition:transform .35s ease}.kpi:hover b{transform:translateX(2px)}
+.mini-bars .bar-fill{position:relative;overflow:hidden}.mini-bars .bar-fill::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 0 42%,rgba(255,255,255,.4) 50%,transparent 58%);transform:translateX(-120%);animation:shine 2.6s ease-in-out infinite}
+@keyframes shine{0%,35%{transform:translateX(-120%)}75%,100%{transform:translateX(120%)}}
+.executive-strip{display:grid;grid-template-columns:1.3fr .85fr .85fr;gap:14px;margin:0 0 18px}
+.exec-card{position:relative;overflow:hidden;background:linear-gradient(135deg,#082e66,#0a4a94);color:#fff;border-radius:20px;padding:22px 24px;box-shadow:0 18px 42px rgba(7,48,101,.16)}
+.exec-card::before{content:"";position:absolute;right:-30px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.08)}
+.exec-card .eyebrow{font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:900;color:#a9c7e6}.exec-card h2{margin:5px 0 6px;font-size:22px;letter-spacing:-.03em}.exec-card p{margin:0;color:#c8d9ec;font-size:11px;max-width:530px;line-height:1.55}.exec-meta{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap}.exec-pill{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.12);font-size:9px;font-weight:900}
+.quick-card{background:#fff;border:1px solid #dce6ef;border-radius:18px;padding:17px 18px;box-shadow:0 12px 30px rgba(18,44,75,.055);display:flex;flex-direction:column;justify-content:space-between;min-height:146px}.quick-card .q-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.quick-icon{width:36px;height:36px;border-radius:11px;background:#edf5fd;color:#0a478f;display:grid;place-items:center}.quick-card strong{font-size:12px;color:#17324d}.quick-card span{font-size:10px;color:#7b8b9c;line-height:1.45}.quick-btn{margin-top:13px;border:1px solid #d5e2ed;background:#f8fbfe;color:#0a478f;border-radius:10px;padding:9px 11px;font-size:10px;font-weight:900;cursor:pointer;text-align:left;transition:.2s}.quick-btn:hover{background:#eef6fd;border-color:#bcd3e7;transform:translateY(-1px)}
+.history-panel{margin:0 0 18px}.history-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px 16px 16px}.history-item{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;border:1px solid #e3eaf1;border-radius:14px;padding:13px 14px;background:linear-gradient(180deg,#fff,#fbfcfe);transition:.2s}.history-item:hover{transform:translateY(-2px);border-color:#c8d8e7;box-shadow:0 10px 24px rgba(17,43,71,.07)}.history-item strong{display:block;color:#17324d;font-size:11px}.history-item small{display:block;color:#8290a0;font-size:9px;margin-top:3px}.history-item .hi-actions{display:flex;gap:6px;align-items:center}.hi-status{font-size:9px;font-weight:900;padding:5px 8px;border-radius:999px;background:#f1f5f9;color:#52657a}.hi-status.done{background:#e8f7ef;color:#0a7d40}.hi-status.review{background:#edf5fd;color:#0a4d95}.hi-btn{border:1px solid #d5e0ea;background:#fff;border-radius:8px;padding:7px 9px;color:#0a478f;font-size:9px;font-weight:900;cursor:pointer}.hi-btn:hover{background:#f2f8fd}
+.search-toolbar{position:sticky;top:69px;z-index:15;backdrop-filter:blur(10px);background:rgba(251,252,254,.92)}
+#atendimentos{scroll-margin-top:92px}
+@media(max-width:1100px){.executive-strip{grid-template-columns:1fr 1fr}.exec-card{grid-column:1/-1}.history-list{grid-template-columns:1fr}}
+@media(max-width:760px){.executive-strip{grid-template-columns:1fr}.exec-card{grid-column:auto}.search-toolbar{top:61px}}
+
+.admin-view{display:none;animation:viewEnter .28s ease both}
+.admin-view.active{display:block}
+@keyframes viewEnter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.view-header{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin:0 0 18px;padding:0 2px}
+.view-header .view-kicker{font-size:9px;text-transform:uppercase;letter-spacing:.13em;font-weight:900;color:#7990a8;margin-bottom:5px}
+.view-header h2{margin:0;color:#083a77;font-size:24px;letter-spacing:-.03em}
+.view-header p{margin:6px 0 0;color:#718196;font-size:11px;line-height:1.55;max-width:760px}
+.view-header .view-count{display:inline-flex;align-items:center;gap:7px;padding:9px 12px;background:#fff;border:1px solid #dce6ef;border-radius:12px;color:#49627a;font-size:10px;font-weight:900;box-shadow:0 8px 22px rgba(20,53,87,.05)}
+.view-header .view-count::before{content:"";width:7px;height:7px;border-radius:50%;background:#18b768;box-shadow:0 0 0 5px rgba(24,183,104,.09)}
+@media(max-width:760px){.view-header{align-items:flex-start;flex-direction:column}.view-header h2{font-size:20px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}
+</style>
+
+<style id="premium-modal-fix">
+/* ===== VISUALIZAÇÃO DE FICHA E E-SISLA — CAMADA FIXA ===== */
+html.modal-lock, body.modal-lock{overflow:hidden !important;}
+body.modal-lock{overscroll-behavior:none;}
+
+.modal{
+  position:fixed !important;
+  inset:0 !important;
+  width:100vw !important;
+  height:100dvh !important;
+  display:none !important;
+  align-items:center !important;
+  justify-content:center !important;
+  padding:16px !important;
+  z-index:2000 !important;
+  overflow:hidden !important;
+  background:rgba(3,18,38,.56) !important;
+  backdrop-filter:blur(10px) saturate(115%) !important;
+  -webkit-backdrop-filter:blur(10px) saturate(115%) !important;
+}
+.modal.open{display:flex !important;animation:premiumModalFade .22s ease-out both !important;}
+#esislaModal{z-index:2100 !important;}
+@keyframes premiumModalFade{from{opacity:0}to{opacity:1}}
+.detail-open-skeleton{min-height:300px;display:grid;place-items:center;padding:30px;text-align:center;background:linear-gradient(180deg,#fbfdff,#f5f9fc);border-top:1px solid #eef3f7}
+.detail-open-skeleton-card{width:min(360px,100%);padding:28px 24px;border:1px solid #dce7ef;border-radius:22px;background:rgba(255,255,255,.92);box-shadow:0 24px 70px rgba(18,44,75,.12);backdrop-filter:blur(10px);animation:skeletonLift .28s ease both}
+.detail-open-loader{width:62px;height:62px;margin:0 auto 14px;border-radius:50%;border:5px solid #e8f0f6;border-top-color:var(--green);border-right-color:var(--blue);animation:orbitSpin 1s linear infinite;box-shadow:0 0 0 8px rgba(7,63,135,.035)}
+.detail-open-skeleton-card strong{display:block;color:var(--blue);font-size:16px}
+.detail-open-skeleton-card span{display:block;margin-top:6px;color:var(--muted);font-size:11px}
+@keyframes skeletonLift{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+
+
+.modal > .dialog{
+  width:min(1180px,100%) !important;
+  max-width:1180px !important;
+  max-height:calc(100dvh - 32px) !important;
+  min-height:0 !important;
+  overflow:hidden !important;
+  display:flex !important;
+  flex-direction:column !important;
+  border:1px solid rgba(215,228,241,.95) !important;
+  border-radius:24px !important;
+  background:linear-gradient(180deg,#ffffff 0%,#f8fbfd 100%) !important;
+  box-shadow:0 32px 100px rgba(4,28,56,.28),0 8px 28px rgba(4,28,56,.12) !important;
+  animation:premiumDialogIn .28s cubic-bezier(.2,.75,.25,1) both !important;
+}
+@keyframes premiumDialogIn{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+
+#detailModal .detail-modal-dialog{height:calc(100dvh - 32px) !important;}
+#detailModal .dialog-head,
+#esislaModal .dialog-head,
+#historyModal .dialog-head,
+#reasonModal .dialog-head{
+  flex:0 0 auto !important;
+  padding:17px 22px !important;
+  background:rgba(255,255,255,.96) !important;
+  border-bottom:1px solid #e7eef4 !important;
+}
+#detailModal .detail,
+#historyModal .history,
+#esislaModal .esisla-body{
+  flex:1 1 auto !important;
+  min-height:0 !important;
+  overflow:auto !important;
+  overscroll-behavior:contain !important;
+}
+#detailModal .dialog-foot,
+#esislaModal .dialog-foot{
+  flex:0 0 auto !important;
+  padding:14px 20px !important;
+  background:rgba(248,251,253,.98) !important;
+  border-top:1px solid #e7eef4 !important;
+}
+
+/* Cabeçalho da ficha */
+#detailTitle{font-size:20px !important;font-weight:900 !important;letter-spacing:-.35px !important;color:#073f87 !important;}
+#detailSub{font-size:11px !important;color:#6f8093 !important;}
+#detailModal .detail{padding:20px !important;background:#f7fafc !important;}
+#detailModal .detail-context{position:sticky;top:0;z-index:5;padding:0 0 14px !important;margin:0 0 2px !important;background:linear-gradient(180deg,#f7fafc 80%,rgba(247,250,252,0) 100%) !important;}
+#detailModal .context-card{border:1px solid #dce7ef !important;border-radius:16px !important;background:rgba(255,255,255,.97) !important;box-shadow:0 8px 24px rgba(18,44,75,.05) !important;}
+#detailModal .section{border:1px solid #dde7ef !important;border-radius:18px !important;box-shadow:0 8px 24px rgba(18,44,75,.04) !important;margin-bottom:12px !important;}
+#detailModal .section h3{font-size:14px !important;}
+#detailModal .field{border-radius:13px !important;background:#fbfdff !important;}
+#detailModal .field div{font-size:12px !important;}
+
+/* eSisla mais legível e com aparência de documento */
+#esislaModal .dialog{width:min(1040px,100%) !important;height:calc(100dvh - 32px) !important;}
+#esislaModal .esisla-body{padding:18px 20px 16px !important;background:#f6f9fc !important;display:flex !important;flex-direction:column !important;gap:12px !important;}
+#esislaModal .esisla-editor-container{flex:1 1 auto !important;min-height:0 !important;display:flex !important;flex-direction:column !important;}
+#esislaModal .esisla-text{flex:1 1 auto !important;min-height:clamp(360px,58vh,660px) !important;height:auto !important;font:14px/1.72 ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace !important;letter-spacing:.01em !important;}
+#esislaModal .notice{border-radius:14px !important;background:#f7fbff !important;border:1px solid #dbe8f3 !important;box-shadow:0 6px 18px rgba(18,44,75,.035) !important;}
+#esislaModal .esisla-editor-container{border:1px solid #d8e3ec !important;border-radius:18px !important;box-shadow:0 12px 30px rgba(18,44,75,.06) !important;}
+#esislaModal .esisla-editor-header{padding:13px 16px !important;background:linear-gradient(180deg,#fafdff,#f2f6fa) !important;}
+#esislaModal .esisla-text{min-height:0 !important;height:100% !important;max-height:none !important;resize:none !important;padding:22px !important;font:13px/1.8 ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace !important;background:#fff !important;}
+#esislaModal .dialog-foot{display:flex !important;justify-content:flex-end !important;flex-wrap:wrap !important;gap:8px !important;}
+
+/* Histórico / justificativa seguem a mesma linguagem visual */
+#historyModal .history-dialog{height:min(820px,calc(100dvh - 32px)) !important;}
+#historyModal .history{padding:18px 20px 24px !important;background:#f7fafc !important;}.history-loading-state{min-height:300px;display:grid;place-items:center;text-align:center}.history-loading-card{display:grid;justify-items:center;gap:10px;color:var(--muted);font-size:12px}.history-loading-spinner{width:56px;height:56px;border-radius:50%;border:4px solid #e8eef4;border-top-color:var(--green);border-right-color:var(--blue);animation:orbitSpin 1s linear infinite;box-shadow:0 0 0 8px rgba(7,63,135,.035)}.history-loading-card strong{color:var(--blue);font-size:15px}
+#reasonModal .dialog{width:min(600px,100%) !important;}
+
+@media(max-width:760px){
+  .modal{padding:0 !important;align-items:stretch !important;}
+  .modal > .dialog,
+  #detailModal .detail-modal-dialog,
+  #esislaModal .dialog,
+  #historyModal .history-dialog{width:100% !important;height:100dvh !important;max-height:100dvh !important;border-radius:0 !important;}
+  #detailModal .detail,#historyModal .history,#esislaModal .esisla-body{padding:14px !important;}
+  #detailModal .detail-context{position:static !important;display:grid !important;grid-template-columns:1fr !important;}
+  #detailModal .dialog-head,#esislaModal .dialog-head{padding:14px 16px !important;}
+  #detailModal .dialog-foot,#esislaModal .dialog-foot{padding:12px 14px !important;}
+}
+@media(prefers-reduced-motion:reduce){.modal.open,.modal > .dialog{animation:none !important;}}
+</style>
+<style id="modal-viewport-fix">
+/* Corrige o contexto de posicionamento dos modais: nenhum ancestral transformado deve conter position:fixed. */
+.admin-main-shell{transform:none !important;animation:none !important;}
+.modal{left:0 !important;right:0 !important;top:0 !important;bottom:0 !important;width:100vw !important;max-width:none !important;}
+.modal > .dialog{width:min(1080px,calc(100vw - 48px)) !important;max-width:1080px !important;height:min(88dvh,820px) !important;max-height:calc(100dvh - 32px) !important;}
+#detailModal .detail-modal-dialog{height:min(88dvh,820px) !important;}
+#esislaModal .dialog{width:min(1040px,calc(100vw - 48px)) !important;height:min(90dvh,860px) !important;}
+#historyModal .history-dialog{width:min(980px,calc(100vw - 48px)) !important;height:min(82dvh,760px) !important;}
+@media(max-width:760px){
+  .modal > .dialog,#detailModal .detail-modal-dialog,#esislaModal .dialog,#historyModal .history-dialog{width:100vw !important;height:100dvh !important;max-height:100dvh !important;}
+}
+</style>
+
+<style id="premium-data-loading">
+.data-loading{position:fixed;inset:0;z-index:100000;background:radial-gradient(circle at 50% 15%,rgba(11,88,168,.12),transparent 34%),linear-gradient(135deg,#eef4f9,#f7fbfd);display:grid;place-items:center;padding:24px;transition:opacity .38s ease,visibility .38s ease}.data-loading.hide{opacity:0;visibility:hidden;pointer-events:none}.data-loading-card{width:min(440px,100%);padding:34px 34px 30px;border:1px solid rgba(255,255,255,.75);border-radius:26px;background:rgba(255,255,255,.88);backdrop-filter:blur(18px);box-shadow:0 30px 90px rgba(9,35,63,.18);text-align:center}.loading-brand{display:flex;justify-content:center;align-items:center;gap:10px;color:var(--blue);font-size:11px;font-weight:900;letter-spacing:.11em}.loading-brand img{width:34px;height:34px;object-fit:contain;border-radius:10px;border:1px solid #e5edf5;background:#fff;padding:3px}.loader-orbit{width:92px;height:92px;margin:24px auto 18px;position:relative;display:grid;place-items:center}.orbit-ring{position:absolute;inset:0;border-radius:50%;border:4px solid #e8f0f7;border-top-color:var(--green);border-right-color:var(--blue);animation:orbitSpin 1.35s linear infinite;box-shadow:0 0 0 9px rgba(7,63,135,.035)}.orbit-core{width:58px;height:58px;border-radius:18px;display:grid;place-items:center;background:linear-gradient(145deg,var(--blue),var(--blue-2));color:#fff;font-size:22px;font-weight:900;box-shadow:0 14px 28px rgba(7,63,135,.2);animation:corePulse 1.5s ease-in-out infinite}.loading-copy strong{display:block;color:var(--blue);font-size:17px;letter-spacing:-.2px}.loading-copy span{display:block;color:var(--muted);font-size:12px;margin-top:6px;min-height:34px}.loading-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:22px 0 14px}.loading-step{padding:8px 6px;border-radius:9px;background:#f4f7fa;color:#8b99aa;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.05em}.loading-step.active{background:var(--blue-3);color:var(--blue);box-shadow:inset 0 0 0 1px #d6e5f4}.loading-step.done{background:var(--green-soft);color:#0b7d43}.loading-progress{height:6px;background:#edf2f6;border-radius:999px;overflow:hidden}.loading-progress span{display:block;width:18%;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--blue),var(--green));transition:width .45s ease}.app-loading{overflow:hidden}.app-loading .admin-main-shell,.app-loading .admin-sidebar,.app-loading .admin-mobile-toggle{pointer-events:none}.esisla-generating{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(246,249,252,.88);backdrop-filter:blur(6px);z-index:20}.esisla-generating.show{display:flex;animation:fadeIn .18s ease}.esisla-generating-card{width:min(420px,calc(100% - 32px));background:#fff;border:1px solid #dce7ef;border-radius:22px;padding:28px;box-shadow:0 24px 70px rgba(18,44,75,.18);text-align:center}.esisla-spinner{width:70px;height:70px;margin:0 auto 18px;border-radius:50%;border:5px solid #e9f1f7;border-top-color:var(--green);border-right-color:var(--blue);animation:orbitSpin 1s linear infinite;box-shadow:0 0 0 8px rgba(7,63,135,.03)}.esisla-generating-card strong{display:block;color:var(--blue);font-size:17px}.esisla-generating-card span{display:block;color:var(--muted);font-size:12px;margin-top:6px;min-height:34px}.esisla-progress{height:7px;background:#eef3f7;border-radius:999px;overflow:hidden;margin-top:20px}.esisla-progress span{display:block;width:14%;height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:999px;transition:width .55s ease}.esisla-stage{display:flex;gap:7px;justify-content:center;margin-top:16px;flex-wrap:wrap}.esisla-stage b{font-size:9px;color:#8998a9;background:#f4f7fa;padding:7px 9px;border-radius:999px}.esisla-stage b.active{background:var(--blue-3);color:var(--blue)}.esisla-stage b.done{background:var(--green-soft);color:#0b7d43}@keyframes orbitSpin{to{transform:rotate(360deg)}}@keyframes corePulse{0%,100%{transform:scale(.98)}50%{transform:scale(1.04)}}@media(prefers-reduced-motion:reduce){.orbit-ring,.orbit-core,.esisla-spinner{animation:none!important}}
+</style>
+</head><body class="admin-shell"><div id="authLoading" style="position:fixed;inset:0;background:#F2F6FA;z-index:999999;display:grid;place-items:center;font-family:Inter,system-ui,sans-serif;color:#073F87"><div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #DDE6EF;border-radius:14px;padding:13px 16px;box-shadow:0 12px 35px rgba(10,30,55,.1);font-size:12px;font-weight:800"><img src="/logo.png" alt="" style="width:28px;height:28px;object-fit:contain"><span>Verificando sessão...</span></div></div>
+<div id="dataLoading" class="data-loading" aria-live="polite" aria-busy="true">
+  <div class="data-loading-card">
+    <div class="loading-brand"><img src="/logo.png" alt=""><span>AMBIENTAL · LTS</span></div>
+    <div class="loader-orbit"><div class="orbit-ring"></div><div class="orbit-core">A</div></div>
+    <div class="loading-copy"><strong id="dataLoadingTitle">Preparando sua sala</strong><span id="dataLoadingText">Conectando aos dados e preparando a gestão...</span></div>
+    <div class="loading-steps"><span class="loading-step active" id="loadStep1">Sessão</span><span class="loading-step" id="loadStep2">Atendimentos</span><span class="loading-step" id="loadStep3">Indicadores</span><span class="loading-step" id="loadStep4">Pronto</span></div>
+    <div class="loading-progress"><span id="loadingProgressBar"></span></div>
+  </div>
+</div>
+<button class="admin-mobile-toggle" id="sidebarToggle" aria-label="Abrir menu" type="button">☰</button>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<aside class="admin-sidebar" id="adminSidebar" aria-label="Navegação administrativa">
+  <div class="sidebar-brand"><img src="/logo.png" alt="Ambiental"><div><strong>Ambiental</strong><span>Gestão administrativa</span></div></div>
+  <div class="sidebar-section">Visão geral</div>
+  <nav class="sidebar-nav">
+    <a href="#dashboard" class="sidebar-link active" data-target="dashboard"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Dashboard</span></a>
+    <a href="#atendimentos" class="sidebar-link" data-target="atendimentos"><svg viewBox="0 0 24 24"><path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/><path d="M7 8h10M7 12h7M7 16h5"/></svg><span>Buscar atendimento</span><span class="badge" id="sideCount">—</span></a>
+    <a href="#historico" class="sidebar-link" data-target="historico"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5M12 7v5l3 2"/></svg><span>Histórico de atendimento</span></a>
+    <a href="#medicos" class="sidebar-link" data-target="medicos"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0M16 11h5M18.5 8.5v5"/></svg><span>Produção por médico</span></a>
+    <a href="#indicadores" class="sidebar-link" data-target="indicadores"><svg viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-8M22 19V3"/></svg><span>Indicadores e resultados</span></a>
+  </nav>
+  <div class="sidebar-section">Operação</div>
+  <nav class="sidebar-nav">
+    <a href="/app?novo=1" class="sidebar-link"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span>Novo atendimento</span></a>
+    <a href="/gestao-medicos-admin.html" class="sidebar-link"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM16 3.5a4 4 0 0 1 0 7.8M19 14a4 4 0 0 1 2 3.5V21"/></svg><span>Gestão de médicos</span></a>
+  </nav>
+  <div class="sidebar-spacer"></div>
+  <div class="sidebar-user"><div class="sidebar-avatar" id="sidebarAvatar">A</div><div><strong id="sidebarName">Administrador</strong><small id="sidebarRole">Acesso administrativo</small></div></div>
+  <div class="sidebar-bottom"><button class="sidebar-link" id="sidebarLogout" type="button" style="width:100%;background:transparent;cursor:pointer"><svg viewBox="0 0 24 24"><path d="M10 17l5-5-5-5M15 12H3M21 19V5a2 2 0 0 0-2-2h-6"/></svg><span>Sair da conta</span></button></div>
+</aside>
+<div class="admin-main-shell">
+<header class="top"><div class="top-in">
+<div class="brand"><img src="/logo.png" alt="Logo Ambiental" style="width:42px;height:42px;object-fit:contain;background:#fff;border:1px solid #E6EDF5;border-radius:11px;padding:3px;box-shadow:0 5px 14px rgba(7,63,135,.08)"><div><strong>Ambiental — Avaliação Médica Pericial — LTS</strong><span>Central de Gestão de Atendimentos</span></div></div>
+<div class="top-actions"><button class="btn btn-quiet" onclick="location.href='/app?novo=1'">Novo atendimento</button><button class="btn btn-primary" onclick="fetchServer().then(refresh)">Atualizar dados</button>
+<div class="session-chip" id="sessionChip" title="Sessão autenticada"><span class="session-dot"></span><span><b id="userName">Verificando...</b><small id="userRole">Sessão segura</small></span><button class="session-logout" id="logoutBtn" type="button">Sair</button></div>
+</div></div></header>
+<main class="layout"><div class="admin-view active" id="view-dashboard"><div class="admin-welcome"><div><div class="admin-kicker"><span class="dot"></span> Gestão administrativa</div><div class="headline" style="margin:8px 0 0"><div><h1>Painel executivo de atendimentos</h1><p>Visão centralizada para localizar atendimentos médicos, acompanhar produtividade, pareceres, pendências e evolução do fluxo.</p></div></div></div><div class="admin-actions"><button class="admin-btn" type="button" onclick="clearFilters()">Limpar filtros</button><button class="admin-btn" type="button" onclick="focusSearch()">Buscar atendimento</button><button class="admin-btn primary" type="button" onclick="fetchServer().then(refresh)">Atualizar dados</button></div></div>
+<section class="executive-strip" aria-label="Resumo executivo">
+  <div class="exec-card"><div class="eyebrow">Central administrativa</div><h2>Visão geral dos atendimentos</h2><p>Acompanhe volume, andamento, pareceres e produção médica em um único painel, com acesso rápido à busca e ao histórico.</p><div class="exec-meta"><span class="exec-pill">Dados em tempo real</span><span class="exec-pill">Acompanhamento operacional</span><span class="exec-pill">Acesso administrativo</span></div></div>
+  <div class="quick-card"><div class="q-top"><div><strong>Buscar atendimento</strong><span style="display:block;margin-top:4px">Encontre por número, paciente, CPF, médico, CID ou unidade.</span></div><div class="quick-icon">⌕</div></div><button class="quick-btn" type="button" onclick="focusSearch()">Abrir pesquisa →</button></div>
+  <div class="quick-card"><div class="q-top"><div><strong>Histórico</strong><span style="display:block;margin-top:4px">Consulte os registros de auditoria dos atendimentos recentes.</span></div><div class="quick-icon">↺</div></div><button class="quick-btn" type="button" onclick="goToSection('historico')">Ver histórico →</button></div>
+</section>
+<section class="dashboard anchor-target" id="dashboard" aria-label="Dashboard administrativo">
+  <div class="dash-card"><div class="dash-card-head"><div><strong>Indicadores gerais</strong><span style="display:block;margin-top:3px">Leitura rápida do volume e do status atual</span></div><span id="dashboardScope">Escopo administrativo</span></div>
+    <div class="kpi-grid">
+      <div class="kpi"><label>Atendimentos</label><b id="dashTotal">—</b><small id="dashRecent">— atualizados recentemente</small></div>
+      <div class="kpi green"><label>Finalizados</label><b id="dashDone">—</b><small id="dashDoneRate">—% do total</small></div>
+      <div class="kpi green"><label>Parecer favorável</label><b id="dashFav">—</b><small id="dashFavRate">—% dos registros</small></div>
+      <div class="kpi red"><label>Parecer contrário</label><b id="dashContra">—</b><small id="dashContraRate">—% dos registros</small></div>
+      <div class="kpi warn"><label>Pendências</label><b id="dashPending">—</b><small>requerem atenção</small></div>
+      <div class="kpi"><label>Completude média</label><b id="dashComplete">—%</b><small>dados registrados</small></div>
+      <div class="kpi"><label>Alertas</label><b id="dashAlerts">—</b><small>itens sinalizados</small></div>
+      <div class="kpi"><label>Médicos com atendimentos</label><b id="dashDoctors">—</b><small>profissionais no escopo</small></div>
+    </div>
+  </div>
+  <div class="dash-card"><div class="dash-card-head"><div><strong>Distribuição dos pareceres</strong><span style="display:block;margin-top:3px">Somente classificações registradas</span></div></div>
+    <div class="mini-bars">
+      <div class="bar-row"><span class="bar-label">Favorável</span><div class="bar-track"><div class="bar-fill green" id="barFav"></div></div><b class="bar-value" id="barFavVal">0</b></div>
+      <div class="bar-row"><span class="bar-label">Contrário</span><div class="bar-track"><div class="bar-fill red" id="barContra"></div></div><b class="bar-value" id="barContraVal">0</b></div>
+      <div class="bar-row"><span class="bar-label">Não definido</span><div class="bar-track"><div class="bar-fill gray" id="barUndefined"></div></div><b class="bar-value" id="barUndefinedVal">0</b></div>
+    </div>
+    <div class="dash-card-head" style="margin-top:2px"><div><strong>Fluxo por status</strong></div></div>
+    <div class="mini-bars" style="padding-top:8px">
+      <div class="bar-row"><span class="bar-label">Finalizados</span><div class="bar-track"><div class="bar-fill green" id="barDone"></div></div><b class="bar-value" id="barDoneVal">0</b></div>
+      <div class="bar-row"><span class="bar-label">Em revisão</span><div class="bar-track"><div class="bar-fill" id="barReview"></div></div><b class="bar-value" id="barReviewVal">0</b></div>
+      <div class="bar-row"><span class="bar-label">Rascunhos</span><div class="bar-track"><div class="bar-fill gray" id="barDraft"></div></div><b class="bar-value" id="barDraftVal">0</b></div>
+    </div>
+  </div>
+</section></div>
+<div class="admin-view" id="view-historico"><div class="view-header"><div><div class="view-kicker">Auditoria e rastreabilidade</div><h2>Histórico de atendimento</h2><p>Consulte rapidamente as atualizações recentes e abra o histórico completo de cada atendimento.</p></div><span class="view-count">Últimos registros</span></div>
+<section class="dash-card history-panel anchor-target" id="historico" style="margin-bottom:18px"><div class="dash-card-head"><div><strong>Histórico recente de atendimentos</strong><span style="display:block;margin-top:3px">Acesso rápido ao histórico de auditoria dos últimos registros atualizados</span></div><button class="admin-btn" type="button" onclick="goToSection('atendimentos')">Ver todos</button></div><div class="history-list" id="recentHistoryList"><div class="empty" style="grid-column:1/-1;padding:24px">Carregando histórico recente...</div></div></section></div>
+<div class="admin-view" id="view-medicos"><div class="view-header"><div><div class="view-kicker">Produtividade</div><h2>Produção por médico</h2><p>Compare volume, finalizações e distribuição dos pareceres por profissional.</p></div><span class="view-count">Indicadores por profissional</span></div>
+<section class="dash-card anchor-target" id="medicos" style="margin-bottom:18px"><div class="dash-card-head"><div><strong>Produção por médico</strong><span style="display:block;margin-top:3px">Quantidade de atendimentos, finalizações e pareceres registrados</span></div></div><div class="doctor-table-wrap"><table class="doctor-mini"><thead><tr><th>Médico</th><th>Total</th><th>Finalizados</th><th>Favoráveis</th><th>Contrários</th><th>Conclusão</th></tr></thead><tbody id="doctorDashboardBody"><tr><td colspan="6" style="text-align:center;color:#8A99AC;padding:18px">Carregando indicadores...</td></tr></tbody></table></div></section></div>
+<div class="admin-view" id="view-indicadores"><div class="view-header"><div><div class="view-kicker">Performance operacional</div><h2>Indicadores e resultados</h2><p>Resumo operacional dos atendimentos, pendências, finalizações e atualizações recentes.</p></div><span class="view-count">Leitura executiva</span></div>
+<section class="stats anchor-target" id="indicadores"><div class="stat"><span>Total</span><b id="statTotal">—</b></div><div class="stat"><span>Rascunhos</span><b id="statDraft">—</b></div><div class="stat"><span>Em revisão</span><b id="statReview">—</b></div><div class="stat"><span>Finalizados</span><b id="statDone">—</b></div><div class="stat"><span>Arquivados</span><b id="statArchived">—</b></div><div class="stat"><span>Pendências</span><b id="statPending">—</b></div><div class="stat"><span>Atualizados hoje</span><b id="statRecent">—</b></div></section></div>
+<div class="admin-view" id="view-busca"><div class="view-header"><div><div class="view-kicker">Consulta operacional</div><h2>Buscar atendimento</h2><p>Localize por número, paciente, CPF, médico, CID, unidade, status ou período e abra o registro completo.</p></div><span class="view-count" id="searchViewCount">— resultados</span></div>
+<section class="panel anchor-target" id="atendimentos"><div class="search-toolbar"><div class="search-toolbar-left"><span class="search-toolbar-title">Localizar atendimento</span><span class="filter-count" id="resultCount">— resultados</span></div><button class="admin-btn" type="button" onclick="clearFilters()">Redefinir busca</button></div><div class="tabs"><button class="tab active" data-tab="all" onclick="setTab('all')">Todos</button><button class="tab" data-tab="draft" onclick="setTab('draft')">Rascunhos</button><button class="tab" data-tab="review" onclick="setTab('review')">Em revisão</button><button class="tab" data-tab="done" onclick="setTab('done')">Finalizados</button><button class="tab" data-tab="archived" onclick="setTab('archived')">Arquivados</button></div><div class="filters"><input class="input" id="search" placeholder="Buscar por paciente, CPF, médico, CID ou conteúdo..." oninput="refresh()" autocomplete="off"><select class="select" id="filter"><option value="all">Todos os status</option><option value="RASCUNHO">Rascunho</option><option value="EM_REVISÃO">Em revisão</option><option value="REABERTO">Reaberto</option><option value="FINALIZADO">Finalizado</option><option value="ARQUIVADO">Arquivado</option></select><input class="input" id="medico" placeholder="Médico" oninput="refresh()"><input class="input" id="cid" placeholder="CID" oninput="refresh()"><input class="input" id="unidade" placeholder="Unidade" oninput="refresh()"><input class="input" id="periodoInicio" type="date" title="Data inicial" aria-label="Data inicial"><input class="input" id="periodoFim" type="date" title="Data final" aria-label="Data final"><select class="select" id="sort" onchange="refresh()"><option value="updated">Última atualização</option><option value="date">Data do atendimento</option><option value="patient">Paciente (A–Z)</option></select></div><table><thead><tr><th>Paciente</th><th>Data</th><th>Profissional</th><th>Dados</th><th>Status</th><th>Atualizado</th><th></th></tr></thead><tbody id="tbody"></tbody></table><div class="empty" id="empty" style="display:none">Nenhum atendimento encontrado para os filtros atuais.</div></section>
+<div class="notice">Fonte principal da Gestão: <strong>PostgreSQL/backend</strong>. O LocalStorage permanece como contingência local para rascunhos e recuperação no próprio navegador.</div></div></main>
+<div class="modal" id="detailModal"><div class="dialog detail-modal-dialog"><div class="dialog-head"><div><strong id="detailTitle">Atendimento</strong><span id="detailSub"></span></div><div class="esisla-toolbar"><button class="btn btn-esisla" id="generateEsislaBtn">Gerar ficha eSisla</button><button class="btn" onclick="closeModal('detailModal')">Fechar</button></div></div><div id="detailBody" class="detail"></div><div class="dialog-foot"><button class="btn" id="openEvalBtn">Abrir atendimento</button><button class="btn" id="historyBtn">Histórico</button></div></div></div>
 <div class="modal" id="esislaModal">
   <div class="dialog" style="width:min(900px,100%)">
     
@@ -304,7 +620,16 @@ details.more summary:hover { background: #F4F7FA; border-color: #CBD5E1; }
       <button class="btn btn-quiet" onclick="closeModal('esislaModal')">✕ Fechar</button>
     </div>
 
-    <div class="esisla-body">
+    <div class="esisla-body" style="position:relative">
+      <div id="esislaGenerating" class="esisla-generating" aria-live="polite" aria-busy="false">
+        <div class="esisla-generating-card">
+          <div class="esisla-spinner"></div>
+          <strong id="esislaGeneratingTitle">Gerando ficha eSisla</strong>
+          <span id="esislaGeneratingText">Lendo os dados completos do atendimento...</span>
+          <div class="esisla-progress"><span id="esislaProgressBar"></span></div>
+          <div class="esisla-stage"><b class="active" id="esislaStage1">Dados</b><b id="esislaStage2">Estruturação</b><b id="esislaStage3">Revisão</b><b id="esislaStage4">Pronto</b></div>
+        </div>
+      </div>
       <div class="notice" style="margin: 0 0 18px 0; border-left: 3px solid var(--blue);">
         <strong>Atenção:</strong> Revise o conteúdo gerado antes de transferir. A formatação abaixo segue o padrão textual exato exigido pelo sistema do Estado.
       </div>
@@ -325,184 +650,371 @@ details.more summary:hover { background: #F4F7FA; border-color: #CBD5E1; }
 
   </div>
 </div>
-<div class="modal" id="historyModal"><div class="dialog"><div class="dialog-head"><div><strong>Histórico de auditoria</strong><span id="historySub"></span></div><button class="btn" onclick="closeModal('historyModal')">Fechar</button></div><div class="history" id="historyBody"></div></div></div>
+<div class="modal" id="historyModal"><div class="dialog history-dialog"><div class="dialog-head"><div><strong>Histórico de auditoria</strong><span id="historySub"></span></div><button class="btn" onclick="closeModal('historyModal')">Fechar</button></div><div class="history" id="historyBody"></div></div></div>
 <div class="modal" id="reasonModal"><div class="dialog" style="width:min(560px,100%)"><div class="dialog-head"><div><strong id="reasonTitle">Justificativa</strong><span>A ação será registrada no histórico do atendimento.</span></div><button class="btn" onclick="closeModal('reasonModal')">Fechar</button></div><div class="reason-wrap"><label for="reasonInput">Motivo obrigatório</label><textarea id="reasonInput" class="reason"></textarea></div><div class="dialog-foot"><button class="btn" onclick="closeModal('reasonModal')">Cancelar</button><button class="btn btn-primary" id="reasonConfirm">Confirmar</button></div></div></div>
+
 <script>
-const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); const arr=v=>Array.isArray(v)?v:[]; const REGISTRY_KEY='ambiental_atendimentos_v1'; let tab='all',serverItems=[],localItems=[];
+let accessToken = null;
+const authReady = AmbientalAuth.requireAuth({area:'gestao'}).then(async profile=>{
+    accessToken = await AmbientalAuth.getAccessToken();
+    const name = document.getElementById('userName');
+    const role = document.getElementById('userRole');
+    if(name) name.textContent = profile?.nome || profile?.email || 'Usuário';
+    if(role) role.textContent = profile?.perfil || 'Sessão segura';
+    document.getElementById('authLoading')?.remove();
+    return profile;
+}).catch(error=>{
+    document.getElementById('authLoading')?.remove();
+    throw error;
+});
+
+const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); 
+const arr=v=>Array.isArray(v)?v:[]; 
+const REGISTRY_KEY='ambiental_atendimentos_v1'; 
+let tab='all',serverItems=[],localItems=[];
 const stateLabel={RASCUNHO:'RASCUNHO',EM_REVISÃO:'EM REVISÃO',REABERTO:'REABERTO',FINALIZADO:'FINALIZADO',ARQUIVADO:'ARQUIVADO'};
-function date(v){if(!v)return'—';const p=String(v).slice(0,10).split('-');return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:'—'}function dt(v){try{return new Date(v).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}catch{return'—'}}
-function values(r){const a=r.aux||{};return{atd:r.atendimento||'—',date:a.dataAtd||'',doctor:r.medico||'—',crm:a.crmResponsavel||'',cargo:a.cargo||'—',idade:a.idade||'',cid:a.cid||'',unidade:a.unidade||'',dias:a.diasSolicitados||'',q:r.queixaDuracao||a.queixaDuracao||'',doenca:a.doencaMotivo||'',hist:a.historicoPregresso||'',sint:a.sintomasLimitacao||'',examType:r.exameFisicoTipo||'',exam:r.alteracoesClinicasExames||'',lim:r.descLimitacao||a.descLimitacao||'',ativ:r.atividadesComprometidas||'',cap:r.capacidade||'—',parecer:r.parecer||'—',just:a.justificativa||'',docs:arr(r.documentosComplementares),meds:arr(r.medications),conds:arr(r.conditions),ques:arr(r.quesitos),updated:r.__registryAt||r.atualizado_em||''}}
+function date(v){if(!v)return'—';const p=String(v).slice(0,10).split('-');return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:'—'}
+function dt(v){try{return new Date(v).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}catch{return'—'}}
+function values(r){const a=r.aux||{};return{atd:r.atendimento||'—',date:a.dataAtd||'',time:a.horaAtd||'',doctor:r.medico||'—',crm:a.crmResponsavel||'',patient:a.nomePaciente||r.nomePaciente||r.paciente_nome||'',cpf:a.cpfPaciente||r.cpfPaciente||r.paciente_cpf||'',cargo:a.cargo||'—',idade:a.idade||'',cid:a.cid||'',unidade:a.unidade||'',dias:a.diasSolicitados||'',q:r.queixaDuracao||a.queixaDuracao||'',doenca:a.doencaMotivo||'',hist:a.historicoPregresso||'',sint:a.sintomasLimitacao||'',examType:r.exameFisicoTipo||'',exam:r.alteracoesClinicasExames||'',lim:r.descLimitacao||a.descLimitacao||'',ativ:r.atividadesComprometidas||'',cap:r.capacidade||'—',parecer:r.parecer||'—',just:a.justificativa||'',docs:arr(r.documentosComplementares),meds:arr(r.medications),conds:arr(r.conditions),ques:arr(r.quesitos),updated:r.__registryAt||r.atualizado_em||''}}
 function statusOf(r){return String(r?.status||r?.workflowStatus||'RASCUNHO').toUpperCase().replace('REVISÃO','EM_REVISÃO').replace('EM_PREENCHIMENTO','RASCUNHO')}
-function hay(r,q){if(!q)return true;return JSON.stringify(values(r)).toLowerCase().includes(q.toLowerCase())}
+function hay(r,q){if(!q)return true;const v=values(r);const blob=JSON.stringify(v).toLowerCase();const qn=q.toLowerCase();const qcpf=qn.replace(/\D/g,'');return blob.includes(qn)|| (qcpf.length>=3 && String(v.cpf||'').replace(/\D/g,'').includes(qcpf))}
 function lerLocalStorage(){try{const raw=localStorage.getItem(REGISTRY_KEY);const reg=raw?JSON.parse(raw):{};if(!reg||typeof reg!=="object")return [];return Object.values(reg).filter(r=>r&&typeof r==="object"&&r.atendimento).map(r=>({...r,__source:"local"}));}catch(e){console.warn("Falha ao ler LocalStorage",e);return [];}}
-function mergeAtendimentos(server,local){const map=new Map();server.forEach(r=>map.set(String(r.atendimento),r));local.forEach(r=>map.set(String(r.atendimento),{...map.get(String(r.atendimento)),...r,__source:"local"}));return [...map.values()];}
+function mergeAtendimentos(server,local){
+    const map=new Map();
+    server.forEach(r=>map.set(String(r.atendimento),{...r,__source:"server"}));
+    local.forEach(r=>{
+        const key=String(r.atendimento);
+        if(!map.has(key)) map.set(key,{...r,__source:"local"});
+    });
+    return [...map.values()];
+}
 function localStats(items){const count=s=>items.filter(r=>statusOf(r)===s).length;return {total:items.length,rascunhos:count('RASCUNHO'),revisao:count('EM_REVISÃO'),finalizados:count('FINALIZADO'),arquivados:count('ARQUIVADO'),pendentes:items.filter(r=>['RASCUNHO','EM_REVISÃO','REABERTO'].includes(statusOf(r))).length,atualizados_recentes:items.filter(r=>{const t=Date.parse(r.__registryAt||r.atualizado_em||'');return t&&!Number.isNaN(t)&&(Date.now()-t)<=7*864e5;}).length};}
 function carregarLocalStorage(){localItems=lerLocalStorage();serverItems=mergeAtendimentos(serverItems.filter(r=>r.__source!=="local"),localItems);renderStats(localStats(serverItems));refresh();document.getElementById('empty').textContent=serverItems.length?'':'Nenhum atendimento salvo neste navegador.';toastLocalStorage();}
 function toastLocalStorage(){const el=document.getElementById('localCount');if(el)el.textContent=`${localItems.length} atendimento(s) local(is)`;}
-async function fetchServer(){localItems=lerLocalStorage();let remote=[];try{const params=new URLSearchParams();const status=document.getElementById('filter').value;if(status!=='all')params.set('status',status);const medico=document.getElementById('medico').value.trim();const cid=document.getElementById('cid').value.trim();const unidade=document.getElementById('unidade').value.trim();const ini=document.getElementById('periodoInicio').value;const fim=document.getElementById('periodoFim').value;if(medico)params.set('medico',medico);if(cid)params.set('cid',cid);if(unidade)params.set('unidade',unidade);if(ini)params.set('data_inicio',ini);if(fim)params.set('data_fim',fim);const q=document.getElementById('search').value.trim();if(q)params.set('q',q);const r=await fetch('/api/atendimentos?'+params.toString(),{cache:'no-store'});const d=await r.json();if(r.ok&&d.success)remote=d.data.items||[];}catch(e){console.warn('Gestão: backend indisponível, usando LocalStorage.',e);}
-serverItems=mergeAtendimentos(remote,localItems);renderStats(localStats(serverItems));const empty=document.getElementById('empty');if(!serverItems.length)empty.textContent='Nenhum atendimento encontrado no LocalStorage ou no backend.';else empty.textContent='';return remote.length>0||localItems.length>0;}
+function setDataLoading(stage,title,text,progress){const overlay=document.getElementById('dataLoading');if(!overlay)return;const t=document.getElementById('dataLoadingTitle');const tx=document.getElementById('dataLoadingText');const bar=document.getElementById('loadingProgressBar');if(t)t.textContent=title;if(tx)tx.textContent=text;if(bar)bar.style.width=(progress||15)+'%';const map={session:'loadStep1',data:'loadStep2',stats:'loadStep3',ready:'loadStep4'};Object.entries(map).forEach(([k,id])=>{const el=document.getElementById(id);if(!el)return;el.classList.toggle('active',k===stage);el.classList.toggle('done',['session','data','stats','ready'].indexOf(k)<=['session','data','stats','ready'].indexOf(stage));});}
+function finishDataLoading(){setDataLoading('ready','Sala pronta','Dados carregados. A gestão está pronta para uso.',100);document.getElementById('dataLoading')?.classList.add('hide');document.documentElement.classList.remove('app-loading');document.body.classList.remove('app-loading');setTimeout(()=>document.getElementById('dataLoading')?.remove(),450);}
+
+async function fetchServer(){
+    localItems=lerLocalStorage();let remote=[];
+    try{
+        const params=new URLSearchParams();
+        const status=document.getElementById('filter').value;if(status!=='all')params.set('status',status);
+        const medico=document.getElementById('medico').value.trim();
+        const cid=document.getElementById('cid').value.trim();
+        const unidade=document.getElementById('unidade').value.trim();
+        const ini=document.getElementById('periodoInicio').value;
+        const fim=document.getElementById('periodoFim').value;
+        if(medico)params.set('medico',medico);
+        if(cid)params.set('cid',cid);
+        if(unidade)params.set('unidade',unidade);
+        if(ini)params.set('data_inicio',ini);
+        if(fim)params.set('data_fim',fim);
+        const q=document.getElementById('search').value.trim();if(q)params.set('q',q);
+        
+        params.set('page','1');params.set('page_size','100');
+        const r=await AmbientalAuth.authFetch('/api/atendimentos?'+params.toString(),{
+            cache:'no-store',
+            headers: {'Authorization': `Bearer ${accessToken}`}
+        });
+        const d=await r.json();
+        if(r.ok&&d.success){
+            remote=d.data.items||[];
+            if(d.data.stats)renderStats(d.data.stats);
+        }
+    }catch(e){console.warn('Gestão: backend indisponível, usando LocalStorage.');}
+    serverItems=mergeAtendimentos(remote,localItems);
+    if(!remote.length) renderStats(localStats(serverItems));
+    const empty=document.getElementById('empty');if(!serverItems.length)empty.textContent='Nenhum atendimento encontrado no LocalStorage ou no backend.';else empty.textContent='';return remote.length>0||localItems.length>0;
+}
 function setTab(v){tab=v;document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===v));const f=document.getElementById('filter');f.value=v==='all'?'all':({draft:'RASCUNHO',review:'EM_REVISÃO',done:'FINALIZADO',archived:'ARQUIVADO'}[v]||'all');fetchServer().then(refresh)}
-function refresh(){const q=document.getElementById('search').value.trim().toLowerCase();const medico=document.getElementById('medico').value.trim().toLowerCase();const cid=document.getElementById('cid').value.trim().toLowerCase();const unidade=document.getElementById('unidade').value.trim().toLowerCase();const ini=document.getElementById('periodoInicio').value;const fim=document.getElementById('periodoFim').value;const sort=document.getElementById('sort').value;let list=serverItems.filter(r=>{const v=values(r),st=statusOf(r),d=String(v.date||'');if(tab==='draft'&&st!=='RASCUNHO')return false;if(tab==='review'&&st!=='EM_REVISÃO')return false;if(tab==='done'&&st!=='FINALIZADO')return false;if(tab==='archived'&&st!=='ARQUIVADO')return false;if(document.getElementById('filter').value!=='all'&&st!==document.getElementById('filter').value)return false;if(medico&&!String(v.doctor).toLowerCase().includes(medico))return false;if(cid&&!String(v.cid).toLowerCase().includes(cid))return false;if(unidade&&!String(v.unidade).toLowerCase().includes(unidade))return false;if(ini&&d<ini)return false;if(fim&&d>fim)return false;return !q||hay(r,q)});list.sort((a,b)=>sort==='id'?String(a.atendimento).localeCompare(String(b.atendimento)):sort==='date'?String(b.aux?.dataAtd||'').localeCompare(String(a.aux?.dataAtd||'')):String(b.__registryAt||b.atualizado_em||'').localeCompare(String(a.__registryAt||a.atualizado_em||'')));document.getElementById('empty').style.display=list.length?'none':'block';document.getElementById('tbody').innerHTML=list.map(row).join('')}
-function renderStats(s){document.getElementById('statTotal').textContent=s.total??0;document.getElementById('statDraft').textContent=s.rascunhos??0;document.getElementById('statReview').textContent=s.revisao??0;document.getElementById('statDone').textContent=s.finalizados??0;document.getElementById('statArchived').textContent=s.arquivados??0;document.getElementById('statPending').textContent=s.pendentes??0;document.getElementById('statRecent').textContent=s.atualizados_recentes??0}
-function row(r){const v=values(r),st=statusOf(r),cls=st==='FINALIZADO'?'done':st==='EM_REVISÃO'?'review':st==='REABERTO'?'reopened':st==='ARQUIVADO'?'archived':'';let more='';if(st==='RASCUNHO')more+=`<button onclick="openEval('${encodeURIComponent(v.atd)}')">Continuar</button><button onclick="openReason('archive','${encodeURIComponent(v.atd)}')">Arquivar</button>`;if(st==='EM_REVISÃO'||st==='REABERTO')more+=`<button onclick="openEval('${encodeURIComponent(v.atd)}')">Continuar</button><button onclick="openReason('archive','${encodeURIComponent(v.atd)}')">Arquivar</button>`;if(st==='FINALIZADO')more+=`<button onclick="openReason('reopen','${encodeURIComponent(v.atd)}')">Reabrir</button><button onclick="openDocument('${encodeURIComponent(v.atd)}')">Visualizar documento</button><button onclick="openReason('archive','${encodeURIComponent(v.atd)}')">Arquivar</button>`;if(st==='ARQUIVADO')more+=`<button onclick="openReason('restore','${encodeURIComponent(v.atd)}')">Restaurar</button>`;return`<tr><td><span class="main-id">${esc(v.atd)}</span><span class="sub">${esc(v.doenca||'Avaliação médico-pericial')}</span></td><td>${date(v.date)}</td><td>${esc(v.doctor)}<span class="sub">${esc(v.crm)}</span></td><td><b>${esc(v.cargo)}</b><span class="sub">CID: ${esc(v.cid||'—')} · ${esc(v.idade||'—')} anos</span></td><td><span class="badge ${cls}"><span class="dot"></span>${esc(stateLabel[st]||st)}</span></td><td>${dt(v.updated)}</td><td><div class="row-actions"><button class="icon-btn primary" onclick="view('${encodeURIComponent(v.atd)}')">Visualizar</button><details class="more"><summary>⋮</summary><div class="more-menu">${more}<button onclick="openHistory('${encodeURIComponent(v.atd)}')">Histórico</button></div></details></div></td></tr>`}
+function refresh(){const q=document.getElementById('search').value.trim().toLowerCase();const medico=document.getElementById('medico').value.trim().toLowerCase();const cid=document.getElementById('cid').value.trim().toLowerCase();const unidade=document.getElementById('unidade').value.trim().toLowerCase();const ini=document.getElementById('periodoInicio').value;const fim=document.getElementById('periodoFim').value;const sort=document.getElementById('sort').value;let list=serverItems.filter(r=>{const v=values(r),st=statusOf(r),d=String(v.date||'');if(tab==='draft'&&st!=='RASCUNHO')return false;if(tab==='review'&&st!=='EM_REVISÃO')return false;if(tab==='done'&&st!=='FINALIZADO')return false;if(tab==='archived'&&st!=='ARQUIVADO')return false;if(document.getElementById('filter').value!=='all'&&st!==document.getElementById('filter').value)return false;if(medico&&!String(v.doctor).toLowerCase().includes(medico))return false;if(cid&&!String(v.cid).toLowerCase().includes(cid))return false;if(unidade&&!String(v.unidade).toLowerCase().includes(unidade))return false;if(ini&&d<ini)return false;if(fim&&d>fim)return false;return !q||hay(r,q)});list.sort((a,b)=>sort==='patient'?String(values(a).patient||'').localeCompare(String(values(b).patient||''),'pt-BR',{sensitivity:'base'}):sort==='date'?String(b.aux?.dataAtd||'').localeCompare(String(a.aux?.dataAtd||'')):String(b.__registryAt||b.atualizado_em||'').localeCompare(String(a.__registryAt||a.atualizado_em||'')));document.getElementById('empty').style.display=list.length?'none':'block';document.getElementById('tbody').innerHTML=list.map(row).join('');renderRecentHistory();const rc=document.getElementById('resultCount');if(rc)rc.textContent=`${list.length} resultado${list.length===1?'':'s'}`;const sc=document.getElementById('searchViewCount');if(sc)sc.textContent=`${list.length} resultado${list.length===1?'':'s'}`}function clearFilters(){['search','medico','cid','unidade','periodoInicio','periodoFim'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});const f=document.getElementById('filter');if(f)f.value='all';const so=document.getElementById('sort');if(so)so.value='updated';tab='all';document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab==='all'));fetchServer().then(refresh)}function focusSearch(){document.getElementById('search')?.focus()}document.addEventListener('keydown',e=>{if(e.key==='/'&&document.activeElement?.tagName!=='INPUT'&&document.activeElement?.tagName!=='TEXTAREA'){e.preventDefault();focusSearch()}if(e.key==='Escape'&&document.activeElement===document.getElementById('search'))document.getElementById('search').blur()});
+let latestStats=null;function pct(n,d){return d?Math.round((Number(n||0)/Number(d||0))*100):0}function setBar(id,value,total,valId){const width=total?Math.max(0,Math.min(100,(Number(value||0)/Number(total))*100)):0;const el=document.getElementById(id);if(el)el.style.width=width+'%';const v=document.getElementById(valId);if(v)v.textContent=Number(value||0)}function renderStats(s){latestStats=s||{};document.getElementById('statTotal').textContent=s.total??0;document.getElementById('statDraft').textContent=s.rascunhos??0;document.getElementById('statReview').textContent=s.revisao??0;document.getElementById('statDone').textContent=s.finalizados??0;document.getElementById('statArchived').textContent=s.arquivados??0;document.getElementById('statPending').textContent=s.pendentes??0;document.getElementById('statRecent').textContent=s.atualizados_recentes??0;document.getElementById('dashTotal').textContent=s.total??0;document.getElementById('dashRecent').textContent=(s.atualizados_recentes??0)+' atualizados recentemente';document.getElementById('dashDone').textContent=s.finalizados??0;document.getElementById('dashDoneRate').textContent=pct(s.finalizados,s.total)+'% do total';document.getElementById('dashFav').textContent=s.favoraveis??0;document.getElementById('dashFavRate').textContent=pct(s.favoraveis,s.total)+'% dos registros';document.getElementById('dashContra').textContent=s.contrarios??0;document.getElementById('dashContraRate').textContent=pct(s.contrarios,s.total)+'% dos registros';document.getElementById('dashPending').textContent=s.pendentes??0;document.getElementById('dashComplete').textContent=(s.completude_media??0)+'%';document.getElementById('dashAlerts').textContent=s.alertas??0;document.getElementById('dashDoctors').textContent=s.medicos_ativos_na_gestao??0;setBar('barFav',s.favoraveis,s.total,'barFavVal');setBar('barContra',s.contrarios,s.total,'barContraVal');setBar('barUndefined',s.pareceres_nao_definidos,s.total,'barUndefinedVal');setBar('barDone',s.finalizados,s.total,'barDoneVal');setBar('barReview',s.revisao,s.total,'barReviewVal');setBar('barDraft',s.rascunhos,s.total,'barDraftVal');const body=document.getElementById('doctorDashboardBody');const rows=Array.isArray(s.por_medico)?s.por_medico:[];body.innerHTML=rows.length?rows.map(d=>`<tr><td>${esc(d.medico)}<div class="doctor-rate">${pct(d.finalizados,d.total)}% finalizados</div></td><td class="doctor-num">${d.total||0}</td><td class="doctor-num">${d.finalizados||0}</td><td class="doctor-num">${d.favoraveis||0}</td><td class="doctor-num">${d.contrarios||0}</td><td class="doctor-num">${pct(d.finalizados,d.total)}%</td></tr>`).join(''):'<tr><td colspan="6" style="text-align:center;color:#8A99AC;padding:18px">Nenhum atendimento disponível no escopo atual.</td></tr>'}
+function row(r){const v=values(r),st=statusOf(r),cls=st==='FINALIZADO'?'done':st==='EM_REVISÃO'?'review':st==='REABERTO'?'reopened':st==='ARQUIVADO'?'archived':'';let more='';if(st==='RASCUNHO')more+=`<button onclick="openEval('${encodeURIComponent(v.atd)}')">Continuar</button><button onclick="openReason('archive','${encodeURIComponent(v.atd)}')">Arquivar</button>`;if(st==='EM_REVISÃO'||st==='REABERTO')more+=`<button onclick="openEval('${encodeURIComponent(v.atd)}')">Continuar</button><button onclick="openReason('archive','${encodeURIComponent(v.atd)}')">Arquivar</button>`;if(st==='FINALIZADO')more+=`<button onclick="openReason('reopen','${encodeURIComponent(v.atd)}')">Reabrir</button><button onclick="openDocument('${encodeURIComponent(v.atd)}')">Visualizar documento</button><button onclick="openReason('archive','${encodeURIComponent(v.atd)}')">Arquivar</button>`;if(st==='ARQUIVADO')more+=`<button onclick="openReason('restore','${encodeURIComponent(v.atd)}')">Restaurar</button>`;return`<tr><td><span class="main-id">${esc(v.patient||'Paciente não informado')}</span>${v.cpf?`<span class="sub">CPF: ${esc(v.cpf)}</span>`:''}<span class="sub">${esc(v.doenca||'Avaliação médico-pericial')}</span></td><td><strong>${esc(date(v.date))}</strong>${v.time?`<span class="sub">${esc(v.time)} · horário de início</span>`:'<span class="sub">Horário não informado</span>'}</td><td><span class="main-name">${esc(v.doctor||'Médico não informado')}</span>${v.crm?`<span class="sub">CRM/CRO: ${esc(v.crm)}</span>`:''}</td><td><b>${esc(v.cargo&&v.cargo!=='—'?v.cargo:'Cargo não informado')}</b><span class="sub">${v.unidade?`Unidade: ${esc(v.unidade)} · `:''}CID: ${esc(v.cid||'—')} · ${esc(v.idade||'—')} anos</span>${v.dias?`<span class="sub">Dias solicitados: ${esc(v.dias)}</span>`:''}</td><td><span class="badge ${cls}"><span class="dot"></span>${esc(stateLabel[st]||st)}</span></td><td><strong>${esc(dt(v.updated))}</strong></td><td><div class="row-actions"><button class="icon-btn primary" onclick="view('${encodeURIComponent(v.atd)}')">Abrir ficha</button><details class="more"><summary>Mais</summary><div class="more-menu">${more}<button onclick="openHistory('${encodeURIComponent(v.atd)}')">Ver histórico</button></div></details></div></td></tr>`}
 function find(id){return serverItems.find(x=>String(x.atendimento)===id)}
-function view(enc){const id=decodeURIComponent(enc),r=find(id);if(!r)return;const v=values(r);document.getElementById('detailTitle').textContent='Atendimento '+v.atd;document.getElementById('detailSub').textContent=`${stateLabel[statusOf(r)]||statusOf(r)} · atualizado em ${dt(r.atualizado_em)}`;document.getElementById('detailBody').innerHTML=detail(r);document.getElementById('openEvalBtn').onclick=()=>openEval(enc);document.getElementById('historyBtn').onclick=()=>openHistory(enc);document.getElementById('generateEsislaBtn').onclick=()=>generateEsisla(enc);document.getElementById('detailModal').classList.add('open')}
-function detail(r){const v=values(r);const docs=v.docs.filter(x=>x?.tipo||x?.data||x?.resultado).map(x=>`<div class="field full"><label>${esc(x.tipo||'Documento')} · ${date(x.data)}</label><div>${esc(x.resultado||'—')}</div></div>`).join('');const qs=(v.ques.length?v.ques:[]).slice(0,3).map((q,i)=>`<div class="qrow"><div><b>${i+1}. </b>${esc(q.pergunta||'')}</div><span class="ans ${q.resposta==='Sim'?'sim':q.resposta==='Não'?'nao':''}">${esc(q.resposta||'Não respondido')}</span></div>`).join('');return`<div class="detail-hero"><div class="chip"><b>Profissional</b><span>${esc(v.doctor)}</span></div><div class="chip"><b>Idade</b><span>${esc(v.idade||'—')}</span></div><div class="chip"><b>CID</b><span>${esc(v.cid||'—')}</span></div><div class="chip"><b>Parecer</b><span>${esc(v.parecer)}</span></div></div><section class="section"><h3>Identificação e contexto</h3><div class="grid">${field('Fonte',r.__source==='local'?'LocalStorage':'Backend')}${field('Data do atendimento',date(v.date))}${field('Cargo',v.cargo)}${field('CRM/CRO',v.crm)}${field('Dias solicitados',v.dias)}${field('Unidade',v.unidade)}${field('Doença / motivo',v.doenca)}${field('Queixa e duração',v.q,true)}${field('Antecedentes mórbidos',v.hist,true)}${field('Sintomas / limitações',v.sint,true)}</div></section><section class="section"><h3>Atestado / relatório / exames</h3><div class="grid">${docs||field('Registro','Sem documentos complementares registrados.',true)}</div></section><section class="section"><h3>Exame e limitações</h3><div class="grid">${field('Categoria',v.examType)}${field('Achados',v.exam,true)}${field('Limitação funcional',v.lim,true)}${field('Atividades comprometidas',v.ativ,true)}</div></section><section class="section"><h3>Quesitos</h3>${qs||'<div class="field">Nenhum quesito registrado.</div>'}</section><section class="section"><h3>Capacidade e parecer</h3><div class="grid">${field('Capacidade',v.cap)}${field('Parecer',v.parecer)}${field('Justificativa',v.just,true)}</div></section>`}
-function field(label,value,full=false){return`<div class="field ${full?'full':''}"><label>${esc(label)}</label><div>${esc(String(value||'—'))}</div></div>`}
-function closeModal(id){document.getElementById(id).classList.remove('open')}
+async function view(enc){
+    const id=decodeURIComponent(enc),r=find(id);
+    if(!r)return;
+    const modal=document.getElementById('detailModal');
+    const title=document.getElementById('detailTitle');
+    const sub=document.getElementById('detailSub');
+    const body=document.getElementById('detailBody');
+    if(title)title.textContent=values(r).patient||'Paciente não informado';
+    if(sub)sub.textContent='Preparando ficha…';
+    if(body)body.innerHTML=`<div class="detail-open-skeleton"><div class="detail-open-skeleton-card"><div class="detail-open-loader"></div><strong>Carregando ficha</strong><span>Consultando os dados completos deste atendimento…</span></div></div>`;
+    setModal('detailModal',true);
+    await new Promise(resolve=>setTimeout(resolve,360));
+    let full=r;
+    try{
+        if(r.__source==='server'&&!r.payload){
+            const response=await AmbientalAuth.authFetch('/api/atendimentos/'+encodeURIComponent(id),{cache:'no-store'});
+            const result=await response.json().catch(()=>null);
+            if(!response.ok||!result?.success)throw new Error(result?.error?.message||'Não foi possível carregar o atendimento.');
+            full={...r,...result.data.payload,payload:result.data.payload};
+        }
+        const v=values(full);
+        if(title)title.textContent=v.patient||'Paciente não informado';
+        if(sub)sub.textContent=`${stateLabel[statusOf(full)]||statusOf(full)} · ${v.atd||'identificação interna'} · atualizado em ${dt(full.atualizado_em||v.updated)}`;
+        if(body)body.innerHTML=detail(full);
+        document.getElementById('openEvalBtn').onclick=()=>openEval(enc);
+        document.getElementById('historyBtn').onclick=()=>openHistory(enc);
+        document.getElementById('generateEsislaBtn').onclick=()=>generateEsisla(enc);
+    }catch(e){
+        if(body)body.innerHTML=`<div class="history-empty"><strong>Não foi possível carregar a ficha.</strong><div style="margin-top:6px">${esc(e.message||'Tente novamente.')}</div></div>`;
+    }
+}
+
+function detail(r){
+    const v=values(r);
+    const docs=v.docs.filter(x=>x?.tipo||x?.data||x?.resultado).map(x=>`<div class="field full"><label>${esc(x.tipo||'Documento')} ${x.data?'· '+date(x.data):''}</label><div>${esc(x.resultado||'Registro sem descrição')}</div></div>`).join('');
+    const qs=(v.ques.length?v.ques:[]).slice(0,3).map((q,i)=>`<div class="qrow"><div><b>${i+1}. </b>${esc(q.pergunta||'Quesito não informado')}</div><span class="ans ${q.resposta==='Sim'?'sim':q.resposta==='Não'?'nao':''}">${esc(q.resposta||'Não respondido')}</span></div>`).join('');
+    const patient=v.patient||'Paciente não informado';
+    return `<div class="detail-context">
+      <div class="context-card"><span class="label">Paciente</span><span class="value">${esc(patient)}</span><span class="muted">CPF: ${esc(v.cpf||'Não informado')}</span></div>
+      <div class="context-card"><span class="label">Data do atendimento</span><span class="value">${esc(date(v.date))}</span><span class="muted">Identificação interna preservada pelo sistema</span></div>
+      <div class="context-card"><span class="label">Situação</span><span class="value">${esc(stateLabel[statusOf(r)]||statusOf(r))}</span><span class="muted">Atualizado ${esc(dt(r.atualizado_em||v.updated))}</span></div>
+    </div>
+    <section class="section"><h3>Identificação profissional</h3><span class="section-sub">Dados de quem realizou o atendimento e contexto ocupacional</span><div class="grid">${field('Médico responsável',v.doctor)}${field('CRM/CRO',v.crm)}${field('Cargo',v.cargo)}${field('Idade',v.idade?String(v.idade)+' anos':'Não informado')}${field('Unidade',v.unidade)}${field('Dias solicitados',v.dias)}</div></section>
+    <section class="section"><h3>Queixa e contexto clínico</h3><span class="section-sub">Informações registradas durante a avaliação</span><div class="grid">${field('Doença / motivo',v.doenca)}${field('Queixa e duração',v.q,true)}${field('Antecedentes mórbidos',v.hist,true)}${field('Sintomas / limitações',v.sint,true)}</div></section>
+    <section class="section"><h3>Documentos, atestados e exames</h3><span class="section-sub">Registros complementares vinculados ao atendimento</span><div class="grid">${docs||field('Registro','Nenhum documento complementar registrado.',true)}</div></section>
+    <section class="section"><h3>Exame e capacidade funcional</h3><span class="section-sub">Achados objetivos e impacto funcional informado</span><div class="grid">${field('Tipo de exame',v.examType)}${field('Achados clínicos / exames',v.exam,true)}${field('Limitação funcional',v.lim,true)}${field('Atividades comprometidas',v.ativ,true)}${field('Capacidade',v.cap)}</div></section>
+    <section class="section"><h3>Quesitos da avaliação</h3><span class="section-sub">Respostas registradas pelo profissional</span>${qs||'<div class="history-empty">Nenhum quesito registrado neste atendimento.</div>'}</section>
+    <section class="section"><h3>Parecer e fundamentação</h3><span class="section-sub">Conclusão registrada no atendimento</span><div class="grid">${field('Parecer',v.parecer,true)}${field('Justificativa',v.just,true)}</div></section>`;
+}
+function field(label,value,full=false){
+    const empty=value===undefined||value===null||String(value).trim()==='';
+    return `<div class="field ${full?'full':''}"><label>${esc(label)}</label><div class="${empty?'field-value-empty':''}">${empty?'Não informado':esc(String(value))}</div></div>`;
+}
+function setModal(id,open=true){const el=document.getElementById(id);if(!el)return;el.classList.toggle('open',open);const anyOpen=[...document.querySelectorAll('.modal.open')].length>0;document.documentElement.classList.toggle('modal-lock',anyOpen);document.body.classList.toggle('modal-lock',anyOpen);if(open){requestAnimationFrame(()=>el.querySelector('button,textarea,[tabindex]:not([tabindex="-1"])')?.focus?.());}}
+function closeModal(id){setModal(id,false)}
 function openEval(enc){location.href='/?atendimento='+enc}
 function openDocument(enc){location.href='/?atendimento='+enc+'&documento=1'}
 function normalizeRecordPayload(r){return r?.payload&&typeof r.payload==='object'?{...r.payload,atendimento:r.atendimento||r.payload.atendimento}:({...r,atendimento:r?.atendimento||r?.payload?.atendimento});}
 function currentRecord(enc){return find(decodeURIComponent(enc));}
-async function carregarAtendimentosDoBanco() {
-    try {
-        const res = await fetch('/api/atendimentos');
-        if (res.ok) {
-            const data = await res.json();
-            // Preenche o painel com os dados vindos do Supabase
-            atualizarTabelaGestao(data.data || data);
-        }
-    } catch (err) {
-        console.error("Erro ao carregar do banco:", err);
-    }
-}
-// Adicione o parâmetro forceRefresh
+
 async function generateEsisla(enc, forceRefresh = false){
-    window.currentEsislaEnc = enc; // Salva o ID globalmente para o botão "Refazer" poder usar
+    window.currentEsislaEnc = enc;
     const id = decodeURIComponent(enc);
     const r = currentRecord(enc);
     if(!r){alert('Atendimento não encontrado.');return;}
-    
-    const btn = document.getElementById('generateEsislaBtn');
-    const regen = document.getElementById('regenerateEsislaBtn');
-    const target = document.getElementById('esislaText');
-    const sub = document.getElementById('esislaSub');
+    const btn = document.getElementById('generateEsislaBtn'), regen = document.getElementById('regenerateEsislaBtn'), target = document.getElementById('esislaText'), sub = document.getElementById('esislaSub');
+    const overlay=document.getElementById('esislaGenerating'), gTitle=document.getElementById('esislaGeneratingTitle'), gText=document.getElementById('esislaGeneratingText'), bar=document.getElementById('esislaProgressBar');
+    const stages=[1,2,3,4].map(i=>document.getElementById('esislaStage'+i)); const setStage=(n,title,text,p)=>{stages.forEach((el,i)=>{if(el){el.classList.toggle('active',i===n-1);el.classList.toggle('done',i<n-1)}});if(gTitle)gTitle.textContent=title;if(gText)gText.textContent=text;if(bar)bar.style.width=(p||10)+'%';};
     const old = btn?.textContent;
-    
     try {
-        if(btn){btn.disabled=true;btn.textContent='Gerando ficha...';}
-        if(regen)regen.disabled=true;
-        if(sub)sub.textContent='A IA está estruturando a ficha com base exclusivamente nos dados registrados.';
-        
-        const payload = normalizeRecordPayload(r);
-        payload.data_hora_atual = new Date().toISOString();
-        
-        // Se o botão forçado foi clicado, envia a flag de limpar cache
-        if (forceRefresh) {
-            payload.force_refresh = true;
-            // AQUI ESTÁ A CORREÇÃO: trocamos toast por alert
-            alert("Limpando cache do servidor e processando...");
+        if(btn){btn.disabled=true;btn.textContent='Gerando ficha...';} if(regen)regen.disabled=true;
+        // Abre a ficha imediatamente para que o usuário veja o progresso da geração.
+        setModal('esislaModal',true);
+        if(overlay){overlay.classList.add('show');overlay.setAttribute('aria-busy','true');}
+        setStage(1,'Gerando ficha eSisla','Lendo os dados completos do atendimento...',18);
+        let full = r;
+        if(r.__source === 'server' && !r.payload){
+            const detailResponse = await AmbientalAuth.authFetch('/api/atendimentos/' + encodeURIComponent(id), {cache:'no-store'});
+            const detailBody = await detailResponse.json().catch(()=>null);
+            if(!detailResponse.ok || !detailBody?.success || !detailBody?.data?.payload) throw new Error(detailBody?.error?.message || 'Não foi possível carregar os dados completos do atendimento.');
+            full = {...r, ...detailBody.data.payload, payload: detailBody.data.payload};
         }
-        
-        const response = await fetch('/api/ai/esisla', {
-            method: 'POST',
-            headers: {'Content-Type':'application/json','Accept':'application/json'},
-            body: JSON.stringify(payload),
-            cache: 'no-store'
-        });
-        
-        let data = {};
-        try { data = await response.json() } catch {}
-        
-        if(!response.ok || !data?.ficha_esisla) {
-            throw new Error(data?.detail || data?.error?.detail || data?.error?.message || 'Não foi possível gerar a ficha eSisla.');
-        }
-        
-        target.value = data.ficha_esisla;
-        sub.textContent = 'Atendimento ' + id + ' · ' + (data?.meta?.cached ? 'resultado em cache' : 'gerado agora');
-        
-        document.getElementById('esislaModal').classList.add('open');
-        
-    } catch(e) {
-        alert(e.message || 'Falha ao gerar a ficha eSisla.');
-    } finally {
-        if(btn){btn.disabled=false;btn.textContent=old||'Gerar ficha eSisla';}
-        if(regen)regen.disabled=false;
+        setStage(2,'Estruturando ficha','Organizando os campos no formato oficial...',48);
+        const payload = normalizeRecordPayload(full); payload.data_hora_atual = new Date().toISOString();
+        if(forceRefresh){payload.force_refresh=true; if(sub)sub.textContent='Atualizando a ficha com os dados mais recentes do servidor...';}
+        await new Promise(requestAnimationFrame);
+        const response = await AmbientalAuth.authFetch('/api/ai/esisla',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify(payload),cache:'no-store'});
+        setStage(3,'Revisando resultado','Conferindo a resposta antes de exibir...',82);
+        let data={}; try{data=await response.json()}catch{}
+        if(!response.ok||!data?.ficha_esisla) throw new Error(data?.detail||data?.error?.detail||data?.error?.message||'Não foi possível gerar a ficha eSisla.');
+        target.value=data.ficha_esisla;
+        sub.textContent='Atendimento '+id+' · '+(data?.meta?.cached?'resultado em cache':'gerado agora');
+        setStage(4,'Ficha pronta','Resultado carregado. Revise antes de transferir para o e-Sisla.',100);
+        await new Promise(r=>setTimeout(r,220));
+        if(overlay){overlay.classList.remove('show');overlay.setAttribute('aria-busy','false');}
+        setModal('esislaModal',true);
+    }catch(e){if(overlay){overlay.classList.remove('show');overlay.setAttribute('aria-busy','false');}alert(e.message||'Falha ao gerar a ficha eSisla.');}
+    finally{if(btn){btn.disabled=false;btn.textContent=old||'Gerar ficha eSisla';}if(regen)regen.disabled=false;}
+}
+async function copyEsisla(){const el=document.getElementById('esislaText');if(!el?.value)return;try{await navigator.clipboard.writeText(el.value);alert('Ficha eSisla copiada para a área de transferência.');}catch{el.select();document.execCommand('copy');alert('Ficha eSisla copiada para a área de transferência.');}}
+function downloadEsisla(){const text=document.getElementById('esislaText')?.value||'';if(!text)return;const sub=document.getElementById('esislaSub')?.textContent||'';const id=(sub.match(/Atendimento\s+([^·]+)/i)||[])[1]?.trim()||'atendimento';const blob=new Blob([text],{type:'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`Ficha-eSisla-${id}.txt`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);}
+
+const HISTORY_LABELS={
+  '__ATENDIMENTO__':'Atendimento criado',
+  'workflowStatus':'Status do atendimento',
+  'motivo_transicao':'Motivo da alteração de status',
+  'validation':'Validação do atendimento',
+  'queixaDuracao':'Queixa e duração',
+  'nomePaciente':'Nome do paciente',
+  'cpfPaciente':'CPF do paciente',
+  'crmResponsavel':'CRM/CRO do médico',
+  'doencaMotivo':'Doença / motivo',
+  'historicoPregresso':'Antecedentes mórbidos',
+  'sintomasLimitacao':'Sintomas / limitações',
+  'alteracoesClinicasExames':'Achados clínicos / exames',
+  'descLimitacao':'Limitação funcional',
+  'atividadesComprometidas':'Atividades comprometidas',
+  'capacidade':'Capacidade funcional',
+  'parecer':'Parecer',
+  'justificativa':'Justificativa',
+  'quesitos':'Quesitos',
+  'documentosComplementares':'Documentos complementares',
+  'workflow_status':'Status do atendimento'
+};
+const HISTORY_STATUS={RASCUNHO:'Rascunho',EM_REVISÃO:'Em revisão',REABERTO:'Reaberto',FINALIZADO:'Finalizado',ARQUIVADO:'Arquivado'};
+function parseAuditValue(raw){
+  if(raw===undefined||raw===null||raw==='') return '';
+  if(typeof raw!=='string') return raw;
+  try{return JSON.parse(raw)}catch{return raw}
+}
+function prettyAuditValue(raw, field=''){
+  const v=parseAuditValue(raw);
+  if(field==='workflowStatus'||field==='workflow_status') return HISTORY_STATUS[String(v)]||String(v||'Não informado');
+  if(field==='validation'){
+    if(v&&typeof v==='object'){
+      const status=v.status||v.validation_status;
+      const parts=[];
+      if(status) parts.push(status==='CONCLUÍDA'?'Validação concluída':status);
+      if(v.quesitos?.answered!==undefined) parts.push(`${v.quesitos.answered} quesitos respondidos`);
+      if(v.score!==undefined) parts.push(`completude ${v.score}%`);
+      if(v.blocking?.length) parts.push(`${v.blocking.length} pendência(s) bloqueante(s)`);
+      return parts.join(' · ')||'Validação registrada';
+    }
+  }
+  if(Array.isArray(v)) return `${v.length} registro(s) atualizado(s)`;
+  if(v&&typeof v==='object'){
+    if(v.nome) return String(v.nome);
+    const keys=Object.keys(v);
+    if(keys.length<=4) return keys.map(k=>`${HISTORY_LABELS[k]||k}: ${prettyAuditValue(v[k],k)}`).join(' · ');
+    return 'Dados do atendimento atualizados';
+  }
+  const text=String(v);
+  return text.length>700?text.slice(0,700)+'…':text;
+}
+function auditFieldLabel(field){return HISTORY_LABELS[field]||String(field||'Registro').replace(/_/g,' ').replace(/([a-z])([A-Z])/g,'$1 $2').replace(/^./,m=>m.toUpperCase())}
+function renderAuditRows(rows, sourceLabel='Servidor'){
+  if(!rows.length) return `<div class="history-empty"><strong>Nenhuma alteração registrada.</strong><div style="margin-top:6px">Este atendimento ainda não possui eventos de auditoria disponíveis.</div></div>`;
+  const total=rows.length;
+  const people=[...new Set(rows.map(x=>x.usuario_nome||'Sistema').filter(Boolean))];
+  const last=rows[0]?.criado_em?dt(rows[0].criado_em):'—';
+  const summary=`<div class="history-summary"><div class="history-kpi"><span>Eventos</span><b>${total}</b></div><div class="history-kpi"><span>Última alteração</span><b>${esc(last)}</b></div><div class="history-kpi"><span>Usuários envolvidos</span><b>${people.length}</b></div><div class="history-kpi"><span>Origem</span><b>${esc(sourceLabel)}</b></div></div>`;
+  const events=rows.map((x,idx)=>{
+    const field=x.campo||'Registro';
+    const label=auditFieldLabel(field);
+    const old=prettyAuditValue(x.valor_anterior,field);
+    const next=prettyAuditValue(x.novo_valor,field);
+    const actor=x.usuario_nome||'Sistema';
+    let title=label, note='';
+    if(field==='__ATENDIMENTO__'){title='Atendimento criado'; note='Registro inicial do atendimento no sistema.';}
+    else if(field==='workflowStatus'||field==='workflow_status'){title='Status alterado'; note=`O atendimento passou de “${esc(old||'Não informado')}” para “${esc(next||'Não informado')}”.`;}
+    else if(field==='motivo_transicao'){title='Motivo registrado'; note=next||old;}
+    else if(field==='validation'){title='Validação realizada'; note=next||'A validação do atendimento foi registrada.';}
+    return `<article class="event"><div class="event-head"><div><div class="event-title">${esc(title)}</div><div class="event-user">${esc(actor)}</div></div><div class="event-time">${esc(dt(x.criado_em))}</div></div>${note?`<div class="event-note">${esc(note)}</div>`:''}${!['__ATENDIMENTO__','motivo_transicao','validation'].includes(field)?`<div class="event-change"><strong>Alteração:</strong> ${esc(old||'não informado')} <span style="color:#8a98a7">→</span> <strong>${esc(next||'não informado')}</strong></div>`:''}<details style="margin-top:8px"><summary class="event-toggle">Ver detalhes técnicos</summary><div class="event-change" style="margin-top:7px"><div><strong>Campo:</strong> ${esc(field)}</div><div style="margin-top:5px"><strong>Antes:</strong> ${esc(old||'—')}</div><div style="margin-top:5px"><strong>Depois:</strong> ${esc(next||'—')}</div></div></details></article>`;
+  }).join('');
+  return summary+`<div class="history"><div class="timeline">${events}</div></div>`;
+}
+async function openHistory(enc){
+    const id=decodeURIComponent(enc);
+    document.getElementById('historySub').textContent='Atendimento '+id+' · preparando histórico';
+    document.getElementById('historyBody').innerHTML=`<div class="detail-open-skeleton"><div class="detail-open-skeleton-card"><div class="detail-open-loader"></div><strong>Carregando histórico</strong><span>Consultando as alterações e eventos registrados…</span></div></div>`;
+    setModal('historyModal',true);
+    await new Promise(r=>setTimeout(r,360));
+    const localRecord=localItems.find(x=>String(x.atendimento)===id);
+    if(localRecord){
+        const rows=Array.isArray(localRecord.statusHistory)?localRecord.statusHistory.map(x=>({campo:x.campo||x.estado||'Evento',criado_em:x.criadoEm||x.criado_em,usuario_nome:x.usuario_nome||'Sistema local',valor_anterior:x.valor_anterior||'',novo_valor:x.motivo||x.novo_valor||x.estado||''})) :[];
+        document.getElementById('historySub').textContent='Atendimento '+id+' · histórico local';
+        document.getElementById('historyBody').innerHTML=renderAuditRows(rows,'Navegador');
+        return;
+    }
+    try{
+        const r=await AmbientalAuth.authFetch('/api/atendimentos/'+encodeURIComponent(id)+'/historico',{cache:'no-store',headers:{'Authorization':`Bearer ${accessToken}`}});
+        const d=await r.json();
+        if(!r.ok||!d.success)throw new Error(d?.error?.message||'Falha no histórico');
+        document.getElementById('historySub').textContent='Atendimento '+id+' · auditoria e rastreabilidade';
+        const rows=Array.isArray(d?.data)?d.data:(d?.data?.items||[]);
+        document.getElementById('historyBody').innerHTML=renderAuditRows(rows,'Servidor');
+    }catch(e){
+        document.getElementById('historyBody').innerHTML=`<div class="history-empty"><strong>Não foi possível carregar o histórico.</strong><div style="margin-top:6px">${esc(e.message||'Tente novamente.')}</div></div>`;
     }
 }
 
-async function copyEsisla(){const el=document.getElementById('esislaText');if(!el?.value)return;try{await navigator.clipboard.writeText(el.value);alert('Ficha eSisla copiada para a área de transferência.');}catch{el.select();document.execCommand('copy');alert('Ficha eSisla copiada para a área de transferência.');}}
-function downloadEsisla(){const text=document.getElementById('esislaText')?.value||'';if(!text)return;const sub=document.getElementById('esislaSub')?.textContent||'';const id=(sub.match(/Atendimento\s+([^·]+)/i)||[])[1]?.trim()||'atendimento';const blob=new Blob([text],{type:'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`Ficha-eSisla-${id}.txt`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);}
-async function openHistory(enc){const id=decodeURIComponent(enc);const localRecord=localItems.find(x=>String(x.atendimento)===id);if(localRecord){const rows=Array.isArray(localRecord.statusHistory)?localRecord.statusHistory:[];document.getElementById('historySub').textContent='Atendimento '+id+' · LocalStorage';document.getElementById('historyBody').innerHTML=rows.length?`<div class="timeline">${rows.map(x=>`<div class="event"><b>${esc(x.campo||x.estado||'Evento')}</b><span>${dt(x.criadoEm||x.criado_em)} · ${esc(x.usuario_nome||'Sistema local')}</span><p>${esc(x.motivo||x.novo_valor||'')}</p></div>`).join('')}</div>`:'<div class="empty">Sem eventos registrados no LocalStorage.</div>';document.getElementById('historyModal').classList.add('open');return;}try{const r=await fetch('/api/atendimentos/'+encodeURIComponent(id)+'/historico',{cache:'no-store'});const d=await r.json();if(!r.ok||!d.success)throw new Error(d?.error?.message||'Falha no histórico');document.getElementById('historySub').textContent='Atendimento '+id;const rows=d.data.items||[];document.getElementById('historyBody').innerHTML=rows.length?`<div class="timeline">${rows.map(x=>`<div class="event"><b>${esc(x.campo)}</b><span>${dt(x.criado_em)} · ${esc(x.usuario_nome||'Usuário')}</span><p>${esc(x.valor_anterior||'')} ${x.novo_valor?'→ '+esc(String(x.novo_valor).slice(0,280)):''}</p></div>`).join('')}</div>`:'<div class="empty">Sem eventos registrados.</div>';document.getElementById('historyModal').classList.add('open')}catch(e){alert(e.message)}}
-let pendingAction=null;function openReason(action,enc){pendingAction={action,id:decodeURIComponent(enc)};document.getElementById('reasonInput').value='';document.getElementById('reasonTitle').textContent=action==='reopen'?'Reabrir atendimento':action==='restore'?'Restaurar atendimento':'Arquivar atendimento';document.getElementById('reasonInput').placeholder=action==='archive'?'Informe o motivo do arquivamento...':'Informe o motivo da ação...';document.getElementById('reasonModal').classList.add('open')}
+let pendingAction=null;function openReason(action,enc){pendingAction={action,id:decodeURIComponent(enc)};document.getElementById('reasonInput').value='';document.getElementById('reasonTitle').textContent=action==='reopen'?'Reabrir atendimento':action==='restore'?'Restaurar atendimento':'Arquivar atendimento';document.getElementById('reasonInput').placeholder=action==='archive'?'Informe o motivo do arquivamento...':'Informe o motivo da ação...';setModal('reasonModal',true)}
 function updateLocalState(id,target,motivo){const raw=localStorage.getItem(REGISTRY_KEY);const reg=raw?JSON.parse(raw):{};const rec=reg[id];if(!rec)return false;rec.workflowStatus=target;rec.finalizado=target==='FINALIZADO';rec.__status=target;rec.__registryAt=new Date().toISOString();rec.statusHistory=Array.isArray(rec.statusHistory)?rec.statusHistory:[];rec.statusHistory.push({estado:target,motivo,criadoEm:new Date().toISOString()});reg[id]=rec;localStorage.setItem(REGISTRY_KEY,JSON.stringify(reg));return true;}
-document.getElementById('reasonConfirm').onclick=async()=>{if(!pendingAction)return;const motivo=document.getElementById('reasonInput').value.trim();if(!motivo){alert('Informe uma justificativa.');return;}const a=pendingAction;let target=a.action==='reopen'||a.action==='restore'?'REABERTO':'ARQUIVADO';const localRecord=localItems.find(x=>String(x.atendimento)===a.id);try{if(localRecord){updateLocalState(a.id,target,motivo);closeModal('reasonModal');await fetchServer();refresh();return;}const r=await fetch('/api/atendimentos/'+encodeURIComponent(a.id)+'/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({estado:target,motivo})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d?.error?.message||'A operação foi recusada pelo backend.');closeModal('reasonModal');await fetchServer();refresh();}catch(e){alert(e.message)}};
+
+document.getElementById('reasonConfirm').onclick=async()=>{ await authReady;
+    if(!pendingAction)return;
+    const motivo=document.getElementById('reasonInput').value.trim();
+    if(!motivo){alert('Informe uma justificativa.');return;}
+    const a=pendingAction;
+    let target=a.action==='reopen'||a.action==='restore'?'REABERTO':'ARQUIVADO';
+    const localRecord=localItems.find(x=>String(x.atendimento)===a.id);
+    try{
+        const remoteRecord = serverItems.find(x=>String(x.atendimento)===a.id && x.__source!=="local");
+        if(localRecord && !remoteRecord){
+            updateLocalState(a.id,target,motivo);
+            closeModal('reasonModal');
+            await fetchServer();
+            refresh();
+            return;
+        }
+        const r=await AmbientalAuth.authFetch('/api/atendimentos/'+encodeURIComponent(a.id)+'/state',{
+            method:'POST',
+            headers:{
+                'Content-Type':'application/json',
+                'Authorization': `Bearer ${accessToken}`
+            },
+            body:JSON.stringify({estado:target,motivo})
+        });
+        const d=await r.json();
+        if(!r.ok||!d.success)throw new Error(d?.error?.message||'A operação foi recusada pelo backend.');
+        closeModal('reasonModal');
+        await fetchServer();
+        refresh();
+    }catch(e){alert(e.message)}
+};
+
 document.getElementById('filter').addEventListener('change',()=>fetchServer().then(refresh));
 ['periodoInicio','periodoFim'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{if(document.getElementById('periodoInicio').value&&document.getElementById('periodoFim').value&&document.getElementById('periodoInicio').value>document.getElementById('periodoFim').value){alert('O período inicial não pode ser posterior ao período final.');return;} fetchServer().then(refresh)}));
 ['medico','cid','unidade'].forEach(id=>document.getElementById(id).addEventListener('change',()=>fetchServer().then(refresh)));
-(async()=>{await fetchServer();toastLocalStorage();refresh()})();
+function goToSection(id){const el=document.getElementById(id);if(!el)return;el.scrollIntoView({behavior:'smooth',block:'start'});document.querySelectorAll('.sidebar-link[data-target]').forEach(x=>x.classList.toggle('active',x.dataset.target===id));if(id==='atendimentos')setTimeout(focusSearch,350)}
+function renderRecentHistory(){const el=document.getElementById('recentHistoryList');if(!el)return;const items=[...serverItems].filter(r=>r&&r.atendimento).sort((a,b)=>String(b.__registryAt||b.atualizado_em||'').localeCompare(String(a.__registryAt||a.atualizado_em||''))).slice(0,8);if(!items.length){el.innerHTML='<div class="empty" style="grid-column:1/-1;padding:24px">Nenhum atendimento disponível para exibir.</div>';return;}el.innerHTML=items.map(r=>{const v=values(r), st=statusOf(r), cls=st==='FINALIZADO'?'done':st==='EM_REVISÃO'?'review':'';return `<article class="history-item"><div><strong>${esc(v.patient||'Paciente não informado')}</strong><small>${esc(v.doctor||'Médico não informado')} · ${esc(v.cid||'Sem CID')} · ${dt(v.updated)}</small></div><div class="hi-actions"><span class="hi-status ${cls}">${esc(stateLabel[st]||st)}</span><button class="hi-btn" type="button" onclick="openHistory('${encodeURIComponent(String(v.atd))}')">Histórico</button></div></article>`}).join('')}
+document.querySelectorAll('.modal').forEach(modal=>modal.addEventListener('mousedown',e=>{if(e.target===modal)closeModal(modal.id)}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){const open=[...document.querySelectorAll('.modal.open')];if(open.length)closeModal(open[open.length-1].id);}});
+document.getElementById('logoutBtn')?.addEventListener('click',()=>AmbientalAuth.logout());
+(async()=>{document.documentElement.classList.add('app-loading');document.body.classList.add('app-loading');setDataLoading('session','Validando acesso','Sessão segura confirmada. Carregando a central...',28);await authReady;setDataLoading('data','Carregando atendimentos','Buscando registros e atualizando sua visão operacional...',62);await fetchServer();setDataLoading('stats','Preparando indicadores','Calculando status, produção e indicadores...',86);toastLocalStorage();refresh();renderRecentHistory();await new Promise(r=>setTimeout(r,180));finishDataLoading()})().catch(e=>{console.error(e);const tx=document.getElementById('dataLoadingText');if(tx)tx.textContent='Não foi possível carregar os dados. Atualize a página e tente novamente.';});
 </script>
-
-<!-- Modal Customizado para Alertas e Confirmações (BLINDADO CONTRA CONFLITOS) -->
-<style>
-  #customDialogOverlay {
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(9,24,45,.45);
-    z-index: 99999;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    backdrop-filter: blur(4px);
-  }
-  #customDialogOverlay.open {
-    display: flex;
-    animation: fadeInDialog .2s ease;
-  }
-  #customDialogBox {
-    width: min(420px, 100%);
-    background: #fff;
-    border-radius: 18px;
-    box-shadow: 0 24px 80px rgba(10,25,48,.28);
-    border: 1px solid #DFE7F0;
-    overflow: hidden;
-  }
-  @keyframes fadeInDialog { 
-    from { opacity: 0; transform: translateY(10px); } 
-    to { opacity: 1; transform: translateY(0); } 
-  }
-</style>
-
-<div id="customDialogOverlay">
-  <div id="customDialogBox">
-    <div style="padding: 16px 20px; border-bottom: 1px solid #EEF2F7; background: linear-gradient(180deg,#FFFFFF,#FBFCFE);">
-      <strong id="customDialogTitle" style="font-size: 16px; color: #073F87;">Aviso</strong>
-    </div>
-    <div style="padding: 20px; font-size: 13px; color: #162033; line-height: 1.5;" id="customDialogMessage">
-      <!-- Mensagem aparecerá aqui -->
-    </div>
-    <div style="padding: 14px 20px; border-top: 1px solid #EEF2F7; display: flex; justify-content: flex-end; gap: 8px; background: #F8FAFC;">
-      <button id="customDialogCancel" class="btn btn-outline" style="border: 1px solid #C7D6E5; background: #fff; color: #29435F;" onclick="CustomDialog.cancel()">Cancelar</button>
-      <button id="customDialogConfirm" class="btn btn-primary" onclick="CustomDialog.confirmAction()">OK</button>
-    </div>
-  </div>
-</div>
 
 <script>
-// Sistema global para sobrescrever os alertas nativos do navegador
-const CustomDialog = {
-  resolve: null,
-  open(title, message, isConfirm = false) {
-    document.getElementById('customDialogTitle').textContent = title;
-    document.getElementById('customDialogMessage').innerHTML = message;
-    document.getElementById('customDialogCancel').style.display = isConfirm ? 'inline-flex' : 'none';
-    document.getElementById('customDialogConfirm').textContent = isConfirm ? 'Confirmar' : 'OK';
-    document.getElementById('customDialogOverlay').classList.add('open');
-    return new Promise(res => { this.resolve = res; });
-  },
-  close() {
-    document.getElementById('customDialogOverlay').classList.remove('open');
-    if(this.resolve) this.resolve(false);
-  },
-  cancel() { this.close(); },
-  confirmAction() {
-    document.getElementById('customDialogOverlay').classList.remove('open');
-    if(this.resolve) this.resolve(true);
+(function(){
+  const sidebar=document.getElementById('adminSidebar'), overlay=document.getElementById('sidebarOverlay'), toggle=document.getElementById('sidebarToggle');
+  const links=[...document.querySelectorAll('.sidebar-link[data-target]')];
+  const route={dashboard:'view-dashboard',atendimentos:'view-busca',historico:'view-historico',medicos:'view-medicos',indicadores:'view-indicadores'};
+  const targetFromHash=()=>String(location.hash||'#dashboard').replace(/^#/,'')||'dashboard';
+  function setOpen(v){sidebar?.classList.toggle('open',v);overlay?.classList.toggle('open',v)}
+  function syncIdentity(){
+    const name=document.getElementById('userName'), role=document.getElementById('userRole'), sname=document.getElementById('sidebarName'), srole=document.getElementById('sidebarRole'), avatar=document.getElementById('sidebarAvatar');
+    if(sname)sname.textContent=name?.textContent||'Administrador';
+    if(srole)srole.textContent=role?.textContent||'Acesso administrativo';
+    if(avatar){const n=(name?.textContent||'A').trim();avatar.textContent=n.charAt(0).toUpperCase()}
   }
-};
-
-window.alert = (msg) => CustomDialog.open("Aviso do Sistema", msg, false);
-window.confirm = (msg) => CustomDialog.open("Confirmação", msg, true);
+  function syncCount(){const total=document.getElementById('statTotal'), badge=document.getElementById('sideCount');if(badge&&total)badge.textContent=total.textContent||'—'}
+  function activate(id,{updateHash=true,focus=false}={}){
+    if(!route[id])id='dashboard';
+    document.querySelectorAll('.admin-view').forEach(v=>v.classList.toggle('active',v.id===route[id]));
+    links.forEach(x=>x.classList.toggle('active',x.dataset.target===id));
+    if(updateHash && location.hash!==('#'+id)) history.replaceState(null,'','#'+id);
+    setOpen(false);
+    if(id==='atendimentos'&&focus){setTimeout(()=>document.getElementById('search')?.focus(),220)}
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  window.goToSection=function(id){activate(id,{focus:id==='atendimentos'})};
+  toggle?.addEventListener('click',()=>setOpen(true));
+  overlay?.addEventListener('click',()=>setOpen(false));
+  links.forEach(link=>link.addEventListener('click',e=>{const id=link.dataset.target;if(route[id]){e.preventDefault();activate(id,{updateHash:true,focus:id==='atendimentos'})}}));
+  window.addEventListener('hashchange',()=>activate(targetFromHash(),{updateHash:false,focus:targetFromHash()==='atendimentos'}));
+  const name=document.getElementById('userName');
+  if(name){new MutationObserver(syncIdentity).observe(name,{childList:true,subtree:true,characterData:true})}
+  syncIdentity();syncCount();
+  const total=document.getElementById('statTotal');
+  if(total)new MutationObserver(syncCount).observe(total,{childList:true,characterData:true,subtree:true});
+  document.getElementById('sidebarLogout')?.addEventListener('click',()=>document.getElementById('logoutBtn')?.click());
+  activate(targetFromHash(),{updateHash:false});
+})();
 </script>
+</div>
 </body>
 </html>

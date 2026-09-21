@@ -3,30 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/global.css">
+<script src="/utils.js"></script>
 <meta name="theme-color" content="#073F87">
 <title>Ambiental — Avaliação Médica Pericial LTS</title>
 <!-- v15: validação determinística dos quesitos baseada diretamente nos radio buttons + sincronização de estado -->
 <style>
-:root{
-  --blue:#073F87;
-  --blue-2:#0A4F9D;
-  --blue-3:#EAF2FB;
-  --green:#00C95A;
-  --green-2:#00A94F;
-  --green-soft:#E9FAF1;
-  --text:#172033;
-  --muted:#64748B;
-  --line:#D9E2EC;
-  --bg:#F5F8FC;
-  --card:#FFFFFF;
-  --danger:#C62828;
-  --danger-bg:#FFF1F1;
-  --warning:#9A6700;
-  --warning-bg:#FFF8E6;
-  --shadow:0 12px 35px rgba(17, 40, 73,.08);
-  --radius:16px;
-  --radius-sm:11px;
-}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{
@@ -378,27 +360,6 @@ a{color:inherit}
 /* =========================================================
    AMBIENTAL VISUAL OVERHAUL — V2
    ========================================================= */
-:root{
-  --blue:#073F87;
-  --blue-2:#0B58A8;
-  --blue-deep:#052F68;
-  --blue-3:#EEF5FC;
-  --green:#00C95A;
-  --green-2:#00AE50;
-  --green-soft:#ECFBF2;
-  --mint:#F4FFFA;
-  --text:#162033;
-  --muted:#64748B;
-  --muted-2:#8A99AC;
-  --line:#DFE7F0;
-  --line-2:#ECF1F6;
-  --bg:#F2F6FA;
-  --card:#FFFFFF;
-  --shadow:0 16px 45px rgba(19,44,78,.075);
-  --shadow-soft:0 8px 26px rgba(19,44,78,.055);
-  --radius:18px;
-  --radius-sm:12px;
-}
 body{
   background:
     radial-gradient(circle at 8% 0%, rgba(7,63,135,.055), transparent 28%),
@@ -824,9 +785,50 @@ body::before{
 .final-review-toolbar .review-help{font-size:11px;color:#607086;margin-right:auto}
 .sticky-review{position:sticky;top:86px;z-index:5}
 @media(max-width:900px){.sticky-review{position:static}.final-review-toolbar .review-help{width:100%;order:2}}
+.header-user{display:flex;align-items:center;gap:8px;background:#F8FAFC;border:1px solid #DDE6EF;border-radius:11px;padding:6px 8px}.header-user>span:nth-child(2){display:flex;flex-direction:column;line-height:1.1}.header-user b{font-size:10px;color:#29435F;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.header-user small{font-size:8px;color:#718096;margin-top:2px}.header-session-dot{width:7px;height:7px;background:#00AE50;border-radius:50%;box-shadow:0 0 0 3px rgba(0,174,80,.09)}.header-user button{border:1px solid #E7CECE;background:#fff;color:#A13A3A;border-radius:8px;padding:6px 8px;font-size:9px;font-weight:800;cursor:pointer}
+/* ===== FINALIZAÇÃO PREMIUM ===== */
+.finalize-progress-overlay{
+  position:fixed;inset:0;z-index:3000;display:none;align-items:center;justify-content:center;
+  padding:24px;background:rgba(7,25,48,.68);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
+}
+.finalize-progress-overlay.open{display:flex;animation:fpFadeIn .22s ease-out}
+.finalize-progress-card{
+  width:min(470px,100%);padding:34px 34px 30px;border-radius:28px;background:rgba(255,255,255,.97);
+  border:1px solid rgba(255,255,255,.75);box-shadow:0 28px 90px rgba(0,0,0,.28);
+  text-align:center;position:relative;overflow:hidden;
+}
+.finalize-progress-card::before{
+  content:"";position:absolute;inset:0 auto auto 0;width:100%;height:4px;
+  background:linear-gradient(90deg,#0A4A8A,#1E88E5,#18A558,#0A4A8A);background-size:240% 100%;
+  animation:fpBar 2.2s linear infinite;
+}
+.finalize-brand{width:72px;height:72px;margin:0 auto 18px;border-radius:22px;background:#F4F9FE;
+  display:grid;place-items:center;position:relative;box-shadow:inset 0 0 0 1px #DCEAF6}
+.finalize-brand::before,.finalize-brand::after{content:"";position:absolute;inset:-8px;border-radius:28px;border:1px solid rgba(10,74,138,.16);animation:fpPulse 2s ease-out infinite}
+.finalize-brand::after{inset:-16px;animation-delay:.55s;opacity:.65}
+.finalize-brand img{width:44px;height:44px;object-fit:contain;position:relative;z-index:1}
+.finalize-progress-title{margin:0;color:#103A62;font-size:20px;font-weight:900;letter-spacing:-.02em}
+.finalize-progress-subtitle{margin:8px 0 0;color:#65778A;font-size:12px;line-height:1.55}
+.finalize-progress-track{height:8px;margin:24px 0 14px;background:#E8EEF4;border-radius:999px;overflow:hidden}
+.finalize-progress-bar{height:100%;width:18%;border-radius:999px;background:linear-gradient(90deg,#0A4A8A,#1E88E5,#18A558);background-size:180% 100%;animation:fpLoading 2.4s ease-in-out infinite}
+.finalize-progress-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.finalize-progress-step{padding:8px 6px;border-radius:10px;background:#F7F9FB;color:#8A98A8;font-size:10px;font-weight:800;transition:.2s}
+.finalize-progress-step.active{color:#0A4A8A;background:#EDF5FC;box-shadow:inset 0 0 0 1px #D7E7F5}
+.finalize-progress-step.done{color:#176B3B;background:#EEF9F2;box-shadow:inset 0 0 0 1px #CBEAD5}
+.finalize-check{display:none;width:64px;height:64px;margin:0 auto 18px;border-radius:50%;place-items:center;background:#EAF8EF;color:#177A42;font-size:30px;font-weight:900;box-shadow:inset 0 0 0 1px #C9EBD5}
+.finalize-progress-overlay.success .finalize-brand{display:none}.finalize-progress-overlay.success .finalize-check{display:grid}
+.finalize-progress-overlay.success .finalize-progress-bar{width:100%;animation:none}
+.finalize-progress-overlay.success .finalize-progress-step{color:#176B3B;background:#EEF9F2;box-shadow:inset 0 0 0 1px #CBEAD5}
+.finalize-success-note{display:none;margin-top:14px;color:#176B3B;font-size:11px;font-weight:800}
+.finalize-progress-overlay.success .finalize-success-note{display:block}
+@keyframes fpFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fpPulse{0%{transform:scale(.85);opacity:.75}100%{transform:scale(1.22);opacity:0}}
+@keyframes fpLoading{0%{width:16%;transform:translateX(-8%)}50%{width:68%;transform:translateX(42%)}100%{width:26%;transform:translateX(295%)}}
+@keyframes fpBar{0%{background-position:0 0}100%{background-position:240% 0}}
+@media(max-width:520px){.finalize-progress-card{padding:28px 20px 24px;border-radius:22px}.finalize-progress-title{font-size:18px}.finalize-progress-steps{grid-template-columns:1fr;gap:6px}.finalize-progress-step{padding:7px}}
 </style></style></style>
-</head>
-<body>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/auth.js"></script><script src="/api.js"></script></head>
+<body><div id="authLoading" style="position:fixed;inset:0;background:#F2F6FA;z-index:999999;display:grid;place-items:center;font-family:Inter,system-ui,sans-serif;color:#073F87"><div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #DDE6EF;border-radius:14px;padding:13px 16px;box-shadow:0 12px 35px rgba(10,30,55,.1);font-size:12px;font-weight:800"><img src="/logo.png" alt="" style="width:28px;height:28px;object-fit:contain"><span>Verificando sessão...</span></div></div>
 <div class="app">
 <header class="header">
   <div class="header-inner">
@@ -846,7 +848,7 @@ body::before{
       <!-- NOVO BOTÃO AQUI -->
       <button class="btn btn-danger optional" onclick="deleteAtendimento()">Excluir</button>
       
-      <button class="btn btn-outline optional" onclick="saveNow()">Salvar</button>
+      <button class="btn btn-outline optional" onclick="saveNow()">Salvar rascunho</button>
       <button class="btn btn-green" onclick="finalizeFromHeader()">Finalizar</button>
     </div>
   </div>
@@ -885,7 +887,7 @@ body::before{
       <div class="section-body">
         <div class="notice">Os campos abaixo identificam o atendimento e não substituem as informações médicas do modelo original.</div>
         <div class="form-grid">
-          <div class="field col-4"><label>Número do atendimento</label><input class="input" id="atd" readonly></div>
+          <div class="field col-4"><label>Identificação interna</label><div class="input" id="atdDisplay" style="display:flex;align-items:center;color:#5B6B7F;background:#F7F9FC">Será gerada ao salvar</div><input type="hidden" id="atd"></div>
           <div class="field col-4"><label>Data do atendimento</label><input class="input" type="date" id="dataAtd"></div>
           <div class="field col-4"><label>Hora de início</label><input class="input" type="time" id="horaAtd"></div>
           <div class="field col-6"><label>Nome do médico responsável</label><input class="input" id="medico" placeholder="Nome completo"></div>
@@ -900,6 +902,8 @@ body::before{
       <div class="section-head"><h2>02 — Queixa e duração</h2><p>Registro das informações apresentadas no atendimento.</p></div>
       <div class="section-body">
         <div class="form-grid">
+          <div class="field col-8"><label>Nome completo do paciente</label><input class="input" id="nomePaciente" autocomplete="name" placeholder="Digite o nome completo"></div>
+          <div class="field col-4"><label>CPF do paciente</label><input class="input" id="cpfPaciente" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="000.000.000-00"></div>
           <div class="field col-6"><label class="required">Cargo</label><input class="input" id="cargo"></div>
           <div class="field col-3"><label class="required">Tempo no cargo</label><input class="input" type="number" min="0" step="0.1" id="tempoCargo"></div>
           <div class="field col-3"><label>Unidade</label><select class="select" id="tempoUnidade"><option value="">Selecione</option><option>Anos</option><option>Meses</option><option>Dias</option></select></div>
@@ -1037,7 +1041,7 @@ body::before{
 
     <!-- 5 -->
     <section class="section" id="section-5">
-      <div class="section-head"><h2>05 — Exame físico geral / mental</h2><p>Selecione apenas um tipo de exame e registre, de forma objetiva, as alterações encontradas e os exames complementares relatados.</p></div>
+      <div class="section-head"><h2>05 — Exame físico geral / mental</h2><p>Registre apenas o que foi observado no exame e o que consta nos documentos apresentados. A IA organizará esses dados no formato eSisla sem acrescentar informações.</p></div>
       <div class="section-body">
         <div class="single-exam">
           <div class="single-exam-card">
@@ -1060,7 +1064,14 @@ body::before{
                 <option>Outros</option>
               </select>
             </div>
-            <div class="field"><label>Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares</label><textarea class="textarea" id="alteracoesClinicasExames" placeholder="Registre somente achados observados e resultados efetivamente apresentados."></textarea></div>
+            <div class="form-grid" style="margin-top:12px">
+              <div class="field col-4"><label>Pressão sistólica (mmHg)</label><input class="input" type="number" min="0" id="pressaoSistolica" placeholder="Somente se aferida"></div>
+              <div class="field col-4"><label>Pressão diastólica (mmHg)</label><input class="input" type="number" min="0" id="pressaoDiastolica" placeholder="Somente se aferida"></div>
+              <div class="field col-4"><label>Pulso (bpm)</label><input class="input" type="number" min="0" id="pulso" placeholder="Somente se aferido"></div>
+            </div>
+            <div class="field"><label>(*)Exame Físico Geral — achados observados</label><textarea class="textarea" id="exameFisicoDescricao" placeholder="Ex.: achados efetivamente observados no exame físico/mental. Registre somente o que foi constatado."></textarea>
+            <div class="help">Este campo alimenta diretamente o item “(*)Exame Físico Geral” da ficha eSisla.</div>
+            <div class="field" style="margin-top:12px"><label>Alterações clínicas / resultados de exames complementares</label><textarea class="textarea" id="alteracoesClinicasExames" placeholder="Descreva apenas alterações encontradas e resultados efetivamente apresentados."></textarea></div></div>
           </div>
         </div>
         <div class="notice" style="margin-top:12px"><strong>Critério de preenchimento:</strong> escolha uma única categoria. O campo descritivo deve conter somente fatos observados ou documentação efetivamente apresentada.</div>
@@ -1200,6 +1211,22 @@ body::before{
 
 <div class="toast" id="toast"></div>
 
+
+<div id="finalizeProgressOverlay" class="finalize-progress-overlay" aria-hidden="true" role="status" aria-live="polite">
+  <div class="finalize-progress-card">
+    <div class="finalize-brand"><img src="/logo.png" alt="Ambiental"></div>
+    <div class="finalize-check" aria-hidden="true">✓</div>
+    <h3 class="finalize-progress-title" id="finalizeProgressTitle">Finalizando atendimento</h3>
+    <p class="finalize-progress-subtitle" id="finalizeProgressSubtitle">Estamos salvando os dados e registrando a finalização com segurança.</p>
+    <div class="finalize-progress-track"><div class="finalize-progress-bar" id="finalizeProgressBar"></div></div>
+    <div class="finalize-progress-steps">
+      <div class="finalize-progress-step active" id="fpStepSave">1 · Salvando</div>
+      <div class="finalize-progress-step" id="fpStepFinalize">2 · Finalizando</div>
+      <div class="finalize-progress-step" id="fpStepDone">3 · Concluído</div>
+    </div>
+    <div class="finalize-success-note">Tudo certo. Abrindo a Gestão Médica…</div>
+  </div>
+</div>
 <div id="finalizeOverlay" class="overlay" aria-hidden="true"><div class="dialog finalize-dialog"><div class="dialog-head"><div><strong>Pronto para finalizar</strong><span>A finalização depende da confirmação do backend e será registrada no histórico.</span></div><button class="btn btn-outline" type="button" onclick="closeFinalizeDialog()">Fechar</button></div><div id="finalizeSummary" class="finalize-summary"></div><div class="dialog-actions"><button class="btn btn-outline" type="button" onclick="closeFinalizeDialog()">Cancelar</button><button class="btn btn-primary" id="confirmFinalizeBtn" type="button" onclick="confirmFinalize()">Finalizar atendimento</button></div></div></div>
 
 <div class="modal-backdrop" id="historyModal">
@@ -1233,6 +1260,38 @@ body::before{
 <div class="footer-actions" style="margin-bottom:0;padding-bottom:0"><button class="btn btn-outline" id="diagRun" onclick="runDiagnostics()">Executar diagnóstico</button><div class="actions-right"><button class="btn btn-primary" id="diagAiTest" onclick="testDiagnosticAI()">Testar geração da IA</button></div></div>
 </div></div></div>
 <script>
+let accessToken = null;
+let currentProfile = null;
+function applyProfessionalDefaults(profile){
+  if(!profile) return;
+  const medico=String(profile.nome||'').trim();
+  const crm=String(profile.crm||'').trim();
+  state.medico=medico || state.medico || '';
+  if(!state.aux || typeof state.aux!=='object') state.aux={};
+  state.aux.medicoResponsavel=medico;
+  state.aux.crmResponsavel=crm;
+  const inputMedico=$("medico");
+  if(inputMedico && medico){ inputMedico.value=medico; inputMedico.readOnly=true; inputMedico.style.backgroundColor='#F8FAFC'; }
+  const inputCrm=$("crmCro")||$("crm");
+  if(inputCrm){ inputCrm.value=crm; inputCrm.readOnly=true; inputCrm.style.backgroundColor='#F8FAFC'; }
+}
+
+const authReady = AmbientalAuth.requireAuth({area:'atendimento'}).then(async profile=>{
+  currentProfile = profile;
+  accessToken = await AmbientalAuth.getAccessToken();
+  const title = document.querySelector('.brand-title');
+  if(title) title.textContent = 'AVALIAÇÃO MÉDICA PERICIAL — LTS';
+  const hdr = document.querySelector('.header-actions');
+  if(hdr && !document.getElementById('headerUser')){
+    const el=document.createElement('div');el.id='headerUser';el.className='header-user';
+    el.innerHTML='<span class="header-session-dot"></span><span><b></b><small></small></span><button type="button">Sair</button>';
+    el.querySelector('b').textContent=profile.nome||profile.email||'Usuário';
+    el.querySelector('small').textContent=profile.perfil||'Perfil';
+    el.querySelector('button').addEventListener('click',()=>AmbientalAuth.logout());
+    hdr.prepend(el);
+  }
+  document.getElementById('authLoading')?.remove();
+}).catch(e=>{if(e?.message!=='AUTH_REQUIRED'&&e?.message!=='PERMISSION_DENIED') console.error('Falha ao validar sessão.');throw e;});
 const LOGO_DATA = "data:image/png;base64,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iElidKny0wTbBeh6NfAq3ASaclvxcFyLazuufLO0t+PRG/HghZu//uH7Lvrv3z7nrx684MLmuq/j3ruw8GhoxkNZbBecWclJLgSerD32eLhHuVxKaaVgSPBpEoNzkahIVbHbTFuLixbHIc4L7lpv519x+x/8z4v+rz8890/+6oqzLvjWXY/AKTagVWyyprZFD/AJuHY4f7eHYtbdR0gB+gIanmmHGw4coZqhgZs2jhMmwBXXbfi5X/mTU97yT37uV37vP//pub/7+x/9D7//sX/163/05nf/wi//5l/eeNsij2MlIcSgPWe0wEeemFpMhLRJr+yjpM8GIbgQapfa0TNhCIxsaaNM7sbmi5ub//LuL/ziRf/l39348T948IL/ueXyP7rvwt/86v/8lav/9PfWnXNOe92N2LDUr7fkSRCNE4lLYErkiYinqKk9rTxoXgFYglElMSIw5n1hYcyErFVMiituWf8L/+YvTnrLj/2jX/r3//VvL/iDv/rcb/3eX//av/+fr33LP//gz/7xVd9YmG8gFRi3KLs9qRIK6d381t1NPuGy5I5ikFiBx2JUKQdEbBrj3/ynT/7CL//7S6++bSGvmE8rWFq1bwprNy71lvKKc86/8oM/8S//65+ev3nC1FVcbN4iMOMx0jIjbappAIrvi39LRR1MXOyRqCO0oxDWYctH7rnkv1z6tx+/60vr9pncObv5nsHmB4abN6yebN7X7+5vuPDBa//0yk99/M5L7sV8E3jashKtRrm5Z+M7L5qXUPqkDijJRrNJf67PzW79CL/7ex9730/90rmXfmMcVy9gxYPz3tR7Y/aAje3MvK34xi0P//g//o3f+6PzqFFWhmR0t2kuLBR373tZ7d1ISIcGKcciLvTY55mnFdzzKH75X//pxz5z6T0PL418NoU5xDmT4XiEJIMUZ0Y+k6u9Fm3uLz782X/9H/5iS4OEMJokkFgdy2GI71wAV35xrqPkLupsZaTsnWZZfAHpW3j4j68762N3fOmhg/2RfdtNK8c2tEEvzIjLeD4tbWqwNN8fPTK7dPG9137kts89jPlHbAvIoQ9z8Ht8cbyQAaUvQAHATMgqc5Rww7WJl1PUphb/9Ff+y4fP/mIje43amXGeyfUK768cezVqdJyYAWc2tfWmSf2nf3P2r/7On26aMGFX41zCC8+ES3c7Iaee53FH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";
 const API_FALLBACK="http://127.0.0.1:8000";
 const STORAGE_KEY="ambiental_lts_v2";
@@ -1299,11 +1358,6 @@ function formatDate(v){
   const [y,m,d]=v.split("-");
   return `${d}/${m}/${y}`;
 }
-function toast(msg){
-  const t=$("toast"); t.textContent=msg; t.classList.add("show");
-  clearTimeout(window.__toast); window.__toast=setTimeout(()=>t.classList.remove("show"),2300);
-}
-
 $("logoHeader").src = LOGO_DATA;
 
 
@@ -1461,36 +1515,22 @@ async function deleteAtendimento() {
     clearTimeout(window.__serverSaveTimer);
     
     try {
-        // Usando a rota POST /state em vez de DELETE para evitar bloqueios HTTP
         const idToArchive = state.__serverId || state.atendimento;
-        if (idToArchive) {
-            const res = await fetch(`${getApiBase()}/api/atendimentos/${encodeURIComponent(idToArchive)}/state`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify({
-                    estado: "ARQUIVADO",
-                    motivo: "Excluído pelo usuário no painel de edição"
-                })
+        if (idToArchive && state.__serverId) {
+            const res = await AmbientalAuth.authFetch(`${getApiBase()}/api/atendimentos/${encodeURIComponent(idToArchive)}`, {
+                method: 'DELETE',
+                headers: { 'Accept': 'application/json' }
             });
-            
-            // Ignora erro 404 (caso seja um rascunho local que nunca subiu pro banco)
-            if (!res.ok && res.status !== 404) {
-                throw new Error("Não foi possível excluir no servidor.");
+            const body = await res.json().catch(()=>null);
+            if (!res.ok) {
+                throw new Error(body?.error?.message || body?.message || `Não foi possível arquivar o atendimento (${res.status}).`);
             }
         }
         
-        // Limpa o armazenamento local principal do formulário
-        localStorage.removeItem("ambiental_lts_v2");
-        localStorage.removeItem("ambiental_lts_v1"); 
-        
-        // CORREÇÃO: Em vez de só mudar o status, removemos o "fantasma" local.
-        // Assim, a Gestão será obrigada a ler a verdade direto do banco de dados!
-        let reg = {};
-        try { reg = JSON.parse(localStorage.getItem("ambiental_atendimentos_v1") || "{}"); } catch(e){}
-        if (reg[state.atendimento]) {
-            delete reg[state.atendimento]; // Remove completamente da memória do navegador
-            localStorage.setItem("ambiental_atendimentos_v1", JSON.stringify(reg));
-        }
+        // Remove backups locais do atendimento após o arquivamento no servidor.
+        await window.AmbientalUtils?.DraftStore?.remove?.(`atendimento:${state.atendimento}`);
+        window.AmbientalUtils?.legacyStorage?.remove?.("ambiental_lts_v2");
+        window.AmbientalUtils?.legacyStorage?.remove?.("ambiental_lts_v1");
         
         toast("Atendimento excluído com sucesso!");
         
@@ -1592,9 +1632,13 @@ async function apiAI(path, payload, action, label, target = "aiOutput") {
   // ------------------------------------------
 
   try {
-    const r = await fetch(`${getApiBase()}${path}`, {
+    const r = await AmbientalAuth.authFetch(`${getApiBase()}${path}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      headers: { 
+        "Content-Type": "application/json", 
+        "Accept": "application/json",
+        "Authorization": `Bearer ${accessToken}` 
+      },
       body: JSON.stringify(payload),
       signal: aiController.signal
     });
@@ -1631,7 +1675,7 @@ async function apiAI(path, payload, action, label, target = "aiOutput") {
     });
   }
 }
-function getJustificativaContext(){const v=values();const limitacoes=[v.descLimitacao,v.atividadesComprometidas,v.sintomasLimitacao,v.alteracoesClinicasExames].filter(x=>String(x||"").trim()).join(" | ");return {atendimento:v.atendimento,cargo:v.cargo,idade:v.idade,cid:v.cid,limitacoes,capacidade:v.capacidade};}
+function getJustificativaContext(){const v=values();const limitacoes=[v.descLimitacao,v.atividadesComprometidas,v.sintomasLimitacao,v.alteracoesClinicasExames].filter(x=>String(x||"").trim()).join(" | ");return {atendimento:v.atendimento,cargo:v.cargo,idade:v.idade,cid:v.cid,doenca_motivo:v.doencaMotivo,queixa_duracao:v.queixaDuracao,tempo_funcao:v.tempoCargo,unidade_tempo:v.unidadeTempo,sintomas_limitacoes:v.sintomasLimitacao,medicamentos:v.medicamentos,condicoes:v.condicoes,antecedentes:v.historicoPregresso,documentos_complementares:v.documentosComplementares,exame_fisico_tipo:v.exameFisicoTipo,alteracoes_clinicas_exames:v.alteracoesClinicasExames,exame:v.exame,limitacoes,desc_limitacao:v.descLimitacao,atividades_comprometidas:v.atividadesComprometidas,capacidade:v.capacidade,parecer:v.parecer,quesitos:v.quesitos};}
 function invalidateAICache(){aiClientCache.clear();}
 async function applyAIText(mode) {if(isFinalizedReadOnly()){toast("Atendimento finalizado: a sugestão pode ser analisada, mas não aplicada.");return;}const text=String(aiLastResult?.justificativa||"").trim();if(!text)return toast("Não há sugestão de IA disponível.");const f=$("justificativa"),cur=f.value.trim();if(mode==="replace"){if (cur && !(await confirm("Substituir o texto atual pela sugestão da IA?"))) return;f.value=text;}else f.value=cur?cur+"\n\n"+text:text;invalidateAICache();autoSave();toast(mode==="replace"?"Justificativa substituída após confirmação.":"Sugestão adicionada abaixo do texto existente.");}
 async function gerarJustificativaIA(){return apiAI("/api/ai/justificativa",getJustificativaContext(),"justificativa","Gerando justificativa...");}
@@ -1720,7 +1764,7 @@ async function applyFinalReportAI(){
 }
 
 function getApiBase(){return location.protocol==="file:"?API_FALLBACK:location.origin;}
-function refreshAIStatus(){if(!navigator.onLine){setAIStatus("offline","IA Indisponível");return;}fetch(`${getApiBase()}/status-ia`,{headers:{"Accept":"application/json"},cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject()).then(d=>{aiBackendOnline=!!d?.backend_online;aiGeminiAvailable=!!d?.gemini_disponivel;setAIStatus(aiGeminiAvailable?"online":"offline",aiGeminiAvailable?"IA Online":"IA Indisponível");}).catch(()=>{aiBackendOnline=false;aiGeminiAvailable=false;setAIStatus("offline","IA Indisponível");});}
+function refreshAIStatus(){if(!navigator.onLine){setAIStatus("offline","IA Indisponível");return;}AmbientalAuth.authFetch(`${getApiBase()}/status-ia`,{headers:{"Accept":"application/json"},cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject()).then(d=>{aiBackendOnline=!!d?.backend_online;aiGeminiAvailable=!!d?.gemini_disponivel;setAIStatus(aiGeminiAvailable?"online":"offline",aiGeminiAvailable?"IA Online":"IA Indisponível");}).catch(()=>{aiBackendOnline=false;aiGeminiAvailable=false;setAIStatus("offline","IA Indisponível");});}
 function formatApiError(data,status){const err=data?.error||{};const d=String(err?.message||data?.detail||data?.error?.detail||"").trim();const details=err?.details||{};const g=details?.status_gemini??data?.status_gemini;const ra=Number(details?.retry_after_seconds||data?.retry_after_seconds||0);if(g===404)return `Modelo Gemini indisponível (HTTP ${g}). ${d}`;if(g===401||g===403)return `Chave Gemini inválida ou sem permissão (HTTP ${g}). ${d}`;if(g===429||status===429)return `IA temporariamente ocupada. ${d||"Aguarde alguns segundos e tente novamente."}${ra?` Aguarde ${ra}s.`:""}`;if(g>=500&&g<=599)return `Indisponibilidade temporária da IA. ${d||"Tente novamente em instantes."}`;return d||`Erro HTTP ${status||"desconhecido"}.`;}
 
 function openDiagnostic(){$("diagnosticModal").classList.add("show");renderDiagnosticBase();runDiagnostics();}
@@ -1734,14 +1778,14 @@ function renderDiagnosticBase(){
 function updateCsvDiagnostic(){if(!$( "diagCsv"))return;if(cidLoadStatus.status==="ok"){setDiag("diagCsv","ok","✓ CSV carregado");setDiagDetail("diagCsvDetail",`Registros: ${cidLoadStatus.count}`);$("diagCsvTech").textContent=`OK — ${cidLoadStatus.count}`;}else if(cidLoadStatus.status==="error"){setDiag("diagCsv","error","✕ CSV não carregado");setDiagDetail("diagCsvDetail",cidLoadStatus.detail);$("diagCsvTech").textContent="ERRO";}else{setDiag("diagCsv","loading","⏳ CSV carregando...");setDiagDetail("diagCsvDetail",cidLoadStatus.detail);$("diagCsvTech").textContent="carregando";}}
 async function runDiagnostics(){
  $("diagRun").disabled=true;setDiag("diagFlask","loading","⏳ Testando Flask...");setDiag("diagRoute","loading","⏳ Testando rota IA...");
- try{const r=await fetch(`${getApiBase()}/`,{headers:{"Accept":"application/json"},cache:"no-store"}),d=await r.json().catch(()=>null);if(!r.ok||d?.status!=="online")throw new Error(formatApiError(d,r.status));setDiag("diagFlask","ok","✓ Flask online");setDiagDetail("diagFlaskDetail",`Modelo: ${d.modelo||"—"} | Chave configurada: ${d.chave_configurada?"SIM":"NÃO"}`);$("diagModel").textContent=d.modelo||"—";$("diagKey").textContent=d.chave_configurada?"SIM":"NÃO";$("diagFlaskTech").textContent="online";}catch(e){setDiag("diagFlask","error","✕ Flask indisponível");setDiagDetail("diagFlaskDetail",e?.message||"Servidor Flask não está rodando.");$("diagModel").textContent="—";$("diagKey").textContent="—";$("diagFlaskTech").textContent="indisponível";}
- try{const r=await fetch(`${getApiBase()}/status-ia`,{headers:{"Accept":"application/json"},cache:"no-store"});const d=await r.json().catch(()=>null);if(!r.ok)throw new Error(`HTTP ${r.status}`);if(d?.gemini_disponivel){setDiag("diagStatusIA","ok","✓ Gemini disponível");setDiagDetail("diagStatusIADetail",`Modelo: ${d.modelo||"—"} | Chave configurada: ${d.chave_configurada?"SIM":"NÃO"}`);}else{setDiag("diagStatusIA","warn","⚠ Gemini indisponível");setDiagDetail("diagStatusIADetail",d?.detalhe||"Não configurado");}}catch(e){setDiag("diagStatusIA","error","✕ /status-ia indisponível");setDiagDetail("diagStatusIADetail",e?.message||"Falha de conexão.");}
- try{const r=await fetch(`${getApiBase()}/gerar-justificativa`,{method:"OPTIONS",headers:{"Accept":"application/json"}});if(r.ok||r.status===204){setDiag("diagRoute","ok","✓ Rota /gerar-justificativa disponível");setDiagDetail("diagRouteDetail",`HTTP ${r.status}`);$("diagRouteTech").textContent="disponível";}else throw new Error(`HTTP ${r.status}`);}catch(e){setDiag("diagRoute","error","✕ Rota da IA indisponível");setDiagDetail("diagRouteDetail",e?.message||"Servidor Flask não está acessível.");$("diagRouteTech").textContent="indisponível";}
+ try{const r=await AmbientalAuth.authFetch(`${getApiBase()}/`,{headers:{"Accept":"application/json"},cache:"no-store"}),d=await r.json().catch(()=>null);if(!r.ok||d?.status!=="online")throw new Error(formatApiError(d,r.status));setDiag("diagFlask","ok","✓ Flask online");setDiagDetail("diagFlaskDetail",`Modelo: ${d.modelo||"—"} | Chave configurada: ${d.chave_configurada?"SIM":"NÃO"}`);$("diagModel").textContent=d.modelo||"—";$("diagKey").textContent=d.chave_configurada?"SIM":"NÃO";$("diagFlaskTech").textContent="online";}catch(e){setDiag("diagFlask","error","✕ Flask indisponível");setDiagDetail("diagFlaskDetail",e?.message||"Servidor Flask não está rodando.");$("diagModel").textContent="—";$("diagKey").textContent="—";$("diagFlaskTech").textContent="indisponível";}
+ try{const r=await AmbientalAuth.authFetch(`${getApiBase()}/status-ia`,{headers:{"Accept":"application/json"},cache:"no-store"});const d=await r.json().catch(()=>null);if(!r.ok)throw new Error(`HTTP ${r.status}`);if(d?.gemini_disponivel){setDiag("diagStatusIA","ok","✓ Gemini disponível");setDiagDetail("diagStatusIADetail",`Modelo: ${d.modelo||"—"} | Chave configurada: ${d.chave_configurada?"SIM":"NÃO"}`);}else{setDiag("diagStatusIA","warn","⚠ Gemini indisponível");setDiagDetail("diagStatusIADetail",d?.detalhe||"Não configurado");}}catch(e){setDiag("diagStatusIA","error","✕ /status-ia indisponível");setDiagDetail("diagStatusIADetail",e?.message||"Falha de conexão.");}
+ try{const r=await AmbientalAuth.authFetch(`${getApiBase()}/gerar-justificativa`,{method:"OPTIONS",headers:{"Accept":"application/json"}});if(r.ok||r.status===204){setDiag("diagRoute","ok","✓ Rota /gerar-justificativa disponível");setDiagDetail("diagRouteDetail",`HTTP ${r.status}`);$("diagRouteTech").textContent="disponível";}else throw new Error(`HTTP ${r.status}`);}catch(e){setDiag("diagRoute","error","✕ Rota da IA indisponível");setDiagDetail("diagRouteDetail",e?.message||"Servidor Flask não está acessível.");$("diagRouteTech").textContent="indisponível";}
  updateCsvDiagnostic();$("diagTimestamp").textContent=new Date().toLocaleString("pt-BR");$("diagRun").disabled=false;
 }
 async function testDiagnosticAI(){
  const btn=$("diagAiTest"),prev=btn.textContent;btn.disabled=true;btn.textContent="Testando IA...";setDiag("diagAi","loading","⏳ Testando geração da IA...");setDiagDetail("diagAiDetail","Enviando apenas dados fictícios de teste.");
- try{const r=await fetch(`${getApiBase()}/gerar-justificativa`,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({cargo:"Teste",idade:"40",cid:"Z00",limitacoes:"Nenhuma limitação objetiva registrada para este teste.",capacidade:"Capacidade laborativa preservada"})});const d=await r.json().catch(()=>null);if(!r.ok)throw new Error(formatApiError(d,r.status));const t=String(d?.justificativa||d?.resumo||"").trim();if(!t)throw new Error("Resposta estruturada vazia da API.");setDiag("diagAi","ok","✓ Gemini respondeu corretamente");setDiagDetail("diagAiDetail",`Resposta recebida (${t.length} caracteres). Nenhum dado do formulário foi usado.`);}catch(e){setDiag("diagAi","error","✕ Falha no teste do Gemini");setDiagDetail("diagAiDetail",e?.message||"Falha desconhecida.");}finally{btn.disabled=false;btn.textContent=prev;}
+ try{const r=await AmbientalAuth.authFetch(`${getApiBase()}/gerar-justificativa`,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({cargo:"Teste",idade:"40",cid:"Z00",limitacoes:"Nenhuma limitação objetiva registrada para este teste.",capacidade:"Capacidade laborativa preservada"})});const d=await r.json().catch(()=>null);if(!r.ok)throw new Error(formatApiError(d,r.status));const t=String(d?.justificativa||d?.resumo||"").trim();if(!t)throw new Error("Resposta estruturada vazia da API.");setDiag("diagAi","ok","✓ Gemini respondeu corretamente");setDiagDetail("diagAiDetail",`Resposta recebida (${t.length} caracteres). Nenhum dado do formulário foi usado.`);}catch(e){setDiag("diagAi","error","✕ Falha no teste do Gemini");setDiagDetail("diagAiDetail",e?.message||"Falha desconhecida.");}finally{btn.disabled=false;btn.textContent=prev;}
 }
 function buildSteps(){
   $("steps").innerHTML=steps.map((s,i)=>`
@@ -1769,7 +1813,7 @@ function go(n){
   if(n===5) renderExam();
   if(n===9){ try{ renderReview(); }catch(error){ console.error("Falha ao renderizar revisão:",error); const rs=$("reviewStatus"); if(rs){rs.className="review-status error";rs.innerHTML='<span class="review-symbol">🔴</span><span>Não foi possível montar a revisão. Recarregue o atendimento e tente novamente.</span>'; } } }
   window.scrollTo({top:0,behavior:"smooth"});
-  autoSave();
+  if(state.atendimento) autoSave(); else setPersistStatus("","Não salvo — clique em Salvar rascunho");
 }
 
 function bind(id, prop=null){
@@ -1780,13 +1824,13 @@ function bind(id, prop=null){
   });
 }
 [
-  "dataAtd","horaAtd","medico","crmResponsavel","cargo","tempoCargo","tempoUnidade","idade",
+  "dataAtd","horaAtd","medico","crmResponsavel","nomePaciente","cpfPaciente","cargo","tempoCargo","tempoUnidade","idade",
   "atividadesReadaptado","queixaDuracao","doencaMotivo","inicioTratamento","freqConsultas","sintomasLimitacao",
   "dataAlteracaoMed","obsAlteracaoMed","obsTerapias","historicoPregresso","crmCro","cid",
   "dataDocumento","diasSolicitados","obsDocumentos","descLimitacao","atividadesComprometidas",
   "obsLimitacoes","justificativa","alteracoesClinicasExames"
 ].forEach(id=>bind(id));
-$("exameFisicoTipo")?.addEventListener("change",e=>setExamType(e.target.value));
+$("exameFisicoTipo")?.addEventListener("change",e=>setExamType(e.target.value)); $("exameFisicoDescricao")?.addEventListener("input",e=>{state.exameFisicoDescricao=e.target.value;state.exam={...(state.exam||{}),descricao:e.target.value};autoSave();});
 $("alteracoesClinicasExames")?.addEventListener("input",e=>setExamDescription(e.target.value));
 $("dataAtd").value=today(); $("horaAtd").value=timeNow();
 
@@ -1795,8 +1839,8 @@ function syncState(){
   state.readaptado=getRadio("readaptado"); state.outrasDoencas=getRadio("outrasDoencas"); state.alteracaoMed=getRadio("alteracaoMed");
   state.limitacaoFuncional=getRadio("limitacaoFuncional"); state.limitacaoRol=getRadio("limitacaoRol"); state.psicoterapia=$("psicoterapia").checked; state.fisioterapia=$("fisioterapia").checked;
   state.capacidade=getRadio("capacidade"); state.parecer=getRadio("parecer");
-  state.exameFisicoTipo=$("exameFisicoTipo")?.value||state.exameFisicoTipo||""; state.alteracoesClinicasExames=$("alteracoesClinicasExames")?.value||state.alteracoesClinicasExames||""; state.exam={selected:state.exameFisicoTipo};
-  state.aux={dataAtd:$("dataAtd").value,horaAtd:$("horaAtd").value,crmResponsavel:$("crmResponsavel").value,cargo:$("cargo").value,tempoCargo:$("tempoCargo").value,tempoUnidade:$("tempoUnidade").value,idade:$("idade").value,atividadesReadaptado:$("atividadesReadaptado").value,queixaDuracao:$("queixaDuracao").value,doencaMotivo:$("doencaMotivo").value,inicioTratamento:$("inicioTratamento").value,freqConsultas:$("freqConsultas").value,sintomasLimitacao:$("sintomasLimitacao").value,dataAlteracaoMed:$("dataAlteracaoMed").value,obsAlteracaoMed:$("obsAlteracaoMed").value,obsTerapias:$("obsTerapias").value,historicoPregresso:$("historicoPregresso").value,crmCro:$("crmCro").value,cid:$("cid").value,dataDocumento:$("dataDocumento").value,diasSolicitados:$("diasSolicitados").value,obsDocumentos:$("obsDocumentos").value,descLimitacao:$("descLimitacao").value,atividadesComprometidas:$("atividadesComprometidas").value,obsLimitacoes:$("obsLimitacoes").value,justificativa:$("justificativa").value};
+  state.exameFisicoTipo=$("exameFisicoTipo")?.value||state.exameFisicoTipo||""; state.exameFisicoDescricao=$("exameFisicoDescricao")?.value||state.exameFisicoDescricao||""; state.alteracoesClinicasExames=$("alteracoesClinicasExames")?.value||state.alteracoesClinicasExames||""; state.exam={selected:state.exameFisicoTipo,descricao:state.exameFisicoDescricao};
+  state.aux={dataAtd:$("dataAtd").value,horaAtd:$("horaAtd").value,crmResponsavel:$("crmResponsavel").value,nomePaciente:$("nomePaciente").value,cpfPaciente:$("cpfPaciente").value,cargo:$("cargo").value,tempoCargo:$("tempoCargo").value,tempoUnidade:$("tempoUnidade").value,idade:$("idade").value,atividadesReadaptado:$("atividadesReadaptado").value,queixaDuracao:$("queixaDuracao").value,doencaMotivo:$("doencaMotivo").value,inicioTratamento:$("inicioTratamento").value,freqConsultas:$("freqConsultas").value,sintomasLimitacao:$("sintomasLimitacao").value,dataAlteracaoMed:$("dataAlteracaoMed").value,obsAlteracaoMed:$("obsAlteracaoMed").value,obsTerapias:$("obsTerapias").value,historicoPregresso:$("historicoPregresso").value,crmCro:$("crmCro").value,cid:$("cid").value,dataDocumento:$("dataDocumento").value,diasSolicitados:$("diasSolicitados").value,obsDocumentos:$("obsDocumentos").value,descLimitacao:$("descLimitacao").value,atividadesComprometidas:$("atividadesComprometidas").value,obsLimitacoes:$("obsLimitacoes").value,exameFisicoDescricao:$("exameFisicoDescricao")?.value||"",pressaoSistolica:$("pressaoSistolica")?.value||"",pressaoDiastolica:$("pressaoDiastolica")?.value||"",pulso:$("pulso")?.value||"",justificativa:$("justificativa").value};
 }
 function normalizeLegacyYesNo(value){ const v=String(value??"").trim().toLowerCase(); if(v==="sim")return "Sim"; if(v==="não"||v==="nao")return "Não"; return ""; }
 function applyState(){
@@ -1806,23 +1850,58 @@ function applyState(){
   state.readaptado=normalizeLegacyYesNo(state.readaptado||state.aux.readaptado);
   state.outrasDoencas=normalizeLegacyYesNo(state.outrasDoencas||state.aux.outrasDoencas);
   state.alteracaoMed=normalizeLegacyYesNo(state.alteracaoMed||state.aux.alteracaoMed);
-  state.queixaDuracao=state.queixaDuracao||state.aux.queixaDuracao||""; state.exameFisicoTipo=state.exameFisicoTipo||state.exam.selected||""; state.alteracoesClinicasExames=state.alteracoesClinicasExames||state.examDescription||"";
-  $("atd").value=state.atendimento||generateId(); $("atdNumber").textContent=$("atd").value; $("atdDate").textContent=formatDate(state.aux.dataAtd||today()); $("dataAtd").value=state.aux.dataAtd||today(); $("horaAtd").value=state.aux.horaAtd||timeNow(); $("medico").value=state.medico||""; $("crmResponsavel").value=state.aux.crmResponsavel||"";
+  state.queixaDuracao=state.queixaDuracao||state.aux.queixaDuracao||""; state.exameFisicoTipo=state.exameFisicoTipo||state.exam.selected||""; state.exameFisicoDescricao=state.exameFisicoDescricao||state.exam.descricao||""; state.alteracoesClinicasExames=state.alteracoesClinicasExames||state.examDescription||"";
+  state.aux.nomePaciente=state.aux.nomePaciente||state.nomePaciente||""; state.aux.cpfPaciente=state.aux.cpfPaciente||state.cpfPaciente||"";
+  $("atd").value=state.atendimento||""; $("atdDisplay").textContent=state.atendimento?"Identificação registrada":["Será gerada ao salvar"][0]; $("atdNumber").textContent=state.atendimento?"Atendimento salvo":"Novo atendimento"; $("atdDate").textContent=formatDate(state.aux.dataAtd||today()); $("dataAtd").value=state.aux.dataAtd||today(); $("horaAtd").value=state.aux.horaAtd||timeNow(); $("medico").value=state.medico||""; $("crmResponsavel").value=state.aux.crmResponsavel||"";
   Object.keys(state.aux).forEach(k=>{const el=$(k);if(el&&k!=="dataAtd"&&k!=="horaAtd")el.value=state.aux[k]??"";});
   $("queixaDuracao").value=state.queixaDuracao||state.aux.queixaDuracao||"";
   $("exameFisicoTipo") && ($("exameFisicoTipo").value=state.exameFisicoTipo||"");
+  $("exameFisicoDescricao") && ($("exameFisicoDescricao").value=state.exameFisicoDescricao||"");
   $("alteracoesClinicasExames") && ($("alteracoesClinicasExames").value=state.alteracoesClinicasExames||"");
   setRadio("readaptado",state.readaptado);setRadio("outrasDoencas",state.outrasDoencas);setRadio("alteracaoMed",state.alteracaoMed);setRadio("limitacaoFuncional",state.limitacaoFuncional);setRadio("limitacaoRol",state.limitacaoRol);setRadio("parecer",state.parecer);setRadio("capacidade",state.capacidade); $("psicoterapia").checked=!!state.psicoterapia;$("fisioterapia").checked=!!state.fisioterapia;
   togglePanelsOnly(); updateLimitacaoStatus(); renderMedications();renderConditions();renderDocumentRecords();renderQuesitos();renderExam();renderParecerHint();applyFinalizedLock(); if($("cid").value)renderCIDAssist(findCID($("cid").value)||null); go(Math.min(9,Math.max(1,Number(state.current)||1)));
 }
 function togglePanelsOnly(){ $("readaptadoPanel").classList.toggle("hidden",getRadio("readaptado")!=="Sim");$("alteracaoPanel").classList.toggle("hidden",getRadio("alteracaoMed")!=="Sim");$("doencasPanel").classList.toggle("hidden",getRadio("outrasDoencas")!=="Sim");$("limitacao1Panel").classList.toggle("hidden",getRadio("limitacaoFuncional")!=="Sim");$("limitacao2Panel").classList.toggle("hidden",getRadio("limitacaoRol")!=="Sim"); }
-const REGISTRY_KEY="ambiental_atendimentos_v1";
-function openManagement(){ window.location.href="/gestao"; }
-function registryRead(){ try{return JSON.parse(localStorage.getItem(REGISTRY_KEY)||"{}");}catch(e){return {};} }
-function registryWrite(record){ try{const reg=registryRead(); const id=record.atendimento||state.atendimento; if(!id)return; reg[id]=record; localStorage.setItem(REGISTRY_KEY,JSON.stringify(reg));}catch(error){console.error("Falha ao atualizar gestão:",error);} }
-function syncToRegistry(){ try{const snapshot=JSON.parse(JSON.stringify(state)); snapshot.__registryAt=new Date().toISOString(); snapshot.__status=snapshot.finalizado?"FINALIZADO":(snapshot.workflowStatus||"RASCUNHO"); registryWrite(snapshot);}catch(error){console.error("Falha ao registrar atendimento:",error);} }
+async function syncToRegistry(){
+  try{
+    const id=state.atendimento;
+    if(!id || !window.AmbientalUtils?.DraftStore) return false;
+    const snapshot=JSON.parse(JSON.stringify(state));
+    snapshot.__registryAt=new Date().toISOString();
+    snapshot.__status=snapshot.finalizado?"FINALIZADO":(snapshot.workflowStatus||"RASCUNHO");
+    await AmbientalUtils.DraftStore.put(`atendimento:${id}`, snapshot);
+    return true;
+  }catch(error){
+    console.warn("Falha ao atualizar o backup local:", error?.name || "StorageError");
+    return false;
+  }
+}
+function openManagement() {
+    if (currentProfile && currentProfile.perfil === "Médico") window.location.href = "/gestao-medicos.html";
+    else window.location.href = "/gestao";
+}
 function workflowStatus(){return String(state.workflowStatus||(state.finalizado?"FINALIZADO":"RASCUNHO")).toUpperCase();}
 function setPersistStatus(kind,text){if($("saveDot"))$("saveDot").className=`save-dot ${kind||""}`;if($("saveText"))$("saveText").textContent=text;}
+async function tryServerLoad(id){
+  if(!id || !navigator.onLine) return false;
+  try{
+    const d=await AmbientalAPI.atendimento.get(id);
+    if(d?.payload){
+      Object.keys(state).forEach(k=>delete state[k]);
+      Object.assign(state,JSON.parse(JSON.stringify(d.payload)));
+      state.__serverId=d.id;
+      state.__serverVersion=Number(d.versao||1);
+      state.workflowStatus=d.status||state.workflowStatus||"RASCUNHO";
+      state.finalizado=state.workflowStatus==="FINALIZADO";
+      applyState();
+      setPersistStatus("ok","Atendimento sincronizado com o servidor");
+      return true;
+    }
+  }catch(e){
+    console.warn("Falha ao carregar atendimento",e);
+  }
+  return false;
+}
 async function syncToServer(manual=false){
   if(isFinalizedReadOnly()){
     console.log("Atendimento em modo leitura. Sincronização de background ignorada.");
@@ -1840,31 +1919,55 @@ async function syncToServer(manual=false){
     payload.validation=ValidationEngine.get();
     delete payload.__serverSyncedAt;
     delete payload.__serverId;
+    if(state.__serverVersion!=null && state.__serverId){ payload.__serverVersion=Number(state.__serverVersion); }
     
     const hasServerId=!!state.__serverId;
     let url=hasServerId?`${getApiBase()}/api/atendimentos/${encodeURIComponent(state.__serverId)}`:`${getApiBase()}/api/atendimentos`;
     let method=hasServerId?"PUT":"POST";
     
-    let r=await fetch(url,{method,headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});
+    let r=await AmbientalAuth.authFetch(url,{
+    method,
+    headers:{
+        "Content-Type":"application/json",
+        "Accept":"application/json"
+    },
+    body:JSON.stringify(payload)
+});
     let d=await r.json().catch(()=>null);
     
     if(!r.ok&&r.status===404&&hasServerId){
-      r=await fetch(`${getApiBase()}/api/atendimentos`,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});
+      r=await AmbientalAuth.authFetch(`${getApiBase()}/api/atendimentos`,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});
       d=await r.json().catch(()=>null);
     }
     
     if(!r.ok&&!hasServerId&&r.status===409&&d?.error?.code==="DUPLICATE_ATENDIMENTO"){
-      r=await fetch(`${getApiBase()}/api/atendimentos/${encodeURIComponent(state.atendimento)}`,{method:"PUT",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});
+      r=await AmbientalAuth.authFetch(`${getApiBase()}/api/atendimentos/${encodeURIComponent(state.atendimento)}`,{method:"PUT",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});
       d=await r.json().catch(()=>null);
     }
     
     // --- NOVO BLOCO: AUTO-CORREÇÃO DE CONFLITO ---
     if(!r.ok || !d?.success){
+      if(r.status === 409 && d?.error?.code === "VERSION_CONFLICT") {
+         await syncToRegistry();
+         // Autosave/background sync must never open a blocking confirmation dialog.
+         // The local snapshot is preserved and the conflict is handled only on an
+         // explicit/manual save action.
+         if(manual){
+           const confirmed = await confirm("Este atendimento foi atualizado em outro dispositivo. Seus dados locais permanecem salvos no backup do navegador. Deseja carregar agora a versão mais recente do servidor?");
+           if(confirmed){
+             const loaded = await tryServerLoad(state.atendimento);
+             if(loaded) toast("Versão mais recente carregada com sucesso.");
+           } else {
+             toast("Alterações locais preservadas. Resolva o conflito antes de sincronizar novamente.");
+           }
+         }
+         return {ok:false,conflict:true,error:new Error("VERSION_CONFLICT")};
+      }
       // Se o banco retornar 409 avisando que o estado oficial é outro (ex: já está finalizado)
       if(r.status === 409 && d?.error?.details?.estado_oficial) {
          const estadoReal = d.error.details.estado_oficial;
          
-         // Atualiza o localStorage forçadamente para combinar com a nuvem
+         // Atualiza o estado local persistido em IndexedDB para refletir a nuvem
          state.workflowStatus = estadoReal;
          state.finalizado = (estadoReal === "FINALIZADO");
          
@@ -1882,6 +1985,7 @@ async function syncToServer(manual=false){
     
     state.__serverSyncedAt=new Date().toISOString();
     state.__serverId=d?.data?.id||state.__serverId;
+    state.__serverVersion=Number(d?.data?.versao||state.__serverVersion||1);
     state.workflowStatus=d?.data?.status||workflowStatus();
     state.finalizado=state.workflowStatus==="FINALIZADO";
     setPersistStatus("ok",manual?"Sincronizado com o servidor":`Salvo às ${timeNow()}`);
@@ -1895,9 +1999,105 @@ async function syncToServer(manual=false){
     return {ok:false,error:e};
   }
 }
-function autoSave(){if(isFinalizedReadOnly())return;syncState();QuesitoService.get();updateProgress();setPersistStatus("saving","Salvando...");clearTimeout(window.__saveTimer);window.__saveTimer=setTimeout(()=>persistNow(true),650);invalidateAICache();}
-async function persistNow(updateStatus=false){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));syncToRegistry();if(updateStatus){setPersistStatus("saving","Sincronizando...");return await syncToServer(false);}if(navigator.onLine){clearTimeout(window.__serverSaveTimer);window.__serverSaveTimer=setTimeout(()=>syncToServer(false),50);}return {ok:true,local:true};}catch(error){console.error("Falha no LocalStorage:",error);setPersistStatus("","Erro ao salvar");return {ok:false,error};}}
-async function saveNow(){if(isFinalizedReadOnly()){toast("Atendimento finalizado: edição bloqueada. Use a Gestão para reabrir.");return false;}syncState();setPersistStatus("saving","Salvando...");const result=await persistNow(true);if(result?.ok)toast("Atendimento sincronizado com o servidor.");return !!result?.ok;}
+async function flushOfflineQueue(){
+  if(!navigator.onLine) return false;
+  const queue=window.AmbientalUtils?.SyncQueue;
+  if(!queue) return false;
+  const items=await queue.list();
+  if(!items.length) return true;
+  let changed=false;
+  for(const item of items){
+    try{
+      const payload=item?.payload;
+      if(!payload || !payload.atendimento) { await queue.remove(item.key); continue; }
+      const serverId=payload.__serverId||null;
+      const url=serverId?`${getApiBase()}/api/atendimentos/${encodeURIComponent(serverId)}`:`${getApiBase()}/api/atendimentos`;
+      const method=serverId?"PUT":"POST";
+      const r=await AmbientalAuth.authFetch(url,{method,headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});
+      const d=await r.json().catch(()=>null);
+      if(r.ok && d?.success){
+        await queue.remove(item.key);
+        changed=true;
+        if(String(state.atendimento)===String(payload.atendimento)){
+          state.__serverId=d?.data?.id||state.__serverId;
+          state.__serverVersion=Number(d?.data?.versao||state.__serverVersion||1);
+          state.__serverSyncedAt=new Date().toISOString();
+          setPersistStatus("ok","Sincronizado com o servidor");
+        }
+      }else if(r.status===409 && d?.error?.code==="VERSION_CONFLICT") {
+        // Keep the queue item for an explicit/manual conflict resolution.
+        continue;
+      }
+    }catch(error){
+      console.warn("Falha ao esvaziar fila offline:", error?.message||error);
+    }
+  }
+  return changed || (await queue.count())===0;
+}
+function autoSave(){
+  if(isFinalizedReadOnly())return;
+  syncState(); QuesitoService.get(); updateProgress(); invalidateAICache();
+  if(!state.atendimento){
+    setPersistStatus("","Não salvo — clique em Salvar rascunho");
+    clearTimeout(window.__saveTimer);
+    return;
+  }
+  setPersistStatus("saving","Salvando...");
+  clearTimeout(window.__saveTimer);
+  window.__saveTimer=setTimeout(()=>persistNow(true),650);
+}
+async function persistNow(updateStatus=false){
+  try{
+    const localOk=await syncToRegistry();
+    if(!localOk) throw new Error("Não foi possível salvar o rascunho local.");
+    window.AmbientalUtils?.legacyStorage?.remove?.(STORAGE_KEY);
+    const queue = window.AmbientalUtils?.SyncQueue;
+    const snapshot = JSON.parse(JSON.stringify(state));
+    if(updateStatus){
+      setPersistStatus("saving",navigator.onLine?"Sincronizando...":"Offline — salvo localmente");
+      if(!navigator.onLine){
+        if(queue) await queue.put(`atendimento:${state.atendimento}`, snapshot, {endpoint:"/api/atendimentos"});
+        return {ok:true,local:true,offline:true};
+      }
+      const result = await syncToServer(false);
+      if(!result.ok && !result.readonly && queue){
+        await queue.put(`atendimento:${state.atendimento}`, snapshot, {endpoint:"/api/atendimentos", lastError:result.error?.message||"Falha de sincronização"});
+      }
+      return result;
+    }
+    if(navigator.onLine){
+      clearTimeout(window.__serverSaveTimer);
+      window.__serverSaveTimer=setTimeout(async()=>{
+        const result=await syncToServer(false);
+        if(!result.ok && !result.readonly && queue){
+          await queue.put(`atendimento:${state.atendimento}`, JSON.parse(JSON.stringify(state)), {endpoint:"/api/atendimentos", lastError:result.error?.message||"Falha de sincronização"});
+        }
+      },50);
+    }else if(queue){
+      await queue.put(`atendimento:${state.atendimento}`, snapshot, {endpoint:"/api/atendimentos"});
+      setPersistStatus("","Offline — salvo localmente");
+    }
+    return {ok:true,local:true,offline:!navigator.onLine};
+  }catch(error){
+    console.warn("Falha no armazenamento local:", error?.name || "StorageError");
+    setPersistStatus("","Erro ao salvar");
+    return {ok:false,error};
+  }
+}
+async function saveNow(){
+  if(isFinalizedReadOnly()){toast("Atendimento finalizado: edição bloqueada. Use a Gestão para reabrir.");return false;}
+  syncState();
+  if(!state.atendimento){
+    state.atendimento=generateId();
+    $("atd").value=state.atendimento;
+    if($("atdDisplay"))$("atdDisplay").textContent="Identificação registrada";
+    $("atdNumber").textContent="Atendimento salvo";
+  }
+  setPersistStatus("saving","Salvando rascunho...");
+  const result=await persistNow(true);
+  if(result?.ok)toast("Rascunho salvo com sucesso.");
+  return !!result?.ok;
+}
 
 function toggleReadaptado(){ $("readaptadoPanel").classList.toggle("hidden",getRadio("readaptado")!=="Sim"); autoSave(); }
 function toggleAlteracaoMed(){ $("alteracaoPanel").classList.toggle("hidden",getRadio("alteracaoMed")!=="Sim"); autoSave(); }
@@ -2095,7 +2295,7 @@ function renderParecerHint(){
   $("parecerHint").textContent=p==="CONTRÁRIO"?"Parecer CONTRÁRIO selecionado. Garanta que a justificativa esteja preenchida e coerente com os achados.":p==="FAVORÁVEL"?"Parecer FAVORÁVEL selecionado. Garanta que a justificativa esteja preenchida e coerente com os achados.":"Selecione o parecer definido pelo médico.";
 }
 
-function values(){syncState();return {atendimento:state.atendimento,dataAtendimento:state.aux.dataAtd,horaInicio:state.aux.horaAtd,medicoResponsavel:state.medico,crmResponsavel:state.aux.crmResponsavel,cargo:state.aux.cargo,tempoCargo:state.aux.tempoCargo,unidadeTempo:state.aux.tempoUnidade,idade:state.aux.idade,readaptado:state.readaptado,atividadesReadaptado:state.aux.atividadesReadaptado,queixaDuracao:state.aux.queixaDuracao,doencaMotivo:state.aux.doencaMotivo,inicioTratamento:state.aux.inicioTratamento,frequenciaConsultas:state.aux.freqConsultas,sintomasLimitacao:state.aux.sintomasLimitacao,medicamentos:state.medications,alteracaoDosagem:state.alteracaoMed,dataAlteracaoMed:state.aux.dataAlteracaoMed,obsAlteracaoMed:state.aux.obsAlteracaoMed,psicoterapia:state.psicoterapia,fisioterapia:state.fisioterapia,obsTerapias:state.aux.obsTerapias,outrasDoencas:state.outrasDoencas,condicoes:state.conditions,historicoPregresso:state.aux.historicoPregresso,crmCro:state.aux.crmCro,cid:state.aux.cid,dataDocumento:state.aux.dataDocumento,diasSolicitados:state.aux.diasSolicitados,obsDocumentos:state.aux.obsDocumentos,documentosComplementares:state.documentosComplementares,exame:state.exam,exameFisicoTipo:state.exameFisicoTipo,alteracoesClinicasExames:state.alteracoesClinicasExames,limitacaoFuncional:state.limitacaoFuncional,descLimitacao:state.aux.descLimitacao,limitacaoRol:state.limitacaoRol,atividadesComprometidas:state.aux.atividadesComprometidas,obsLimitacoes:state.aux.obsLimitacoes,quesitos:state.quesitos,capacidade:state.capacidade,justificativa:state.aux.justificativa,parecer:state.parecer,finalizado:!!state.finalizado,finalizadoEm:state.finalizadoEm||""};}
+function values(){syncState();return {atendimento:state.atendimento,dataAtendimento:state.aux.dataAtd,horaInicio:state.aux.horaAtd,medicoResponsavel:state.medico,crmResponsavel:state.aux.crmResponsavel,nomePaciente:state.aux.nomePaciente,cpfPaciente:state.aux.cpfPaciente,cargo:state.aux.cargo,tempoCargo:state.aux.tempoCargo,unidadeTempo:state.aux.tempoUnidade,idade:state.aux.idade,readaptado:state.readaptado,atividadesReadaptado:state.aux.atividadesReadaptado,queixaDuracao:state.aux.queixaDuracao,doencaMotivo:state.aux.doencaMotivo,inicioTratamento:state.aux.inicioTratamento,frequenciaConsultas:state.aux.freqConsultas,sintomasLimitacao:state.aux.sintomasLimitacao,medicamentos:state.medications,alteracaoDosagem:state.alteracaoMed,dataAlteracaoMed:state.aux.dataAlteracaoMed,obsAlteracaoMed:state.aux.obsAlteracaoMed,psicoterapia:state.psicoterapia,fisioterapia:state.fisioterapia,obsTerapias:state.aux.obsTerapias,outrasDoencas:state.outrasDoencas,condicoes:state.conditions,historicoPregresso:state.aux.historicoPregresso,crmCro:state.aux.crmCro,cid:state.aux.cid,dataDocumento:state.aux.dataDocumento,diasSolicitados:state.aux.diasSolicitados,obsDocumentos:state.aux.obsDocumentos,documentosComplementares:state.documentosComplementares,exame:state.exam,exameFisicoTipo:state.exameFisicoTipo,exameFisicoDescricao:state.exameFisicoDescricao||state.aux.exameFisicoDescricao||"",pressaoSistolica:state.aux.pressaoSistolica||"",pressaoDiastolica:state.aux.pressaoDiastolica||"",pulso:state.aux.pulso||"",alteracoesClinicasExames:state.alteracoesClinicasExames,limitacaoFuncional:state.limitacaoFuncional,descLimitacao:state.aux.descLimitacao,limitacaoRol:state.limitacaoRol,atividadesComprometidas:state.aux.atividadesComprometidas,obsLimitacoes:state.aux.obsLimitacoes,quesitos:state.quesitos,capacidade:state.capacidade,justificativa:state.aux.justificativa,parecer:state.parecer,finalizado:!!state.finalizado,finalizadoEm:state.finalizadoEm||""};}
 
 function missingFields(){return ValidationEngine.get().blocking;}
 function renderReview(){
@@ -2261,7 +2461,7 @@ function buildPrint(){
       <div class="print-summary">${synthesis}</div>
 
       ${printSection("1 — Identificação e contexto do atendimento",administrative)}
-      ${printSection("2 — Antecedentes mórbidos",`<div class="print-field"><span class="print-label">Queixa e duração</span><span class="print-value">${printText(v.queixaDuracao)}</span></div>${context}`)}
+      ${printSection("2 — Antecedentes mórbidos",`${printField("Paciente",v.nomePaciente)}${printField("CPF",v.cpfPaciente)}<div class="print-field"><span class="print-label">Queixa e duração</span><span class="print-value">${printText(v.queixaDuracao)}</span></div>${context}`)}
       ${printSection("3 — Atestado / Relatório / Exames Complementares",doc)}
       ${printSection("4 — Exame Físico Geral / Mental",examHtml)}
       ${printSection("5 — Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares",printField("Descrição",v.alteracoesClinicasExames))}
@@ -2303,7 +2503,7 @@ async function openFinalReport(){
   try{
     const payload=JSON.parse(JSON.stringify(state));
     payload.quesitos=QuesitoService.get();
-    const r=await fetch(`${getApiBase()}/api/gerar-relatorio-final`,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});
+    const r=await AmbientalAuth.authFetch(`${getApiBase()}/api/gerar-relatorio-final`,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});
     const d=await r.json().catch(()=>null);
     if(!r.ok || !d?.relatorio) throw new Error(d?.error?.detail||d?.error?.message||"Não foi possível gerar o relatório com IA.");
     const report=sanitizeAIReport(d.relatorio);
@@ -2319,14 +2519,29 @@ async function openFinalReport(){
     const fallback=buildReportHTML(); const fw=window.open("","_blank"); if(fw){fw.document.open();fw.document.write(fallback);fw.document.close();fw.focus();}
   }
 }
-async function downloadFinalPDF(){ const miss=missingFields();if(miss.length){go(9);renderReview();toast("Há bloqueios críticos; corrija-os antes do PDF.");return;} const html=buildReportHTML(); try{setAIStatus("loading","Gerando PDF...");const r=await fetch(`${getApiBase()}/api/relatorios/pdf`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({atendimento:state.atendimento,html})});if(!r.ok)throw new Error("Falha ao gerar PDF");const blob=await r.blob();const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`ATD-${state.atendimento||"Ambiental"}.pdf`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);toast("PDF gerado com sucesso.");}catch(e){toast("Não foi possível gerar o PDF pelo servidor. Abra a prévia e use Imprimir → Salvar como PDF.");openFinalReport();}finally{setAIStatus("online","Sistema Online");}}
+async function downloadFinalPDF(){ const miss=missingFields();if(miss.length){go(9);renderReview();toast("Há bloqueios críticos; corrija-os antes do PDF.");return;} const html=buildReportHTML(); try{setAIStatus("loading","Gerando PDF...");const r=await AmbientalAuth.authFetch(`${getApiBase()}/api/relatorios/pdf`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({atendimento:state.atendimento,html})});if(!r.ok)throw new Error("Falha ao gerar PDF");const blob=await r.blob();const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`ATD-${state.atendimento||"Ambiental"}.pdf`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);toast("PDF gerado com sucesso.");}catch(e){toast("Não foi possível gerar o PDF pelo servidor. Abra a prévia e use Imprimir → Salvar como PDF.");openFinalReport();}finally{setAIStatus("online","Sistema Online");}}
 function previewFinalReport(){const miss=missingFields();if(miss.length){go(9);renderReview();toast("Há campos pendentes. Revise antes de visualizar o relatório.");return;}openFinalReport();}
 function finalizeFromHeader(){if(isFinalizedReadOnly()){toast("Atendimento já finalizado. Reabra pela Gestão para editar.");return;}go(9);setTimeout(openFinalizeDialog,100);}
 function openFinalizeDialog(){const validation=ValidationEngine.get();if(!validation.valid){renderReview();toast("Há bloqueios críticos. Revise o checklist antes de finalizar.");return;}syncState();const q=getQuesitoValidation();const el=$("finalizeSummary");if(!el)return;const items=[["Atendimento",state.atendimento],["Situação","Todos os campos obrigatórios preenchidos"],["Quesitos",`${q.answered}/3 respondidos`],["Capacidade laborativa",state.capacidade||"Não definida"],["Parecer",state.parecer||"Não definido"],["Inconsistências críticas",String(validation.blocking.length)],["Documento final",missingFields().length?"Pendente":"Disponível para visualização"]];el.innerHTML=items.map(([l,v])=>`<div class="finalize-item"><span>${esc(l)}</span><b>${esc(v)}</b></div>`).join("");$("finalizeOverlay")?.classList.add("open");}
 function closeFinalizeDialog(){$("finalizeOverlay")?.classList.remove("open");}
-async function confirmFinalize(){const btn=$("confirmFinalizeBtn");if(btn)btn.disabled=true;try{if(isFinalizedReadOnly()){closeFinalizeDialog();return;}const validation=ValidationEngine.get();if(!validation.valid){closeFinalizeDialog();renderReview();toast("Há bloqueios críticos.");return;}syncState();localStorage.setItem(STORAGE_KEY,JSON.stringify(state));syncToRegistry();setPersistStatus("saving","Salvando...");const saved=await syncToServer(true);if(!saved.ok){toast("Não foi possível confirmar o atendimento no servidor.");return;}let current=workflowStatus();if(current==="RASCUNHO"||current==="REABERTO"){const rr=await fetch(`${getApiBase()}/api/atendimentos/${encodeURIComponent(state.atendimento)}/state`,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({estado:"EM_REVISÃO",motivo:"Entrada na revisão final"})});const rd=await rr.json().catch(()=>null);if(!rr.ok||!rd?.success)throw new Error(rd?.error?.message||"Não foi possível colocar o atendimento em revisão.");state.workflowStatus="EM_REVISÃO";}const r=await fetch(`${getApiBase()}/api/atendimentos/${encodeURIComponent(state.atendimento)}/state`,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({estado:"FINALIZADO",motivo:"Finalização do atendimento"})});const d=await r.json().catch(()=>null);if(!r.ok||!d?.success){const bs=d?.error?.details?.bloqueios||[];if(bs.length){renderReview();closeFinalizeDialog();toast(`Finalização bloqueada: ${bs.map(x=>`${x.campo} (etapa ${x.etapa})`).join("; ")}`);return;}throw new Error(d?.error?.message||"O servidor recusou a finalização.");}if(d?.data?.status!=="FINALIZADO")throw new Error("O servidor não confirmou o estado FINALIZADO.");state.workflowStatus="FINALIZADO";state.finalizado=true;state.finalizadoEm=d?.data?.atualizado_em||new Date().toISOString();state.__serverSyncedAt=new Date().toISOString();localStorage.setItem(STORAGE_KEY,JSON.stringify(state));syncToRegistry();applyState();closeFinalizeDialog();setPersistStatus("ok","Atendimento finalizado");toast("Atendimento finalizado pelo servidor.");renderReview();}catch(e){toast(e.message||"Falha ao finalizar atendimento.");}finally{if(btn)btn.disabled=false;}}
+function openFinalizeProgress(){const o=$("finalizeProgressOverlay");if(!o)return;o.classList.remove("success");o.classList.add("open");o.setAttribute("aria-hidden","false");$("finalizeProgressTitle").textContent="Finalizando atendimento";$("finalizeProgressSubtitle").textContent="Salvando os dados e registrando a finalização com segurança.";$("fpStepSave").className="finalize-progress-step active";$("fpStepFinalize").className="finalize-progress-step";$("fpStepDone").className="finalize-progress-step";}
+function setFinalizeProgress(stage,title,subtitle){const t=$("finalizeProgressTitle"),sub=$("finalizeProgressSubtitle");if(t)t.textContent=title;if(sub)sub.textContent=subtitle;const map={save:"fpStepSave",finalize:"fpStepFinalize",done:"fpStepDone"};Object.entries(map).forEach(([key,id])=>{const el=$(id);if(!el)return;el.className="finalize-progress-step "+(key===stage?"active":(["save","finalize","done"].indexOf(key)<["save","finalize","done"].indexOf(stage)?"done":""));});}
+function closeFinalizeProgress(){const o=$("finalizeProgressOverlay");if(!o)return;o.classList.remove("open","success");o.setAttribute("aria-hidden","true");}
+function finalizeGoBack(){if(currentProfile&&currentProfile.perfil==="Médico"){window.location.href="/gestao-medicos.html";}else{window.location.href="/gestao";}}
+async function confirmFinalize(){const btn=$("confirmFinalizeBtn");if(btn)btn.disabled=true;let progressOpened=false;try{if(isFinalizedReadOnly()){closeFinalizeDialog();return;}const validation=ValidationEngine.get();if(!validation.valid){closeFinalizeDialog();renderReview();toast("Há bloqueios críticos.");return;}closeFinalizeDialog();openFinalizeProgress();progressOpened=true;syncState();
+if(!state.atendimento){
+  state.atendimento=generateId();
+  $("atd").value=state.atendimento;
+  $("atdNumber").textContent=state.atendimento;
+}
+setFinalizeProgress("save","Salvando atendimento","Sincronizando a última versão com o servidor…");
+await syncToRegistry();
+setPersistStatus("saving","Salvando...");
+const saved=await syncToServer(true);if(!saved.ok)throw new Error("Não foi possível confirmar o atendimento no servidor.");let current=workflowStatus();if(current==="RASCUNHO"||current==="REABERTO"){setFinalizeProgress("finalize","Preparando finalização","Registrando a revisão final do atendimento…");const rr=await AmbientalAuth.authFetch(`${getApiBase()}/api/atendimentos/${encodeURIComponent(state.atendimento)}/state`,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({estado:"EM_REVISÃO",motivo:"Entrada na revisão final",versao:state.__serverVersion ?? undefined})});const rd=await rr.json().catch(()=>null);if(!rr.ok||!rd?.success)throw new Error(rd?.error?.message||"Não foi possível colocar o atendimento em revisão.");state.__serverVersion=Number(rd?.data?.versao||state.__serverVersion||1);state.workflowStatus="EM_REVISÃO";}setFinalizeProgress("finalize","Finalizando atendimento","Confirmando o atendimento definitivamente no servidor…");const r=await AmbientalAuth.authFetch(`${getApiBase()}/api/atendimentos/${encodeURIComponent(state.atendimento)}/state`,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({estado:"FINALIZADO",motivo:"Finalização do atendimento",versao:state.__serverVersion ?? undefined})});const d=await r.json().catch(()=>null);if(!r.ok||!d?.success){const bs=d?.error?.details?.bloqueios||[];if(bs.length){closeFinalizeProgress();renderReview();toast(`Finalização bloqueada: ${bs.map(x=>`${x.campo} (etapa ${x.etapa})`).join("; ")}`);return;}throw new Error(d?.error?.message||"O servidor recusou a finalização.");}if(d?.data?.status!=="FINALIZADO")throw new Error("O servidor não confirmou o estado FINALIZADO.");state.__serverVersion=Number(d?.data?.versao||state.__serverVersion||1);state.workflowStatus="FINALIZADO";state.finalizado=true;state.finalizadoEm=d?.data?.atualizado_em||new Date().toISOString();state.__serverSyncedAt=new Date().toISOString();await syncToRegistry();applyState();setPersistStatus("ok","Atendimento finalizado");setFinalizeProgress("done","Atendimento finalizado!","Tudo foi salvo com sucesso. Preparando a Gestão Médica…");const o=$("finalizeProgressOverlay");o?.classList.add("success");toast("Atendimento finalizado pelo servidor.");await new Promise(resolve=>setTimeout(resolve,1300));finalizeGoBack();}catch(e){if(progressOpened)closeFinalizeProgress();toast(e.message||"Falha ao finalizar atendimento.");}finally{if(btn)btn.disabled=false;}}
 
-function newEmptyState(){ state.current=1; state.atendimento=generateId(); state.medico=""; state.capacidade=""; state.parecer=""; state.finalizado=false; state.finalizadoEm=""; state.workflowStatus="RASCUNHO"; state.statusHistory=[]; state.medications=[]; state.conditions=[]; state.quesitos=[]; state.exam={}; state.documentosComplementares=[]; state.exameFisicoTipo=""; state.alteracoesClinicasExames=""; state.queixaDuracao=""; state.aux={}; }
+function formatCPF(value){ const digits=String(value||"").replace(/\D/g,"").slice(0,11); if(digits.length<=3)return digits; if(digits.length<=6)return digits.slice(0,3)+"."+digits.slice(3); if(digits.length<=9)return digits.slice(0,3)+"."+digits.slice(3,6)+"."+digits.slice(6); return digits.slice(0,3)+"."+digits.slice(3,6)+"."+digits.slice(6,9)+"-"+digits.slice(9); }
+$("cpfPaciente")?.addEventListener("input",e=>{ e.target.value=formatCPF(e.target.value); autoSave(); });
+function newEmptyState(){ state.current=1; state.atendimento=""; state.medico=""; state.capacidade=""; state.parecer=""; state.finalizado=false; state.finalizadoEm=""; state.workflowStatus="RASCUNHO"; state.statusHistory=[]; state.medications=[]; state.conditions=[]; state.quesitos=[]; state.exam={}; state.documentosComplementares=[]; state.exameFisicoTipo=""; state.exameFisicoDescricao=""; state.alteracoesClinicasExames=""; state.queixaDuracao=""; state.aux={}; applyProfessionalDefaults(currentProfile); }
 function isFinalizedReadOnly(){return workflowStatus()==="FINALIZADO" && new URLSearchParams(location.search).get("reabrir")!=="1";}
 function isReadOnlySafeButton(el){
   if(!el || el.tagName!=="BUTTON") return false;
@@ -2359,18 +2574,38 @@ function applyFinalizedLock(){
   }
 }
 
-function loadRegistryRecord(id){ const rec=registryRead()[id]; if(!rec)return false; Object.keys(state).forEach(k=>delete state[k]); Object.assign(state,JSON.parse(JSON.stringify(rec))); if(!state.atendimento)state.atendimento=id; applyState(); return true; }
+async function loadRegistryRecord(id){
+  try{
+    const rec=await window.AmbientalUtils?.DraftStore?.get?.(`atendimento:${id}`);
+    if(!rec)return false;
+    Object.keys(state).forEach(k=>delete state[k]); Object.assign(state,JSON.parse(JSON.stringify(rec)));
+    if(!state.atendimento)state.atendimento=id; applyState(); return true;
+  }catch(error){
+    console.warn("Falha ao recuperar backup local:", error?.name || "StorageError");
+    return false;
+  }
+}
 async function init(){
  buildSteps();$("dataAtd").value=today();$("horaAtd").value=timeNow();let recovered=false;
+ await authReady;
  const params=new URLSearchParams(location.search); const recordId=params.get("atendimento"); const isNew=params.get("novo")==="1"; const openDocumentOnLoad=params.get("documento")==="1";
- async function tryServerLoad(id){if(!id||!navigator.onLine)return false;try{const r=await fetch(`${getApiBase()}/api/atendimentos/${encodeURIComponent(id)}`,{cache:"no-store"});if(!r.ok)return false;const d=await r.json();if(d?.success&&d.data?.payload){Object.keys(state).forEach(k=>delete state[k]);Object.assign(state,JSON.parse(JSON.stringify(d.data.payload)));state.__serverId=d.data.id;state.workflowStatus=d.data.status||state.workflowStatus||"RASCUNHO";state.finalizado=state.workflowStatus==="FINALIZADO";applyState();setPersistStatus("ok","Atendimento sincronizado com o servidor");return true;}}catch(e){console.warn(e)}return false;}
- try{
-  if(recordId){ recovered=loadRegistryRecord(recordId); if(!recovered) recovered=await tryServerLoad(recordId); if(recovered && !$("saveText").textContent.includes("servidor")){setPersistStatus("ok","Atendimento carregado");} }
-  if(!recovered && !isNew && (!recordId || !navigator.onLine)){ const v2=localStorage.getItem(STORAGE_KEY),legacy=localStorage.getItem(LEGACY_STORAGE_KEY),saved=v2||legacy; if(saved){Object.assign(state,JSON.parse(saved));if(!state.atendimento)state.atendimento=generateId();if(legacy&&!v2)state.__migratedFromV1=true;applyState();$("saveDot").className="save-dot ok";$("saveText").textContent=state.finalizado?"Atendimento finalizado":"Rascunho recuperado";recovered=true;} }
- }catch(e){console.error("Falha ao recuperar atendimento:",e);}
- if(!recovered){newEmptyState();$("atd").value=state.atendimento;$("atdNumber").textContent=state.atendimento;$("atdDate").textContent=formatDate(today());renderMedications();renderConditions();renderDocumentRecords();renderQuesitos();renderExam();updateProgress();syncToRegistry();}
- loadCIDs();renderDiagnosticBase();if(openDocumentOnLoad){setTimeout(previewFinalReport,350);}window.addEventListener("online",()=>{syncServer();});
-function syncServer(){return syncToServer();}document.addEventListener("change",()=>autoSave());document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeModal("historyModal");closeModal("diagnosticModal");}});window.addEventListener("beforeunload",persistNow);
+  if(isNew || !recordId){
+   newEmptyState();
+   applyState();
+ } else {
+   recovered=await tryServerLoad(recordId);
+   if(!recovered) recovered=await loadRegistryRecord(recordId);
+   if(!recovered){
+     newEmptyState();
+     state.atendimento=recordId;
+     applyProfessionalDefaults(currentProfile);
+     applyState();
+   }
+ }
+ if(openDocumentOnLoad) setTimeout(()=>openFinalReport(),250);
+ window.addEventListener("online",()=>{flushOfflineQueue().catch(()=>{});});
+ flushOfflineQueue().catch(()=>{});
+ function syncServer(){return syncToServer();}document.addEventListener("change",()=>autoSave());document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeModal("historyModal");closeModal("diagnosticModal");}});window.addEventListener("beforeunload",()=>{void syncToRegistry();});
 }
 init().catch(e=>{console.error("Falha na inicialização:",e);toast("Erro ao iniciar o sistema.");});
 
@@ -2379,76 +2614,5 @@ document.addEventListener("click",e=>{const o=e.target.closest(".cid-option");if
 </script>
 </div> <!-- Fecha a div .app -->
 
-<!-- Modal Customizado para Alertas e Confirmações (BLINDADO CONTRA CONFLITOS) -->
-<style>
-  #customDialogOverlay {
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(9,24,45,.45);
-    z-index: 99999;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    backdrop-filter: blur(4px);
-  }
-  #customDialogOverlay.open {
-    display: flex;
-    animation: fadeInDialog .2s ease;
-  }
-  #customDialogBox {
-    width: min(420px, 100%);
-    background: #fff;
-    border-radius: 18px;
-    box-shadow: 0 24px 80px rgba(10,25,48,.28);
-    border: 1px solid #DFE7F0;
-    overflow: hidden;
-  }
-  @keyframes fadeInDialog { 
-    from { opacity: 0; transform: translateY(10px); } 
-    to { opacity: 1; transform: translateY(0); } 
-  }
-</style>
-
-<div id="customDialogOverlay">
-  <div id="customDialogBox">
-    <div style="padding: 16px 20px; border-bottom: 1px solid #EEF2F7; background: linear-gradient(180deg,#FFFFFF,#FBFCFE);">
-      <strong id="customDialogTitle" style="font-size: 16px; color: #073F87;">Aviso</strong>
-    </div>
-    <div style="padding: 20px; font-size: 13px; color: #162033; line-height: 1.5;" id="customDialogMessage">
-      <!-- Mensagem aparecerá aqui -->
-    </div>
-    <div style="padding: 14px 20px; border-top: 1px solid #EEF2F7; display: flex; justify-content: flex-end; gap: 8px; background: #F8FAFC;">
-      <button id="customDialogCancel" class="btn btn-outline" style="border: 1px solid #C7D6E5; background: #fff; color: #29435F;" onclick="CustomDialog.cancel()">Cancelar</button>
-      <button id="customDialogConfirm" class="btn btn-primary" onclick="CustomDialog.confirmAction()">OK</button>
-    </div>
-  </div>
-</div>
-
-<script>
-// Sistema global para sobrescrever os alertas nativos do navegador
-const CustomDialog = {
-  resolve: null,
-  open(title, message, isConfirm = false) {
-    document.getElementById('customDialogTitle').textContent = title;
-    document.getElementById('customDialogMessage').innerHTML = message;
-    document.getElementById('customDialogCancel').style.display = isConfirm ? 'inline-flex' : 'none';
-    document.getElementById('customDialogConfirm').textContent = isConfirm ? 'Confirmar' : 'OK';
-    document.getElementById('customDialogOverlay').classList.add('open');
-    return new Promise(res => { this.resolve = res; });
-  },
-  close() {
-    document.getElementById('customDialogOverlay').classList.remove('open');
-    if(this.resolve) this.resolve(false);
-  },
-  cancel() { this.close(); },
-  confirmAction() {
-    document.getElementById('customDialogOverlay').classList.remove('open');
-    if(this.resolve) this.resolve(true);
-  }
-};
-
-window.alert = (msg) => CustomDialog.open("Aviso do Sistema", msg, false);
-window.confirm = (msg) => CustomDialog.open("Confirmação", msg, true);
-</script>
-</body>
+<script>window.addEventListener("pageshow",()=>{AmbientalAuth.me().then(p=>{if(!p) location.replace("/login.html?reason=expired");}).catch(()=>{});});</script></body>
 </html>

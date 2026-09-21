@@ -1,0 +1,90 @@
+/* Ambiental — Design System global
+   Componentes compartilhados: tema, acessibilidade, Toast e CustomDialog.
+   Telas podem sobrescrever apenas o CSS específico de sua área. */
+:root{
+  --ambiental-blue:#073F87;
+  --ambiental-blue-2:#0B58A8;
+  --ambiental-blue-3:#EAF2FB;
+  --ambiental-green:#00C95A;
+  --ambiental-green-2:#00AE50;
+  --ambiental-green-soft:#E9FAF1;
+  --ambiental-text:#162033;
+  --ambiental-muted:#64748B;
+  --ambiental-line:#DDE6EF;
+  --ambiental-bg:#F2F6FA;
+  --ambiental-card:#FFFFFF;
+  --ambiental-danger:#C62828;
+  --ambiental-danger-bg:#FFF4F4;
+  --ambiental-warning:#B7791F;
+  --ambiental-warning-bg:#FFFBEB;
+  --ambiental-shadow:0 16px 45px rgba(19,44,78,.075);
+  --ambiental-radius:16px;
+  /* aliases usados pelas páginas legadas */
+  --blue:var(--ambiental-blue);
+  --blue-2:var(--ambiental-blue-2);
+  --blue2:var(--ambiental-blue-2);
+  --blue-deep:#052F68;
+  --blue-3:var(--ambiental-blue-3);
+  --blue3:var(--ambiental-blue-3);
+  --green:var(--ambiental-green);
+  --green-2:var(--ambiental-green-2);
+  --green2:#EAF8F1;
+  --green-soft:var(--ambiental-green-soft);
+  --mint:#F4FFFA;
+  --text:var(--ambiental-text);
+  --muted:var(--ambiental-muted);
+  --muted-2:#8A99AC;
+  --line:var(--ambiental-line);
+  --line-2:#ECF1F6;
+  --bg:var(--ambiental-bg);
+  --card:var(--ambiental-card);
+  --danger:var(--ambiental-danger);
+  --danger-bg:var(--ambiental-danger-bg);
+  --success:#087443;
+  --success-bg:#EEFBF4;
+  --amber:var(--ambiental-warning);
+  --amber-bg:var(--ambiental-warning-bg);
+  --red:#DC2626;
+  --red-bg:#FEF2F2;
+  --shadow:var(--ambiental-shadow);
+  --shadow-soft:0 8px 26px rgba(19,44,78,.055);
+  --radius:var(--ambiental-radius);
+  --radius-sm:11px;
+  --radius-small:11px;
+
+}
+.ambiental-visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+#toast,.toast{
+  position:fixed;right:20px;bottom:20px;z-index:100000;
+  min-width:260px;max-width:min(420px,calc(100vw - 40px));
+  background:#17324d;color:#fff;border:1px solid rgba(255,255,255,.08);
+  border-radius:13px;padding:12px 14px;
+  box-shadow:0 20px 45px rgba(10,30,55,.25);
+  font:700 12px/1.45 Inter,ui-sans-serif,system-ui,sans-serif;
+  opacity:0;transform:translateY(10px);pointer-events:none;
+  transition:opacity .2s ease,transform .2s ease;
+}
+#toast.show,.toast.show{opacity:1;transform:none}
+#customDialogOverlay{
+  position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;
+  padding:20px;background:rgba(9,24,45,.45);backdrop-filter:blur(4px);
+}
+#customDialogOverlay.open{display:flex;animation:ambientalDialogIn .2s ease}
+#customDialogBox{
+  width:min(460px,100%);background:#fff;border:1px solid #DFE7F0;border-radius:18px;
+  box-shadow:0 24px 80px rgba(10,25,48,.28);overflow:hidden;
+}
+#customDialogHeader{padding:16px 20px;border-bottom:1px solid #EEF2F7;background:linear-gradient(180deg,#fff,#FBFCFE)}
+#customDialogTitle{font:800 16px/1.25 Inter,ui-sans-serif,system-ui,sans-serif;color:var(--ambiental-blue)}
+#customDialogMessage{padding:20px;font:13px/1.55 Inter,ui-sans-serif,system-ui,sans-serif;color:var(--ambiental-text)}
+#customDialogActions{padding:14px 20px;border-top:1px solid #EEF2F7;display:flex;justify-content:flex-end;gap:8px;background:#F8FAFC}
+#customDialogCancel,#customDialogConfirm{
+  min-height:40px;border-radius:10px;padding:0 14px;font:800 12px/1 Inter,ui-sans-serif,system-ui,sans-serif;
+}
+#customDialogCancel{border:1px solid #C7D6E5;background:#fff;color:#29435F}
+#customDialogConfirm{border:0;background:var(--ambiental-blue);color:#fff}
+#customDialogCancel:hover,#customDialogConfirm:hover{filter:brightness(.98);transform:translateY(-1px)}
+@keyframes ambientalDialogIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  #toast,.toast,#customDialogOverlay.open{animation:none!important;transition:none!important}
+}

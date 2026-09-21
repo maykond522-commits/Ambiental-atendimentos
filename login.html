@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#073F87">
+<title>Ambiental — Acesso ao Sistema</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<style>
+*{box-sizing:border-box}html,body{min-height:100%}
+body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--text);background:linear-gradient(135deg,#F7FAFD 0%,var(--bg) 100%);}
+button,input{font:inherit}
+button{cursor:pointer}
+.page{min-height:100vh;display:grid;grid-template-columns:minmax(360px,.94fr) minmax(460px,1.06fr)}
+.brand-panel{position:relative;overflow:hidden;padding:56px;display:flex;align-items:center;background:var(--blue)}
+.brand-panel:before,.brand-panel:after{content:"";position:absolute;border:1px solid rgba(255,255,255,.09);border-radius:50%}
+.brand-panel:before{width:560px;height:560px;right:-220px;top:-190px}.brand-panel:after{width:420px;height:420px;left:-230px;bottom:-170px}
+.brand-grid{position:absolute;inset:0;opacity:.18;background-image:linear-gradient(rgba(255,255,255,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.12) 1px,transparent 1px);background-size:54px 54px;mask-image:linear-gradient(to bottom,transparent 0%,#000 22%,#000 80%,transparent 100%)}
+.brand-content{position:relative;z-index:2;max-width:560px;color:#fff}
+.logo-wrap{width:76px;height:76px;border-radius:20px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 14px 34px rgba(0,0,0,.18);margin-bottom:32px}
+.logo-wrap img{max-width:64px;max-height:64px;object-fit:contain}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.72)}
+.eyebrow i{width:7px;height:7px;border-radius:50%;background:var(--green)}
+h1{margin:12px 0 16px;font-size:clamp(34px,4vw,56px);line-height:1.05;letter-spacing:-.045em}
+.brand-copy{max-width:520px;margin:0;color:rgba(255,255,255,.78);font-size:16px;line-height:1.7}
+.features{margin-top:42px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.feature{display:flex;gap:12px;align-items:center;padding:14px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);border-radius:14px;color:rgba(255,255,255,.9);font-size:12px}
+.feature-icon{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.09);display:grid;place-items:center;flex:0 0 auto}
+.secure-note{margin-top:38px;color:rgba(255,255,255,.62);font-size:11px}
+.form-panel{display:flex;align-items:center;justify-content:center;padding:40px 7vw}
+.form-shell{width:min(490px,100%);background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:42px}
+.form-head{margin-bottom:26px}
+.form-head .mini{font-size:11px;color:var(--blue-2);font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.form-head h2{margin:9px 0 7px;font-size:32px;letter-spacing:-.04em;color:var(--blue)}
+.form-head p{margin:0;color:var(--muted);font-size:14px}
+.context{display:flex;gap:10px;align-items:center;padding:12px 14px;border:1px solid #E5EDF5;background:#F9FBFD;border-radius:14px;margin-bottom:24px}
+.context-badge{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--blue);padding:6px 8px;border-radius:8px;background:#EDF5FD}
+.context span{font-size:11px;color:var(--muted)}
+.field{margin-bottom:18px}.field label{display:flex;justify-content:space-between;gap:8px;margin-bottom:8px;font-size:12px;font-weight:800;color:#334155}
+.input-wrap{position:relative}.input{width:100%;height:50px;border:1px solid #D3DEEA;border-radius:13px;background:#fff;padding:0 14px;font-size:14px;color:var(--text);outline:0;transition:.2s}
+.input.password{padding-right:48px}.input:focus{border-color:#76A6D3;box-shadow:0 0 0 4px rgba(7,63,135,.08)}
+.input.invalid{border-color:#D65A5A;box-shadow:0 0 0 4px rgba(198,40,40,.06)}
+.toggle{position:absolute;right:8px;top:7px;width:36px;height:36px;border:0;background:transparent;color:#64748B;border-radius:9px}
+.toggle:hover{background:#F3F7FB;color:var(--blue)}
+.field-error{min-height:16px;margin-top:6px;font-size:11px;color:var(--danger);font-weight:700}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:2px 0 22px}
+.checkbox{display:flex;align-items:center;gap:9px;font-size:12px;color:#475569;cursor:pointer}
+.checkbox input{width:15px;height:15px;accent-color:var(--blue)}
+.link{border:0;background:transparent;color:var(--blue-2);font-size:12px;font-weight:800;padding:4px 0;text-decoration:none}.link:hover{text-decoration:underline}
+.submit{width:100%;height:52px;border:0;border-radius:13px;background:linear-gradient(135deg,var(--blue),var(--blue-2));color:#fff;font-size:13px;font-weight:900;letter-spacing:.01em;box-shadow:0 12px 26px rgba(7,63,135,.2);transition:.2s}
+.submit:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 16px 30px rgba(7,63,135,.24)}
+.submit:disabled{opacity:.7;cursor:not-allowed}
+.submit-content{display:flex;align-items:center;justify-content:center;gap:10px}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+.status{display:none;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:12px;margin:16px 0 0;font-size:12px;line-height:1.45}
+.status.show{display:flex}.status.error{background:var(--danger-bg);color:var(--danger);border:1px solid #F3CECE}.status.success{background:var(--success-bg);color:var(--success);border:1px solid #CDECDD}.status.info{background:#EFF6FF;color:#225C96;border:1px solid #D6E8FB}
+.status-icon{font-weight:900;flex:0 0 auto}
+.footer{margin-top:22px;text-align:center;color:#8190A4;font-size:10px}
+.overlay{position:fixed;inset:0;background:rgba(9,24,45,.44);backdrop-filter:blur(7px);display:none;align-items:center;justify-content:center;padding:20px;z-index:20}
+.overlay.open{display:flex}.modal{width:min(440px,100%);background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 30px 90px rgba(8,25,50,.26);padding:28px}
+.modal h3{margin:0;color:var(--blue);font-size:22px}.modal p{color:var(--muted);font-size:13px;line-height:1.55}.modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:22px}.btn{height:42px;border-radius:11px;padding:0 14px;border:1px solid #CBD8E5;background:#fff;color:#334155;font-weight:800;font-size:12px}.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.hidden{display:none!important}
+@keyframes spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:no-preference){.form-shell{animation:rise .55s ease}.brand-content{animation:fade .7s ease}}@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@keyframes fade{from{opacity:0}to{opacity:1}}
+@media(max-width:900px){.page{grid-template-columns:1fr}.brand-panel{display:none}.form-panel{padding:28px 20px}.form-shell{padding:30px;border-radius:20px;box-shadow:0 18px 55px rgba(10,30,55,.1)}}
+@media(max-width:520px){.form-panel{padding:14px}.form-shell{padding:24px 20px;border:0;box-shadow:none;background:transparent}.row{align-items:flex-start;flex-direction:column}.form-head h2{font-size:29px}.context{margin-bottom:20px}}
+</style>
+<link rel="stylesheet" href="/global.css">
+<script src="/utils.js"></script>
+</head>
+<body>
+<div class="page">
+  <aside class="brand-panel" aria-label="Informações institucionais">
+    <div class="brand-grid" aria-hidden="true"></div>
+    <div class="brand-content">
+      <div class="logo-wrap"><img src="/logo.png" alt="Logo Ambiental"></div>
+      <div class="eyebrow"><i></i> Portal Corporativo</div>
+      <h1>Ambiental</h1>
+      <p class="brand-copy"><strong>Avaliação Médica Pericial — LTS</strong><br>Gestão inteligente e segura de avaliações médicas periciais.</p>
+      <div class="features">
+        <div class="feature"><span class="feature-icon">✓</span><span>Ambiente protegido</span></div>
+        <div class="feature"><span class="feature-icon">▣</span><span>Dados corporativos</span></div>
+        <div class="feature"><span class="feature-icon">◈</span><span>Controle de acesso</span></div>
+        <div class="feature"><span class="feature-icon">↗</span><span>Gestão integrada</span></div>
+      </div>
+      <div class="secure-note">Ambiente seguro de Avaliação Médica Pericial</div>
+    </div>
+  </aside>
+
+  <main class="form-panel">
+    <section class="form-shell" aria-labelledby="loginTitle">
+      <div class="form-head">
+        <div class="mini">Ambiental · LTS</div>
+        <h2 id="loginTitle">Bem-vindo de volta</h2>
+        <p>Acesse sua conta para continuar.</p>
+      </div>
+
+      <div class="context">
+        <span class="context-badge">Acesso seguro</span>
+        <span>Autenticação corporativa com controle de perfil e sessão.</span>
+      </div>
+
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label for="email">E-mail corporativo</label>
+          <div class="input-wrap"><input id="email" name="email" class="input" type="email" autocomplete="username" inputmode="email" placeholder="seu.email@empresa.com" aria-describedby="emailError"></div>
+          <div id="emailError" class="field-error" role="alert"></div>
+        </div>
+
+        <div class="field">
+          <label for="password">Senha</label>
+          <div class="input-wrap">
+            <input id="password" name="password" class="input password" type="password" autocomplete="current-password" placeholder="Digite sua senha" aria-describedby="passwordError">
+            <button class="toggle" id="togglePassword" type="button" aria-label="Mostrar senha" aria-pressed="false">◉</button>
+          </div>
+          <div id="passwordError" class="field-error" role="alert"></div>
+        </div>
+
+        <div class="row">
+          <label class="checkbox"><input id="remember" type="checkbox"> <span>Lembrar acesso neste dispositivo</span></label>
+          <button type="button" class="link" id="forgotBtn">Esqueci minha senha</button>
+        </div>
+
+        <button id="submitBtn" class="submit" type="submit">
+          <span class="submit-content"><span id="submitSpinner" class="spinner hidden"></span><span id="submitText">Entrar no sistema</span></span>
+        </button>
+
+        <div id="statusBox" class="status" role="status" aria-live="polite"></div>
+      </form>
+
+      <div class="footer">Ambiental · Avaliação Médica Pericial — LTS</div>
+    </section>
+  </main>
+</div>
+
+<div class="overlay" id="recoveryOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="recoveryTitle">
+    <h3 id="recoveryTitle">Recuperar acesso</h3>
+    <p>Digite seu e-mail corporativo. Enviaremos orientações para redefinir sua senha.</p>
+    <div class="field"><label for="recoveryEmail">E-mail corporativo</label><input id="recoveryEmail" class="input" type="email" autocomplete="email" placeholder="seu.email@empresa.com"></div>
+    <div id="recoveryStatus" class="status" role="status" aria-live="polite"></div>
+    <div class="modal-actions"><button class="btn" id="closeRecovery" type="button">Cancelar</button><button class="btn btn-primary" id="sendRecovery" type="button">Enviar link de recuperação</button></div>
+  </div>
+</div>
+
+<script>
+(async()=>{
+  const $=id=>document.getElementById(id);
+  const form=$("loginForm"), email=$("email"), password=$("password"), remember=$("remember");
+  const btn=$("submitBtn"), spinner=$("submitSpinner"), submitText=$("submitText"), statusBox=$("statusBox");
+  const recoveryOverlay=$("recoveryOverlay"), recoveryEmail=$("recoveryEmail"), recoveryStatus=$("recoveryStatus");
+  const params=new URLSearchParams(location.search), next=params.get("next");
+  const allowedNext = /^\/(app|gestao|gestao_atendimentos\.html|ambiental_avaliacao_medica_lts_cid_assistente\.html)(\?|$)/;
+  const safeNext = next && allowedNext.test(next) ? next : null;
+
+  function status(el,type,msg,icon=""){el.className=`status show ${type}`;el.innerHTML=`<span class="status-icon">${icon}</span><span>${msg}</span>`}
+  function clearStatus(){statusBox.className="status";statusBox.textContent=""}
+  function fieldErr(input,err,msg){$(err).textContent=msg||"";input.classList.toggle("invalid",!!msg);if(msg)input.setAttribute("aria-invalid","true");else input.removeAttribute("aria-invalid")}
+  function setLoading(on){btn.disabled=on;spinner.classList.toggle("hidden",!on);submitText.textContent=on?"Autenticando...":"Entrar no sistema"}
+  function humanLoginError(err,code){
+    if(code==="NO_PROFILE") return ["error","Perfil não habilitado","Sua conta foi autenticada, mas ainda não possui um perfil de acesso ativo no sistema. Procure o administrador.","!"];
+    if(code==="AUTH_SERVER_UNAVAILABLE") return ["error","Sistema temporariamente indisponível","Não foi possível concluir a validação do acesso no servidor. Tente novamente em alguns instantes.","!"];
+    const msg=String(err?.message||"").toLowerCase();
+    if(!navigator.onLine||msg.includes("network")||msg.includes("fetch")) return ["error","Não foi possível conectar ao sistema","Verifique sua conexão e tente novamente.","!"];
+    if(msg.includes("invalid login")||msg.includes("invalid credentials")||msg.includes("invalid")) return ["error","Não foi possível entrar","Verifique seu e-mail e senha e tente novamente.","!"];
+    return ["error","Não foi possível entrar","Verifique suas credenciais e tente novamente.","!"];
+  }
+
+  await AmbientalAuth.init().catch(()=>{status(statusBox,"error","Sistema temporariamente indisponível. Tente novamente em alguns instantes.","!");});
+
+  try{
+    const existing=await AmbientalAuth.me();
+    if(existing){location.replace(safeNext||AmbientalAuth.roleHome(existing));return;}
+  }catch{}
+
+  if(params.get("reason")==="expired") status(statusBox,"info","Sua sessão expirou. Entre novamente para continuar.","i");
+  if(params.get("reason")==="required") status(statusBox,"info","Faça login para acessar esta área.","i");
+
+  $("togglePassword").addEventListener("click",()=>{
+    const hide=password.type==="password";password.type=hide?"text":"password";
+    $("togglePassword").setAttribute("aria-label",hide?"Ocultar senha":"Mostrar senha");
+    $("togglePassword").setAttribute("aria-pressed",String(hide));
+  });
+  remember.addEventListener("change",()=>AmbientalAuth.setRemember(remember.checked).catch(()=>{}));
+
+  form.addEventListener("submit",async e=>{
+    e.preventDefault();clearStatus();
+    fieldErr(email,"emailError","");fieldErr(password,"passwordError","");
+    const ev=email.value.trim(), pv=password.value;
+    let valid=true;
+    if(!ev){fieldErr(email,"emailError","Informe seu e-mail corporativo.");valid=false}
+    else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ev)){fieldErr(email,"emailError","Informe um e-mail válido.");valid=false}
+    if(!pv){fieldErr(password,"passwordError","Informe sua senha.");valid=false}
+    if(!valid){(email.classList.contains("invalid")?email:password).focus();return}
+    setLoading(true);
+    const result=await AmbientalAuth.login(ev,pv,remember.checked).catch(err=>({ok:false,error:err}));
+    if(!result?.ok){
+      setLoading(false);
+      const [type,title,msg,ic]=humanLoginError(result?.error,result?.code);
+      status(statusBox,type,`<strong>${title}</strong><br>${msg}`,ic);
+      return;
+    }
+    submitText.textContent="Acesso autorizado";
+    status(statusBox,"success","<strong>Acesso autorizado</strong><br>Redirecionando para sua área de trabalho.","✓");
+    await new Promise(r=>setTimeout(r,280));
+    location.replace(safeNext&&AmbientalAuth.areaAllowed(result.profile, safeNext.includes("gestao")?"gestao":"atendimento")?safeNext:AmbientalAuth.roleHome(result.profile));
+  });
+
+  $("forgotBtn").addEventListener("click",()=>{recoveryEmail.value=email.value.trim();recoveryStatus.className="status";recoveryOverlay.classList.add("open");recoveryOverlay.setAttribute("aria-hidden","false");setTimeout(()=>recoveryEmail.focus(),30)});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&recoveryOverlay.classList.contains("open")) $("closeRecovery").click();});
+  $("closeRecovery").addEventListener("click",()=>{recoveryOverlay.classList.remove("open");recoveryOverlay.setAttribute("aria-hidden","true")});
+  recoveryOverlay.addEventListener("click",e=>{if(e.target===recoveryOverlay)$("closeRecovery").click()});
+  $("sendRecovery").addEventListener("click",async()=>{
+    const ev=recoveryEmail.value.trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ev)){status(recoveryStatus,"error","Informe um e-mail corporativo válido.","!");return}
+    const b=$("sendRecovery");b.disabled=true;b.textContent="Enviando...";
+    const r=await AmbientalAuth.recover(ev).catch(error=>({ok:false,error}));
+    b.disabled=false;b.textContent="Enviar link de recuperação";
+    if(r?.ok) status(recoveryStatus,"success","<strong>Verifique seu e-mail</strong><br>Se houver uma conta correspondente, você receberá um link para recuperar o acesso.","✓");
+    else status(recoveryStatus,"error","Não foi possível enviar as orientações agora. Tente novamente em alguns instantes.","!");
+  });
+})();
+</script>
+</body>
+</html>

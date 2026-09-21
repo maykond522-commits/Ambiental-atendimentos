@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Contas médicas — Ambiental</title>
+<link rel="stylesheet" href="/global.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<script src="/api.js"></script>
+<script src="/utils.js"></script>
+<style>
+:root{--nav:#062d62;--blue:#0756a8;--blue2:#0b67b9;--green:#00c95a;--ink:#12365b;--muted:#71859b;--line:#dfe8f1;--bg:#f4f8fb;--danger:#c03645;--dangerBg:#fff5f6}
+*{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at 5% 0%,rgba(7,86,168,.09),transparent 30%),linear-gradient(180deg,#f8fbfe,#eef4f8);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink)}
+.shell{min-height:100vh;display:grid;grid-template-columns:252px minmax(0,1fr)}
+.side{background:linear-gradient(180deg,#05295a,#073f87 62%,#062f67);color:#fff;padding:18px 14px;display:flex;flex-direction:column;box-shadow:12px 0 34px rgba(8,40,78,.15)}
+.brand{display:flex;gap:10px;align-items:center;padding:4px 6px 20px;border-bottom:1px solid rgba(255,255,255,.12)}.brand img{width:40px;height:40px;background:#fff;border-radius:11px;padding:4px}.brand b{display:block;font-size:14px}.brand span{display:block;font-size:10px;opacity:.72}
+.nav-title{font-size:9px;letter-spacing:.13em;text-transform:uppercase;opacity:.58;font-weight:900;margin:20px 8px 8px}.nav a{display:flex;align-items:center;gap:9px;color:#fff;text-decoration:none;padding:11px 10px;border-radius:11px;font-size:11px;font-weight:900;margin:4px 0;transition:.18s}.nav a.active,.nav a:hover{background:rgba(255,255,255,.13);transform:translateX(2px)}.spacer{flex:1}.user{padding:12px 10px;border:1px solid rgba(255,255,255,.12);border-radius:13px;background:rgba(255,255,255,.07);font-size:11px}.user small{display:block;opacity:.62;margin-top:2px}
+main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.88);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}.topin{padding:18px 30px;display:flex;justify-content:space-between;gap:20px;align-items:center}.crumb{font-size:10px;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.08em}.title{font-size:28px;font-weight:950;margin:5px 0}.subtitle{margin:0;color:var(--muted);font-size:12px}.content{padding:28px 30px 36px;max-width:1380px}
+.hero{background:linear-gradient(135deg,#073f87,#0b67b9);color:#fff;padding:24px;border-radius:22px;box-shadow:0 18px 34px rgba(7,63,135,.18);display:flex;justify-content:space-between;align-items:center;gap:20px;animation:rise .45s ease both}.hero h2{margin:0 0 7px;font-size:22px}.hero p{margin:0;color:rgba(255,255,255,.78);font-size:12px;max-width:760px;line-height:1.55}.hero-stat{text-align:right}.hero-stat b{display:block;font-size:28px}.hero-stat span{font-size:10px;opacity:.74}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}.stat{background:#fff;border:1px solid var(--line);border-radius:18px;padding:17px 18px;box-shadow:0 10px 26px rgba(26,60,95,.06);animation:rise .55s ease both}.stat small{display:block;font-size:9px;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.08em}.stat b{display:block;font-size:25px;margin-top:7px}.stat span{display:block;color:var(--muted);font-size:10px;margin-top:4px}
+.workspace{display:grid;grid-template-columns:minmax(330px,390px) minmax(0,1fr);gap:18px;align-items:start}.panel{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 12px 30px rgba(26,60,95,.06);overflow:hidden;animation:rise .65s ease both}.panelhead{padding:17px 19px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}.panelhead strong{font-size:14px}.panelhead span{font-size:9px;color:var(--muted);font-weight:900}.panelbody{padding:19px}
+.form-grid{display:grid;gap:13px}.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:10px;font-weight:950;color:#506982}.field input{width:100%;padding:12px 13px;border:1px solid #cfdae6;border-radius:11px;outline:none;background:#fbfdff;color:#173654;font:inherit;font-size:12px;transition:.18s}.field input:focus{border-color:#78aadd;box-shadow:0 0 0 4px rgba(7,86,168,.08);background:#fff}.hint{font-size:9px;color:var(--muted);line-height:1.45}.requirements{display:grid;gap:8px;margin-top:12px;padding:12px;border-radius:13px;background:#f6f9fc;border:1px solid #e7eef5}.req{display:flex;gap:8px;align-items:flex-start;font-size:9px;color:#5e748b}.req i{width:7px;height:7px;border-radius:999px;background:var(--green);margin-top:3px;flex:0 0 auto}
+.actions{display:flex;gap:8px;margin-top:18px}.primary,.secondary,.danger{border:0;border-radius:11px;padding:11px 14px;font-weight:950;font-size:10px;cursor:pointer;transition:.18s}.primary{background:var(--green);color:#06381d;box-shadow:0 9px 20px rgba(0,201,90,.22)}.primary:hover{transform:translateY(-1px);filter:saturate(1.05)}.secondary{background:#fff;color:#35516d;border:1px solid var(--line)}.secondary:hover{background:#f8fbfd}.primary:disabled,.secondary:disabled,.danger:disabled{opacity:.55;cursor:not-allowed;transform:none}.danger{background:var(--dangerBg);color:var(--danger);border:1px solid #f0cbd0}.danger:hover{background:#fff0f2}
+.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:720px}.table th,.table td{padding:13px 14px;border-bottom:1px solid #edf2f6;text-align:left;font-size:11px;vertical-align:middle}.table th{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#71849a;background:#fbfcfe}.med{font-weight:950}.sub{font-size:10px;color:var(--muted);margin-top:3px}.badge{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;background:#e9f9f0;color:#08793b;font-weight:950;font-size:9px}.badge.off{background:#f2f4f7;color:#7a8794}.empty{padding:40px;text-align:center;color:var(--muted);font-size:12px}.list-tools{display:flex;gap:8px;align-items:center}.search{padding:9px 11px;border:1px solid var(--line);border-radius:10px;outline:none;font-size:10px;width:180px}.search:focus{border-color:#78aadd;box-shadow:0 0 0 3px rgba(7,86,168,.08)}
+.notice{padding:12px 14px;border-radius:12px;background:#eff8ff;border:1px solid #d7e9f8;color:#47667f;font-size:10px;line-height:1.5;margin-bottom:14px}.danger-note{background:#fff7f7;border-color:#f1d4d8;color:#884651}
+.loadingbar{height:2px;position:fixed;top:0;left:0;right:0;z-index:100;background:linear-gradient(90deg,transparent,#00c95a,#0756a8,transparent);background-size:200% 100%;animation:shimmer 1.2s linear infinite}.admin-boot-loader{position:fixed;inset:0;z-index:110;background:radial-gradient(circle at 50% 10%,rgba(7,86,168,.12),transparent 38%),linear-gradient(145deg,#eef4f9,#f9fbfd);display:grid;place-items:center;padding:24px;transition:opacity .38s ease,visibility .38s ease}.admin-boot-loader.hide{opacity:0;visibility:hidden;pointer-events:none}.admin-boot-card{width:min(430px,100%);padding:34px;border:1px solid #e2eaf2;border-radius:26px;background:rgba(255,255,255,.92);backdrop-filter:blur(16px);box-shadow:0 30px 90px rgba(8,40,78,.18);text-align:center}.admin-boot-brand{display:flex;align-items:center;justify-content:center;gap:9px;color:var(--blue);font-size:11px;font-weight:950;letter-spacing:.1em}.admin-boot-brand img{width:34px;height:34px;border-radius:10px;background:#fff;padding:3px;border:1px solid #e6edf4}.admin-boot-spinner{width:78px;height:78px;margin:24px auto 16px;border-radius:50%;border:5px solid #e7eef5;border-top-color:var(--green);border-right-color:var(--blue);animation:spin 1.05s linear infinite;box-shadow:0 0 0 9px rgba(7,63,135,.04)}.admin-boot-card h3{margin:0;color:var(--ink);font-size:18px}.admin-boot-card p{margin:7px 0 18px;color:var(--muted);font-size:12px}.admin-boot-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}.admin-boot-step{padding:9px 6px;border-radius:10px;background:#f3f7fa;color:#8191a2;font-size:9px;font-weight:950;text-transform:uppercase;letter-spacing:.05em}.admin-boot-step.active{background:#e8f2ff;color:var(--blue)}.admin-boot-step.done{background:#e9f8f0;color:#08793b}.admin-boot-progress{height:6px;background:#edf2f6;border-radius:999px;overflow:hidden}.admin-boot-progress span{display:block;width:8%;height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:999px;transition:width .5s ease}.toast-region{position:fixed;right:18px;bottom:18px;z-index:120;display:grid;gap:8px}.toastx{background:#0e2f52;color:#fff;padding:12px 14px;border-radius:11px;box-shadow:0 14px 34px rgba(4,29,53,.22);font-size:10px;font-weight:800;animation:toastin .2s ease both;max-width:340px}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@keyframes toastin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}@keyframes spin{to{transform:rotate(360deg)}}@media(max-width:980px){.workspace{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.hero{flex-direction:column;align-items:flex-start}.hero-stat{text-align:left}.content{padding:20px 16px}.topin{padding:16px}.search{width:140px}}@media(max-width:800px){.shell{grid-template-columns:1fr}.side{display:none}}
+</style>
+</head>
+<body>
+<div id="adminBootLoader" class="admin-boot-loader" aria-live="polite" aria-busy="true"><div class="admin-boot-card"><div class="admin-boot-brand"><img src="/logo.png" alt=""><span>AMBIENTAL · LTS</span></div><div class="admin-boot-spinner"></div><h3 id="adminBootTitle">Preparando gestão de profissionais</h3><p id="adminBootText">Conectando ao cadastro médico seguro…</p><div class="admin-boot-steps"><span class="admin-boot-step active" id="abStep1">Sessão</span><span class="admin-boot-step" id="abStep2">Contas</span><span class="admin-boot-step" id="abStep3">Pronto</span></div><div class="admin-boot-progress"><span id="abProgress"></span></div></div></div>
+<div id="loadingbar" class="loadingbar" hidden></div>
+<div class="shell">
+<aside class="side">
+  <div class="brand"><img src="/logo.png" alt="Ambiental"><div><b>Ambiental</b><span>Gestão administrativa</span></div></div>
+  <div class="nav-title">Administração</div>
+  <nav class="nav">
+    <a href="/gestao">Dashboard</a>
+    <a class="active" href="/gestao-medicos-admin.html">Contas médicas</a>
+    <a href="/gestao#atendimentos">Buscar atendimento</a>
+    <a href="/gestao#historico">Histórico</a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="user"><div id="who">Administrador</div><small>Gerenciamento de contas médicas</small></div>
+</aside>
+<main>
+<header class="top"><div class="topin"><div><div class="crumb">Administração / Contas médicas</div><div class="title">Central de contas médicas</div><p class="subtitle">Um espaço dedicado para criar e remover acessos de médicos, mantendo os dados sincronizados com o cadastro interno.</p></div></div></header>
+<section class="content">
+  <section class="hero">
+    <div><h2>Gestão de profissionais</h2><p>Cadastre um médico uma única vez. O sistema cria a conta no Authentication e registra automaticamente nome, CRM/CRO e perfil em <b>usuarios</b>. A remoção encerra o acesso sem apagar os atendimentos já realizados.</p></div>
+    <div class="hero-stat"><b id="count">—</b><span>médicos cadastrados</span></div>
+  </section>
+
+  <section class="stats">
+    <article class="stat"><small>Contas ativas</small><b id="activeCount">—</b><span>Acessos disponíveis para login</span></article>
+    <article class="stat"><small>Atendimentos realizados</small><b id="attendanceCount">—</b><span>Total vinculado aos profissionais</span></article>
+    <article class="stat"><small>Finalizados</small><b id="finishedCount">—</b><span>Atendimentos já concluídos</span></article>
+  </section>
+
+  <section class="workspace">
+    <div class="panel" id="createPanel">
+      <div class="panelhead"><strong>Adicionar novo médico</strong><span>CADASTRO SEGURO</span></div>
+      <div class="panelbody">
+        <div class="notice">Preencha os dados abaixo para criar o acesso. A senha inicial é enviada somente ao Authentication do Supabase e não é armazenada na tabela <b>usuarios</b>.</div>
+        <form id="createForm" novalidate>
+          <div class="form-grid">
+            <div class="field"><label for="nome">Nome completo</label><input id="nome" name="nome" required minlength="3" autocomplete="name" placeholder="Ex.: Dra. Maria Silva"></div>
+            <div class="field"><label for="email">E-mail corporativo</label><input id="email" name="email" type="email" required autocomplete="email" placeholder="medico@empresa.com.br"></div>
+            <div class="field"><label for="crm">CRM/CRO</label><input id="crm" name="crm" required placeholder="Ex.: CRM 123456 / UF"></div>
+            <div class="field"><label for="senha">Senha inicial</label><input id="senha" name="senha" type="password" required minlength="8" autocomplete="new-password" placeholder="Mínimo de 8 caracteres"><div class="hint">A senha é usada somente para criação da conta no Authentication.</div></div>
+          </div>
+          <div class="requirements"><div class="req"><i></i><span>O perfil será criado automaticamente como <b>Médico</b>.</span></div><div class="req"><i></i><span>O CRM fica vinculado ao mesmo UUID do usuário autenticado.</span></div><div class="req"><i></i><span>Atendimentos existentes não são excluídos ao remover o acesso.</span></div></div>
+          <div class="actions"><button class="primary" id="createBtn" type="submit">Criar conta médica</button><button class="secondary" type="button" id="clearBtn">Limpar</button></div>
+        </form>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panelhead"><strong>Médicos cadastrados</strong><div class="list-tools"><input id="search" class="search" placeholder="Buscar por nome ou CRM"><span id="sync">Carregando…</span></div></div>
+      <div class="table-wrap">
+        <table class="table"><thead><tr><th>Médico</th><th>CRM/CRO</th><th>Atendimentos</th><th>Status</th><th>Cadastro</th><th>Ação</th></tr></thead><tbody id="tbody"></tbody></table>
+      </div>
+      <div class="empty" id="empty" hidden>Nenhum médico encontrado.</div>
+    </div>
+  </section>
+</section>
+</main>
+</div>
+<div class="toast-region" id="toasts" aria-live="polite"></div>
+<script>
+(async()=>{
+  const $=id=>document.getElementById(id); let rows=[]; let filtered=[];
+  const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const fmt=d=>d?new Date(d).toLocaleDateString('pt-BR'):'—';
+  const moneyless=v=>Number(v||0);
+  const toast=(message)=>{const el=document.createElement('div');el.className='toastx';el.textContent=message;$('toasts').appendChild(el);setTimeout(()=>el.remove(),3600)};
+  const busy=(on)=>{ $('loadingbar').hidden=!on; document.body.setAttribute('aria-busy',on?'true':'false'); };
+  const render=()=>{
+    $('count').textContent=rows.length; $('activeCount').textContent=rows.filter(r=>Number(r.ativo)===1).length; $('attendanceCount').textContent=rows.reduce((s,r)=>s+moneyless(r.total_atendimentos),0); $('finishedCount').textContent=rows.reduce((s,r)=>s+moneyless(r.finalizados),0);
+    const q=$('search').value.trim().toLowerCase(); filtered=rows.filter(r=>!q||`${r.nome||''} ${r.crm||''}`.toLowerCase().includes(q));
+    $('empty').hidden=filtered.length>0; $('tbody').innerHTML=filtered.map(r=>`<tr><td><div class="med">${esc(r.nome)}</div><div class="sub">ID: ${esc(r.id)}</div></td><td>${esc(r.crm||'—')}</td><td><b>${moneyless(r.total_atendimentos)}</b> <span class="sub">(${moneyless(r.finalizados)} finalizados)</span></td><td><span class="badge ${Number(r.ativo)===1?'':'off'}">● ${Number(r.ativo)===1?'Ativo':'Removido'}</span></td><td>${fmt(r.criado_em)}</td><td>${Number(r.ativo)===1?`<button class="danger" data-remove="${esc(r.id)}">Remover acesso</button>`:'—'}</td></tr>`).join('');
+    document.querySelectorAll('[data-remove]').forEach(btn=>btn.addEventListener('click',()=>removeDoctor(btn.dataset.remove)));
+  };
+  function setBoot(step,title,text,progress){const ids=['abStep1','abStep2','abStep3'];ids.forEach((id,i)=>{const el=$(id);if(!el)return;const n=i+1;el.classList.toggle('active',n===step);el.classList.toggle('done',n<step);});if($('adminBootTitle'))$('adminBootTitle').textContent=title;if($('adminBootText'))$('adminBootText').textContent=text;if($('abProgress'))$('abProgress').style.width=progress+'%';}
+  async function load(){ $('sync').textContent='Sincronizando…'; setBoot(2,'Carregando profissionais','Buscando contas médicas e vínculos de atendimento…',58); try{const res=await AmbientalAuth.authFetch('/api/admin/medicos');const data=await res.json();if(!res.ok)throw new Error(data?.error?.message||'Não foi possível carregar os médicos.');rows=data.data?.items||[];render();$('sync').textContent='Atualizado agora';setBoot(3,'Sala pronta','Contas médicas carregadas. Gestão liberada.',100);setTimeout(()=>{$('adminBootLoader')?.classList.add('hide');$('adminBootLoader')?.setAttribute('aria-busy','false');setTimeout(()=>$('adminBootLoader')?.remove(),420)},500);}catch(e){$('sync').textContent='Erro';setBoot(3,'Não foi possível carregar','Verifique a conexão com o servidor e tente novamente.',100);toast(e.message)}}
+  async function removeDoctor(id){const r=rows.find(x=>String(x.id)===String(id));if(!r)return;const ok=confirm(`Remover o acesso de ${r.nome}?\n\nO login será encerrado, mas os atendimentos e o histórico permanecerão preservados.`);if(!ok)return;busy(true);try{const res=await AmbientalAuth.authFetch('/api/admin/medicos/'+encodeURIComponent(id),{method:'DELETE'});const data=await res.json();if(!res.ok)throw new Error(data?.error?.message||'Não foi possível remover a conta.');toast('Acesso médico removido com sucesso.');await load();}catch(e){toast(e.message)}finally{busy(false)}}
+  $('search').addEventListener('input',render); $('clearBtn').addEventListener('click',()=>{$('createForm').reset();$('nome').focus()});
+  $('createForm').addEventListener('submit',async e=>{e.preventDefault();const form=e.currentTarget;if(!form.reportValidity())return;const btn=$('createBtn');btn.disabled=true;btn.textContent='Criando conta…';busy(true);try{const payload={nome:$('nome').value.trim(),email:$('email').value.trim().toLowerCase(),crm:$('crm').value.trim(),senha:$('senha').value};const res=await AmbientalAuth.authFetch('/api/admin/medicos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const data=await res.json();if(!res.ok)throw new Error(data?.error?.message||'Não foi possível criar a conta.');form.reset();toast('Médico criado e sincronizado com o Authentication.');await load();$('nome').focus();}catch(e){toast(e.message)}finally{btn.disabled=false;btn.textContent='Criar conta médica';busy(false)}});
+  try{setBoot(1,'Validando acesso','Confirmando sua sessão administrativa segura…',24);const profile=await AmbientalAuth.requireAuth({area:'gestao'});if(profile?.perfil!=='Administrador'){location.replace('/acesso-negado.html?area=gestao-medicos-admin');return}$('who').textContent=profile.nome||profile.email||'Administrador';await load();}catch(e){if(e.message!=='AUTH_REQUIRED'&&e.message!=='PERMISSION_DENIED'){setBoot(3,'Falha ao iniciar','Não foi possível preparar a gestão de profissionais.',100);toast('Não foi possível iniciar a gestão de contas médicas.')}}
+})();
+</script>
+</body>
+</html>

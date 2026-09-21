@@ -1,18 +1,26 @@
 from __future__ import annotations
 
+import atexit
 import json
 import os
 import re
 import time
+import urllib.parse
 import psycopg2
 import psycopg2.extras
+from psycopg2.pool import ThreadedConnectionPool
 import hashlib
+import urllib.error
+import urllib.request
+import requests
 from datetime import datetime, timezone
 from io import BytesIO
-from collections import defaultdict, deque
 from typing import Any, Literal
 
-from flask import Flask, jsonify, request, send_from_directory, g, make_response
+from services.atendimento_service import pagination as service_pagination, list_filters as service_list_filters, build_where
+from services.observability import install as install_observability, metrics_snapshot, current_request_id
+
+from flask import Flask, jsonify, request, send_from_directory, g, make_response, redirect
 from dotenv import load_dotenv
 from flask_cors import CORS
 from pydantic import BaseModel, Field, ValidationError, ConfigDict
@@ -20,21 +28,33 @@ from pydantic import BaseModel, Field, ValidationError, ConfigDict
 try:
     from google import genai
     from google.genai import types
-except ImportError:  # pragma: no cover - dependency is provided by requirements.txt
+except ImportError:  
     genai = None
     types = None
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"), override=False)
 
+SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
+SUPABASE_PUBLISHABLE_KEY = os.getenv("SUPABASE_PUBLISHABLE_KEY", os.getenv("SUPABASE_ANON_KEY", "")).strip()
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
 MAX_BODY_BYTES = int(os.getenv("MAX_BODY_BYTES", "120000"))
 AI_RATE_LIMIT = int(os.getenv("AI_RATE_LIMIT_PER_MINUTE", "12"))
 RATE_WINDOW = 60
 DATABASE_URL = os.getenv("DATABASE_URL")
 APP_ENV = os.getenv("APP_ENV", "development").lower()
-AUTH_REQUIRED = os.getenv("AUTH_REQUIRED", "0") == "1"
-ALLOWED_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://127.0.0.1:8000,http://localhost:8000").split(",") if o.strip()]
+AUTH_REQUIRED = os.getenv("AUTH_REQUIRED", "1") == "1"
+_cors_raw = os.getenv("CORS_ORIGINS", "").strip()
+if _cors_raw:
+    ALLOWED_ORIGINS = [o.strip().rstrip("/") for o in _cors_raw.split(",") if o.strip()]
+elif APP_ENV == "development":
+    # Em desenvolvimento local, permitir explicitamente os dois hosts usados pelo servidor.
+    ALLOWED_ORIGINS = ["http://127.0.0.1:8000", "http://localhost:8000"]
+else:
+    # Em produção, a aplicação deve receber CORS_ORIGINS explicitamente.
+    ALLOWED_ORIGINS = []
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+ESISLA_PROMPT_VERSION = "esisla-v3-evidence-grounded-rewrite"
 GEMINI_FALLBACK_MODELS = [
     m.strip() for m in os.getenv("GEMINI_FALLBACK_MODELS", "gemini-3.5-flash-lite,gemini-3.5-flash").split(",")
     if m.strip() and m.strip() != GEMINI_MODEL
@@ -42,9 +62,14 @@ GEMINI_FALLBACK_MODELS = [
 GEMINI_RETRIES = max(1, int(os.getenv("GEMINI_RETRIES", "2")))
 GEMINI_BACKOFF_SECONDS = max(0.1, float(os.getenv("GEMINI_BACKOFF_SECONDS", "1.0")))
 API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+DB_POOL_MIN = max(1, int(os.getenv("DB_POOL_MIN", "2")))
+DB_POOL_MAX = max(DB_POOL_MIN, int(os.getenv("DB_POOL_MAX", "20")))
+DB_POOL = None
 
 app = Flask(__name__, static_folder=BASE_DIR, static_url_path="")
-app.config.update(JSON_SORT_KEYS=False, MAX_CONTENT_LENGTH=MAX_BODY_BYTES)
+app.config.update(JSON_SORT_KEYS=False, MAX_CONTENT_LENGTH=MAX_BODY_BYTES, REQUEST_ID_HEADER="X-Request-ID")
+
+install_observability(app)
 
 @app.after_request
 def _no_cache_dev_assets(response):
@@ -52,6 +77,18 @@ def _no_cache_dev_assets(response):
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    response.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
+    response.headers.setdefault("X-Permitted-Cross-Domain-Policies", "none")
+    response.headers.setdefault("Content-Security-Policy", "default-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co https://generativelanguage.googleapis.com; font-src 'self' data: https://cdn.jsdelivr.net; frame-ancestors 'self'; base-uri 'self'; form-action 'self'")
+    if APP_ENV == "production":
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    rid = current_request_id()
+    if rid:
+        response.headers.setdefault("X-Request-ID", rid)
     return response
 
 CORS(
@@ -59,13 +96,154 @@ CORS(
     resources={r"/api/*": {"origins": ALLOWED_ORIGINS}},
 )
 
-_rate_bucket: dict[str, deque[float]] = defaultdict(deque)
+@app.get("/health")
+def health():
+    return jsonify({
+        "status": "online",
+        "persistencia": "postgresql",
+        "ambiente": APP_ENV,
+        "servico": "Ambiental — Avaliação Médica Pericial LTS",
+        "modelo": GEMINI_MODEL,
+        "chave_configurada": bool(API_KEY),
+        "request_id": current_request_id(),
+    })
+
+@app.get("/ready")
+def readiness():
+    checks = {"database": False, "supabase": bool(SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY), "ai": bool(API_KEY)}
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute("SELECT 1")
+            checks["database"] = bool(cur.fetchone())
+    except Exception:
+        checks["database"] = False
+    ready = all((checks["database"], checks["supabase"]))
+    return jsonify({"status": "ready" if ready else "not_ready", "checks": checks}), (200 if ready else 503)
+
+@app.get("/metrics")
+def metrics():
+    # Métricas de baixo risco; nenhum payload médico, token ou e-mail é exposto.
+    return jsonify({"requests": metrics_snapshot()})
+
+PROTECTED_HTML_PATHS = {
+    "/", "/app", "/gestao", "/gestao_atendimentos.html", 
+    "/gestao_medicos.html", "/gestao-medicos", "/gestao-medicos.html",
+    "/ambiental_avaliacao_medica_lts_cid_assistente.html",
+    "/gestao-medicos-admin.html",
+}
+
+def _safe_error_message(exc: Exception) -> str:
+    # Mensagens internas nunca devem alcançar a resposta HTTP de produção.
+    if APP_ENV == "development":
+        return str(exc)
+    return "O sistema não conseguiu concluir a solicitação."
+
+def _request_supabase_user(token: str) -> dict[str, Any] | None:
+    # 1. Verifica se o .env foi carregado com sucesso
+    if not SUPABASE_URL or not SUPABASE_PUBLISHABLE_KEY:
+        app.logger.error("Supabase auth configuration is missing.")
+        return None
+        
+    if not token:
+        return None
+        
+    try:
+        response = requests.get(
+            f"{SUPABASE_URL}/auth/v1/user",
+            headers={
+                "apikey": SUPABASE_PUBLISHABLE_KEY,
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/json",
+            },
+            timeout=10
+        )
+        if response.status_code != 200:
+            app.logger.warning("Supabase token validation failed with status=%s", response.status_code)
+            return None
+            
+        payload = response.json()
+        return payload if isinstance(payload, dict) and payload.get("id") else None
+        
+    except Exception as e:
+        app.logger.warning("Supabase auth request failed: %s", type(e).__name__)
+        return None
+
+def _get_request_token() -> str | None:
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.lower().startswith("bearer "):
+        return auth_header.split(" ", 1)[1].strip() or None
+    return request.cookies.get("ambiental_session") or None
+
+def _role_from_profile(user: dict[str, Any], db) -> tuple[str | None, dict[str, Any]]:
+    user_id = str(user.get("id") or "")
+    user_metadata = user.get("user_metadata") or {}
+    email = user.get("email") or ""
+
+    cur = db.cursor()
+    cur.execute("SELECT id, nome, perfil, ativo FROM usuarios WHERE id=%s", (user_id,))
+    row = cur.fetchone()
+    if row:
+        cur.execute("SELECT crm FROM usuarios WHERE id=%s", (user_id,))
+        crm_row = cur.fetchone() or {}
+        row["crm"] = crm_row.get("crm")
+    cur.close()
+
+    if not row or not bool(row["ativo"]):
+        return None, {}
+
+    role = str(row.get("perfil") or "").strip()
+    name = str(row.get("nome") or user_metadata.get("name") or user_metadata.get("full_name") or email.split("@")[0] or "Usuário")
+    crm = str(row.get("crm") or "")
+
+    if role not in _ALLOWED_ROLES:
+        return None, {}
+
+    return role, {
+        "id": user_id,
+        "nome": str(name or email.split("@")[0] or "Usuário"),
+        "email": email,
+        "perfil": role,
+        "crm": crm, # CRM injetado no perfil da sessão
+        "permissoes": sorted(_ROLE_PERMISSIONS.get(role, set())),
+    }
+
+def _authenticate_request() -> tuple[dict[str, Any] | None, str | None]:
+    token = _get_request_token()
+    if not token:
+        app.logger.info("Authentication token missing for protected request.")
+        return None, None
+
+    user = _request_supabase_user(token)
+    if not user:
+        # Se falhou aqui, o terminal já imprimiu o motivo gigante na função acima
+        return None, token
+        
+    try:
+        db = get_db()
+        role, profile = _role_from_profile(user, db)
+        if not role:
+            raise ValueError("Perfil ausente ou inativo no banco de dados.")
+    except Exception as exc:
+        app.logger.warning("Falha ao resolver perfil do usuário: %s", type(exc).__name__)
+        return None, token
+
+    # Atualiza o cache para as próximas requisições serem super rápidas
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    g.ambiental_auth_cache = {"hash": token_hash, "profile": profile, "expires": time.time() + 15}
+    
+    return profile, token
+
+def _html_auth_redirect():
+    target = request.full_path if request.full_path and request.full_path != "/" else request.path
+    return redirect("/login.html?reason=required&next=" + urllib.parse.quote(target, safe=""))
+
 _status_cache: dict[str, Any] = {"ts": 0.0, "result": None}
 
 _ALLOWED_ROLES = {"Administrador", "Médico", "Coordenador", "Revisor", "Gestor", "Consulta"}
 _ROLE_PERMISSIONS = {
-    "Administrador": {"create", "edit", "finalize", "reopen", "archive", "delete", "audit", "export", "configure"},
-    "Médico": {"create", "edit", "finalize", "reopen_own", "audit_own", "export_own"},
+    "Administrador": {"view", "create", "edit", "finalize", "reopen", "archive", "delete", "audit", "export", "configure"},
+    "Médico": {"view", "create", "edit", "finalize", "reopen_own", "audit_own", "export_own"},
     "Coordenador": {"create", "edit", "finalize", "reopen", "archive", "audit", "export"},
     "Revisor": {"view", "edit", "audit", "export"},
     "Gestor": {"view", "audit", "export", "archive"},
@@ -75,26 +253,58 @@ _ROLE_PERMISSIONS = {
 def _utc_now():
     return datetime.now(timezone.utc).isoformat()
 
+def _init_pool():
+    global DB_POOL
+    if DB_POOL is not None:
+        return DB_POOL
+    if not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL não configurada no ambiente.")
+    DB_POOL = ThreadedConnectionPool(
+        minconn=DB_POOL_MIN,
+        maxconn=DB_POOL_MAX,
+        dsn=DATABASE_URL,
+        cursor_factory=psycopg2.extras.RealDictCursor,
+    )
+    return DB_POOL
+
 def get_db():
     db = getattr(g, "ambiental_db", None)
-    if db is None:
-        if not DATABASE_URL:
-            raise RuntimeError("DATABASE_URL não configurada no ambiente.")
-        db = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
-        g.ambiental_db = db
+    if db is not None and not db.closed:
+        return db
+
+    pool = _init_pool()
+    db = pool.getconn()
+    try:
+        if db.closed:
+            raise RuntimeError("Conexão do pool encerrada.")
+        # Remove conexões quebradas antes de entregá-las à requisição.
+        with db.cursor() as cur:
+            cur.execute("SELECT 1")
+    except Exception:
+        try:
+            pool.putconn(db, close=True)
+        except Exception:
+            pass
+        db = pool.getconn()
+    g.ambiental_db = db
     return db
 
 @app.teardown_appcontext
 def close_db(_exc):
     db = getattr(g, "ambiental_db", None)
-    if db is not None:
-        db.close()
+    if db is not None and DB_POOL is not None:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        DB_POOL.putconn(db)
+        g.pop("ambiental_db", None)
 
 def _init_db():
     if not DATABASE_URL:
         return
     try:
-        conn = psycopg2.connect(DATABASE_URL)
+        conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
         cur = conn.cursor()
         cur.execute("""
         CREATE TABLE IF NOT EXISTS usuarios (
@@ -104,6 +314,8 @@ def _init_db():
             ativo INTEGER NOT NULL DEFAULT 1,
             criado_em TEXT NOT NULL
         );
+        ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS crm TEXT;
+        CREATE INDEX IF NOT EXISTS idx_usuarios_crm ON usuarios(crm);
         CREATE TABLE IF NOT EXISTS atendimentos (
             id TEXT PRIMARY KEY,
             numero TEXT NOT NULL UNIQUE,
@@ -118,12 +330,50 @@ def _init_db():
             inconsistencias INTEGER NOT NULL DEFAULT 0,
             criado_em TEXT NOT NULL,
             atualizado_em TEXT NOT NULL,
-            finalizado_em TEXT
+            finalizado_em TEXT,
+            versao BIGINT NOT NULL DEFAULT 1,
+            atualizado_por TEXT
         );
+        ALTER TABLE atendimentos ADD COLUMN IF NOT EXISTS versao BIGINT NOT NULL DEFAULT 1;
+        ALTER TABLE atendimentos ADD COLUMN IF NOT EXISTS atualizado_por TEXT;
+        ALTER TABLE atendimentos ADD COLUMN IF NOT EXISTS paciente_nome TEXT;
+        ALTER TABLE atendimentos ADD COLUMN IF NOT EXISTS paciente_cpf TEXT;
         CREATE INDEX IF NOT EXISTS idx_atd_status ON atendimentos(status);
+        CREATE INDEX IF NOT EXISTS idx_atd_paciente_nome_lower ON atendimentos(LOWER(paciente_nome));
+        CREATE INDEX IF NOT EXISTS idx_atd_paciente_cpf ON atendimentos(paciente_cpf);
         CREATE INDEX IF NOT EXISTS idx_atd_updated ON atendimentos(atualizado_em DESC);
         CREATE INDEX IF NOT EXISTS idx_atd_medico ON atendimentos(medico);
         CREATE INDEX IF NOT EXISTS idx_atd_cid ON atendimentos(cid);
+        ALTER TABLE atendimentos ADD COLUMN IF NOT EXISTS usuario_id TEXT;
+        CREATE INDEX IF NOT EXISTS idx_atd_usuario ON atendimentos(usuario_id);
+        CREATE INDEX IF NOT EXISTS idx_atd_usuario_status_updated ON atendimentos(usuario_id, status, atualizado_em DESC);
+        -- Materializa os dados de identificação do paciente em colunas próprias
+        -- para busca rápida na Gestão, mantendo o payload_json como fonte completa.
+        UPDATE atendimentos
+        SET paciente_nome = NULLIF(BTRIM(COALESCE(payload_json->'aux'->>'nomePaciente', payload_json->>'nomePaciente', '')), ''),
+            paciente_cpf = NULLIF(REGEXP_REPLACE(COALESCE(payload_json->'aux'->>'cpfPaciente', payload_json->>'cpfPaciente', ''), '[^0-9]', '', 'g'), '')
+        WHERE paciente_nome IS NULL OR paciente_cpf IS NULL;
+        -- Vincula, com segurança, registros antigos sem proprietário somente quando
+        -- o CRM e o nome do médico coincidirem exatamente com um usuário Médico.
+        UPDATE atendimentos a
+        SET usuario_id = u.id
+        FROM usuarios u
+        WHERE a.usuario_id IS NULL
+          AND u.perfil = 'Médico'
+          AND u.ativo = 1
+          AND NULLIF(BTRIM(u.crm), '') IS NOT NULL
+          AND NULLIF(BTRIM(a.payload_json->'aux'->>'crmCro'), '') IS NOT NULL
+          AND LOWER(BTRIM(u.crm)) = LOWER(BTRIM(a.payload_json->'aux'->>'crmCro'))
+          AND LOWER(BTRIM(u.nome)) = LOWER(BTRIM(COALESCE(a.payload_json->'aux'->>'medicoResponsavel', '')))
+          AND NOT EXISTS (
+              SELECT 1
+              FROM usuarios u2
+              WHERE u2.perfil = 'Médico'
+                AND u2.ativo = 1
+                AND NULLIF(BTRIM(u2.crm), '') IS NOT NULL
+                AND LOWER(BTRIM(u2.crm)) = LOWER(BTRIM(a.payload_json->'aux'->>'crmCro'))
+                AND u2.id <> u.id
+          );
         CREATE TABLE IF NOT EXISTS documentos (
             id SERIAL PRIMARY KEY,
             atendimento_id TEXT NOT NULL REFERENCES atendimentos(id) ON DELETE CASCADE,
@@ -183,33 +433,127 @@ def _init_db():
             atualizado_em TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_cache_ia_endpoint_hash ON cache_ia(endpoint, context_hash);
+        CREATE TABLE IF NOT EXISTS ia_rate_limits (
+            chave TEXT PRIMARY KEY,
+            janela_inicio TIMESTAMPTZ NOT NULL,
+            contagem INTEGER NOT NULL DEFAULT 0,
+            atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_ia_rate_updated ON ia_rate_limits(atualizado_em);
         """)
         conn.commit()
         cur.close()
         conn.close()
     except Exception as exc:
-        print("Aviso ao inicializar banco Postgres:", exc)
+        if "conn" in locals():
+            try:
+                conn.close()
+            except Exception:
+                pass
+        print("Aviso ao inicializar banco Postgres:", type(exc).__name__, exc)
 
 _init_db()
 
+@atexit.register
+def _close_db_pool():
+    global DB_POOL
+    if DB_POOL is not None:
+        try:
+            DB_POOL.closeall()
+        except Exception:
+            pass
+        DB_POOL = None
+
+@app.before_request
+def request_origin_guard():
+    # Endpoints mutáveis não devem aceitar chamadas cross-origin usando o cookie de sessão.
+    if request.method in {"POST", "PUT", "PATCH", "DELETE"} and request.path.startswith("/api/"):
+        origin = (request.headers.get("Origin") or "").rstrip("/")
+        allowed = {o.rstrip("/") for o in ALLOWED_ORIGINS}
+        same_origin = f"{request.scheme}://{request.host}".rstrip("/")
+        # Requisições same-origin do próprio servidor são válidas mesmo sem CORS_ORIGINS.
+        # Em produção, origens cross-origin continuam exigindo allowlist explícita.
+        if origin and origin != same_origin and origin not in allowed:
+            return _error("CSRF_ORIGIN_DENIED", "Origem da solicitação não autorizada.", False, 403)
+
 @app.before_request
 def request_security_context():
-    request.user_name = request.headers.get("X-User-Name", "Usuário local")[:120]
-    request.user_role = request.headers.get("X-User-Role", "Administrador" if not AUTH_REQUIRED else "")
-    if request.path.startswith("/api/") and AUTH_REQUIRED and request.user_role not in _ALLOWED_ROLES:
-        return _error("AUTH_ERROR", "Autenticação/autorização necessária.", False, 401)
+    path = request.path
+
+    # Endpoints públicos e TODAS as rotas de autenticação (evita o bloqueio prematuro)
+    if path in {"/login.html", "/reset-password.html", "/acesso-negado.html", "/404.html", "/health"} or path.startswith("/api/auth/") or path in {"/ready", "/metrics"}:
+        return
+
+    if path in PROTECTED_HTML_PATHS:
+        if not AUTH_REQUIRED:
+            return
+        profile, _token = _authenticate_request()
+        if not profile:
+            return _html_auth_redirect()
+            
+        # Atualize a linha abaixo para cobrir as 3 formas de escrever a URL:
+        if path in {"/gestao_medicos.html", "/gestao-medicos", "/gestao-medicos.html"} and profile.get("perfil") not in {"Médico", "Administrador"}:
+            return redirect("/acesso-negado.html?area=portal-medico")
+        if path == "/gestao-medicos-admin.html" and profile.get("perfil") != "Administrador":
+            return redirect("/acesso-negado.html?area=gestao-medicos-admin")
+            
+        request.user_profile = profile
+        request.user_id = profile["id"]
+        request.user_email = profile["email"]
+        request.user_name = profile["nome"]
+        request.user_role = profile["perfil"]
+        return
+
+    if path.startswith("/api/"):
+        if not AUTH_REQUIRED:
+            return
+        profile, _token = _authenticate_request()
+        if not profile:
+            return _error("AUTH_ERROR", "Sua sessão não é válida ou expirou.", False, 401)
+        request.user_profile = profile
+        request.user_id = profile["id"]
+        request.user_email = profile["email"]
+        request.user_name = profile["nome"]
+        request.user_role = profile["perfil"]
+
 
 def _has_permission(permission):
     role = getattr(request, "user_role", "Consulta")
-    return permission in _ROLE_PERMISSIONS.get(role, set())
+    perms = _ROLE_PERMISSIONS.get(role, set())
+    if permission in perms:
+        return True
+    if role == "Médico":
+        own_permission = f"{permission}_own"
+        return own_permission in perms
+    return False
 
 def _require_permission(permission):
     if not _has_permission(permission):
         return _error("PERMISSION_DENIED", "Você não tem permissão para esta ação.", False, 403)
     return None
 
+def _require_record_access(row, *, write=False):
+    """Impede que médicos consultem/editem registros de outro profissional.
+
+    A fonte de verdade é sempre usuario_id da sessão autenticada, nunca o
+    nome/CRM informado pelo navegador. Registros sem proprietário não são
+    liberados para médicos por segurança.
+    """
+    if getattr(request, "user_role", None) != "Médico":
+        return None
+    owner = row.get("usuario_id") if row else None
+    current_user = getattr(request, "user_id", "")
+    if owner and str(owner) == str(current_user):
+        return None
+    return _error(
+        "PERMISSION_DENIED",
+        "Acesso restrito aos seus próprios atendimentos.",
+        False,
+        403,
+    )
+
 def _error(code, message, retryable=False, status=400, details=None):
-    body = {"success": False, "error": {"code": code, "message": message, "retryable": bool(retryable)}}
+    body = {"success": False, "error": {"code": code, "message": message, "retryable": bool(retryable)}, "request_id": current_request_id()}
     if details is not None: body["error"]["details"] = details
     return jsonify(body), status
 
@@ -225,10 +569,20 @@ def _record_id(payload):
         payload["atendimento"] = number
     return hashlib.sha256(number.encode("utf-8")).hexdigest()[:32], number
 
+def _normalize_cpf(value):
+    digits = re.sub(r"\D", "", str(value or ""))
+    return digits[:11] if digits else None
+
 def _patient_hash(payload):
     a = payload.get("aux") or {}
-    value = str(a.get("nome") or a.get("paciente") or payload.get("nome") or "").strip().lower()
+    value = str(a.get("nomePaciente") or a.get("nome") or a.get("paciente") or payload.get("nomePaciente") or payload.get("nome") or "").strip().lower()
     return hashlib.sha256(value.encode("utf-8")).hexdigest() if value else None
+
+def _patient_fields(payload):
+    a = payload.get("aux") or {}
+    nome = str(a.get("nomePaciente") or payload.get("nomePaciente") or "").strip() or None
+    cpf = _normalize_cpf(a.get("cpfPaciente") or payload.get("cpfPaciente"))
+    return nome, cpf
 
 def _calc_completeness(payload):
     a=payload.get("aux") or {}
@@ -395,14 +749,42 @@ REGRAS OBRIGATÓRIAS:
 TASK_PROMPTS = {
     "justificativa": """
 TAREFA: GERAR SUGESTÃO DE JUSTIFICATIVA FINAL DO LAUDO PERICIAL.
-Atue como um Médico Perito em Saúde Ocupacional redigindo a justificativa final de um laudo pericial.
-Sua tarefa é sintetizar os dados clínicos abaixo em um único parágrafo coeso, formal e técnico, OBRIGATORIAMENTE redigido em PRIMEIRA PESSOA do singular (ex: "constato", "observo", "concluo").
-DADOS DO ATENDIMENTO:
-- Cargo do periciando: {cargo}
+Atue como apoio de redação técnico-pericial em Medicina do Trabalho, com linguagem compatível com um médico especialista em saúde ocupacional.
+Produza UMA justificativa individualizada, objetiva, fundamentada e diretamente vinculada aos fatos registrados no atendimento. OBRIGATORIAMENTE escreva em PRIMEIRA PESSOA do singular (ex.: "constato", "observo", "verifico", "considero").
+
+OBJETIVO DA REDAÇÃO:
+- integrar queixa, evolução clínica, tratamento, documentos, exame físico/mental e limitações funcionais;
+- relacionar limitações às exigências reais do cargo SOMENTE quando essas exigências estiverem informadas;
+- explicar tecnicamente como os achados registrados sustentam a classificação de capacidade e o parecer já escolhido pelo médico;
+- apontar explicitamente quando um dado relevante não estiver registrado, sem inventá-lo;
+- evitar frases genéricas, fórmulas vazias e repetição mecânica dos campos.
+
+NÃO FAÇA:
+- não invente sintomas, achados, datas, medicamentos, resultados de exames, limitações ou relações causais;
+- não conclua incapacidade, nexo ou necessidade de afastamento apenas com base no CID;
+- não altere a capacidade laborativa nem o parecer informado pelo médico;
+- não crie exigências do cargo que não estejam registradas.
+
+ESTILO:
+Escreva 1 parágrafo, aproximadamente 80–180 palavras quando houver dados suficientes. Use linguagem técnico-pericial, objetiva e natural, como fundamentação de um especialista em Medicina do Trabalho. Destaque a relação entre dados clínicos, achados objetivos, funcionalidade e trabalho somente na medida sustentada pelos dados.
+
+DADOS-CHAVE DO ATENDIMENTO:
+- Cargo: {cargo}
 - Idade: {idade}
-- Diagnóstico (CID): {cid}
-- Limitações funcionais constatadas no exame físico/mental: {limitacoes}
-- Classificação da Capacidade Laborativa apontada: {capacidade}
+- CID: {cid}
+- Doença/motivo: {doenca_motivo}
+- Queixa e duração: {queixa_duracao}
+- Tempo no cargo: {tempo_funcao} {unidade_tempo}
+- Sintomas/limitações: {sintomas_limitacoes}
+- Tratamentos/medicações: {tratamentos}
+- Antecedentes: {antecedentes}
+- Documentos/exames: {documentos}
+- Exame físico/mental e achados: {exame}
+- Limitações funcionais: {limitacoes}
+- Atividades comprometidas: {atividades_comprometidas}
+- Capacidade laborativa selecionada: {capacidade}
+- Parecer selecionado: {parecer}
+- Quesitos respondidos: {quesitos}
 """.strip(),
     "revisao": "TAREFA: REVISÃO DETERMINÍSTICA ASSISTIDA DO ATENDIMENTO.",
     "coerencia": "TAREFA: ANÁLISE EXCLUSIVA DE COERÊNCIA.",
@@ -411,88 +793,126 @@ DADOS DO ATENDIMENTO:
     "revisao_texto": "TAREFA: REVISAR TEXTO INFORMADO PELO PROFISSIONAL.",
     "preenchimento": "TAREFA: SUGERIR PREENCHIMENTO ASSISTIDO.",
     "esisla": """
-TAREFA: FORMATAR DADOS NO PADRÃO E-SISLA (DPME).
+TAREFA: GERAR UMA FICHA E-SISLA A PARTIR DOS DADOS REGISTRADOS NO QUESTIONÁRIO DO ATENDIMENTO.
 
-Atue como um Médico Perito do Estado de São Paulo. Sua tarefa é receber os dados do atendimento e formatá-los EXATAMENTE no padrão exigido pelo sistema e-sisla.
+OBJETIVO: organizar e REESCREVER, de forma clínica, objetiva e natural, somente os fatos já registrados, preenchendo os cinco campos narrativos abaixo com redação profissional. Use EXCLUSIVAMENTE informações presentes no questionário e no contexto do atendimento fornecido.
 
-DIRETRIZES:
-1. Mantenha os títulos dos campos exatamente como no modelo abaixo, com os asteriscos (*).
-2. Redija em terceira pessoa (ex: "Periciado(a) de X anos...").
-3. Pressão Arterial padrão: Sistólica 120, Diastólica 80, Pulso 100 (salvo se informado diferente).
-4. "(*) Justificativa Parecer Final" DEVE ser: "Parecer emitido pelo Coordenador de Ingresso, Licenças, Readaptação e Aposentadoria, à vista do que prevê o artigo 32, do Decreto nº 69.234, de 23/12/2024 c/c o artigo 95, da Resolução SGGD 25, de 16/05/2025."
-5. Crie um texto coeso substituindo as variáveis pelos dados reais informados.
+REGRA CENTRAL — ZERO INFORMAÇÃO NOVA:
+- NÃO invente, complete, suponha, interprete ou deduza informações ausentes.
+- NÃO crie sinais vitais.
+- É permitido condensar, reorganizar e reescrever informações já fornecidas para evitar fragmentação e melhorar a clareza.
+- É proibido inferir diagnóstico, gravidade, causalidade, incapacidade, prognóstico, nexo, sintomas, achados, tratamentos, limitações ou resultados.
+- Não use conhecimento médico externo para completar lacunas.
+- Não transforme CID em diagnóstico descritivo, nem cargo em exigência funcional.
+- Não altere nenhum valor, data, dose, unidade, CID, resposta de quesito, parecer ou número de dias.
+- Se não houver dado para um campo, deixe o conteúdo do campo vazio. DEIXE O VALOR EM BRANCO quando não houver informação.
 
-ESTRUTURA DE TEXTO ESPERADA (Retorne todo esse bloco preenchido):
+REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
+1. “(*) Queixa e Duração”
+   Reescreva de forma clara e concisa usando somente queixa_duracao, doenca_motivo, inicio_tratamento, frequencia_consultas e sintomas_limitacoes quando esses dados ajudarem a contextualizar a própria queixa. Pode unir informações desses campos, sem criar fatos novos. Não acrescente diagnóstico ou interpretação que não esteja escrita nos dados.
+
+2. “Antecedentes Mórbidos”
+   Consolide somente outras_doencas, condicoes e antecedentes. Pode eliminar repetição e organizar o conteúdo quando isso apenas melhora a leitura, mas não introduza condições, diagnósticos ou tratamentos não registrados.
+
+3. “(*)Exame Físico Geral”
+   Redija usando exclusivamente exame_fisico_tipo, exame_fisico_descricao e os valores de pressão/pulso expressamente registrados. Reorganize apenas a apresentação dos achados. Não crie normalidade, negatividade, estado geral ou achados não escritos.
+
+4. “Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares”
+   Organize somente alteracoes_clinicas_exames, documentos_complementares e observacoes_documentos. Pode unir itens relacionados do próprio questionário para melhorar a leitura, sem interpretar resultados.
+
+5. “(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)”
+   Reúna somente desc_limitacao, limitacao_funcional, limitacao_rol, atividades_comprometidas, sintomas_limitacoes e obs_limitacoes quando houver conteúdo pertinente. É permitido reduzir repetição e formar uma redação única, mas “Sim” sozinho não autoriza criar uma limitação específica.
+
+OUTROS CAMPOS — TRANSCRIÇÃO FIEL:
+- “Atestado/Relatório/Exames Complementares (Tipo-Data-Resultado)” usa somente documentos registrados.
+- Pressão Arterial/Sistólica/Diastólica/Pulso usam somente valores explicitamente registrados.
+- “(*)Parecer Médico” e “(*) Parecer Final” reproduzem somente os valores já escolhidos.
+- “(*)Resposta aos quesitos” reproduz somente as respostas efetivamente registradas.
+- “Médico Perito” e “CRM” usam somente os dados do profissional responsável já gravados no atendimento.
+- “CRM ou CRO do médico assistente” é um campo independente e nunca deve receber automaticamente o CRM do médico responsável.
+- Não acrescente o texto legal da justificativa final nem qualquer texto fixo que não esteja presente nos dados fornecidos.
+
+ESTILO DA REDAÇÃO:
+- Linguagem clínica profissional, objetiva, natural e legível, adequada a um registro médico.
+- Frases completas e curtas; sem listas, sem markdown e sem comentários sobre o processo de geração.
+- Não use linguagem que revele geração automática, IA ou assistência computacional. Não use expressões meta como “IA”, “inteligência artificial”, “sugestão”, “modelo”, “assistente”, “gerado” ou equivalentes no texto da ficha.
+- Não escreva “não informado”, “não consta”, “sem dados” ou equivalentes dentro dos campos; deixe o conteúdo vazio.
+- Não use fórmulas de normalidade como “em bom estado geral”, “sem alterações”, “afebril”, “normocárdico”, “lúcido” ou semelhantes quando isso não estiver expressamente registrado.
+
+FORMATO DE SAÍDA — PRESERVE EXATAMENTE A ORDEM E OS TÍTULOS:
 Registro da perícia Médica para Licença
 
 (*) Queixa e Duração:
-[Preencher com idade, cargo, tempo na função, doença/motivo, sintomas e medicações]
 
 Antecedentes Mórbidos:
-[Preencher doenças prévias e tratamentos]
 
 Atestado/Relatório/Exames Complementares (Tipo-Data-Resultado):
-[Preencher com emissor, CID, data e dias]
 
 Pressão Arterial
 Sistólica (mmHg):
-120
 Diastólica (mmHg):
-80
 Pulso (bpm):
-100
 
 (*)Exame Físico Geral
-[Preencher com os aparelhos comprometidos / tipo de exame]
 
 Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:
-[Preencher achados clínicos do exame]
 
 (*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):
-[Preencher limitações com base no exame pericial]
 
 (*)Parecer Médico
-[FAVORÁVEL OU CONTRÁRIO]
-Nº Dias: [Dias]
-Data Início: [Data de início]
-CID 10: [CID]
-Descrição: [Descrição do CID]
-Médico Perito: [Nome do Médico responsável] CRM: [CRM]
-Dt/Hr Perícia: [Data e Hora do Atendimento]
+
+Nº Dias:
+Data Início:
+CID 10:
+Descrição:
+Médico Perito:
+CRM:
+Dt/Hr Perícia:
 
 (*)Resposta aos quesitos
 1) Há doença(s) ou sequela(s) de doença(s) prévia(s)?
-[Sim/Não]
 2) A(s) doença(s) ou sequela(s) de doença(s) prévia(s) gera(m) limitação(ões) para periciando(a)?
-[Sim/Não]
 3) A(s) limitação(ões) impede(m) o(a) periciando(a) de exercer alguma atividade do rol?
-[Sim/Não]
 
 (*)Justificativa Parecer Médico
-[Sintetizar justificativa pericial final]
 
 (*) Parecer Final
-[FAVORÁVEL OU CONTRÁRIO]
-Nº Dias: [Dias]
-Data Início: [Data de início]
-CID 10: [CID]
-Descrição: [Descrição do CID]
-Diretor DPME: [Nome] CRM: [CRM]
-Data P.F.: [Data/Hora]
 
-(*) Justificativa Parecer Final
-Parecer emitido pelo Coordenador de Ingresso, Licenças, Readaptação e Aposentadoria, à vista do que prevê o artigo 32, do Decreto nº 69.234, de 23/12/2024 c/c o artigo 95, da Resolução SGGD 25, de 16/05/2025.
+Nº Dias:
+Data Início:
+CID 10:
+Descrição:
+Diretor DPME:
+Data P.F.:
+
+VALIDAÇÃO FINAL:
+Cada frase factual da saída deve ser rastreável a um ou mais campos do questionário. Se não for rastreável, remova a frase. Se um valor não existir, deixe o campo vazio.
 """.strip()
 }
 
 def _task_instruction(task: str, payload: dict[str, Any]) -> str:
     if task == "justificativa":
+        documentos = payload.get("documentos_complementares") or []
+        meds = payload.get("medicamentos") or []
+        conds = payload.get("condicoes") or []
         prompt = TASK_PROMPTS[task].format(
             cargo=payload.get("cargo") or "não informado",
             idade=payload.get("idade") or "não informada",
             cid=payload.get("cid") or "não informado",
-            limitacoes=payload.get("limitacoes") or "não informadas",
+            doenca_motivo=payload.get("doenca_motivo") or "não informado",
+            queixa_duracao=payload.get("queixa_duracao") or "não informada",
+            tempo_funcao=payload.get("tempo_funcao") or "não informado",
+            unidade_tempo=payload.get("unidade_tempo") or "",
+            sintomas_limitacoes=payload.get("sintomas_limitacoes") or "não informados",
+            tratamentos=json.dumps({"medicamentos": meds, "condicoes": conds, "psicoterapia": payload.get("psicoterapia"), "fisioterapia": payload.get("fisioterapia"), "alteracao_dosagem": payload.get("alteracao_dosagem")}, ensure_ascii=False),
+            antecedentes=payload.get("antecedentes") or "não informados",
+            documentos=json.dumps(documentos, ensure_ascii=False),
+            exame=json.dumps({"tipo": payload.get("exame_fisico_tipo"), "achados": payload.get("alteracoes_clinicas_exames"), "exame": payload.get("exame") or {}}, ensure_ascii=False),
+            limitacoes=payload.get("desc_limitacao") or payload.get("limitacoes") or "não informadas",
+            atividades_comprometidas=payload.get("atividades_comprometidas") or "não informadas",
             capacidade=payload.get("capacidade") or "não informada",
+            parecer=payload.get("parecer") or "não informado",
+            quesitos=json.dumps(payload.get("quesitos") or [], ensure_ascii=False),
         )
         return prompt + "\n\n" + _context_text(payload)
     return TASK_PROMPTS[task] + "\n\n" + _context_text(payload)
@@ -526,18 +946,54 @@ class AIRateLimitError(RuntimeError):
         super().__init__("Limite local de solicitações de IA atingido.")
         self.retry_after = max(1, int(retry_after))
 
+
+class AIRecordAccessError(RuntimeError):
+    """Acesso negado ao atendimento usado como contexto de IA."""
+
 def _rate_limit(endpoint: str):
-    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown").split(",")[0].strip()
-    key = f"{ip}|{endpoint}"
-    now = time.time()
-    bucket = _rate_bucket[key]
-    while bucket and now - bucket[0] > RATE_WINDOW:
-        bucket.popleft()
-    if len(bucket) >= AI_RATE_LIMIT:
-        retry_after = int(max(1, RATE_WINDOW - (now - bucket[0]))) if bucket else RATE_WINDOW
-        return False, retry_after
-    bucket.append(now)
-    return True, 0
+    """Rate limit global por IP + endpoint, compartilhado entre processos via PostgreSQL."""
+    identity = str(getattr(request, "user_id", "") or "").strip()
+    if not identity:
+        forwarded = request.headers.get("X-Forwarded-For", "")
+        identity = (forwarded.split(",", 1)[0].strip() if forwarded else (request.remote_addr or "unknown"))[:128]
+    raw_key = f"{identity}|{endpoint}"
+    key = hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
+    db = get_db()
+    cur = db.cursor()
+    try:
+        cur.execute(
+            """
+            INSERT INTO ia_rate_limits (chave, janela_inicio, contagem, atualizado_em)
+            VALUES (%s, NOW(), 1, NOW())
+            ON CONFLICT (chave) DO UPDATE SET
+                janela_inicio = CASE
+                    WHEN EXTRACT(EPOCH FROM (NOW() - ia_rate_limits.janela_inicio)) >= %s
+                    THEN NOW() ELSE ia_rate_limits.janela_inicio END,
+                contagem = CASE
+                    WHEN EXTRACT(EPOCH FROM (NOW() - ia_rate_limits.janela_inicio)) >= %s
+                    THEN 1 ELSE ia_rate_limits.contagem + 1 END,
+                atualizado_em = NOW()
+            RETURNING contagem, janela_inicio
+            """,
+            (key, RATE_WINDOW, RATE_WINDOW),
+        )
+        row = cur.fetchone()
+        if not row:
+            db.rollback()
+            raise RuntimeError("Não foi possível verificar o limite de uso da IA.")
+        count = int(row["contagem"] or 0)
+        window_start = row["janela_inicio"]
+        elapsed = max(0.0, time.time() - window_start.timestamp())
+        allowed = count <= AI_RATE_LIMIT
+        retry_after = int(max(1, RATE_WINDOW - elapsed)) if not allowed else 0
+        db.commit()
+        return allowed, retry_after
+    except Exception:
+        db.rollback()
+        raise RuntimeError("Não foi possível verificar o limite de uso da IA.")
+    finally:
+        cur.close()
+
 
 def _json_body() -> dict[str, Any]:
     data = request.get_json(silent=True)
@@ -587,7 +1043,7 @@ def _generate_structured(instruction: str, schema):
     client = _client()
     config = types.GenerateContentConfig(
         system_instruction=SYSTEM_PROMPT,
-        temperature=0.2,
+        temperature=0.0 if endpoint.endswith("/esisla") else 0.2,
         response_mime_type="application/json",
         response_schema=schema,
     )
@@ -627,19 +1083,18 @@ def _generate_structured(instruction: str, schema):
 
 def _ai_context_hash(endpoint: str, payload: dict[str, Any]) -> str:
     canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    return hashlib.sha256(f"{endpoint}|{canonical}".encode("utf-8")).hexdigest()
+    prompt_version = ESISLA_PROMPT_VERSION if endpoint.endswith("/esisla") else "default"
+    return hashlib.sha256(f"{endpoint}|{prompt_version}|{canonical}".encode("utf-8")).hexdigest()
 
 def _generate_cached(endpoint: str, payload: dict[str, Any], instruction: str, schema, force_refresh: bool = False):
     context_hash = _ai_context_hash(endpoint, payload)
     db = get_db()
     cur = db.cursor()
     
-    # Se forçado, deleta o cache antigo antes de tentar buscar
     if force_refresh:
         cur.execute("DELETE FROM cache_ia WHERE endpoint=%s AND context_hash=%s", (endpoint, context_hash))
         db.commit()
     else:
-        # Busca normal...
         cur.execute(
             "SELECT resultado_json FROM cache_ia WHERE endpoint=%s AND context_hash=%s",
             (endpoint, context_hash),
@@ -701,6 +1156,10 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
         "observacoes_documentos": payload.get("observacoes_documentos") or a.get("obsDocumentos"),
         "documentos_complementares": payload.get("documentos_complementares") or payload.get("documentosComplementares") or [],
         "exame_fisico_tipo": payload.get("exame_fisico_tipo") or payload.get("exameFisicoTipo"),
+        "exame_fisico_descricao": payload.get("exame_fisico_descricao") or payload.get("exameFisicoDescricao") or a.get("exameFisicoDescricao"),
+        "pressao_sistolica": payload.get("pressao_sistolica") or payload.get("pressaoSistolica") or a.get("pressaoSistolica"),
+        "pressao_diastolica": payload.get("pressao_diastolica") or payload.get("pressaoDiastolica") or a.get("pressaoDiastolica"),
+        "pulso": payload.get("pulso") or a.get("pulso"),
         "alteracoes_clinicas_exames": payload.get("alteracoes_clinicas_exames") or payload.get("alteracoesClinicasExames"),
         "exame": payload.get("exame") or {},
         "limitacao_funcional": payload.get("limitacao_funcional") or payload.get("limitacaoFuncional"),
@@ -719,6 +1178,34 @@ def _ai_result_response(result, endpoint, cached):
     body["meta"] = {"cached": bool(cached), "endpoint": endpoint}
     return jsonify(body), 200
 
+
+def _load_authoritative_ai_payload(raw: dict[str, Any]) -> dict[str, Any]:
+    """Busca o atendimento completo no banco, quando o identificador foi informado.
+
+    A gestão de atendimentos lista somente metadados por desempenho. A IA precisa do payload
+    integral, então o servidor carrega o registro autorizado e usa seus dados como fonte oficial.
+    """
+    payload = dict(raw or {})
+    atendimento = str(payload.get("atendimento") or "").strip()
+    if not atendimento:
+        return payload
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("SELECT * FROM atendimentos WHERE id=%s OR numero=%s", (atendimento, atendimento))
+    row = cur.fetchone()
+    cur.close()
+    if not row:
+        return payload
+    denied = _require_record_access(row)
+    if denied:
+        raise AIRecordAccessError("Acesso restrito aos seus próprios atendimentos.")
+    stored = row["payload_json"] if isinstance(row["payload_json"], dict) else json.loads(row["payload_json"])
+    if not isinstance(stored, dict):
+        return payload
+    merged = dict(stored)
+    merged["atendimento"] = row.get("numero") or stored.get("atendimento") or atendimento
+    return merged
+
 def _generate(instruction: str) -> AIResult:
     return _generate_structured(instruction, AIResult)
 
@@ -728,6 +1215,8 @@ def _context_text(payload: dict[str, Any]) -> str:
     )
 
 def _provider_error(exc: Exception):
+    if isinstance(exc, AIRecordAccessError):
+        return _error("PERMISSION_DENIED", str(exc), False, 403)
     if isinstance(exc, AIRateLimitError):
         resp = _error("AI_RATE_LIMIT", "O sistema está controlando a frequência de chamadas de IA. Aguarde alguns segundos e tente novamente.", True, 429, {"retry_after_seconds": exc.retry_after, "origem": "servidor"})
         response, status = resp
@@ -774,8 +1263,35 @@ def guard():
 def too_large(_):
     return jsonify({"error": "payload_too_large", "detail": "Payload excede o limite permitido."}), 413
 
+
+
+@app.errorhandler(500)
+def handle_500(_exc):
+    app.logger.exception("internal_error request_id=%s", current_request_id())
+    return _error("INTERNAL_ERROR", "O sistema não conseguiu concluir a solicitação.", True, 500)
+
+@app.errorhandler(404)
+def handle_404(_exc):
+    if request.path.startswith("/api/"):
+        return _error("NOT_FOUND", "Recurso não encontrado.", False, 404)
+    if request.path.endswith(".html") and request.path not in {"/login.html", "/reset-password.html", "/acesso-negado.html", "/404.html"}:
+        return send_from_directory(BASE_DIR, "404.html"), 404
+    try:
+        return send_from_directory(BASE_DIR, "404.html"), 404
+    except Exception:
+        return jsonify({"error": "not_found"}), 404
+
+@app.get("/acesso-negado.html")
+def access_denied_page():
+    return send_from_directory(BASE_DIR, "acesso-negado.html")
+
+@app.get("/404.html")
+def not_found_page():
+    return send_from_directory(BASE_DIR, "404.html")
+
 @app.get("/")
 def home():
+
     response = send_from_directory(BASE_DIR, "ambiental_avaliacao_medica_lts_cid_assistente.html")
     response.headers["Cache-Control"] = "no-store, max-age=0"
     response.headers["Pragma"] = "no-cache"
@@ -788,18 +1304,27 @@ def gestao_html():
     response.headers["Pragma"] = "no-cache"
     return response
 
-@app.get("/health")
-def health():
-    return jsonify(
-        {
-            "status": "online",
-            "persistencia": "postgresql",
-            "ambiente": APP_ENV,
-            "servico": "Ambiental — Avaliação Médica Pericial LTS",
-            "modelo": GEMINI_MODEL,
-            "chave_configurada": bool(API_KEY),
-        }
-    )
+@app.get("/gestao-medicos")
+@app.get("/gestao-medicos.html")
+@app.get("/gestao_medicos.html")
+def gestao_medicos_html():
+    response = send_from_directory(BASE_DIR, "gestao_medicos.html")
+    response.headers["Cache-Control"] = "no-store, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    return response
+
+@app.get("/gestao-medicos-admin.html")
+def gestao_medicos_admin_html():
+    if AUTH_REQUIRED:
+        profile, _token = _authenticate_request()
+        if not profile:
+            return _html_auth_redirect()
+        if profile.get("perfil") != "Administrador":
+            return redirect("/acesso-negado.html?area=gestao-medicos-admin")
+    response = send_from_directory(BASE_DIR, "gestao-medicos-admin.html")
+    response.headers["Cache-Control"] = "no-store, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    return response
 
 @app.get("/status-ia")
 def status_ia():
@@ -833,7 +1358,7 @@ def status_ia():
 @app.post("/api/ai/justificativa")
 def api_ai_justificativa():
     try:
-        raw = _json_body(); payload = _minimal_ai_context(raw)
+        raw = _load_authoritative_ai_payload(_json_body()); payload = _minimal_ai_context(raw)
         instruction = _task_instruction("justificativa", payload)
         result, cached, _ = _generate_cached("justificativa", payload, instruction, JustificationResult)
         texto = str(result.justificativa or "").strip()
@@ -877,17 +1402,37 @@ def api_ai_documento():
         if isinstance(exc, ValueError): return _error("VALIDATION_ERROR", str(exc), False, 400)
         return _provider_error(exc)
 
+def _clean_esisla_text(text: str) -> str:
+    text = str(text or "").strip()
+    text = re.sub(r"^```(?:text|txt|plaintext)?\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s*```$", "", text)
+    text = text.strip()
+    if not text.startswith("Registro da perícia Médica para Licença"):
+        raise ValueError("A ficha e-Sisla retornou formato diferente do formulário oficial.")
+    lower = text.casefold()
+    forbidden = (
+        "gerado por ia", "gerada por ia", "inteligência artificial",
+        "assistente de ia", "segundo a ia", "sugestão de ia",
+        "como modelo de linguagem", "como assistente",
+    )
+    if any(token in lower for token in forbidden):
+        raise ValueError("A ficha e-Sisla retornou texto meta que não pertence ao formulário.")
+    if re.search(r"\[[^\]]{1,120}\]", text):
+        raise ValueError("A ficha e-Sisla retornou marcador de preenchimento em vez de dado do atendimento.")
+    return text
+
+
 @app.post("/api/ai/esisla")
 def api_ai_esisla():
     try:
         raw = _json_body()
-        # Captura o sinal do frontend
         force = bool(raw.pop("force_refresh", False))
+        raw = _load_authoritative_ai_payload(raw)
         payload = _minimal_ai_context(raw)
         instruction = _task_instruction("esisla", payload)
         
-        # Passa a variável force_refresh para a função do cache
         result, cached, _ = _generate_cached("esisla", payload, instruction, EsislaResult, force_refresh=force)
+        result = EsislaResult(ficha_esisla=_clean_esisla_text(result.ficha_esisla))
         return jsonify({
             "ficha_esisla": result.ficha_esisla,
             "meta": {"cached": bool(cached), "endpoint": "esisla"}
@@ -996,57 +1541,198 @@ def gerar_relatorio_final():
             return jsonify({"error": "invalid_request", "detail": str(exc)}), 400
         return _provider_error(exc)
 
+
+def _require_admin():
+    return _error("PERMISSION_DENIED", "Apenas administradores podem gerenciar contas médicas.", False, 403) if getattr(request, "user_role", None) != "Administrador" else None
+
+def _supabase_admin_headers():
+    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+        raise RuntimeError("SUPABASE_SERVICE_ROLE_KEY não configurada no servidor.")
+    return {
+        "apikey": SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+
+def _supabase_admin_request(method: str, path: str, payload: dict[str, Any] | None = None):
+    url = f"{SUPABASE_URL}{path}"
+    response = requests.request(method, url, headers=_supabase_admin_headers(), json=payload, timeout=15)
+    body = response.json() if response.text else {}
+    return response, body
+
+@app.get("/api/admin/medicos")
+def api_admin_medicos():
+    denied = _require_admin()
+    if denied: return denied
+    db = get_db(); cur = db.cursor()
+    cur.execute("""
+        SELECT u.id, u.nome, u.crm, u.ativo, u.criado_em,
+               COUNT(a.id) AS total_atendimentos,
+               COUNT(a.id) FILTER (WHERE a.status='FINALIZADO') AS finalizados
+          FROM usuarios u
+          LEFT JOIN atendimentos a ON a.usuario_id = u.id
+         WHERE u.perfil = 'Médico'
+         GROUP BY u.id, u.nome, u.crm, u.ativo, u.criado_em
+         ORDER BY u.ativo DESC, u.nome ASC
+    """)
+    rows = cur.fetchall(); cur.close()
+    return _ok({"items": rows})
+
+@app.post("/api/admin/medicos")
+def api_admin_criar_medico():
+    denied = _require_admin()
+    if denied: return denied
+    try:
+        body = _json_body()
+        nome = str(body.get("nome") or "").strip()
+        email = str(body.get("email") or "").strip().lower()
+        crm = str(body.get("crm") or "").strip()
+        senha = str(body.get("senha") or "")
+        if len(nome) < 3: return _error("VALIDATION_ERROR", "Informe o nome completo do médico.", False, 400)
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email): return _error("VALIDATION_ERROR", "Informe um e-mail válido.", False, 400)
+        if len(crm) < 3: return _error("VALIDATION_ERROR", "Informe o CRM/CRO.", False, 400)
+        if len(senha) < 8: return _error("VALIDATION_ERROR", "A senha deve ter pelo menos 8 caracteres.", False, 400)
+        db = get_db(); cur = db.cursor()
+        cur.execute("SELECT id FROM usuarios WHERE LOWER(COALESCE(crm,'')) = LOWER(%s) LIMIT 1", (crm,))
+        if cur.fetchone():
+            cur.close(); return _error("DUPLICATE_CRM", "Já existe um usuário com este CRM/CRO.", False, 409)
+        response, data = _supabase_admin_request("POST", "/auth/v1/admin/users", {
+            "email": email, "password": senha, "email_confirm": True,
+            "user_metadata": {"name": nome, "full_name": nome, "crm": crm, "perfil": "Médico"},
+        })
+        if response.status_code >= 300 or not data.get("id"):
+            detail = data.get("msg") or data.get("message") or data.get("error_description") or "Não foi possível criar a conta no Authentication."
+            cur.close(); return _error("AUTH_CREATE_FAILED", str(detail), False, 409 if response.status_code in (400,409,422) else 502)
+        user_id = str(data["id"])
+        try:
+            cur.execute("""INSERT INTO usuarios (id,nome,perfil,ativo,criado_em,crm) VALUES (%s,%s,'Médico',1,%s,%s)""", (user_id, nome, _utc_now(), crm))
+            db.commit()
+        except Exception:
+            db.rollback()
+            try:
+                _supabase_admin_request("DELETE", f"/auth/v1/admin/users/{urllib.parse.quote(user_id, safe='')}")
+            except Exception:
+                app.logger.exception("Falha ao desfazer usuário Auth após erro de banco")
+            cur.close(); return _error("PROFILE_CREATE_FAILED", "A conta foi criada no Auth, mas não foi possível criar o perfil médico. Operação desfeita quando possível.", False, 500)
+        cur.close()
+        return _ok({"id": user_id, "nome": nome, "email": email, "perfil": "Médico", "crm": crm, "ativo": 1}, 201)
+    except RuntimeError as exc:
+        return _error("AUTH_ADMIN_NOT_CONFIGURED", str(exc), False, 503)
+    except Exception as exc:
+        app.logger.exception("admin_create_medico")
+        return _error("INTERNAL_ERROR", _safe_error_message(exc), False, 500)
+
+@app.delete("/api/admin/medicos/<user_id>")
+def api_admin_remover_medico(user_id):
+    denied = _require_admin()
+    if denied: return denied
+    user_id = str(user_id or "").strip()
+    if not user_id: return _error("VALIDATION_ERROR", "Usuário inválido.", False, 400)
+    db = get_db(); cur = db.cursor()
+    cur.execute("SELECT id,nome,perfil,ativo FROM usuarios WHERE id=%s", (user_id,))
+    row = cur.fetchone()
+    if not row or row.get("perfil") != "Médico":
+        cur.close(); return _error("NOT_FOUND", "Conta médica não encontrada.", False, 404)
+    cur.execute("UPDATE usuarios SET ativo=0 WHERE id=%s", (user_id,))
+    db.commit()
+    try:
+        response, data = _supabase_admin_request("DELETE", f"/auth/v1/admin/users/{urllib.parse.quote(user_id, safe='')}")
+        if response.status_code >= 300 and response.status_code != 404:
+            cur.execute("UPDATE usuarios SET ativo=1 WHERE id=%s", (user_id,)); db.commit()
+            detail = data.get("msg") or data.get("message") or "Não foi possível remover a conta no Authentication."
+            cur.close(); return _error("AUTH_DELETE_FAILED", str(detail), False, 502)
+    except Exception as exc:
+        cur.execute("UPDATE usuarios SET ativo=1 WHERE id=%s", (user_id,)); db.commit(); cur.close()
+        return _error("AUTH_ADMIN_NOT_CONFIGURED", _safe_error_message(exc), False, 503)
+    cur.close()
+    return _ok({"id": user_id, "removed": True})
+
+@app.get("/api/auth/config")
+def api_auth_config():
+    if not SUPABASE_URL or not SUPABASE_PUBLISHABLE_KEY:
+        return _error("AUTH_CONFIG_ERROR", "Serviço de autenticação não configurado no servidor.", False, 503)
+    return _ok({
+        "supabase_url": SUPABASE_URL,
+        "supabase_publishable_key": SUPABASE_PUBLISHABLE_KEY,
+    })
+
+@app.post("/api/auth/session")
+def api_auth_session():
+    token = _get_request_token()
+    if not token:
+        return _error("AUTH_ERROR", "Sessão ausente.", False, 401)
+    profile, _ = _authenticate_request()
+    if not profile:
+        return _error("AUTH_ERROR", "Não foi possível validar sua sessão.", False, 401)
+        
+    # Construindo a resposta direto com jsonify para evitar o Erro 500 (bug das tuplas)
+    resp = jsonify({"success": True, "data": profile})
+    resp.set_cookie(
+        "ambiental_session", token,
+        max_age=3600, httponly=True,
+        secure=APP_ENV == "production",
+        samesite="Lax", path="/",
+    )
+    return resp, 200
+
+@app.get("/api/auth/me")
+def api_auth_me():
+    profile, _ = _authenticate_request()
+    if not profile:
+        return _error("AUTH_ERROR", "Sua sessão não é válida ou expirou.", False, 401)
+    return _ok(profile)
+
+@app.post("/api/auth/logout")
+def api_auth_logout():
+    resp = jsonify({"success": True, "data": {"logged_out": True}})
+    resp.delete_cookie("ambiental_session", path="/", samesite="Lax")
+    return resp, 200
+
 @app.get("/api/atendimentos")
 def api_list_atendimentos():
     denied = _require_permission("view")
     if denied:
         return denied
-    q = str(request.args.get("q", "")).strip().lower()
-    status = str(request.args.get("status", "")).strip().upper()
-    medico = str(request.args.get("medico", "")).strip()
-    cid = str(request.args.get("cid", "")).strip()
-    unidade = str(request.args.get("unidade", "")).strip()
-    data_inicio = str(request.args.get("data_inicio", "")).strip()
-    data_fim = str(request.args.get("data_fim", "")).strip()
-    
+
+    page, page_size, offset = service_pagination(request.args)
+
     db = get_db()
-    clauses = []
-    params = []
-    
-    if q:
-        like = f"%{q}%"
-        clauses.append("(lower(numero) LIKE %s OR lower(medico) LIKE %s OR lower(cid) LIKE %s OR lower(payload_json::text) LIKE %s)")
-        params += [like, like, like, like]
-    if status:
-        clauses.append("status = %s")
-        params.append(status)
-    if medico:
-        clauses.append("lower(medico) LIKE lower(%s)")
-        params.append(f"%{medico}%")
-    if cid:
-        clauses.append("lower(cid) LIKE lower(%s)")
-        params.append(f"%{cid}%")
-    if unidade:
-        clauses.append("lower(unidade) LIKE lower(%s)")
-        params.append(f"%{unidade}%")
-    if data_inicio:
-        clauses.append("COALESCE(payload_json->'aux'->>'dataAtd', criado_em::text) >= %s")
-        params.append(data_inicio)
-    if data_fim:
-        clauses.append("COALESCE(payload_json->'aux'->>'dataAtd', criado_em::text) <= %s")
-        params.append(data_fim)
-        
-    where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
+    clauses, params = service_list_filters(request.args, role=request.user_role, user_id=request.user_id)
+    where = build_where(clauses)
+
     cur = db.cursor()
-    cur.execute(f"SELECT id, numero, payload_json, status, medico, cid, unidade, completude, alertas, inconsistencias, criado_em, atualizado_em, finalizado_em FROM atendimentos{where} ORDER BY atualizado_em DESC", params)
+    cur.execute(f"SELECT COUNT(*) AS total FROM atendimentos{where}", params)
+    total = int((cur.fetchone() or {}).get("total", 0))
+    offset = (page - 1) * page_size
+
+    cur.execute(
+        f"""
+        SELECT id, numero, status, medico, cid, unidade, completude,
+               alertas, inconsistencias, criado_em, atualizado_em,
+               finalizado_em, usuario_id, versao, atualizado_por,
+               paciente_nome, paciente_cpf, payload_json
+        FROM atendimentos
+        {where}
+        ORDER BY atualizado_em DESC
+        LIMIT %s OFFSET %s
+        """,
+        params + [page_size, offset],
+    )
     rows = cur.fetchall()
-    
+
     items = []
     for r in rows:
-        p = r["payload_json"] if isinstance(r["payload_json"], dict) else json.loads(r["payload_json"])
         official = _normalize_workflow_state(r["status"], "RASCUNHO")
-        if official != r["status"]:
-            p["workflowStatus"] = official
+        payload = r.get("payload_json") or {}
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except Exception:
+                payload = {}
+        if not isinstance(payload, dict):
+            payload = {}
+        aux = payload.get("aux") if isinstance(payload.get("aux"), dict) else {}
         items.append({
             "id": r["id"],
             "atendimento": r["numero"],
@@ -1060,34 +1746,98 @@ def api_list_atendimentos():
             "criado_em": str(r["criado_em"]) if r["criado_em"] else None,
             "atualizado_em": str(r["atualizado_em"]) if r["atualizado_em"] else None,
             "finalizado_em": str(r["finalizado_em"]) if r["finalizado_em"] else None,
-            "payload": p
+            "versao": int(r["versao"] or 1),
+            "nomePaciente": r.get("paciente_nome") or aux.get("nomePaciente"),
+            "cpfPaciente": r.get("paciente_cpf") or aux.get("cpfPaciente"),
+            # Metadados de leitura rápida para a Gestão; o prontuário completo continua no endpoint detalhado.
+            "aux": {
+                "dataAtd": aux.get("dataAtd"),
+                "horaAtd": aux.get("horaAtd"),
+                "medicoResponsavel": aux.get("medicoResponsavel"),
+                "crmResponsavel": aux.get("crmResponsavel"),
+                "cargo": aux.get("cargo"),
+                "idade": aux.get("idade"),
+                "diasSolicitados": aux.get("diasSolicitados"),
+                "nomePaciente": aux.get("nomePaciente"),
+                "cpfPaciente": aux.get("cpfPaciente"),
+                "cid": aux.get("cid"),
+                "unidade": aux.get("unidade"),
+                "doencaMotivo": aux.get("doencaMotivo"),
+                "queixaDuracao": aux.get("queixaDuracao"),
+            },
         })
-    
-    cur.execute("SELECT status, completude, alertas, inconsistencias, atualizado_em FROM atendimentos")
+
+    # Estatísticas seguem o mesmo escopo de segurança do usuário.
+    stat_where = " WHERE usuario_id=%s" if request.user_role == "Médico" else ""
+    stat_params = [request.user_id] if request.user_role == "Médico" else []
+    cur.execute(
+        f"SELECT status, medico, completude, alertas, inconsistencias, atualizado_em, payload_json FROM atendimentos{stat_where}",
+        stat_params,
+    )
     all_rows = cur.fetchall()
     cur.close()
-    
-    all_items = [{
-        "status": _normalize_workflow_state(x["status"], "RASCUNHO"),
-        "completude": x["completude"] or 0,
-        "alertas": x["alertas"] or 0,
-        "inconsistencias": x["inconsistencias"] or 0,
-        "atualizado_em": str(x["atualizado_em"]) if x["atualizado_em"] else ""
-    } for x in all_rows]
-    
+
+    all_items = []
+    for x in all_rows:
+        payload = x.get("payload_json") or {}
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except Exception:
+                payload = {}
+        if not isinstance(payload, dict):
+            payload = {}
+        parecer = str(payload.get("parecer") or "").strip().upper()
+        all_items.append({
+            "status": _normalize_workflow_state(x["status"], "RASCUNHO"),
+            "medico": str(x.get("medico") or "").strip(),
+            "parecer": parecer,
+            "completude": float(x["completude"] or 0),
+            "alertas": int(x["alertas"] or 0),
+            "inconsistencias": int(x["inconsistencias"] or 0),
+            "atualizado_em": str(x["atualizado_em"]) if x["atualizado_em"] else "",
+        })
+
     today_prefix = _utc_now()[:10]
+    total_count = len(all_items)
+    finalizados = sum(x["status"] == "FINALIZADO" for x in all_items)
+    parecer_fav = sum(x["parecer"] == "FAVORÁVEL" for x in all_items)
+    parecer_contr = sum(x["parecer"] == "CONTRÁRIO" for x in all_items)
+    parecer_nao_def = max(0, total_count - parecer_fav - parecer_contr)
+    avg_completion = round(sum(x["completude"] for x in all_items) / total_count, 1) if total_count else 0
+    doctor_map = {}
+    for x in all_items:
+        doctor = x["medico"] or "Não identificado"
+        doctor_map.setdefault(doctor, {"medico": doctor, "total": 0, "finalizados": 0, "favoraveis": 0, "contrarios": 0})
+        doctor_map[doctor]["total"] += 1
+        doctor_map[doctor]["finalizados"] += x["status"] == "FINALIZADO"
+        doctor_map[doctor]["favoraveis"] += x["parecer"] == "FAVORÁVEL"
+        doctor_map[doctor]["contrarios"] += x["parecer"] == "CONTRÁRIO"
+
     stats = {
-        "total": len(all_items),
+        "total": total_count,
         "rascunhos": sum(x["status"] == "RASCUNHO" for x in all_items),
         "revisao": sum(x["status"] == "EM_REVISÃO" for x in all_items),
         "pendentes": sum((x["alertas"] > 0 or x["inconsistencias"] > 0 or x["completude"] < 100) for x in all_items),
-        "finalizados": sum(x["status"] == "FINALIZADO" for x in all_items),
+        "finalizados": finalizados,
         "arquivados": sum(x["status"] == "ARQUIVADO" for x in all_items),
         "alertas": sum(x["alertas"] for x in all_items),
         "inconsistencias": sum(x["inconsistencias"] for x in all_items),
-        "atualizados_recentes": sum(str(x["atualizado_em"]).startswith(today_prefix) for x in all_items)
+        "atualizados_recentes": sum(str(x["atualizado_em"]).startswith(today_prefix) for x in all_items),
+        "favoraveis": parecer_fav,
+        "contrarios": parecer_contr,
+        "pareceres_nao_definidos": parecer_nao_def,
+        "completude_media": avg_completion,
+        "taxa_finalizacao": round((finalizados / total_count) * 100, 1) if total_count else 0,
+        "medicos_ativos_na_gestao": len([d for d in doctor_map if d != "Não identificado"]),
+        "por_medico": sorted(doctor_map.values(), key=lambda d: (-d["total"], d["medico"]))[:12],
     }
-    return _ok({"items": items, "stats": stats})
+    pages = (total + page_size - 1) // page_size if total else 0
+    return _ok({
+        "items": items,
+        "stats": stats,
+        "pagination": {"page": page, "page_size": page_size, "total": total, "pages": pages},
+    })
 
 @app.get("/api/atendimentos/<rid>")
 def api_get_atendimento(rid):
@@ -1098,8 +1848,10 @@ def api_get_atendimento(rid):
     r = cur.fetchone()
     cur.close()
     if not r: return _error("NOT_FOUND","Atendimento não encontrado.",False,404)
+    denied = _require_record_access(r)
+    if denied: return denied
     payload = r["payload_json"] if isinstance(r["payload_json"], dict) else json.loads(r["payload_json"])
-    return _ok({"id":r["id"],"atendimento":r["numero"],"status":r["status"],"payload":payload,"completude":r["completude"],"atualizado_em":r["atualizado_em"],"finalizado_em":r["finalizado_em"]})
+    return _ok({"id":r["id"],"atendimento":r["numero"],"status":r["status"],"payload":payload,"completude":r["completude"],"atualizado_em":r["atualizado_em"],"finalizado_em":r["finalizado_em"],"versao":int(r.get("versao") or 1),"atualizado_por":r.get("atualizado_por")})
 
 @app.post("/api/atendimentos")
 @app.put("/api/atendimentos/<rid>")
@@ -1109,6 +1861,11 @@ def api_save_atendimento(rid=None):
         return denied
     try:
         payload = _json_body()
+        expected_version_raw = payload.pop("__serverVersion", None)
+        try:
+            expected_version = int(expected_version_raw) if expected_version_raw not in (None, "") else None
+        except (TypeError, ValueError):
+            return _error("VALIDATION_ERROR", "Versão de sincronização inválida.", False, 400)
         number = str(payload.get("atendimento") or rid or "").strip()
         if not number:
             return _error("VALIDATION_ERROR", "Número do atendimento é obrigatório.", False, 400)
@@ -1120,12 +1877,43 @@ def api_save_atendimento(rid=None):
         
         db = get_db()
         cur = db.cursor()
-        cur.execute("SELECT * FROM atendimentos WHERE id=%s OR numero=%s", (rid, number))
+        cur.execute("SELECT * FROM atendimentos WHERE id=%s OR numero=%s FOR UPDATE", (rid, number))
         oldrow = cur.fetchone()
+        if oldrow:
+            denied = _require_record_access(oldrow, write=True)
+            if denied:
+                cur.close()
+                return denied
         old = (oldrow["payload_json"] if isinstance(oldrow["payload_json"], dict) else json.loads(oldrow["payload_json"])) if oldrow else None
+
+        # Identidade profissional oficial vem do banco/sessão.
+        # Injeta o CRM antes de calcular a completude e antes de persistir payload_json.
+        cur.execute("SELECT nome, crm FROM usuarios WHERE id=%s", (request.user_id,))
+        medico_db = cur.fetchone()
+        nome_medico = str((medico_db.get("nome") if medico_db else None) or request.user_name or "").strip()
+        crm_medico = str((medico_db.get("crm") if medico_db else None) or "").strip()
+        assinatura_profissional = f"{nome_medico} - CRM: {crm_medico}" if crm_medico else nome_medico
+        payload["medico"] = assinatura_profissional
+        paciente_nome_db, paciente_cpf_db = _patient_fields(payload)
+        if not isinstance(payload.get("aux"), dict):
+            payload["aux"] = {}
+        payload["aux"]["crmResponsavel"] = crm_medico
+        payload["aux"]["medicoResponsavel"] = nome_medico
+        a = payload["aux"]
+
         incoming = _normalize_workflow_state(payload.get("workflowStatus"), "RASCUNHO")
         
         if oldrow:
+            current_version = int(oldrow.get("versao") or 1)
+            if expected_version is not None and expected_version != current_version:
+                cur.close()
+                return _error(
+                    "VERSION_CONFLICT",
+                    "Este atendimento foi atualizado em outro dispositivo. Recarregue a versão mais recente antes de continuar.",
+                    True,
+                    409,
+                    {"versao_servidor": current_version, "atualizado_em": str(oldrow.get("atualizado_em") or ""), "atualizado_por": str(oldrow.get("atualizado_por") or "")},
+                )
             current = _normalize_workflow_state(oldrow["status"], "RASCUNHO")
             if current in {"FINALIZADO", "ARQUIVADO"} and incoming != current:
                 cur.close()
@@ -1144,23 +1932,33 @@ def api_save_atendimento(rid=None):
         completeness = _calc_completeness(payload)
         
         if oldrow:
+            next_version = int(oldrow.get("versao") or 1) + 1
             cur.execute(
-                "UPDATE atendimentos SET numero=%s, payload_json=%s, status=%s, paciente_nome_hash=%s, medico=%s, cid=%s, unidade=%s, completude=%s, alertas=%s, inconsistencias=%s, atualizado_em=%s, finalizado_em=%s WHERE id=%s",
-                (number, json.dumps(payload, ensure_ascii=False), status, _patient_hash(payload), str(payload.get("medico") or ""), str(a.get("cid") or ""), str(a.get("unidade") or ""), completeness, int(len(payload.get("aiAlertas") or [])), int(len(payload.get("inconsistencias") or [])), now, oldrow["finalizado_em"], oldrow["id"])
+                "UPDATE atendimentos SET numero=%s, payload_json=%s, status=%s, paciente_nome_hash=%s, paciente_nome=%s, paciente_cpf=%s, medico=%s, cid=%s, unidade=%s, completude=%s, alertas=%s, inconsistencias=%s, atualizado_em=%s, finalizado_em=%s, versao=%s, atualizado_por=%s WHERE id=%s AND versao=%s",
+                (number, json.dumps(payload, ensure_ascii=False), status, _patient_hash(payload), paciente_nome_db, paciente_cpf_db, str(payload.get("medico") or ""), str(a.get("cid") or ""), str(a.get("unidade") or ""), completeness, int(len(payload.get("aiAlertas") or [])), int(len(payload.get("inconsistencias") or [])), now, oldrow["finalizado_em"], next_version, request.user_id, oldrow["id"], current_version)
             )
+            if cur.rowcount != 1:
+                db.rollback()
+                cur.close()
+                return _error("VERSION_CONFLICT", "Este atendimento foi alterado durante o salvamento. Recarregue a versão mais recente antes de continuar.", True, 409)
             real_id = oldrow["id"]
+            # Não permite que um médico aproprie um atendimento sem proprietário
+            # por este endpoint; registros sem dono permanecem inacessíveis ao perfil Médico.
+            if not oldrow.get("usuario_id") and request.user_role != "Médico":
+                cur.execute("UPDATE atendimentos SET usuario_id=%s WHERE id=%s", (request.user_id, real_id))
         else:
             real_id = rid
             cur.execute(
-                "INSERT INTO atendimentos(id, numero, payload_json, status, paciente_nome_hash, medico, cid, unidade, completude, alertas, inconsistencias, criado_em, atualizado_em, finalizado_em) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                (real_id, number, json.dumps(payload, ensure_ascii=False), status, _patient_hash(payload), str(payload.get("medico") or ""), str(a.get("cid") or ""), str(a.get("unidade") or ""), completeness, int(len(payload.get("aiAlertas") or [])), int(len(payload.get("inconsistencias") or [])), now, now, payload.get("finalizadoEm") or None)
+                "INSERT INTO atendimentos(id, numero, payload_json, status, paciente_nome_hash, paciente_nome, paciente_cpf, medico, cid, unidade, completude, alertas, inconsistencias, criado_em, atualizado_em, finalizado_em, usuario_id, versao, atualizado_por) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (real_id, number, json.dumps(payload, ensure_ascii=False), status, _patient_hash(payload), paciente_nome_db, paciente_cpf_db, str(payload.get("medico") or ""), str(a.get("cid") or ""), str(a.get("unidade") or ""), completeness, int(len(payload.get("aiAlertas") or [])), int(len(payload.get("inconsistencias") or [])), now, now, payload.get("finalizadoEm") or None, request.user_id, 1, request.user_id)
             )
-            
+
         _sync_child_tables(db, real_id, payload)
         _audit_record(db, real_id, old, payload, "MANUAL")
         db.commit()
+        saved_version = 1 if oldrow is None else int(oldrow.get("versao") or 1) + 1
         cur.close()
-        return _ok({"id": real_id, "atendimento": number, "status": status, "completude": completeness, "atualizado_em": now}, 201 if oldrow is None else 200)
+        return _ok({"id": real_id, "atendimento": number, "status": status, "completude": completeness, "atualizado_em": now, "versao": saved_version}, 201 if oldrow is None else 200)
         
     except psycopg2.IntegrityError as exc:
         if 'db' in locals() and db:
@@ -1170,7 +1968,7 @@ def api_save_atendimento(rid=None):
         if 'db' in locals() and db:
             db.rollback()
         app.logger.error("Erro interno ao salvar atendimento: %s", str(exc))
-        return _error("INTERNAL_ERROR", f"Erro interno: {str(exc)}", True, 500)
+        return _error("INTERNAL_ERROR", "Não foi possível salvar o atendimento neste momento.", True, 500)
 
 def _finalization_blockers(payload: dict[str, Any]) -> list[dict[str, str]]:
     a = payload.get("aux") or {}
@@ -1209,13 +2007,26 @@ def _finalization_blockers(payload: dict[str, Any]) -> list[dict[str, str]]:
 @app.post("/api/atendimentos/<rid>/state")
 def api_state_transition(rid):
     payload=request.get_json(silent=True) or {}; target=_normalize_workflow_state(payload.get("estado"), "") ; motivo=str(payload.get("motivo") or "").strip()
+    expected_version_raw = payload.get("versao")
+    try:
+        expected_version = int(expected_version_raw) if expected_version_raw not in (None, "") else None
+    except (TypeError, ValueError):
+        return _error("VALIDATION_ERROR", "Versão de sincronização inválida.", False, 400)
     if target not in WORKFLOW_STATES:return _error("VALIDATION_ERROR","Estado inválido.",False,400)
     db=get_db(); cur = db.cursor()
-    cur.execute("SELECT * FROM atendimentos WHERE id=%s OR numero=%s", (rid, rid))
+    cur.execute("SELECT * FROM atendimentos WHERE id=%s OR numero=%s FOR UPDATE", (rid, rid))
     r = cur.fetchone()
     if not r:
         cur.close()
         return _error("NOT_FOUND","Atendimento não encontrado.",False,404)
+    denied = _require_record_access(r, write=True)
+    if denied:
+        cur.close()
+        return denied
+    current_version=int(r.get("versao") or 1)
+    if expected_version is not None and expected_version != current_version:
+        cur.close()
+        return _error("VERSION_CONFLICT", "Este atendimento foi atualizado em outro dispositivo. Recarregue a versão mais recente antes de continuar.", True, 409, {"versao_servidor": current_version, "atualizado_em": str(r.get("atualizado_em") or "")})
     current=_normalize_workflow_state(r["status"], "RASCUNHO")
     if target==current:
         cur.close()
@@ -1242,42 +2053,47 @@ def api_state_transition(rid):
         cur.close()
         return _error("VALIDATION_ERROR","Restauração requer justificativa explícita.",False,409)
     now=_utc_now()
+    next_version = int(r.get("versao") or 1) + 1
     p = r["payload_json"] if isinstance(r["payload_json"], dict) else json.loads(r["payload_json"])
     old=p.copy()
     p["workflowStatus"]=target; p["finalizado"]=(target=="FINALIZADO")
     if target=="FINALIZADO": p["finalizadoEm"]=now
     if target in {"RASCUNHO","EM_REVISÃO","REABERTO"} and current=="FINALIZADO": p["finalizado"]=False
     history=p.setdefault("statusHistory",[]); history.append({"data":now,"usuario":request.user_name,"anterior":current,"novo":target,"motivo":motivo})
-    cur.execute("UPDATE atendimentos SET status=%s, payload_json=%s, atualizado_em=%s, finalizado_em=%s WHERE id=%s", (target, json.dumps(p, ensure_ascii=False), now, now if target=="FINALIZADO" else r["finalizado_em"], r["id"]))
+    cur.execute("UPDATE atendimentos SET status=%s, payload_json=%s, atualizado_em=%s, finalizado_em=%s, versao=%s, atualizado_por=%s WHERE id=%s", (target, json.dumps(p, ensure_ascii=False), now, now if target=="FINALIZADO" else r["finalizado_em"], next_version, request.user_id, r["id"]))
     cur.execute("INSERT INTO historico_atendimento(atendimento_id, usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em) VALUES(%s, %s, %s, %s, %s, %s, %s)", (r["id"], request.user_name, "workflowStatus", current, target, "WORKFLOW", now))
     if motivo:
         cur.execute("INSERT INTO historico_atendimento(atendimento_id, usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em) VALUES(%s, %s, %s, %s, %s, %s, %s)", (r["id"], request.user_name, "motivo_transicao", motivo, "", "WORKFLOW", now))
     db.commit()
     cur.close()
-    return _ok({"status":target,"atualizado_em":now,"changed":True,"payload":p})
+    return _ok({"status":target,"atualizado_em":now,"changed":True,"payload":p,"versao":next_version})
 
 @app.delete("/api/atendimentos/<rid>")
 def api_delete_atendimento(rid):
     denied=_require_permission("archive")
     if denied:return denied
     db=get_db(); cur = db.cursor()
-    cur.execute("SELECT * FROM atendimentos WHERE id=%s OR numero=%s", (rid, rid))
+    cur.execute("SELECT * FROM atendimentos WHERE id=%s OR numero=%s FOR UPDATE", (rid, rid))
     r = cur.fetchone()
     if not r:
         cur.close()
         return _error("NOT_FOUND","Atendimento não encontrado.",False,404)
+    denied = _require_record_access(r, write=True)
+    if denied:
+        cur.close()
+        return denied
     current=_normalize_workflow_state(r["status"],"RASCUNHO")
     if "ARQUIVADO" not in WORKFLOW_TRANSITIONS.get(current,set()):
         cur.close()
         return _error("INVALID_TRANSITION",f"Não é possível arquivar no estado {current}.",False,409)
     p = r["payload_json"] if isinstance(r["payload_json"], dict) else json.loads(r["payload_json"])
-    p["arquivado"]=True; p["finalizado"]=False; p["workflowStatus"]="ARQUIVADO"; now=_utc_now()
+    p["arquivado"]=True; p["finalizado"]=False; p["workflowStatus"]="ARQUIVADO"; now=_utc_now(); next_version=int(r.get("versao") or 1)+1
     p.setdefault("statusHistory",[]).append({"data":now,"usuario":request.user_name,"anterior":current,"novo":"ARQUIVADO","motivo":"Arquivamento"})
-    cur.execute("UPDATE atendimentos SET status='ARQUIVADO', payload_json=%s, atualizado_em=%s WHERE id=%s", (json.dumps(p, ensure_ascii=False), now, r["id"]))
+    cur.execute("UPDATE atendimentos SET status='ARQUIVADO', payload_json=%s, atualizado_em=%s, versao=%s, atualizado_por=%s WHERE id=%s", (json.dumps(p, ensure_ascii=False), now, next_version, request.user_id, r["id"]))
     cur.execute("INSERT INTO historico_atendimento(atendimento_id, usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em) VALUES(%s, %s, %s, %s, %s, %s, %s)", (r["id"], request.user_name, "workflowStatus", current, "ARQUIVADO", "WORKFLOW", now))
     db.commit()
     cur.close()
-    return _ok({"status":"ARQUIVADO","atualizado_em":now})
+    return _ok({"status":"ARQUIVADO","atualizado_em":now,"versao":next_version})
 
 @app.get("/api/atendimentos/<rid>/historico")
 def api_history(rid):
@@ -1289,42 +2105,134 @@ def api_history(rid):
     if not r:
         cur.close()
         return _error("NOT_FOUND","Atendimento não encontrado.",False,404)
+    cur.execute("SELECT usuario_id FROM atendimentos WHERE id=%s", (r["id"],))
+    owner_row = cur.fetchone()
+    denied = _require_record_access(owner_row)
+    if denied:
+        cur.close()
+        return denied
     cur.execute("SELECT usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em FROM historico_atendimento WHERE atendimento_id=%s ORDER BY criado_em DESC, id DESC", (r["id"],))
     rows = cur.fetchall()
     cur.close()
     return _ok([dict(x) for x in rows])
 
+@app.get("/api/medico/atendimentos")
+def api_medico_atendimentos():
+    if request.user_role not in {"Médico", "Administrador"}:
+        return _error("PERMISSION_DENIED", "Seu perfil não possui acesso ao Portal Médico.", False, 403)
+    return api_list_atendimentos()
+
+@app.get("/api/medico/dashboard")
+def api_medico_dashboard():
+    if request.user_role not in {"Médico", "Administrador"}:
+        return _error("PERMISSION_DENIED", "Seu perfil não possui acesso ao Portal Médico.", False, 403)
+    return api_dashboard()
+
 @app.get("/api/dashboard")
 def api_dashboard():
-    denied=_require_permission("view")
-    if denied:return denied
-    db=get_db(); today=datetime.now().strftime("%Y-%m-%d")
+    denied = _require_permission("view")
+    if denied:
+        return denied
+
+    db = get_db()
+    today = datetime.now().strftime("%Y-%m-%d")
     cur = db.cursor()
-    
-    def fetch_val(q, p=None):
-        cur.execute(q, p or ())
+    scoped = request.user_role == "Médico"
+    owner_clause = " WHERE usuario_id=%s" if scoped else ""
+    owner_args = (request.user_id,) if scoped else ()
+
+    def fetch_val(q, p=()):
+        cur.execute(q, p)
         res = cur.fetchone()
         return list(res.values())[0] if res else 0
 
-    stats={
-      "total": fetch_val("SELECT COUNT(*) FROM atendimentos"),
-      "rascunhos": fetch_val("SELECT COUNT(*) FROM atendimentos WHERE status=%s", ('RASCUNHO',)),
-      "revisao": fetch_val("SELECT COUNT(*) FROM atendimentos WHERE status=%s", ('EM_REVISÃO',)),
-      "pendentes": fetch_val("SELECT COUNT(*) FROM atendimentos WHERE status=%s", ('PENDENTE',)),
-      "finalizados": fetch_val("SELECT COUNT(*) FROM atendimentos WHERE status=%s", ('FINALIZADO',)),
-      "arquivados": fetch_val("SELECT COUNT(*) FROM atendimentos WHERE status=%s", ('ARQUIVADO',)),
-      "atendimentos_hoje": fetch_val("SELECT COUNT(*) FROM atendimentos WHERE SUBSTR(criado_em, 1, 10)=%s", (today,)),
-      "alertas": fetch_val("SELECT COALESCE(SUM(alertas), 0) FROM atendimentos"),
-      "inconsistencias": fetch_val("SELECT COALESCE(SUM(inconsistencias), 0) FROM atendimentos"),
+    def count_status(value):
+        return fetch_val(
+            "SELECT COUNT(*) FROM atendimentos" + owner_clause + (" AND " if owner_clause else " WHERE ") + "status=%s",
+            owner_args + (value,),
+        )
+
+    stats = {
+        "total": fetch_val("SELECT COUNT(*) FROM atendimentos" + owner_clause, owner_args),
+        "rascunhos": count_status("RASCUNHO"),
+        "revisao": count_status("EM_REVISÃO"),
+        "pendentes": count_status("PENDENTE"),
+        "finalizados": count_status("FINALIZADO"),
+        "arquivados": count_status("ARQUIVADO"),
+        "atendimentos_hoje": fetch_val(
+            "SELECT COUNT(*) FROM atendimentos" + owner_clause + (" AND " if owner_clause else " WHERE ") + "SUBSTR(criado_em, 1, 10)=%s",
+            owner_args + (today,),
+        ),
+        "alertas": fetch_val("SELECT COALESCE(SUM(alertas), 0) FROM atendimentos" + owner_clause, owner_args),
+        "inconsistencias": fetch_val("SELECT COALESCE(SUM(inconsistencias), 0) FROM atendimentos" + owner_clause, owner_args),
     }
-    cur.execute("SELECT COALESCE(NULLIF(medico,''),'Não informado') AS medico, COUNT(*) AS total FROM atendimentos GROUP BY medico ORDER BY total DESC LIMIT 20")
-    prof = [dict(x) for x in cur.fetchall()]
-    
-    cur.execute("SELECT status, COUNT(*) AS total FROM atendimentos GROUP BY status ORDER BY total DESC")
+
+    # Distribuição global/individual por status.
+    if scoped:
+        cur.execute("SELECT status, COUNT(*) AS total FROM atendimentos WHERE usuario_id=%s GROUP BY status ORDER BY total DESC", (request.user_id,))
+    else:
+        cur.execute("SELECT status, COUNT(*) AS total FROM atendimentos GROUP BY status ORDER BY total DESC")
     status = [dict(x) for x in cur.fetchall()]
+
+    # Série dos últimos 7 dias sem carregar os payloads completos para o navegador.
+    cur.execute(
+        """
+        SELECT SUBSTR(criado_em,1,10) AS dia, COUNT(*) AS total
+        FROM atendimentos
+        {where}
+        AND SUBSTR(criado_em,1,10) >= %s
+        GROUP BY SUBSTR(criado_em,1,10)
+        ORDER BY dia
+        """.format(where=owner_clause if owner_clause else "WHERE 1=1"),
+        owner_args + ((datetime.now(timezone.utc).date() - __import__("datetime").timedelta(days=6)).strftime("%Y-%m-%d"),),
+    )
+    last7_rows = [dict(x) for x in cur.fetchall()]
+
+    # Próximos registros e pendências: apenas metadados essenciais.
+    upcoming_where = "WHERE usuario_id=%s AND " if scoped else "WHERE "
+    upcoming_params = (request.user_id,) if scoped else ()
+    cur.execute(
+        f"""
+        SELECT id, numero, status, medico, unidade, completude, alertas, inconsistencias,
+               criado_em, atualizado_em, finalizado_em,
+               payload_json->'aux'->>'dataAtd' AS data_atd,
+               payload_json->'aux'->>'horaAtd' AS hora_atd
+        FROM atendimentos
+        {upcoming_where}
+        COALESCE(payload_json->'aux'->>'dataAtd', SUBSTR(criado_em,1,10)) >= %s
+        AND status NOT IN ('FINALIZADO','ARQUIVADO')
+        ORDER BY COALESCE(payload_json->'aux'->>'dataAtd', SUBSTR(criado_em,1,10)),
+                 COALESCE(payload_json->'aux'->>'horaAtd',''), atualizado_em DESC
+        LIMIT 8
+        """,
+        upcoming_params + (today,),
+    )
+    upcoming = [dict(x) for x in cur.fetchall()]
+
+    pending_where = "WHERE usuario_id=%s AND " if scoped else "WHERE "
+    pending_params = (request.user_id,) if scoped else ()
+    cur.execute(
+        f"""
+        SELECT id, numero, status, completude, alertas, inconsistencias, atualizado_em
+        FROM atendimentos
+        {pending_where}
+        status NOT IN ('FINALIZADO','ARQUIVADO')
+        AND (status='PENDENTE' OR alertas>0 OR inconsistencias>0 OR completude<100)
+        ORDER BY (alertas + inconsistencias) DESC, completude ASC, atualizado_em DESC
+        LIMIT 8
+        """,
+        pending_params,
+    )
+    pending = [dict(x) for x in cur.fetchall()]
+
     cur.close()
-    
-    return _ok({"stats":stats,"por_profissional":prof,"por_status":status})
+    return _ok({
+        "stats": stats,
+        "por_status": status,
+        "ultimos_7_dias": last7_rows,
+        "proximos": upcoming,
+        "pendencias": pending,
+    })
 
 @app.post("/api/relatorios/pdf")
 def api_report_pdf():
@@ -1345,9 +2253,13 @@ def api_report_pdf():
             bio=BytesIO(); c=canvas.Canvas(bio); c.setFont("Helvetica",9); c.drawString(40,800,"O gerador avançado de PDF não está disponível neste ambiente."); c.drawString(40,785,"Use a pré-visualização para imprimir/salvar como PDF."); c.save(); pdf=bio.getvalue()
         except Exception:return _error("INTERNAL_ERROR","Não foi possível gerar o PDF neste ambiente.",True,500)
     h=hashlib.sha256(pdf).hexdigest(); db=get_db(); cur = db.cursor()
-    cur.execute("SELECT id FROM atendimentos WHERE numero=%s", (atendimento,))
+    cur.execute("SELECT id, usuario_id FROM atendimentos WHERE numero=%s", (atendimento,))
     r = cur.fetchone()
     if r:
+        denied = _require_record_access(r)
+        if denied:
+            cur.close()
+            return denied
         cur.execute("INSERT INTO relatorios(atendimento_id,tipo,hash_conteudo,criado_em,criado_por) VALUES(%s,%s,%s,%s,%s)",(r["id"],"PDF",h,_utc_now(),request.user_name))
         db.commit()
     cur.close()

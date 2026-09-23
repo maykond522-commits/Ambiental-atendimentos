@@ -22,10 +22,47 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
 .workspace{display:grid;grid-template-columns:minmax(330px,390px) minmax(0,1fr);gap:18px;align-items:start}.panel{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 12px 30px rgba(26,60,95,.06);overflow:hidden;animation:rise .65s ease both}.panelhead{padding:17px 19px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}.panelhead strong{font-size:14px}.panelhead span{font-size:9px;color:var(--muted);font-weight:900}.panelbody{padding:19px}
 .form-grid{display:grid;gap:13px}.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:10px;font-weight:950;color:#506982}.field input{width:100%;padding:12px 13px;border:1px solid #cfdae6;border-radius:11px;outline:none;background:#fbfdff;color:#173654;font:inherit;font-size:12px;transition:.18s}.field input:focus{border-color:#78aadd;box-shadow:0 0 0 4px rgba(7,86,168,.08);background:#fff}.hint{font-size:9px;color:var(--muted);line-height:1.45}.requirements{display:grid;gap:8px;margin-top:12px;padding:12px;border-radius:13px;background:#f6f9fc;border:1px solid #e7eef5}.req{display:flex;gap:8px;align-items:flex-start;font-size:9px;color:#5e748b}.req i{width:7px;height:7px;border-radius:999px;background:var(--green);margin-top:3px;flex:0 0 auto}
 .actions{display:flex;gap:8px;margin-top:18px}.primary,.secondary,.danger{border:0;border-radius:11px;padding:11px 14px;font-weight:950;font-size:10px;cursor:pointer;transition:.18s}.primary{background:var(--green);color:#06381d;box-shadow:0 9px 20px rgba(0,201,90,.22)}.primary:hover{transform:translateY(-1px);filter:saturate(1.05)}.secondary{background:#fff;color:#35516d;border:1px solid var(--line)}.secondary:hover{background:#f8fbfd}.primary:disabled,.secondary:disabled,.danger:disabled{opacity:.55;cursor:not-allowed;transform:none}.danger{background:var(--dangerBg);color:var(--danger);border:1px solid #f0cbd0}.danger:hover{background:#fff0f2}
-.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:720px}.table th,.table td{padding:13px 14px;border-bottom:1px solid #edf2f6;text-align:left;font-size:11px;vertical-align:middle}.table th{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#71849a;background:#fbfcfe}.med{font-weight:950}.sub{font-size:10px;color:var(--muted);margin-top:3px}.badge{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;background:#e9f9f0;color:#08793b;font-weight:950;font-size:9px}.badge.off{background:#f2f4f7;color:#7a8794}.empty{padding:40px;text-align:center;color:var(--muted);font-size:12px}.list-tools{display:flex;gap:8px;align-items:center}.search{padding:9px 11px;border:1px solid var(--line);border-radius:10px;outline:none;font-size:10px;width:180px}.search:focus{border-color:#78aadd;box-shadow:0 0 0 3px rgba(7,86,168,.08)}
-.notice{padding:12px 14px;border-radius:12px;background:#eff8ff;border:1px solid #d7e9f8;color:#47667f;font-size:10px;line-height:1.5;margin-bottom:14px}.danger-note{background:#fff7f7;border-color:#f1d4d8;color:#884651}
-.loadingbar{height:2px;position:fixed;top:0;left:0;right:0;z-index:100;background:linear-gradient(90deg,transparent,#00c95a,#0756a8,transparent);background-size:200% 100%;animation:shimmer 1.2s linear infinite}.admin-boot-loader{position:fixed;inset:0;z-index:110;background:radial-gradient(circle at 50% 10%,rgba(7,86,168,.12),transparent 38%),linear-gradient(145deg,#eef4f9,#f9fbfd);display:grid;place-items:center;padding:24px;transition:opacity .38s ease,visibility .38s ease}.admin-boot-loader.hide{opacity:0;visibility:hidden;pointer-events:none}.admin-boot-card{width:min(430px,100%);padding:34px;border:1px solid #e2eaf2;border-radius:26px;background:rgba(255,255,255,.92);backdrop-filter:blur(16px);box-shadow:0 30px 90px rgba(8,40,78,.18);text-align:center}.admin-boot-brand{display:flex;align-items:center;justify-content:center;gap:9px;color:var(--blue);font-size:11px;font-weight:950;letter-spacing:.1em}.admin-boot-brand img{width:34px;height:34px;border-radius:10px;background:#fff;padding:3px;border:1px solid #e6edf4}.admin-boot-spinner{width:78px;height:78px;margin:24px auto 16px;border-radius:50%;border:5px solid #e7eef5;border-top-color:var(--green);border-right-color:var(--blue);animation:spin 1.05s linear infinite;box-shadow:0 0 0 9px rgba(7,63,135,.04)}.admin-boot-card h3{margin:0;color:var(--ink);font-size:18px}.admin-boot-card p{margin:7px 0 18px;color:var(--muted);font-size:12px}.admin-boot-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}.admin-boot-step{padding:9px 6px;border-radius:10px;background:#f3f7fa;color:#8191a2;font-size:9px;font-weight:950;text-transform:uppercase;letter-spacing:.05em}.admin-boot-step.active{background:#e8f2ff;color:var(--blue)}.admin-boot-step.done{background:#e9f8f0;color:#08793b}.admin-boot-progress{height:6px;background:#edf2f6;border-radius:999px;overflow:hidden}.admin-boot-progress span{display:block;width:8%;height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:999px;transition:width .5s ease}.toast-region{position:fixed;right:18px;bottom:18px;z-index:120;display:grid;gap:8px}.toastx{background:#0e2f52;color:#fff;padding:12px 14px;border-radius:11px;box-shadow:0 14px 34px rgba(4,29,53,.22);font-size:10px;font-weight:800;animation:toastin .2s ease both;max-width:340px}
-@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@keyframes toastin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}@keyframes spin{to{transform:rotate(360deg)}}@media(max-width:980px){.workspace{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.hero{flex-direction:column;align-items:flex-start}.hero-stat{text-align:left}.content{padding:20px 16px}.topin{padding:16px}.search{width:140px}}@media(max-width:800px){.shell{grid-template-columns:1fr}.side{display:none}}
+.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:760px}.table th,.table td{padding:13px 14px;border-bottom:1px solid #edf2f6;text-align:left;font-size:11px;vertical-align:middle}.table th{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#71849a;background:#fbfcfe}.med{font-weight:950}.sub{font-size:10px;color:var(--muted);margin-top:3px}.badge{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;background:#e9f9f0;color:#08793b;font-weight:950;font-size:9px}.badge.off{background:#f2f4f7;color:#7a8794}.empty{padding:40px;text-align:center;color:var(--muted);font-size:12px}.list-tools{display:flex;gap:8px;align-items:center}.search{padding:9px 11px;border:1px solid var(--line);border-radius:10px;outline:none;font-size:10px;width:180px}.search:focus{border-color:#78aadd;box-shadow:0 0 0 3px rgba(7,86,168,.08)}
+.btn-group{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.btn-sm{padding:6px 9px;font-size:10px;font-weight:800;border-radius:8px;border:1px solid var(--line);cursor:pointer;background:#fff;color:var(--ink);transition:.15s}
+.btn-sm:hover{background:#f4f8fb;border-color:#b9cfdf}
+.btn-sm.primary{background:var(--blue);color:#fff;border-color:transparent}
+.btn-sm.primary:hover{background:var(--blue2)}
+.btn-sm.warning{background:#fff8e6;color:#9e6a00;border-color:#fae09c}
+.btn-sm.warning:hover{background:#fff1cc}
+.btn-sm.success{background:#eaf8ef;color:#0e7b44;border-color:#b5e8c8}
+.btn-sm.success:hover{background:#dcf3e4}
+.btn-sm.danger{background:var(--dangerBg);color:var(--danger);border-color:#f0cbd0}
+.btn-sm.danger:hover{background:#ffe6e9}
+.modal-overlay{position:fixed;inset:0;background:rgba(6,45,98,.45);backdrop-filter:blur(8px);z-index:150;display:grid;place-items:center;padding:16px;opacity:0;visibility:hidden;transition:.25s ease}
+.modal-overlay.open{opacity:1;visibility:visible}
+.modal-card{background:#fff;border-radius:20px;box-shadow:0 24px 60px rgba(6,45,98,.2);width:min(460px,100%);overflow:hidden;animation:rise .3s ease both}
+.modal-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.modal-head h3{margin:0;font-size:15px;color:var(--ink)}
+.modal-close{border:0;background:transparent;font-size:18px;cursor:pointer;color:var(--muted);padding:4px 8px;border-radius:8px}
+.modal-close:hover{background:#f1f5f9;color:var(--ink)}
+.modal-body{padding:20px}
+.notice{padding:12px 14px;border-radius:12px;background:#eff8ff;border:1px solid #d7e9f8;color:#47667f;font-size:10px;line-height:1.5;margin-bottom:14px}
+.loadingbar{height:2px;position:fixed;top:0;left:0;right:0;z-index:100;background:linear-gradient(90deg,transparent,#00c95a,#0756a8,transparent);background-size:200% 100%;animation:shimmer 1.2s linear infinite}
+.admin-boot-loader{position:fixed;inset:0;z-index:110;background:radial-gradient(circle at 50% 10%,rgba(7,86,168,.12),transparent 38%),linear-gradient(145deg,#eef4f9,#f9fbfd);display:grid;place-items:center;padding:24px;transition:opacity .38s ease,visibility .38s ease}
+.admin-boot-loader.hide{opacity:0;visibility:hidden;pointer-events:none}
+.admin-boot-card{width:min(430px,100%);padding:34px;border:1px solid #e2eaf2;border-radius:26px;background:rgba(255,255,255,.92);backdrop-filter:blur(16px);box-shadow:0 30px 90px rgba(8,40,78,.18);text-align:center}
+.admin-boot-brand{display:flex;align-items:center;justify-content:center;gap:9px;color:var(--blue);font-size:11px;font-weight:950;letter-spacing:.1em}
+.admin-boot-brand img{width:34px;height:34px;border-radius:10px;background:#fff;padding:3px;border:1px solid #e6edf4}
+.admin-boot-spinner{width:78px;height:78px;margin:24px auto 16px;border-radius:50%;border:5px solid #e7eef5;border-top-color:var(--green);border-right-color:var(--blue);animation:spin 1.05s linear infinite;box-shadow:0 0 0 9px rgba(7,63,135,.04)}
+.admin-boot-card h3{margin:0;color:var(--ink);font-size:18px}.admin-boot-card p{margin:7px 0 18px;color:var(--muted);font-size:12px}
+.admin-boot-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.admin-boot-step{padding:9px 6px;border-radius:10px;background:#f3f7fa;color:#8191a2;font-size:9px;font-weight:950;text-transform:uppercase;letter-spacing:.05em}
+.admin-boot-step.active{background:#e8f2ff;color:var(--blue)}.admin-boot-step.done{background:#e9f8f0;color:#08793b}
+.admin-boot-progress{height:6px;background:#edf2f6;border-radius:999px;overflow:hidden}.admin-boot-progress span{display:block;width:8%;height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:999px;transition:width .5s ease}
+.toast-region{position:fixed;right:18px;bottom:18px;z-index:160;display:grid;gap:8px}
+.toastx{background:#0e2f52;color:#fff;padding:12px 14px;border-radius:11px;box-shadow:0 14px 34px rgba(4,29,53,.22);font-size:10px;font-weight:800;animation:toastin .2s ease both;max-width:340px}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes toastin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:980px){.workspace{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.hero{flex-direction:column;align-items:flex-start}.hero-stat{text-align:left}.content{padding:20px 16px}.topin{padding:16px}.search{width:140px}}
+@media(max-width:800px){.shell{grid-template-columns:1fr}.side{display:none}}
 </style>
 </head>
 <body>
@@ -45,10 +82,10 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
   <div class="user"><div id="who">Administrador</div><small>Gerenciamento de contas médicas</small></div>
 </aside>
 <main>
-<header class="top"><div class="topin"><div><div class="crumb">Administração / Contas médicas</div><div class="title">Central de contas médicas</div><p class="subtitle">Um espaço dedicado para criar e remover acessos de médicos, mantendo os dados sincronizados com o cadastro interno.</p></div></div></header>
+<header class="top"><div class="topin"><div><div class="crumb">Administração / Contas médicas</div><div class="title">Central de contas médicas</div><p class="subtitle">Um espaço dedicado para cadastrar, editar, redefinir senhas e gerenciar acessos de médicos.</p></div></div></header>
 <section class="content">
   <section class="hero">
-    <div><h2>Gestão de profissionais</h2><p>Cadastre um médico uma única vez. O sistema cria a conta no Authentication e registra automaticamente nome, CRM/CRO e perfil em <b>usuarios</b>. A remoção encerra o acesso sem apagar os atendimentos já realizados.</p></div>
+    <div><h2>Gestão de profissionais</h2><p>Cadastre um médico uma única vez. O sistema sincroniza a conta com o Authentication e registra nome, CRM/CRO e perfil em <b>usuarios</b>. Você pode editar os dados, suspender acessos temporariamente ou redefinir a senha a qualquer momento.</p></div>
     <div class="hero-stat"><b id="count">—</b><span>médicos cadastrados</span></div>
   </section>
 
@@ -62,7 +99,7 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
     <div class="panel" id="createPanel">
       <div class="panelhead"><strong>Adicionar novo médico</strong><span>CADASTRO SEGURO</span></div>
       <div class="panelbody">
-        <div class="notice">Preencha os dados abaixo para criar o acesso. A senha inicial é enviada somente ao Authentication do Supabase e não é armazenada na tabela <b>usuarios</b>.</div>
+        <div class="notice">Preencha os dados abaixo para criar o acesso. A senha inicial é enviada ao Authentication do Supabase e vinculada ao perfil <b>Médico</b>.</div>
         <form id="createForm" novalidate>
           <div class="form-grid">
             <div class="field"><label for="nome">Nome completo</label><input id="nome" name="nome" required minlength="3" autocomplete="name" placeholder="Ex.: Dra. Maria Silva"></div>
@@ -79,7 +116,7 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
     <div class="panel">
       <div class="panelhead"><strong>Médicos cadastrados</strong><div class="list-tools"><input id="search" class="search" placeholder="Buscar por nome ou CRM"><span id="sync">Carregando…</span></div></div>
       <div class="table-wrap">
-        <table class="table"><thead><tr><th>Médico</th><th>CRM/CRO</th><th>Atendimentos</th><th>Status</th><th>Cadastro</th><th>Ação</th></tr></thead><tbody id="tbody"></tbody></table>
+        <table class="table"><thead><tr><th>Médico</th><th>CRM/CRO</th><th>Atendimentos</th><th>Status</th><th>Cadastro</th><th>Ações</th></tr></thead><tbody id="tbody"></tbody></table>
       </div>
       <div class="empty" id="empty" hidden>Nenhum médico encontrado.</div>
     </div>
@@ -87,6 +124,68 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
 </section>
 </main>
 </div>
+
+<!-- Modal Edição de Médico -->
+<div id="editModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 id="editModalTitle">Editar dados do médico</h3>
+      <button type="button" class="modal-close" onclick="closeEditModal()" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="editForm" novalidate>
+        <input type="hidden" id="editId">
+        <div class="form-grid">
+          <div class="field">
+            <label for="editNome">Nome completo</label>
+            <input id="editNome" required minlength="3" placeholder="Ex.: Dr. Roberto Santos">
+          </div>
+          <div class="field">
+            <label for="editCrm">CRM/CRO</label>
+            <input id="editCrm" required minlength="3" placeholder="Ex.: CRM 123456 / SP">
+          </div>
+        </div>
+        <div class="hint" style="margin-top:10px">As alterações serão sincronizadas com o Authentication e com a tabela de usuários.</div>
+        <div class="actions" style="margin-top:20px;justify-content:flex-end">
+          <button type="button" class="secondary" onclick="closeEditModal()">Cancelar</button>
+          <button type="submit" class="primary" id="saveEditBtn">Salvar alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Redefinir Senha -->
+<div id="pwdModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="pwdModalTitle">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 id="pwdModalTitle">Redefinir senha de acesso</h3>
+      <button type="button" class="modal-close" onclick="closePwdModal()" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="pwdTargetDoctor" style="font-size:11px;color:var(--muted);margin:0 0 14px 0"></p>
+      <form id="pwdForm" novalidate>
+        <input type="hidden" id="pwdId">
+        <div class="form-grid">
+          <div class="field">
+            <label for="newPwd">Nova senha</label>
+            <input id="newPwd" type="password" required minlength="8" placeholder="Mínimo de 8 caracteres" autocomplete="new-password">
+          </div>
+          <div class="field">
+            <label for="confirmPwd">Confirmar nova senha</label>
+            <input id="confirmPwd" type="password" required minlength="8" placeholder="Repita a nova senha" autocomplete="new-password">
+          </div>
+        </div>
+        <div class="hint" style="margin-top:10px">A nova senha terá efeito imediato para o próximo login do profissional.</div>
+        <div class="actions" style="margin-top:20px;justify-content:flex-end">
+          <button type="button" class="secondary" onclick="closePwdModal()">Cancelar</button>
+          <button type="submit" class="primary" id="savePwdBtn">Redefinir senha</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <div class="toast-region" id="toasts" aria-live="polite"></div>
 <script>
 (async()=>{
@@ -96,18 +195,228 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
   const moneyless=v=>Number(v||0);
   const toast=(message)=>{const el=document.createElement('div');el.className='toastx';el.textContent=message;$('toasts').appendChild(el);setTimeout(()=>el.remove(),3600)};
   const busy=(on)=>{ $('loadingbar').hidden=!on; document.body.setAttribute('aria-busy',on?'true':'false'); };
+
   const render=()=>{
-    $('count').textContent=rows.length; $('activeCount').textContent=rows.filter(r=>Number(r.ativo)===1).length; $('attendanceCount').textContent=rows.reduce((s,r)=>s+moneyless(r.total_atendimentos),0); $('finishedCount').textContent=rows.reduce((s,r)=>s+moneyless(r.finalizados),0);
-    const q=$('search').value.trim().toLowerCase(); filtered=rows.filter(r=>!q||`${r.nome||''} ${r.crm||''}`.toLowerCase().includes(q));
-    $('empty').hidden=filtered.length>0; $('tbody').innerHTML=filtered.map(r=>`<tr><td><div class="med">${esc(r.nome)}</div><div class="sub">ID: ${esc(r.id)}</div></td><td>${esc(r.crm||'—')}</td><td><b>${moneyless(r.total_atendimentos)}</b> <span class="sub">(${moneyless(r.finalizados)} finalizados)</span></td><td><span class="badge ${Number(r.ativo)===1?'':'off'}">● ${Number(r.ativo)===1?'Ativo':'Removido'}</span></td><td>${fmt(r.criado_em)}</td><td>${Number(r.ativo)===1?`<button class="danger" data-remove="${esc(r.id)}">Remover acesso</button>`:'—'}</td></tr>`).join('');
-    document.querySelectorAll('[data-remove]').forEach(btn=>btn.addEventListener('click',()=>removeDoctor(btn.dataset.remove)));
+    $('count').textContent=rows.length;
+    $('activeCount').textContent=rows.filter(r=>Number(r.ativo)===1).length;
+    $('attendanceCount').textContent=rows.reduce((s,r)=>s+moneyless(r.total_atendimentos),0);
+    $('finishedCount').textContent=rows.reduce((s,r)=>s+moneyless(r.finalizados),0);
+    const q=$('search').value.trim().toLowerCase();
+    filtered=rows.filter(r=>!q||`${r.nome||''} ${r.crm||''}`.toLowerCase().includes(q));
+    $('empty').hidden=filtered.length>0;
+    $('tbody').innerHTML=filtered.map(r=>{
+      const isActive = Number(r.ativo) === 1;
+      return `<tr>
+        <td>
+          <div class="med">${esc(r.nome)}</div>
+          <div class="sub">ID: ${esc(r.id)}</div>
+        </td>
+        <td>${esc(r.crm||'—')}</td>
+        <td><b>${moneyless(r.total_atendimentos)}</b> <span class="sub">(${moneyless(r.finalizados)} finalizados)</span></td>
+        <td><span class="badge ${isActive?'':'off'}">● ${isActive?'Ativo':'Inativo/Suspenso'}</span></td>
+        <td>${fmt(r.criado_em)}</td>
+        <td>
+          <div class="btn-group">
+            <button class="btn-sm" data-edit="${esc(r.id)}" title="Editar nome e CRM">Editar</button>
+            <button class="btn-sm ${isActive?'warning':'success'}" data-toggle="${esc(r.id)}" title="${isActive?'Suspender acesso':'Reativar acesso'}">
+              ${isActive ? 'Suspender' : 'Reativar'}
+            </button>
+            <button class="btn-sm" data-pwd="${esc(r.id)}" title="Redefinir senha">Senha</button>
+            <button class="btn-sm danger" data-remove="${esc(r.id)}" title="Excluir conta médica">Excluir</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+
+    document.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>openEditDoctor(b.dataset.edit)));
+    document.querySelectorAll('[data-toggle]').forEach(b=>b.addEventListener('click',()=>toggleDoctorStatus(b.dataset.toggle)));
+    document.querySelectorAll('[data-pwd]').forEach(b=>b.addEventListener('click',()=>openPwdDoctor(b.dataset.pwd)));
+    document.querySelectorAll('[data-remove]').forEach(b=>b.addEventListener('click',()=>removeDoctor(b.dataset.remove)));
   };
+
   function setBoot(step,title,text,progress){const ids=['abStep1','abStep2','abStep3'];ids.forEach((id,i)=>{const el=$(id);if(!el)return;const n=i+1;el.classList.toggle('active',n===step);el.classList.toggle('done',n<step);});if($('adminBootTitle'))$('adminBootTitle').textContent=title;if($('adminBootText'))$('adminBootText').textContent=text;if($('abProgress'))$('abProgress').style.width=progress+'%';}
-  async function load(){ $('sync').textContent='Sincronizando…'; setBoot(2,'Carregando profissionais','Buscando contas médicas e vínculos de atendimento…',58); try{const res=await AmbientalAuth.authFetch('/api/admin/medicos');const data=await res.json();if(!res.ok)throw new Error(data?.error?.message||'Não foi possível carregar os médicos.');rows=data.data?.items||[];render();$('sync').textContent='Atualizado agora';setBoot(3,'Sala pronta','Contas médicas carregadas. Gestão liberada.',100);setTimeout(()=>{$('adminBootLoader')?.classList.add('hide');$('adminBootLoader')?.setAttribute('aria-busy','false');setTimeout(()=>$('adminBootLoader')?.remove(),420)},500);}catch(e){$('sync').textContent='Erro';setBoot(3,'Não foi possível carregar','Verifique a conexão com o servidor e tente novamente.',100);toast(e.message)}}
-  async function removeDoctor(id){const r=rows.find(x=>String(x.id)===String(id));if(!r)return;const ok=confirm(`Remover o acesso de ${r.nome}?\n\nO login será encerrado, mas os atendimentos e o histórico permanecerão preservados.`);if(!ok)return;busy(true);try{const res=await AmbientalAuth.authFetch('/api/admin/medicos/'+encodeURIComponent(id),{method:'DELETE'});const data=await res.json();if(!res.ok)throw new Error(data?.error?.message||'Não foi possível remover a conta.');toast('Acesso médico removido com sucesso.');await load();}catch(e){toast(e.message)}finally{busy(false)}}
-  $('search').addEventListener('input',render); $('clearBtn').addEventListener('click',()=>{$('createForm').reset();$('nome').focus()});
-  $('createForm').addEventListener('submit',async e=>{e.preventDefault();const form=e.currentTarget;if(!form.reportValidity())return;const btn=$('createBtn');btn.disabled=true;btn.textContent='Criando conta…';busy(true);try{const payload={nome:$('nome').value.trim(),email:$('email').value.trim().toLowerCase(),crm:$('crm').value.trim(),senha:$('senha').value};const res=await AmbientalAuth.authFetch('/api/admin/medicos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const data=await res.json();if(!res.ok)throw new Error(data?.error?.message||'Não foi possível criar a conta.');form.reset();toast('Médico criado e sincronizado com o Authentication.');await load();$('nome').focus();}catch(e){toast(e.message)}finally{btn.disabled=false;btn.textContent='Criar conta médica';busy(false)}});
-  try{setBoot(1,'Validando acesso','Confirmando sua sessão administrativa segura…',24);const profile=await AmbientalAuth.requireAuth({area:'gestao'});if(profile?.perfil!=='Administrador'){location.replace('/acesso-negado.html?area=gestao-medicos-admin');return}$('who').textContent=profile.nome||profile.email||'Administrador';await load();}catch(e){if(e.message!=='AUTH_REQUIRED'&&e.message!=='PERMISSION_DENIED'){setBoot(3,'Falha ao iniciar','Não foi possível preparar a gestão de profissionais.',100);toast('Não foi possível iniciar a gestão de contas médicas.')}}
+
+  async function load(){
+    $('sync').textContent='Sincronizando…';
+    setBoot(2,'Carregando profissionais','Buscando contas médicas e vínculos de atendimento…',58);
+    try{
+      const res=await AmbientalAuth.authFetch('/api/admin/medicos');
+      const data=await res.json();
+      if(!res.ok)throw new Error(data?.error?.message||'Não foi possível carregar os médicos.');
+      rows=data.data?.items||[];
+      render();
+      $('sync').textContent='Atualizado agora';
+      setBoot(3,'Sala pronta','Contas médicas carregadas. Gestão liberada.',100);
+      setTimeout(()=>{$('adminBootLoader')?.classList.add('hide');$('adminBootLoader')?.setAttribute('aria-busy','false');setTimeout(()=>$('adminBootLoader')?.remove(),420)},500);
+    }catch(e){
+      $('sync').textContent='Erro';
+      setBoot(3,'Não foi possível carregar','Verifique a conexão com o servidor e tente novamente.',100);
+      toast(e.message);
+    }
+  }
+
+  window.openEditDoctor = function(id) {
+    const r = rows.find(x => String(x.id) === String(id));
+    if (!r) return;
+    $('editId').value = r.id;
+    $('editNome').value = r.nome || '';
+    $('editCrm').value = r.crm || '';
+    $('editModal').classList.add('open');
+    $('editNome').focus();
+  };
+
+  window.closeEditModal = function() {
+    $('editModal').classList.remove('open');
+    $('editForm').reset();
+  };
+
+  window.openPwdDoctor = function(id) {
+    const r = rows.find(x => String(x.id) === String(id));
+    if (!r) return;
+    $('pwdId').value = r.id;
+    $('pwdTargetDoctor').textContent = `Definindo nova senha de acesso para ${r.nome} (${r.crm || 'Sem CRM'}).`;
+    $('pwdModal').classList.add('open');
+    $('newPwd').focus();
+  };
+
+  window.closePwdModal = function() {
+    $('pwdModal').classList.remove('open');
+    $('pwdForm').reset();
+  };
+
+  async function toggleDoctorStatus(id) {
+    const r = rows.find(x => String(x.id) === String(id));
+    if (!r) return;
+    const isAct = Number(r.ativo) === 1;
+    const action = isAct ? 'suspender' : 'reativar';
+    const ok = confirm(`Deseja realmente ${action} o acesso de ${r.nome}?\n\n${isAct ? 'O médico não poderá realizar login enquanto estiver suspenso.' : 'O médico poderá voltar a acessar o sistema.'}`);
+    if (!ok) return;
+    busy(true);
+    try {
+      const res = await AmbientalAPI.admin.toggleStatus(id);
+      toast(res?.data?.mensagem || res?.mensagem || `Status de ${r.nome} atualizado.`);
+      await load();
+    } catch(e) {
+      toast(e.message || 'Erro ao alterar status do médico.');
+    } finally {
+      busy(false);
+    }
+  }
+
+  async function removeDoctor(id){
+    const r=rows.find(x=>String(x.id)===String(id));
+    if(!r)return;
+    const ok=confirm(`Excluir permanentemente a conta de ${r.nome}?\n\nO login no Authentication será revogado, mas os atendimentos e o histórico permanecerão preservados.`);
+    if(!ok)return;
+    busy(true);
+    try{
+      const res=await AmbientalAuth.authFetch('/api/admin/medicos/'+encodeURIComponent(id),{method:'DELETE'});
+      const data=await res.json();
+      if(!res.ok)throw new Error(data?.error?.message||'Não foi possível remover a conta.');
+      toast('Conta médica excluída com sucesso.');
+      await load();
+    }catch(e){
+      toast(e.message);
+    }finally{
+      busy(false);
+    }
+  }
+
+  $('search').addEventListener('input',render);
+  $('clearBtn').addEventListener('click',()=>{$('createForm').reset();$('nome').focus()});
+
+  $('createForm').addEventListener('submit',async e=>{
+    e.preventDefault();
+    const form=e.currentTarget;
+    if(!form.reportValidity())return;
+    const btn=$('createBtn');
+    btn.disabled=true;btn.textContent='Criando conta…';busy(true);
+    try{
+      const payload={nome:$('nome').value.trim(),email:$('email').value.trim().toLowerCase(),crm:$('crm').value.trim(),senha:$('senha').value};
+      const res=await AmbientalAuth.authFetch('/api/admin/medicos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const data=await res.json();
+      if(!res.ok)throw new Error(data?.error?.message||'Não foi possível criar a conta.');
+      form.reset();
+      toast('Médico criado e sincronizado com o Authentication.');
+      await load();
+      $('nome').focus();
+    }catch(e){
+      toast(e.message);
+    }finally{
+      btn.disabled=false;btn.textContent='Criar conta médica';busy(false);
+    }
+  });
+
+  $('editForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const id = $('editId').value;
+    const nome = $('editNome').value.trim();
+    const crm = $('editCrm').value.trim();
+    if (nome.length < 3) { toast('Informe o nome completo.'); return; }
+    if (crm.length < 3) { toast('Informe o CRM/CRO.'); return; }
+    const btn = $('saveEditBtn');
+    btn.disabled = true; btn.textContent = 'Salvando…'; busy(true);
+    try {
+      const res = await AmbientalAPI.admin.updateMedico(id, { nome, crm });
+      toast('Dados do médico atualizados com sucesso.');
+      closeEditModal();
+      await load();
+    } catch(err) {
+      toast(err.message || 'Erro ao salvar alterações.');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Salvar alterações'; busy(false);
+    }
+  });
+
+  $('pwdForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const id = $('pwdId').value;
+    const senha = $('newPwd').value;
+    const confirmSenha = $('confirmPwd').value;
+    if (senha.length < 8) { toast('A nova senha deve ter no mínimo 8 caracteres.'); return; }
+    if (senha !== confirmSenha) { toast('As senhas não coincidem. Digite novamente.'); return; }
+    const btn = $('savePwdBtn');
+    btn.disabled = true; btn.textContent = 'Redefinindo…'; busy(true);
+    try {
+      const res = await AmbientalAPI.admin.resetSenha(id, senha);
+      toast(res?.data?.mensagem || res?.mensagem || 'Senha redefinida com sucesso.');
+      closePwdModal();
+    } catch(err) {
+      toast(err.message || 'Erro ao redefinir senha.');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Redefinir senha'; busy(false);
+    }
+  });
+
+  // Fechar modals com ESC ou clique fora
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeEditModal();
+      closePwdModal();
+    }
+  });
+  $('editModal').addEventListener('click', e => {
+    if (e.target === $('editModal')) closeEditModal();
+  });
+  $('pwdModal').addEventListener('click', e => {
+    if (e.target === $('pwdModal')) closePwdModal();
+  });
+
+  try{
+    setBoot(1,'Validando acesso','Confirmando sua sessão administrativa segura…',24);
+    const profile=await AmbientalAuth.requireAuth({area:'gestao'});
+    if(profile?.perfil!=='Administrador'){
+      location.replace('/acesso-negado.html?area=gestao-medicos-admin');
+      return;
+    }
+    $('who').textContent=profile.nome||profile.email||'Administrador';
+    await load();
+  }catch(e){
+    if(e.message!=='AUTH_REQUIRED'&&e.message!=='PERMISSION_DENIED'){
+      setBoot(3,'Falha ao iniciar','Não foi possível preparar a gestão de profissionais.',100);
+      toast('Não foi possível iniciar a gestão de contas médicas.');
+    }
+  }
 })();
 </script>
 </body>

@@ -181,12 +181,8 @@ def _role_from_profile(user: dict[str, Any], db) -> tuple[str | None, dict[str, 
     email = user.get("email") or ""
 
     cur = db.cursor()
-    cur.execute("SELECT id, nome, perfil, ativo FROM usuarios WHERE id=%s", (user_id,))
+    cur.execute("SELECT id, nome, perfil, ativo, crm FROM usuarios WHERE id=%s", (user_id,))
     row = cur.fetchone()
-    if row:
-        cur.execute("SELECT crm FROM usuarios WHERE id=%s", (user_id,))
-        crm_row = cur.fetchone() or {}
-        row["crm"] = crm_row.get("crm")
     cur.close()
 
     if not row or not bool(row["ativo"]):
@@ -452,7 +448,9 @@ def _init_db():
                 pass
         print("Aviso ao inicializar banco Postgres:", type(exc).__name__, exc)
 
-_init_db()
+# Inicialização sob demanda ou em desenvolvimento (evita bloqueios em serverless/múltiplos workers)
+if os.getenv("RUN_DB_MIGRATIONS", "0") == "1" or (APP_ENV == "development" and os.getenv("SKIP_INIT_DB", "0") != "1"):
+    _init_db()
 
 @atexit.register
 def _close_db_pool():
@@ -630,8 +628,10 @@ def _sync_child_tables(db, rid, payload):
 
 def _audit_record(db, rid, old, new, origin="MANUAL"):
     cur = db.cursor()
+    user_id = getattr(request, "user_id", None)
+    user_name = getattr(request, "user_name", "Sistema")
     if not old:
-        cur.execute("INSERT INTO historico_atendimento(atendimento_id, usuario_id, usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em) VALUES(%s, %s, %s, %s, %s, %s, %s, %s)", (rid, None, request.user_name, "__ATENDIMENTO__", "", json.dumps(new, ensure_ascii=False), origin, _utc_now()))
+        cur.execute("INSERT INTO historico_atendimento(atendimento_id, usuario_id, usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em) VALUES(%s, %s, %s, %s, %s, %s, %s, %s)", (rid, user_id, user_name, "__ATENDIMENTO__", "", json.dumps(new, ensure_ascii=False), origin, _utc_now()))
         cur.close()
         return
     keys = sorted(set(old.keys()) | set(new.keys()))
@@ -639,7 +639,7 @@ def _audit_record(db, rid, old, new, origin="MANUAL"):
         ov = json.dumps(old.get(k), ensure_ascii=False, sort_keys=True)
         nv = json.dumps(new.get(k), ensure_ascii=False, sort_keys=True)
         if ov != nv:
-            cur.execute("INSERT INTO historico_atendimento(atendimento_id, usuario_id, usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em) VALUES(%s, %s, %s, %s, %s, %s, %s, %s)", (rid, None, request.user_name, k, ov[:8000], nv[:8000], origin, _utc_now()))
+            cur.execute("INSERT INTO historico_atendimento(atendimento_id, usuario_id, usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em) VALUES(%s, %s, %s, %s, %s, %s, %s, %s)", (rid, user_id, user_name, k, ov[:8000], nv[:8000], origin, _utc_now()))
     cur.close()
 
 class AIResult(BaseModel):
@@ -1648,6 +1648,96 @@ def api_admin_remover_medico(user_id):
     cur.close()
     return _ok({"id": user_id, "removed": True})
 
+@app.put("/api/admin/medicos/<user_id>")
+def api_admin_editar_medico(user_id):
+    denied = _require_admin()
+    if denied: return denied
+    user_id = str(user_id or "").strip()
+    if not user_id: return _error("VALIDATION_ERROR", "Usuário inválido.", False, 400)
+    try:
+        body = _json_body()
+        nome = str(body.get("nome") or "").strip()
+        crm = str(body.get("crm") or "").strip()
+        if len(nome) < 3: return _error("VALIDATION_ERROR", "Informe o nome completo do médico.", False, 400)
+        if len(crm) < 3: return _error("VALIDATION_ERROR", "Informe o CRM/CRO.", False, 400)
+        
+        db = get_db(); cur = db.cursor()
+        cur.execute("SELECT id, nome, perfil, ativo FROM usuarios WHERE id=%s", (user_id,))
+        row = cur.fetchone()
+        if not row or row.get("perfil") != "Médico":
+            cur.close(); return _error("NOT_FOUND", "Conta médica não encontrada.", False, 404)
+            
+        cur.execute("SELECT id FROM usuarios WHERE LOWER(COALESCE(crm,'')) = LOWER(%s) AND id <> %s LIMIT 1", (crm, user_id))
+        if cur.fetchone():
+            cur.close(); return _error("DUPLICATE_CRM", "Já existe outro médico com este CRM/CRO.", False, 409)
+            
+        cur.execute("UPDATE usuarios SET nome=%s, crm=%s WHERE id=%s", (nome, crm, user_id))
+        db.commit()
+        cur.close()
+        
+        try:
+            _supabase_admin_request("PUT", f"/auth/v1/admin/users/{urllib.parse.quote(user_id, safe='')}", {
+                "user_metadata": {"name": nome, "full_name": nome, "crm": crm, "perfil": "Médico"}
+            })
+        except Exception:
+            app.logger.warning("Não foi possível sincronizar metadados do médico no Supabase Auth.")
+            
+        return _ok({"id": user_id, "nome": nome, "crm": crm, "atualizado": True})
+    except Exception as exc:
+        app.logger.exception("admin_editar_medico")
+        return _error("INTERNAL_ERROR", _safe_error_message(exc), False, 500)
+
+@app.patch("/api/admin/medicos/<user_id>/status")
+def api_admin_toggle_status_medico(user_id):
+    denied = _require_admin()
+    if denied: return denied
+    user_id = str(user_id or "").strip()
+    if not user_id: return _error("VALIDATION_ERROR", "Usuário inválido.", False, 400)
+    db = get_db(); cur = db.cursor()
+    cur.execute("SELECT id, nome, perfil, ativo FROM usuarios WHERE id=%s", (user_id,))
+    row = cur.fetchone()
+    if not row or row.get("perfil") != "Médico":
+        cur.close(); return _error("NOT_FOUND", "Conta médica não encontrada.", False, 404)
+        
+    novo_status = 0 if int(row.get("ativo") or 0) == 1 else 1
+    cur.execute("UPDATE usuarios SET ativo=%s WHERE id=%s", (novo_status, user_id))
+    db.commit()
+    cur.close()
+    return _ok({"id": user_id, "ativo": novo_status, "mensagem": "Acesso ativado com sucesso." if novo_status == 1 else "Acesso suspenso com sucesso."})
+
+@app.post("/api/admin/medicos/<user_id>/senha")
+def api_admin_reset_senha_medico(user_id):
+    denied = _require_admin()
+    if denied: return denied
+    user_id = str(user_id or "").strip()
+    if not user_id: return _error("VALIDATION_ERROR", "Usuário inválido.", False, 400)
+    try:
+        body = _json_body()
+        senha = str(body.get("senha") or "").strip()
+        if len(senha) < 8:
+            return _error("VALIDATION_ERROR", "A nova senha deve ter no mínimo 8 caracteres.", False, 400)
+            
+        db = get_db(); cur = db.cursor()
+        cur.execute("SELECT id, nome, perfil, ativo FROM usuarios WHERE id=%s", (user_id,))
+        row = cur.fetchone()
+        cur.close()
+        if not row or row.get("perfil") != "Médico":
+            return _error("NOT_FOUND", "Conta médica não encontrada.", False, 404)
+            
+        response, data = _supabase_admin_request("PUT", f"/auth/v1/admin/users/{urllib.parse.quote(user_id, safe='')}", {
+            "password": senha
+        })
+        if response.status_code >= 300:
+            detail = data.get("msg") or data.get("message") or "Falha ao atualizar a senha no Authentication."
+            return _error("AUTH_UPDATE_FAILED", str(detail), False, 502)
+            
+        return _ok({"id": user_id, "mensagem": "Senha do médico redefinida com sucesso."})
+    except RuntimeError as exc:
+        return _error("AUTH_ADMIN_NOT_CONFIGURED", str(exc), False, 503)
+    except Exception as exc:
+        app.logger.exception("admin_reset_senha_medico")
+        return _error("INTERNAL_ERROR", _safe_error_message(exc), False, 500)
+
 @app.get("/api/auth/config")
 def api_auth_config():
     if not SUPABASE_URL or not SUPABASE_PUBLISHABLE_KEY:
@@ -1767,70 +1857,86 @@ def api_list_atendimentos():
             },
         })
 
-    # Estatísticas seguem o mesmo escopo de segurança do usuário.
+    # Estatísticas agregadas diretamente no PostgreSQL com alto desempenho
     stat_where = " WHERE usuario_id=%s" if request.user_role == "Médico" else ""
     stat_params = [request.user_id] if request.user_role == "Médico" else []
+    today_prefix = _utc_now()[:10]
+
     cur.execute(
-        f"SELECT status, medico, completude, alertas, inconsistencias, atualizado_em, payload_json FROM atendimentos{stat_where}",
+        f"""
+        SELECT
+            COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE status = 'RASCUNHO') AS rascunhos,
+            COUNT(*) FILTER (WHERE status = 'EM_REVISÃO') AS revisao,
+            COUNT(*) FILTER (WHERE status = 'FINALIZADO') AS finalizados,
+            COUNT(*) FILTER (WHERE status = 'ARQUIVADO') AS arquivados,
+            COUNT(*) FILTER (WHERE alertas > 0 OR inconsistencias > 0 OR completude < 100) AS pendentes,
+            COALESCE(SUM(alertas), 0) AS alertas,
+            COALESCE(SUM(inconsistencias), 0) AS inconsistencias,
+            COUNT(*) FILTER (WHERE atualizado_em LIKE %s) AS atualizados_recentes,
+            COUNT(*) FILTER (WHERE UPPER(COALESCE(payload_json->>'parecer', '')) = 'FAVORÁVEL') AS favoraveis,
+            COUNT(*) FILTER (WHERE UPPER(COALESCE(payload_json->>'parecer', '')) = 'CONTRÁRIO') AS contrarios,
+            ROUND(COALESCE(AVG(completude), 0)::numeric, 1) AS completude_media
+        FROM atendimentos
+        {stat_where}
+        """,
+        [f"{today_prefix}%"] + stat_params,
+    )
+    srow = cur.fetchone() or {}
+
+    total_count = int(srow.get("total") or 0)
+    finalizados = int(srow.get("finalizados") or 0)
+    favoraveis = int(srow.get("favoraveis") or 0)
+    contrarios = int(srow.get("contrarios") or 0)
+    parecer_nao_def = max(0, total_count - favoraveis - contrarios)
+
+    cur.execute(
+        f"""
+        SELECT
+            COALESCE(NULLIF(TRIM(medico), ''), 'Não identificado') AS medico,
+            COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE status = 'FINALIZADO') AS finalizados,
+            COUNT(*) FILTER (WHERE UPPER(COALESCE(payload_json->>'parecer', '')) = 'FAVORÁVEL') AS favoraveis,
+            COUNT(*) FILTER (WHERE UPPER(COALESCE(payload_json->>'parecer', '')) = 'CONTRÁRIO') AS contrarios
+        FROM atendimentos
+        {stat_where}
+        GROUP BY COALESCE(NULLIF(TRIM(medico), ''), 'Não identificado')
+        ORDER BY total DESC, medico ASC
+        LIMIT 12
+        """,
         stat_params,
     )
-    all_rows = cur.fetchall()
+    doc_rows = cur.fetchall() or []
     cur.close()
 
-    all_items = []
-    for x in all_rows:
-        payload = x.get("payload_json") or {}
-        if isinstance(payload, str):
-            try:
-                payload = json.loads(payload)
-            except Exception:
-                payload = {}
-        if not isinstance(payload, dict):
-            payload = {}
-        parecer = str(payload.get("parecer") or "").strip().upper()
-        all_items.append({
-            "status": _normalize_workflow_state(x["status"], "RASCUNHO"),
-            "medico": str(x.get("medico") or "").strip(),
-            "parecer": parecer,
-            "completude": float(x["completude"] or 0),
-            "alertas": int(x["alertas"] or 0),
-            "inconsistencias": int(x["inconsistencias"] or 0),
-            "atualizado_em": str(x["atualizado_em"]) if x["atualizado_em"] else "",
-        })
-
-    today_prefix = _utc_now()[:10]
-    total_count = len(all_items)
-    finalizados = sum(x["status"] == "FINALIZADO" for x in all_items)
-    parecer_fav = sum(x["parecer"] == "FAVORÁVEL" for x in all_items)
-    parecer_contr = sum(x["parecer"] == "CONTRÁRIO" for x in all_items)
-    parecer_nao_def = max(0, total_count - parecer_fav - parecer_contr)
-    avg_completion = round(sum(x["completude"] for x in all_items) / total_count, 1) if total_count else 0
-    doctor_map = {}
-    for x in all_items:
-        doctor = x["medico"] or "Não identificado"
-        doctor_map.setdefault(doctor, {"medico": doctor, "total": 0, "finalizados": 0, "favoraveis": 0, "contrarios": 0})
-        doctor_map[doctor]["total"] += 1
-        doctor_map[doctor]["finalizados"] += x["status"] == "FINALIZADO"
-        doctor_map[doctor]["favoraveis"] += x["parecer"] == "FAVORÁVEL"
-        doctor_map[doctor]["contrarios"] += x["parecer"] == "CONTRÁRIO"
+    por_medico = [
+        {
+            "medico": d["medico"],
+            "total": int(d["total"] or 0),
+            "finalizados": int(d["finalizados"] or 0),
+            "favoraveis": int(d["favoraveis"] or 0),
+            "contrarios": int(d["contrarios"] or 0),
+        }
+        for d in doc_rows
+    ]
 
     stats = {
         "total": total_count,
-        "rascunhos": sum(x["status"] == "RASCUNHO" for x in all_items),
-        "revisao": sum(x["status"] == "EM_REVISÃO" for x in all_items),
-        "pendentes": sum((x["alertas"] > 0 or x["inconsistencias"] > 0 or x["completude"] < 100) for x in all_items),
+        "rascunhos": int(srow.get("rascunhos") or 0),
+        "revisao": int(srow.get("revisao") or 0),
+        "pendentes": int(srow.get("pendentes") or 0),
         "finalizados": finalizados,
-        "arquivados": sum(x["status"] == "ARQUIVADO" for x in all_items),
-        "alertas": sum(x["alertas"] for x in all_items),
-        "inconsistencias": sum(x["inconsistencias"] for x in all_items),
-        "atualizados_recentes": sum(str(x["atualizado_em"]).startswith(today_prefix) for x in all_items),
-        "favoraveis": parecer_fav,
-        "contrarios": parecer_contr,
+        "arquivados": int(srow.get("arquivados") or 0),
+        "alertas": int(srow.get("alertas") or 0),
+        "inconsistencias": int(srow.get("inconsistencias") or 0),
+        "atualizados_recentes": int(srow.get("atualizados_recentes") or 0),
+        "favoraveis": favoraveis,
+        "contrarios": contrarios,
         "pareceres_nao_definidos": parecer_nao_def,
-        "completude_media": avg_completion,
-        "taxa_finalizacao": round((finalizados / total_count) * 100, 1) if total_count else 0,
-        "medicos_ativos_na_gestao": len([d for d in doctor_map if d != "Não identificado"]),
-        "por_medico": sorted(doctor_map.values(), key=lambda d: (-d["total"], d["medico"]))[:12],
+        "completude_media": float(srow.get("completude_media") or 0.0),
+        "taxa_finalizacao": round((finalizados / total_count) * 100, 1) if total_count else 0.0,
+        "medicos_ativos_na_gestao": len([d for d in por_medico if d["medico"] != "Não identificado"]),
+        "por_medico": por_medico,
     }
     pages = (total + page_size - 1) // page_size if total else 0
     return _ok({
@@ -1886,19 +1992,38 @@ def api_save_atendimento(rid=None):
                 return denied
         old = (oldrow["payload_json"] if isinstance(oldrow["payload_json"], dict) else json.loads(oldrow["payload_json"])) if oldrow else None
 
-        # Identidade profissional oficial vem do banco/sessão.
-        # Injeta o CRM antes de calcular a completude e antes de persistir payload_json.
-        cur.execute("SELECT nome, crm FROM usuarios WHERE id=%s", (request.user_id,))
-        medico_db = cur.fetchone()
-        nome_medico = str((medico_db.get("nome") if medico_db else None) or request.user_name or "").strip()
-        crm_medico = str((medico_db.get("crm") if medico_db else None) or "").strip()
-        assinatura_profissional = f"{nome_medico} - CRM: {crm_medico}" if crm_medico else nome_medico
-        payload["medico"] = assinatura_profissional
+        # Identidade profissional:
+        # - Perfil Médico: valida e assina com seu nome e CRM oficiais do banco.
+        # - Perfis Administrativos em edição: preserva a autoria e CRM do médico original.
+        # - Perfis Administrativos em criação: utiliza os dados médicos informados no payload.
         paciente_nome_db, paciente_cpf_db = _patient_fields(payload)
         if not isinstance(payload.get("aux"), dict):
             payload["aux"] = {}
-        payload["aux"]["crmResponsavel"] = crm_medico
-        payload["aux"]["medicoResponsavel"] = nome_medico
+
+        if request.user_role == "Médico":
+            cur.execute("SELECT nome, crm FROM usuarios WHERE id=%s", (request.user_id,))
+            medico_db = cur.fetchone()
+            nome_medico = str((medico_db.get("nome") if medico_db else None) or request.user_name or "").strip()
+            crm_medico = str((medico_db.get("crm") if medico_db else None) or "").strip()
+            assinatura_profissional = f"{nome_medico} - CRM: {crm_medico}" if crm_medico else nome_medico
+            payload["medico"] = assinatura_profissional
+            payload["aux"]["crmResponsavel"] = crm_medico
+            payload["aux"]["medicoResponsavel"] = nome_medico
+        elif oldrow:
+            old_aux = (old.get("aux") if isinstance(old, dict) and isinstance(old.get("aux"), dict) else {})
+            preservado_medico = str(payload.get("medico") or oldrow.get("medico") or (old.get("medico") if isinstance(old, dict) else "") or "").strip()
+            preservado_nome = str(payload["aux"].get("medicoResponsavel") or old_aux.get("medicoResponsavel") or preservado_medico).strip()
+            preservado_crm = str(payload["aux"].get("crmResponsavel") or old_aux.get("crmResponsavel") or "").strip()
+            payload["medico"] = preservado_medico or (f"{preservado_nome} - CRM: {preservado_crm}" if preservado_crm else preservado_nome)
+            payload["aux"]["medicoResponsavel"] = preservado_nome
+            payload["aux"]["crmResponsavel"] = preservado_crm
+        else:
+            med_nome = str(payload["aux"].get("medicoResponsavel") or payload.get("medico") or request.user_name or "").strip()
+            med_crm = str(payload["aux"].get("crmResponsavel") or "").strip()
+            payload["medico"] = str(payload.get("medico") or (f"{med_nome} - CRM: {med_crm}" if med_crm else med_nome)).strip()
+            payload["aux"]["medicoResponsavel"] = med_nome
+            payload["aux"]["crmResponsavel"] = med_crm
+
         a = payload["aux"]
 
         incoming = _normalize_workflow_state(payload.get("workflowStatus"), "RASCUNHO")
@@ -2061,9 +2186,9 @@ def api_state_transition(rid):
     if target in {"RASCUNHO","EM_REVISÃO","REABERTO"} and current=="FINALIZADO": p["finalizado"]=False
     history=p.setdefault("statusHistory",[]); history.append({"data":now,"usuario":request.user_name,"anterior":current,"novo":target,"motivo":motivo})
     cur.execute("UPDATE atendimentos SET status=%s, payload_json=%s, atualizado_em=%s, finalizado_em=%s, versao=%s, atualizado_por=%s WHERE id=%s", (target, json.dumps(p, ensure_ascii=False), now, now if target=="FINALIZADO" else r["finalizado_em"], next_version, request.user_id, r["id"]))
-    cur.execute("INSERT INTO historico_atendimento(atendimento_id, usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em) VALUES(%s, %s, %s, %s, %s, %s, %s)", (r["id"], request.user_name, "workflowStatus", current, target, "WORKFLOW", now))
+    cur.execute("INSERT INTO historico_atendimento(atendimento_id, usuario_id, usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em) VALUES(%s, %s, %s, %s, %s, %s, %s, %s)", (r["id"], getattr(request, "user_id", None), request.user_name, "workflowStatus", current, target, "WORKFLOW", now))
     if motivo:
-        cur.execute("INSERT INTO historico_atendimento(atendimento_id, usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em) VALUES(%s, %s, %s, %s, %s, %s, %s)", (r["id"], request.user_name, "motivo_transicao", motivo, "", "WORKFLOW", now))
+        cur.execute("INSERT INTO historico_atendimento(atendimento_id, usuario_id, usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em) VALUES(%s, %s, %s, %s, %s, %s, %s, %s)", (r["id"], getattr(request, "user_id", None), request.user_name, "motivo_transicao", motivo, "", "WORKFLOW", now))
     db.commit()
     cur.close()
     return _ok({"status":target,"atualizado_em":now,"changed":True,"payload":p,"versao":next_version})
@@ -2090,7 +2215,7 @@ def api_delete_atendimento(rid):
     p["arquivado"]=True; p["finalizado"]=False; p["workflowStatus"]="ARQUIVADO"; now=_utc_now(); next_version=int(r.get("versao") or 1)+1
     p.setdefault("statusHistory",[]).append({"data":now,"usuario":request.user_name,"anterior":current,"novo":"ARQUIVADO","motivo":"Arquivamento"})
     cur.execute("UPDATE atendimentos SET status='ARQUIVADO', payload_json=%s, atualizado_em=%s, versao=%s, atualizado_por=%s WHERE id=%s", (json.dumps(p, ensure_ascii=False), now, next_version, request.user_id, r["id"]))
-    cur.execute("INSERT INTO historico_atendimento(atendimento_id, usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em) VALUES(%s, %s, %s, %s, %s, %s, %s)", (r["id"], request.user_name, "workflowStatus", current, "ARQUIVADO", "WORKFLOW", now))
+    cur.execute("INSERT INTO historico_atendimento(atendimento_id, usuario_id, usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em) VALUES(%s, %s, %s, %s, %s, %s, %s, %s)", (r["id"], getattr(request, "user_id", None), request.user_name, "workflowStatus", current, "ARQUIVADO", "WORKFLOW", now))
     db.commit()
     cur.close()
     return _ok({"status":"ARQUIVADO","atualizado_em":now,"versao":next_version})
@@ -2299,4 +2424,10 @@ def app_html():
     return response
 
 if __name__ == "__main__":
+    import sys
+    if "--init-db" in sys.argv:
+        print("Executando inicialização do banco Postgres...")
+        _init_db()
+        print("Inicialização concluída com sucesso.")
+        sys.exit(0)
     app.run(host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "8000")), debug=False)

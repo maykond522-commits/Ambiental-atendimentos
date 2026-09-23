@@ -89,7 +89,16 @@
     ai: {
       justificativa: (payload) => request('/api/ai/justificativa', { method: 'POST', body: JSON.stringify(payload) }),
       preenchimento: (payload) => request('/api/ai/preenchimento', { method: 'POST', body: JSON.stringify(payload) }),
-      documento: (payload) => request('/api/ai/documento', { method: 'POST', body: JSON.stringify(payload) })
+      documento: (payload) => request('/api/ai/documento', { method: 'POST', body: JSON.stringify(payload) }),
+      esisla: (payload) => request('/api/ai/esisla', { method: 'POST', body: JSON.stringify(payload) })
+    },
+    admin: {
+      medicos: () => request('/api/admin/medicos'),
+      createMedico: (payload) => request('/api/admin/medicos', { method: 'POST', body: JSON.stringify(payload) }),
+      updateMedico: (id, payload) => request(`/api/admin/medicos/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(payload) }),
+      toggleStatus: (id) => request(`/api/admin/medicos/${encodeURIComponent(id)}/status`, { method: 'PATCH' }),
+      resetSenha: (id, senha) => request(`/api/admin/medicos/${encodeURIComponent(id)}/senha`, { method: 'POST', body: JSON.stringify({ senha }) }),
+      deleteMedico: (id) => request(`/api/admin/medicos/${encodeURIComponent(id)}`, { method: 'DELETE' })
     }
   };
 

@@ -48,3 +48,25 @@ def test_esisla_rewrites_only_five_narrative_fields_from_explicit_sources():
         'pulso',
     ):
         assert token in APP
+
+
+def test_esisla_programa_melhoria_continua_guidelines():
+    required_phrases = (
+        "Programa de Melhoria Contínua",
+        "Dosagens sempre em mg/dia e histórico de trocas de medicações",
+        "Doenças de base crônicas (HAS, DM, etc.)",
+        "Cirurgias prévias e tempo decorrido",
+        "Hábitos e vícios (uso ou negação registrada de bebida alcoólica, tabagismo ou substâncias ilícitas)",
+        "Histórico de neoplasias e tratamentos associados",
+        "solicita [dias_solicitados] dias de afastamento a partir de [data_documento], pelo CID [cid] – Relatório médico em anexo",
+        "atividades estas constantes no Rol de Atividades do cargo",
+        "Do ponto de vista médico não se observa limitações",
+        "Capacidade laborativa parcial e temporariamente prejudicada",
+        "Capacidade laborativa preservada",
+        "tempo este considerado suficiente para restabelecimento da capacidade laborativa",
+        "Guia com mais de 3 dias de retroação",
+        "caracterizando sobreposição de períodos",
+    )
+    for phrase in required_phrases:
+        assert phrase in APP, f"Falta a diretriz obrigatória de melhoria contínua: '{phrase}'"
+

@@ -6,6 +6,7 @@
 <title>Contas médicas — Ambiental</title>
 <link rel="stylesheet" href="/global.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="/auth.js"></script>
 <script src="/api.js"></script>
 <script src="/utils.js"></script>
@@ -36,12 +37,21 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
 .btn-sm.danger:hover{background:#ffe6e9}
 .modal-overlay{position:fixed;inset:0;background:rgba(6,45,98,.45);backdrop-filter:blur(8px);z-index:150;display:grid;place-items:center;padding:16px;opacity:0;visibility:hidden;transition:.25s ease}
 .modal-overlay.open{opacity:1;visibility:visible}
-.modal-card{background:#fff;border-radius:20px;box-shadow:0 24px 60px rgba(6,45,98,.2);width:min(460px,100%);overflow:hidden;animation:rise .3s ease both}
+.modal-card{background:#fff;border-radius:20px;box-shadow:0 24px 60px rgba(6,45,98,.2);width:min(460px,100%);max-height:92vh;display:flex;flex-direction:column;overflow:hidden;animation:rise .3s ease both;transition:width .22s ease}
+.modal-card.modal-lg{width:min(840px,100%)}
+.modal-tabs{display:flex;gap:4px;padding:10px 20px 0;background:#f8fafc;border-bottom:1px solid var(--line)}
+.modal-tab{border:0;background:transparent;padding:10px 16px;font-size:11px;font-weight:800;color:var(--muted);cursor:pointer;border-bottom:2.5px solid transparent;border-radius:8px 8px 0 0;transition:.15s}
+.modal-tab:hover{color:var(--ink);background:rgba(7,86,168,.05)}
+.modal-tab.active{color:var(--blue);border-bottom-color:var(--blue);background:#fff;font-weight:900}
+.agenda-preview-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:10px}
+.agenda-preview-table th,.agenda-preview-table td{padding:8px 10px;border-bottom:1px solid #edf2f6;text-align:left;vertical-align:middle}
+.agenda-preview-table th{background:#f8fafc;color:var(--muted);font-size:9.5px;text-transform:uppercase;letter-spacing:.05em}
+.agenda-preview-table tr:hover td{background:#fbfdff}
 .modal-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
 .modal-head h3{margin:0;font-size:15px;color:var(--ink)}
 .modal-close{border:0;background:transparent;font-size:18px;cursor:pointer;color:var(--muted);padding:4px 8px;border-radius:8px}
 .modal-close:hover{background:#f1f5f9;color:var(--ink)}
-.modal-body{padding:20px}
+.modal-body{padding:20px;overflow-y:auto;max-height:calc(92vh - 120px)}
 .notice{padding:12px 14px;border-radius:12px;background:#eff8ff;border:1px solid #d7e9f8;color:#47667f;font-size:10px;line-height:1.5;margin-bottom:14px}
 .loadingbar{height:2px;position:fixed;top:0;left:0;right:0;z-index:100;background:linear-gradient(90deg,transparent,#00c95a,#0756a8,transparent);background-size:200% 100%;animation:shimmer 1.2s linear infinite}
 .admin-boot-loader{position:fixed;inset:0;z-index:110;background:radial-gradient(circle at 50% 10%,rgba(7,86,168,.12),transparent 38%),linear-gradient(145deg,#eef4f9,#f9fbfd);display:grid;place-items:center;padding:24px;transition:opacity .38s ease,visibility .38s ease}
@@ -127,30 +137,111 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
 
 <!-- Modal Edição de Médico -->
 <div id="editModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
-  <div class="modal-card">
+  <div class="modal-card" id="editModalCard">
     <div class="modal-head">
       <h3 id="editModalTitle">Editar dados do médico</h3>
       <button type="button" class="modal-close" onclick="closeEditModal()" aria-label="Fechar">✕</button>
     </div>
+    <div class="modal-tabs">
+      <button type="button" class="modal-tab active" id="tabBtnEditDados" onclick="switchEditModalTab('dados')">👤 Dados Cadastrais</button>
+      <button type="button" class="modal-tab" id="tabBtnEditAgenda" onclick="switchEditModalTab('agenda')">📅 Incluir e Gerenciar Agendas</button>
+    </div>
     <div class="modal-body">
-      <form id="editForm" novalidate>
-        <input type="hidden" id="editId">
-        <div class="form-grid">
-          <div class="field">
-            <label for="editNome">Nome completo</label>
-            <input id="editNome" required minlength="3" placeholder="Ex.: Dr. Roberto Santos">
+      <!-- Aba 1: Dados Cadastrais -->
+      <div id="tabContentEditDados">
+        <form id="editForm" novalidate>
+          <input type="hidden" id="editId">
+          <div class="form-grid">
+            <div class="field">
+              <label for="editNome">Nome completo</label>
+              <input id="editNome" required minlength="3" placeholder="Ex.: Dr. Roberto Santos">
+            </div>
+            <div class="field">
+              <label for="editCrm">CRM/CRO</label>
+              <input id="editCrm" required minlength="3" placeholder="Ex.: CRM 123456 / SP">
+            </div>
           </div>
-          <div class="field">
-            <label for="editCrm">CRM/CRO</label>
-            <input id="editCrm" required minlength="3" placeholder="Ex.: CRM 123456 / SP">
+          <div class="hint" style="margin-top:10px">As alterações serão sincronizadas com o Authentication e com a tabela de usuários.</div>
+          <div class="actions" style="margin-top:20px;justify-content:flex-end">
+            <button type="button" class="secondary" onclick="closeEditModal()">Cancelar</button>
+            <button type="submit" class="primary" id="saveEditBtn">Salvar alterações</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Aba 2: Incluir e Gerenciar Agendas -->
+      <div id="tabContentEditAgenda" hidden>
+        <div class="notice" style="background:#f0f7ff;border-color:#cbe2f8;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+          <div><strong>Médico Selecionado:</strong> <span id="agendaDocName">—</span> <span class="sub" id="agendaDocCrm"></span></div>
+          <span class="badge" style="background:#e0f2fe;color:#0369a1">Gestão de Agenda Pericial</span>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap;background:#fbfcfe;border:1px solid var(--line);border-radius:12px;padding:10px 14px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <label for="agendaDataInput" style="font-size:11px;font-weight:800;color:var(--ink)">Data da Agenda:</label>
+            <input type="date" id="agendaDataInput" class="search" style="width:145px;font-weight:700">
+            <button type="button" class="btn-sm primary" id="btnConsultarAgendaDia">🔄 Carregar Dia</button>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button type="button" class="btn-sm danger" id="btnLimparAgendaDia" title="Excluir todos os agendamentos desta data">🗑️ Limpar Dia Inteiro</button>
           </div>
         </div>
-        <div class="hint" style="margin-top:10px">As alterações serão sincronizadas com o Authentication e com a tabela de usuários.</div>
-        <div class="actions" style="margin-top:20px;justify-content:flex-end">
-          <button type="button" class="secondary" onclick="closeEditModal()">Cancelar</button>
-          <button type="submit" class="primary" id="saveEditBtn">Salvar alterações</button>
+
+        <div style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+            <div>
+              <strong style="font-size:12px;color:var(--ink)">📥 Incluir Agendamentos da Planilha</strong>
+              <p class="hint" style="margin:2px 0 0">Cole as linhas copiadas do Excel (Ctrl+C / Ctrl+V) ou selecione o arquivo (.xlsx, .csv).<br>Colunas: <b>Status, Hora, Tipo, Protocolo, NI, Nome do Periciado, Compareceu, Obs / Assinatura, Seq</b></p>
+            </div>
+            <button type="button" class="btn-sm" id="btnExemploPlanilha" title="Preencher com exemplo de teste" style="flex-shrink:0">Exemplo</button>
+          </div>
+          <textarea id="agendaPasteInput" rows="4" style="width:100%;border:1px solid #cfdae6;border-radius:10px;padding:10px;font-size:11px;font-family:Consolas,monospace;resize:vertical;background:#fbfdff" placeholder="Cole aqui os dados da planilha do Excel (com colunas Status, Hora, Tipo, Protocolo, NI, Nome do Periciado...)..."></textarea>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;flex-wrap:wrap;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <input type="file" id="agendaFileInput" accept=".csv,.xlsx,.xls,.tsv,.txt" style="display:none">
+              <button type="button" class="btn-sm" id="btnTriggerFile">📁 Selecionar Arquivo (.xlsx / .csv)</button>
+              <span id="agendaFileFeedback" style="font-size:10px;color:var(--muted)"></span>
+            </div>
+            <button type="button" class="primary" id="btnProcessarPlanilha" style="padding:9px 16px">⚡ Processar Planilha</button>
+          </div>
         </div>
-      </form>
+
+        <div id="agendaPreviewArea" style="display:none;background:#fbfcfe;border:1px solid #b5d5f5;border-radius:14px;padding:14px;margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div><strong style="font-size:12px;color:var(--blue)">✨ Pré-visualização da Planilha</strong> <span class="badge" id="previewCountBadge" style="background:#eaf8ef;color:#0e7b44;margin-left:6px">0 periciados</span></div>
+            <span style="font-size:10px;color:var(--muted)">Revise antes de gravar</span>
+          </div>
+          <div class="table-wrap" style="max-height:220px;border:1px solid var(--line);border-radius:10px;background:#fff">
+            <table class="agenda-preview-table">
+              <thead><tr><th>Hora</th><th>Tipo</th><th>Protocolo</th><th>NI</th><th>Nome do Periciado</th><th>Compareceu</th><th>Obs</th></tr></thead>
+              <tbody id="agendaPreviewTbody"></tbody>
+            </table>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:10px">
+            <label style="font-size:11px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" id="checkSubstituirAgenda" checked> Substituir agendamentos existentes desta data
+            </label>
+            <div style="display:flex;gap:8px">
+              <button type="button" class="btn-sm" id="btnDescartarPreview">Descartar</button>
+              <button type="button" class="primary" id="btnSalvarAgenda">💾 Gravar Agendamentos</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="agendaCurrentSection" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div><strong style="font-size:12px;color:var(--ink)">📋 Agendamentos Gravados na Base</strong> <span class="counter-badge" id="currentAgendaCountBadge" style="font-size:10px;margin-left:6px">0 gravados</span></div>
+            <span id="agendaCurrentDateLabel" style="font-size:10px;color:var(--muted);font-weight:700"></span>
+          </div>
+          <div class="table-wrap" style="max-height:260px;border:1px solid var(--line);border-radius:10px;background:#fff">
+            <table class="agenda-preview-table">
+              <thead><tr><th>Hora</th><th>Tipo</th><th>Protocolo</th><th>NI</th><th>Nome do Periciado</th><th>Status</th><th>Ações</th></tr></thead>
+              <tbody id="agendaCurrentTbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="agendaCurrentEmpty" style="padding:24px" hidden>Nenhum agendamento gravado para esta data.</div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -218,6 +309,7 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
         <td>
           <div class="btn-group">
             <button class="btn-sm" data-edit="${esc(r.id)}" title="Editar nome e CRM">Editar</button>
+            <button class="btn-sm primary" data-agenda="${esc(r.id)}" title="Incluir e gerenciar agendas">📅 Agenda</button>
             <button class="btn-sm ${isActive?'warning':'success'}" data-toggle="${esc(r.id)}" title="${isActive?'Suspender acesso':'Reativar acesso'}">
               ${isActive ? 'Suspender' : 'Reativar'}
             </button>
@@ -229,6 +321,7 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
     }).join('');
 
     document.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>openEditDoctor(b.dataset.edit)));
+    document.querySelectorAll('[data-agenda]').forEach(b=>b.addEventListener('click',()=>openAgendaDoctor(b.dataset.agenda)));
     document.querySelectorAll('[data-toggle]').forEach(b=>b.addEventListener('click',()=>toggleDoctorStatus(b.dataset.toggle)));
     document.querySelectorAll('[data-pwd]').forEach(b=>b.addEventListener('click',()=>openPwdDoctor(b.dataset.pwd)));
     document.querySelectorAll('[data-remove]').forEach(b=>b.addEventListener('click',()=>removeDoctor(b.dataset.remove)));
@@ -255,19 +348,68 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
     }
   }
 
+  const todayYMD = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  };
+
+  let activeAgendaDoctorId = null;
+  let currentParsedAgendaItems = [];
+  let currentSavedAgendaItems = [];
+
+  window.switchEditModalTab = function(tab) {
+    const isDados = tab === 'dados';
+    $('tabBtnEditDados').classList.toggle('active', isDados);
+    $('tabBtnEditAgenda').classList.toggle('active', !isDados);
+    $('tabContentEditDados').hidden = !isDados;
+    $('tabContentEditAgenda').hidden = isDados;
+    $('editModalCard').classList.toggle('modal-lg', !isDados);
+    if (!isDados && activeAgendaDoctorId) {
+      if (!$('agendaDataInput').value) {
+        $('agendaDataInput').value = todayYMD();
+      }
+      loadDoctorAgendasForSelectedDate();
+    }
+  };
+
   window.openEditDoctor = function(id) {
     const r = rows.find(x => String(x.id) === String(id));
     if (!r) return;
+    activeAgendaDoctorId = r.id;
     $('editId').value = r.id;
     $('editNome').value = r.nome || '';
     $('editCrm').value = r.crm || '';
+    $('agendaDocName').textContent = r.nome || 'Médico';
+    $('agendaDocCrm').textContent = r.crm ? `(${r.crm})` : '';
+    switchEditModalTab('dados');
     $('editModal').classList.add('open');
     $('editNome').focus();
+  };
+
+  window.openAgendaDoctor = function(id) {
+    const r = rows.find(x => String(x.id) === String(id));
+    if (!r) return;
+    activeAgendaDoctorId = r.id;
+    $('editId').value = r.id;
+    $('editNome').value = r.nome || '';
+    $('editCrm').value = r.crm || '';
+    $('agendaDocName').textContent = r.nome || 'Médico';
+    $('agendaDocCrm').textContent = r.crm ? `(${r.crm})` : '';
+    if (!$('agendaDataInput').value) {
+      $('agendaDataInput').value = todayYMD();
+    }
+    switchEditModalTab('agenda');
+    $('editModal').classList.add('open');
   };
 
   window.closeEditModal = function() {
     $('editModal').classList.remove('open');
     $('editForm').reset();
+    discardPreview();
+    $('agendaPasteInput').value = '';
+    $('agendaFileInput').value = '';
+    $('agendaFileFeedback').textContent = '';
+    activeAgendaDoctorId = null;
   };
 
   window.openPwdDoctor = function(id) {
@@ -278,6 +420,258 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
     $('pwdModal').classList.add('open');
     $('newPwd').focus();
   };
+
+  function discardPreview() {
+    currentParsedAgendaItems = [];
+    $('agendaPreviewArea').style.display = 'none';
+    $('agendaPreviewTbody').innerHTML = '';
+  }
+
+  function parseAgendaCsvText(rawText) {
+    if (!rawText || !rawText.trim()) return [];
+    const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    if (!lines.length) return [];
+
+    const firstLine = lines[0];
+    let delimiter = '\t';
+    if (firstLine.includes('\t')) delimiter = '\t';
+    else if (firstLine.split(';').length >= 3) delimiter = ';';
+    else delimiter = ',';
+
+    const lowerFirst = firstLine.toLowerCase();
+    const hasHeader = lowerFirst.includes('hora') || lowerFirst.includes('protocolo') || lowerFirst.includes('periciado') || lowerFirst.includes('nome');
+    
+    let colMap = { hora: 1, tipo: 2, protocolo: 3, ni: 4, nome: 5, compareceu: 6, obs: 7, seq: 8, status: 0 };
+    let startIdx = 0;
+
+    if (hasHeader) {
+      startIdx = 1;
+      const headerCols = firstLine.split(delimiter).map(c => c.trim().toLowerCase().replace(/["']/g, ''));
+      headerCols.forEach((col, idx) => {
+        if (col.includes('hora')) colMap.hora = idx;
+        else if (col.includes('protocolo')) colMap.protocolo = idx;
+        else if (col.includes('nome') || col.includes('periciado')) colMap.nome = idx;
+        else if (col === 'ni' || col.includes('identifica')) colMap.ni = idx;
+        else if (col.includes('tipo')) colMap.tipo = idx;
+        else if (col.includes('status')) colMap.status = idx;
+        else if (col.includes('compareceu')) colMap.compareceu = idx;
+        else if (col.includes('obs') || col.includes('assinatura')) colMap.obs = idx;
+        else if (col.includes('seq')) colMap.seq = idx;
+      });
+    }
+
+    const items = [];
+    for (let i = startIdx; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line) continue;
+      const parts = line.split(delimiter).map(p => p.trim().replace(/^["']|["']$/g, ''));
+      if (parts.length < 2) continue;
+
+      const rawNome = (parts[colMap.nome] || '').trim();
+      const rawProtocolo = (parts[colMap.protocolo] || '').trim();
+      if (!rawNome && !rawProtocolo) continue;
+
+      let compareceu = (parts[colMap.compareceu] || '').trim();
+      if (/^[.\/:\s]+$/.test(compareceu)) compareceu = '';
+
+      let obs = (parts[colMap.obs] || '').trim();
+      if (/^[.\/:\s]+$/.test(obs)) obs = '';
+
+      let rawHora = (parts[colMap.hora] || '').trim();
+      if (/^\d{1,2}:\d{2}/.test(rawHora)) {
+        const hp = rawHora.split(':');
+        rawHora = `${hp[0].padStart(2, '0')}:${hp[1].slice(0, 2)}`;
+      }
+
+      let rawStatus = (parts[colMap.status] || '').trim();
+      if (rawStatus === '(   )' || rawStatus === '()' || !rawStatus) rawStatus = 'Agendado';
+
+      items.push({
+        hora: rawHora || '08:00',
+        tipo: (parts[colMap.tipo] || 'LICENC').trim(),
+        protocolo: rawProtocolo,
+        ni: (parts[colMap.ni] || '').trim(),
+        nome_periciado: rawNome,
+        compareceu: compareceu,
+        observacao: obs,
+        seq: (parts[colMap.seq] || '').trim(),
+        status: rawStatus
+      });
+    }
+
+    items.sort((a, b) => (a.hora || '').localeCompare(b.hora || ''));
+    return items;
+  }
+
+  function renderPreview(items) {
+    currentParsedAgendaItems = items;
+    if (!items.length) {
+      discardPreview();
+      toast('Nenhum agendamento válido encontrado no texto informado.');
+      return;
+    }
+    $('previewCountBadge').textContent = `${items.length} periciado(s) identificado(s)`;
+    $('agendaPreviewTbody').innerHTML = items.map(it => `
+      <tr>
+        <td><b>${esc(it.hora)}</b></td>
+        <td><span class="badge">${esc(it.tipo)}</span></td>
+        <td><code>${esc(it.protocolo || '—')}</code></td>
+        <td>${esc(it.ni || '—')}</td>
+        <td><strong>${esc(it.nome_periciado)}</strong></td>
+        <td>${esc(it.compareceu || '—')}</td>
+        <td><small class="sub">${esc(it.observacao || '—')}</small></td>
+      </tr>
+    `).join('');
+    $('agendaPreviewArea').style.display = 'block';
+  }
+
+  async function loadDoctorAgendasForSelectedDate() {
+    if (!activeAgendaDoctorId) return;
+    const date = $('agendaDataInput').value || todayYMD();
+    $('agendaCurrentDateLabel').textContent = `Data: ${date}`;
+    $('agendaCurrentTbody').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:16px;color:var(--muted)">Carregando agendamentos…</td></tr>';
+    $('agendaCurrentEmpty').hidden = true;
+    try {
+      const res = await AmbientalAPI.admin.getAgendas(activeAgendaDoctorId, { data: date });
+      currentSavedAgendaItems = Array.isArray(res?.items) ? res.items : [];
+      $('currentAgendaCountBadge').textContent = `${currentSavedAgendaItems.length} gravado(s)`;
+      if (!currentSavedAgendaItems.length) {
+        $('agendaCurrentTbody').innerHTML = '';
+        $('agendaCurrentEmpty').hidden = false;
+        return;
+      }
+      $('agendaCurrentEmpty').hidden = true;
+      $('agendaCurrentTbody').innerHTML = currentSavedAgendaItems.map(it => `
+        <tr>
+          <td><b style="color:var(--blue)">${esc(it.hora)}</b></td>
+          <td><span class="badge">${esc(it.tipo || 'LICENC')}</span></td>
+          <td><code>${esc(it.protocolo || '—')}</code></td>
+          <td>${esc(it.ni || '—')}</td>
+          <td>
+            <strong>${esc(it.nome_periciado)}</strong>
+            ${it.atd_status ? `<span class="badge success" style="margin-left:6px">Atendido (${esc(it.atd_status)})</span>` : ''}
+          </td>
+          <td><span class="badge ${it.status === 'Agendado' ? '' : 'off'}">${esc(it.status || 'Agendado')}</span></td>
+          <td>
+            <button type="button" class="btn-sm danger" onclick="deleteIndividualAgenda(${it.id})" title="Excluir este agendamento">Excluir</button>
+          </td>
+        </tr>
+      `).join('');
+    } catch(err) {
+      $('agendaCurrentTbody').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--danger)">Erro: ${esc(err.message)}</td></tr>`;
+      toast(err.message || 'Erro ao carregar agendamentos salvos.');
+    }
+  }
+
+  window.deleteIndividualAgenda = async function(agendaId) {
+    if (!confirm('Deseja excluir este agendamento da agenda?')) return;
+    busy(true);
+    try {
+      await AmbientalAPI.admin.deleteAgenda(agendaId);
+      toast('Agendamento excluído com sucesso.');
+      await loadDoctorAgendasForSelectedDate();
+    } catch(err) {
+      toast(err.message || 'Erro ao excluir agendamento.');
+    } finally {
+      busy(false);
+    }
+  };
+
+  $('btnConsultarAgendaDia').addEventListener('click', loadDoctorAgendasForSelectedDate);
+  $('agendaDataInput').addEventListener('change', loadDoctorAgendasForSelectedDate);
+
+  $('btnLimparAgendaDia').addEventListener('click', async () => {
+    if (!activeAgendaDoctorId) return;
+    const date = $('agendaDataInput').value || todayYMD();
+    const ok = confirm(`Deseja realmente excluir TODOS os agendamentos cadastrados para o dia ${date}?\n\nEsta ação removerá todos os horários cadastrados deste médico nesta data.`);
+    if (!ok) return;
+    busy(true);
+    try {
+      const res = await AmbientalAPI.admin.clearAgendas(activeAgendaDoctorId, date);
+      toast(res?.mensagem || 'Agenda do dia limpa com sucesso.');
+      await loadDoctorAgendasForSelectedDate();
+    } catch(err) {
+      toast(err.message || 'Erro ao limpar agendamentos do dia.');
+    } finally {
+      busy(false);
+    }
+  });
+
+  $('btnProcessarPlanilha').addEventListener('click', () => {
+    const text = $('agendaPasteInput').value;
+    if (!text.trim()) {
+      toast('Cole os dados da planilha ou carregue um arquivo para processar.');
+      return;
+    }
+    const items = parseAgendaCsvText(text);
+    renderPreview(items);
+  });
+
+  $('btnDescartarPreview').addEventListener('click', discardPreview);
+
+  $('btnSalvarAgenda').addEventListener('click', async () => {
+    if (!activeAgendaDoctorId) { toast('Médico não identificado.'); return; }
+    const date = $('agendaDataInput').value;
+    if (!date) { toast('Selecione uma data para a agenda.'); return; }
+    if (!currentParsedAgendaItems.length) { toast('Nenhum agendamento pré-visualizado para gravar.'); return; }
+
+    const btn = $('btnSalvarAgenda');
+    btn.disabled = true; btn.textContent = 'Gravando…'; busy(true);
+    try {
+      const payload = {
+        data: date,
+        itens: currentParsedAgendaItems,
+        substituir: $('checkSubstituirAgenda').checked
+      };
+      const res = await AmbientalAPI.admin.saveAgendas(activeAgendaDoctorId, payload);
+      toast(res?.mensagem || `${currentParsedAgendaItems.length} agendamento(s) salvo(s) com sucesso!`);
+      discardPreview();
+      $('agendaPasteInput').value = '';
+      await loadDoctorAgendasForSelectedDate();
+    } catch(err) {
+      toast(err.message || 'Erro ao gravar agendamentos.');
+    } finally {
+      btn.disabled = false; btn.textContent = '💾 Gravar Agendamentos'; busy(false);
+    }
+  });
+
+  $('btnTriggerFile').addEventListener('click', () => $('agendaFileInput').click());
+
+  $('agendaFileInput').addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    $('agendaFileFeedback').textContent = `Lendo ${file.name}…`;
+    try {
+      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        if (typeof XLSX !== 'undefined') {
+          const data = await file.arrayBuffer();
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const csv = XLSX.utils.sheet_to_csv(worksheet, { FS: '\t' });
+          $('agendaPasteInput').value = csv;
+          $('agendaFileFeedback').textContent = `✓ ${file.name} carregado`;
+          renderPreview(parseAgendaCsvText(csv));
+        } else {
+          throw new Error('Biblioteca de leitura de planilhas indisponível.');
+        }
+      } else {
+        const text = await file.text();
+        $('agendaPasteInput').value = text;
+        $('agendaFileFeedback').textContent = `✓ ${file.name} carregado`;
+        renderPreview(parseAgendaCsvText(text));
+      }
+    } catch(err) {
+      $('agendaFileFeedback').textContent = `Erro ao ler arquivo: ${err.message}`;
+      toast(`Erro ao ler arquivo: ${err.message}`);
+    }
+  });
+
+  $('btnExemploPlanilha').addEventListener('click', () => {
+    const sample = `Status\tHora\tTipo\tProtocolo\tNI\tNome do Periciado\tCompareceu\tObs / Assinatura\tSeq / Pessoa\n(   )\t09:00\tLICENC\t954380200\t1331159\tCARLOS EDUARDO FIUZA ANDRADE\t..../..../........:......\t............................\t1\n(   )\t09:10\tLICENC\t954380475\t1521632\tALANA GABRIELE DA SILVA\t..../..../........:......\t............................\t1\n(   )\t09:10\tLICENC\t954380780\t1318087\tDANILLA CUNHA DOS SANTOS\t..../..../........:......\t............................\t1\n(   )\t09:10\tLICENC\t954380814\t1273023\tPAULO ANDRE MICHELAO PENASSO\t..../..../........:......\t...........................\t1`;
+    $('agendaPasteInput').value = sample;
+    renderPreview(parseAgendaCsvText(sample));
+  });
 
   window.closePwdModal = function() {
     $('pwdModal').classList.remove('open');

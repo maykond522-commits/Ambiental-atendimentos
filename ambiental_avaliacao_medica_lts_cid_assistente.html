@@ -933,7 +933,6 @@ body::before{
           </div>
           <div class="field col-12 hidden" id="readaptadoPanel"><label>Quais atividades realiza atualmente?</label><textarea class="textarea" id="atividadesReadaptado" placeholder="Descreva as atividades atuais."></textarea></div>
 
-          <div class="field col-12"><label>Queixa e duração</label><textarea class="textarea" id="queixaDuracao" placeholder="Descreva a queixa principal, início e duração informada no atendimento."></textarea></div>
           <div class="field col-12"><label class="required">Qual a doença está tratando que motivou o afastamento?</label><textarea class="textarea" id="doencaMotivo"></textarea></div>
           <div class="field col-6"><label class="required">Quando começou o tratamento?</label><input class="input" type="date" id="inicioTratamento"></div>
           <div class="field col-6"><label>Com que frequência realiza consultas?</label><input class="input" id="freqConsultas" placeholder="Ex.: semanal, mensal, conforme necessidade"></div>
@@ -1283,8 +1282,8 @@ function applyProfessionalDefaults(profile){
   state.aux.crmResponsavel=crm;
   const inputMedico=$("medico");
   if(inputMedico && medico){ inputMedico.value=medico; inputMedico.readOnly=true; inputMedico.style.backgroundColor='#F8FAFC'; }
-  const inputCrm=$("crmCro")||$("crm");
-  if(inputCrm){ inputCrm.value=crm; inputCrm.readOnly=true; inputCrm.style.backgroundColor='#F8FAFC'; }
+  const inputCrm=$("crmResponsavel")||$("crm");
+  if(inputCrm && crm){ inputCrm.value=crm; inputCrm.readOnly=true; inputCrm.style.backgroundColor='#F8FAFC'; }
 }
 
 const authReady = AmbientalAuth.requireAuth({area:'atendimento'}).then(async profile=>{
@@ -2003,7 +2002,7 @@ async function applyFillSuggestions(){
   if(isFinalizedReadOnly()){toast("Atendimento finalizado: sugestões não podem ser aplicadas sem reabertura.");return;}
   const r=window.__aiFillResult||{}; const s=r.sugestoes_preenchimento||{};
   if(!confirm("Aplicar somente sugestões da IA aos campos vazios? Os dados já preenchidos não serão substituídos."))return;
-  if(!$("queixaDuracao").value.trim()&&s.queixa_e_duracao)$("queixaDuracao").value=s.queixa_e_duracao;
+  if($("queixaDuracao")&&!$("queixaDuracao").value.trim()&&s.queixa_e_duracao)$("queixaDuracao").value=s.queixa_e_duracao;
   if(!$("historicoPregresso").value.trim()&&s.antecedentes_morbidos)$("historicoPregresso").value=s.antecedentes_morbidos;
   if(!$("exameFisicoTipo").value.trim()&&s.exame_fisico_mental)$("exameFisicoTipo").value=s.exame_fisico_mental;
   if(!$("alteracoesClinicasExames").value.trim()&&s.alteracoes_clinicas_exames)$("alteracoesClinicasExames").value=s.alteracoes_clinicas_exames;
@@ -2142,7 +2141,7 @@ function syncState(){
   state.limitacaoFuncional=getRadio("limitacaoFuncional"); state.limitacaoRol=getRadio("limitacaoRol"); state.psicoterapia=$("psicoterapia").checked; state.fisioterapia=$("fisioterapia").checked;
   state.capacidade=getRadio("capacidade"); state.parecer=getRadio("parecer");
   state.exameFisicoTipo=$("exameFisicoTipo")?.value||state.exameFisicoTipo||""; state.exameFisicoDescricao=$("exameFisicoDescricao")?.value||state.exameFisicoDescricao||""; state.alteracoesClinicasExames=$("alteracoesClinicasExames")?.value||state.alteracoesClinicasExames||""; state.exam={selected:state.exameFisicoTipo,descricao:state.exameFisicoDescricao};
-  state.aux={dataAtd:$("dataAtd").value,horaAtd:$("horaAtd").value,crmResponsavel:$("crmResponsavel").value,nomePaciente:$("nomePaciente").value,cpfPaciente:$("cpfPaciente").value,cargo:$("cargo").value,tempoCargo:$("tempoCargo").value,tempoUnidade:$("tempoUnidade").value,idade:$("idade").value,atividadesReadaptado:$("atividadesReadaptado").value,queixaDuracao:$("queixaDuracao").value,doencaMotivo:$("doencaMotivo").value,inicioTratamento:$("inicioTratamento").value,freqConsultas:$("freqConsultas").value,sintomasLimitacao:$("sintomasLimitacao").value,dataAlteracaoMed:$("dataAlteracaoMed").value,obsAlteracaoMed:$("obsAlteracaoMed").value,obsTerapias:$("obsTerapias").value,historicoPregresso:$("historicoPregresso").value,crmCro:$("crmCro").value,cid:$("cid").value,dataDocumento:$("dataDocumento").value,diasSolicitados:$("diasSolicitados").value,obsDocumentos:$("obsDocumentos").value,descLimitacao:$("descLimitacao").value,atividadesComprometidas:$("atividadesComprometidas").value,obsLimitacoes:$("obsLimitacoes").value,exameFisicoDescricao:$("exameFisicoDescricao")?.value||"",pressaoSistolica:$("pressaoSistolica")?.value||"",pressaoDiastolica:$("pressaoDiastolica")?.value||"",pulso:$("pulso")?.value||"",justificativa:$("justificativa").value};
+  state.aux={dataAtd:$("dataAtd").value,horaAtd:$("horaAtd").value,crmResponsavel:$("crmResponsavel").value,nomePaciente:$("nomePaciente").value,cpfPaciente:$("cpfPaciente").value,cargo:$("cargo").value,tempoCargo:$("tempoCargo").value,tempoUnidade:$("tempoUnidade").value,idade:$("idade").value,atividadesReadaptado:$("atividadesReadaptado").value,queixaDuracao:$("queixaDuracao")?$("queixaDuracao").value:(state.queixaDuracao||state.aux?.queixaDuracao||""),doencaMotivo:$("doencaMotivo").value,inicioTratamento:$("inicioTratamento").value,freqConsultas:$("freqConsultas").value,sintomasLimitacao:$("sintomasLimitacao").value,dataAlteracaoMed:$("dataAlteracaoMed").value,obsAlteracaoMed:$("obsAlteracaoMed").value,obsTerapias:$("obsTerapias").value,historicoPregresso:$("historicoPregresso").value,crmCro:$("crmCro").value,cid:$("cid").value,dataDocumento:$("dataDocumento").value,diasSolicitados:$("diasSolicitados").value,obsDocumentos:$("obsDocumentos").value,descLimitacao:$("descLimitacao").value,atividadesComprometidas:$("atividadesComprometidas").value,obsLimitacoes:$("obsLimitacoes").value,exameFisicoDescricao:$("exameFisicoDescricao")?.value||"",pressaoSistolica:$("pressaoSistolica")?.value||"",pressaoDiastolica:$("pressaoDiastolica")?.value||"",pulso:$("pulso")?.value||"",justificativa:$("justificativa").value};
 }
 function normalizeLegacyYesNo(value){ const v=String(value??"").trim().toLowerCase(); if(v==="sim")return "Sim"; if(v==="não"||v==="nao")return "Não"; return ""; }
 function applyState(){
@@ -2156,7 +2155,7 @@ function applyState(){
   state.aux.nomePaciente=state.aux.nomePaciente||state.nomePaciente||""; state.aux.cpfPaciente=state.aux.cpfPaciente||state.cpfPaciente||"";
   $("atd").value=state.atendimento||""; $("atdDisplay").textContent=state.atendimento?"Identificação registrada":["Será gerada ao salvar"][0]; $("atdNumber").textContent=state.atendimento?"Atendimento salvo":"Novo atendimento"; $("atdDate").textContent=formatDate(state.aux.dataAtd||today()); $("dataAtd").value=state.aux.dataAtd||today(); $("horaAtd").value=state.aux.horaAtd||timeNow(); $("medico").value=state.medico||""; $("crmResponsavel").value=state.aux.crmResponsavel||"";
   Object.keys(state.aux).forEach(k=>{const el=$(k);if(el&&k!=="dataAtd"&&k!=="horaAtd")el.value=state.aux[k]??"";});
-  $("queixaDuracao").value=state.queixaDuracao||state.aux.queixaDuracao||"";
+  $("queixaDuracao") && ($("queixaDuracao").value=state.queixaDuracao||state.aux.queixaDuracao||"");
   $("exameFisicoTipo") && ($("exameFisicoTipo").value=state.exameFisicoTipo||"");
   $("exameFisicoDescricao") && ($("exameFisicoDescricao").value=state.exameFisicoDescricao||"");
   $("alteracoesClinicasExames") && ($("alteracoesClinicasExames").value=state.alteracoesClinicasExames||"");
@@ -2904,6 +2903,31 @@ async function init(){
      applyProfessionalDefaults(currentProfile);
      applyState();
    }
+ }
+ const pacienteParam = params.get("paciente");
+ const protocoloParam = params.get("protocolo") || params.get("agenda_protocolo");
+ const horaParam = params.get("hora");
+ const niParam = params.get("ni");
+ if (pacienteParam || protocoloParam) {
+   if (!state.aux) state.aux = {};
+   if (pacienteParam) {
+     state.aux.nomePaciente = pacienteParam;
+     if ($("nomePaciente")) $("nomePaciente").value = pacienteParam;
+   }
+   if (protocoloParam) {
+     state.atendimento = protocoloParam;
+     if ($("atendimento")) $("atendimento").value = protocoloParam;
+   }
+   if (horaParam) {
+     state.aux.horaAtd = horaParam;
+     if ($("horaAtd")) $("horaAtd").value = horaParam;
+   }
+   if (niParam) {
+     state.aux.ni = niParam;
+   }
+   applyProfessionalDefaults(currentProfile);
+   applyState();
+   autoSave();
  }
  if(openDocumentOnLoad) setTimeout(()=>openFinalReport(),250);
  window.addEventListener("online",()=>{flushOfflineQueue().catch(()=>{});});

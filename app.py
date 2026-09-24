@@ -54,7 +54,7 @@ else:
     # Em produção, a aplicação deve receber CORS_ORIGINS explicitamente.
     ALLOWED_ORIGINS = []
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
-ESISLA_PROMPT_VERSION = "esisla-v3-evidence-grounded-rewrite"
+ESISLA_PROMPT_VERSION = "esisla-v4-melhoria-continua-dpme"
 GEMINI_FALLBACK_MODELS = [
     m.strip() for m in os.getenv("GEMINI_FALLBACK_MODELS", "gemini-3.5-flash-lite,gemini-3.5-flash").split(",")
     if m.strip() and m.strip() != GEMINI_MODEL
@@ -436,6 +436,25 @@ def _init_db():
             atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
         CREATE INDEX IF NOT EXISTS idx_ia_rate_updated ON ia_rate_limits(atualizado_em);
+        CREATE TABLE IF NOT EXISTS agendas (
+            id SERIAL PRIMARY KEY,
+            medico_id TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+            data DATE NOT NULL,
+            hora VARCHAR(10) NOT NULL,
+            status TEXT DEFAULT '',
+            tipo TEXT DEFAULT '',
+            protocolo TEXT DEFAULT '',
+            ni TEXT DEFAULT '',
+            nome_periciado TEXT NOT NULL,
+            compareceu TEXT DEFAULT '',
+            observacao TEXT DEFAULT '',
+            seq TEXT DEFAULT '',
+            atendimento_id TEXT REFERENCES atendimentos(id) ON DELETE SET NULL,
+            criado_em TEXT NOT NULL,
+            atualizado_em TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_agendas_medico_data_hora ON agendas(medico_id, data, hora ASC);
+        CREATE INDEX IF NOT EXISTS idx_agendas_protocolo ON agendas(protocolo);
         """)
         conn.commit()
         cur.close()
@@ -759,6 +778,11 @@ OBJETIVO DA REDAÇÃO:
 - apontar explicitamente quando um dado relevante não estiver registrado, sem inventá-lo;
 - evitar frases genéricas, fórmulas vazias e repetição mecânica dos campos.
 
+PADRÕES TÉCNICOS OFICIAIS (Programa de Melhoria Contínua):
+- Se Parecer FAVORÁVEL: Estruture em 1ª pessoa alinhado à diretriz oficial: "Considero a capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol, em razão de limitações na esfera [psicoemocional/osteomuscular] que compromete para [atividades comprometidas]." Se houver redução de dias em relação ao atestado assistente: "Concedo [X] dias de afastamento a contar da data de início dos sintomas, tempo este considerado suficiente para restabelecimento da capacidade laborativa para a função periciada."
+- Se Parecer CONTRÁRIO: Estruture em 1ª pessoa alinhado à diretriz oficial: "Constato a capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações de ordem [osteomuscular/psíquica] incapacitantes para as atribuições rotineiras do cargo atual."
+- Pareceres contrários administrativos: Se retroação de guia > 3 dias sem internação: "Guia com mais de 3 dias de retroação, não havendo comprovação de internamento hospitalar ou impedimento absoluto do servidor para emissão da guia." Se sobreposição de períodos: "Período solicitado já contemplado em licença anteriormente concedida, caracterizando sobreposição de períodos."
+
 NÃO FAÇA:
 - não invente sintomas, achados, datas, medicamentos, resultados de exames, limitações ou relações causais;
 - não conclua incapacidade, nexo ou necessidade de afastamento apenas com base no CID;
@@ -795,46 +819,102 @@ DADOS-CHAVE DO ATENDIMENTO:
     "esisla": """
 TAREFA: GERAR UMA FICHA E-SISLA A PARTIR DOS DADOS REGISTRADOS NO QUESTIONÁRIO DO ATENDIMENTO.
 
-OBJETIVO: organizar e REESCREVER, de forma clínica, objetiva e natural, somente os fatos já registrados, preenchendo os cinco campos narrativos abaixo com redação profissional. Use EXCLUSIVAMENTE informações presentes no questionário e no contexto do atendimento fornecido.
+OBJETIVO: organizar e REESCREVER, de forma clínica, objetiva e natural, somente os fatos já registrados, preenchendo os cinco campos narrativos abaixo com redação profissional e estrita aderência ao padrão pericial oficial DPME / Programa de Melhoria Contínua. Use EXCLUSIVAMENTE informações presentes no questionário e no contexto do atendimento fornecido.
 
 REGRA CENTRAL — ZERO INFORMAÇÃO NOVA:
 - NÃO invente, complete, suponha, interprete ou deduza informações ausentes.
-- NÃO crie sinais vitais.
-- É permitido condensar, reorganizar e reescrever informações já fornecidas para evitar fragmentação e melhorar a clareza.
+- NÃO crie sinais vitais (pressao_sistolica, pressao_diastolica, pulso). Se não estiverem registrados nos dados fornecidos, DEIXE O VALOR EM BRANCO.
+- É permitido condensar, reorganizar e reescrever informações já fornecidas para evitar fragmentação e alcançar a excelência pericial.
 - É proibido inferir diagnóstico, gravidade, causalidade, incapacidade, prognóstico, nexo, sintomas, achados, tratamentos, limitações ou resultados.
-- Não use conhecimento médico externo para completar lacunas.
-- Não transforme CID em diagnóstico descritivo, nem cargo em exigência funcional.
+- Não use conhecimento médico externo para preencher lacunas.
+- Não transforme CID em diagnóstico descritivo além do registrado, nem crie exigências funcionais inventadas.
 - Não altere nenhum valor, data, dose, unidade, CID, resposta de quesito, parecer ou número de dias.
 - Se não houver dado para um campo, deixe o conteúdo do campo vazio. DEIXE O VALOR EM BRANCO quando não houver informação.
+- NUNCA use colchetes como marcadores de preenchimento no texto final da ficha gerada.
 
 REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
+
 1. “(*) Queixa e Duração”
-   Reescreva de forma clara e concisa usando somente queixa_duracao, doenca_motivo, inicio_tratamento, frequencia_consultas e sintomas_limitacoes quando esses dados ajudarem a contextualizar a própria queixa. Pode unir informações desses campos, sem criar fatos novos. Não acrescente diagnóstico ou interpretação que não esteja escrita nos dados.
+   Reescreva e sintetize em parágrafo único, fluido e coeso, integrando os dados clínicos e ocupacionais na ordem padronizada dos 11 itens do Programa de Melhoria Contínua:
+   (1) Idade ("Paciente de X anos"),
+   (2) Cargo e (3) Tempo de cargo ("[cargo] há X anos/meses"),
+   (4) Readaptação funcional e atividades atribuídas (se readaptado, indicar atividades exercidas; se não, constar "não readaptado"),
+   (5) Doença motivadora informada ("com queixa de ..."),
+   (6) Início do tratamento e (7) Frequência das consultas ("Refere início do tratamento há ..., com consultas a cada ..."),
+   (8) Sintomas e limitações laborais relatadas ("Queixa-se de ... com dificuldade para ..."),
+   (9) Medicações em curso,
+   (10) Dosagens sempre em mg/dia e histórico de trocas de medicações (obrigatório detalhar dosagem diária em mg/dia e histórico de trocas/alterações de dosagem para patologias com CID F / psiquiátricas, ex.: "Em uso de Sertralina 100 mg/dia e Clonazepam 2 mg/dia, sem trocas recentes de medicação"),
+   (11) Terapias não medicamentosas ("Realiza psicoterapia semanal" / "Realiza fisioterapia ...").
+   Fontes a integrar: idade, cargo, tempo_funcao, unidade_tempo, readaptado, atividades_readaptado, doenca_motivo, queixa_duracao, inicio_tratamento, frequencia_consultas, sintomas_limitacoes, medicamentos, alteracao_dosagem, data_alteracao_med, obs_alteracao_med, psicoterapia, fisioterapia, obs_terapias.
+   Exemplo de referência oficial DPME:
+   "Paciente de 40 anos, professor há 10 anos, não readaptado, com queixa de depressão desde 2020. Refere início do tratamento há 2 anos, com consultas a cada 2 meses. Queixa-se de tristeza, desânimo, choro fácil e insônia, com dificuldade para planejar aulas e manter a atenção. Em uso de Sertralina 100 mg/dia e Clonazepam 2 mg/dia, sem trocas recentes de medicação. Realiza psicoterapia semanal."
+   Apenas inclua elementos presentes nos dados registrados, conectando-os de forma natural. Não invente dados não registrados nem acrescente diagnóstico ou interpretação que não esteja escrita nos dados.
 
 2. “Antecedentes Mórbidos”
-   Consolide somente outras_doencas, condicoes e antecedentes. Pode eliminar repetição e organizar o conteúdo quando isso apenas melhora a leitura, mas não introduza condições, diagnósticos ou tratamentos não registrados.
+   Consolide de forma sintética, clara e técnica os dados de outras_doencas, condicoes e antecedentes, cobrindo os 4 itens padronizados:
+   (1) Doenças de base crônicas (HAS, DM, etc.) e tratamentos em curso,
+   (2) Cirurgias prévias e tempo decorrido,
+   (3) Hábitos e vícios (uso ou negação registrada de bebida alcoólica, tabagismo ou substâncias ilícitas),
+   (4) Histórico de neoplasias e tratamentos associados.
+   Exemplo de referência oficial DPME:
+   "Hipertenso e diabético há 5 anos, em tratamento medicamentoso. Apendicectomia há 10 anos. Nega tabagismo, etilismo ou uso de substâncias ilícitas. Nega histórico de neoplasias."
+   Consolide somente outras_doencas, condicoes e antecedentes. Pode eliminar repetição e organizar o conteúdo quando isso melhora a leitura, mas não introduza condições, diagnósticos ou tratamentos não registrados.
 
-3. “(*)Exame Físico Geral”
-   Redija usando exclusivamente exame_fisico_tipo, exame_fisico_descricao e os valores de pressão/pulso expressamente registrados. Reorganize apenas a apresentação dos achados. Não crie normalidade, negatividade, estado geral ou achados não escritos.
+3. “(*)Exame Físico Geral” e “Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares”
+   Redija usando exclusivamente exame_fisico_tipo, exame_fisico_descricao e os valores de pressão/pulso expressamente registrados. Reorganize a apresentação dos achados direcionando para a patologia em questão:
+   - Para patologia Mental / Psiquiátrica (CID F): estruture os achados psíquicos descritos: postura e acompanhamento (descrever se veio acompanhado ou desacompanhado, postura na sala de espera e durante o atendimento), orientação (tempo e espaço), aparência física e higiene, fluxo de pensamento (lentificado, acelerado, coerente, prolixo), diálogo (espontâneo, colaborativo, lentificado), psicomotricidade, humor e afeto, volição, pragmatismo (capacidade de realizar atividades rotineiras) e presença ou ausência de ideação e delírios relatados.
+   - Para patologia Ortopédica / Físico-funcional: estruture os achados físicos descritos: entrada e inspeção dinâmica (marcha, uso de órteses), fácies de dor, cicatrizes cirúrgicas, trofismo muscular, mobilidade articular (amplitude de movimento ativo e passivo), força muscular (grau 5/5), presença de contraturas musculares, sensibilidade e reflexos tendinosos profundos relatados.
+   - Em “Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares”, organize somente alteracoes_clinicas_exames, documentos_complementares e observacoes_documentos. Pode unir itens relacionados do próprio questionário para melhorar a leitura, sem interpretar resultados.
+   - Não crie normalidade, negatividade, estado geral ou achados não escritos.
+   - Registre nos campos próprios de Pressão Arterial (Sistólica, Diastólica) e Pulso exclusivamente os valores expressamente registrados em pressao_sistolica, pressao_diastolica e pulso. Se não registrados, DEIXE O VALOR EM BRANCO.
 
-4. “Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares”
-   Organize somente alteracoes_clinicas_exames, documentos_complementares e observacoes_documentos. Pode unir itens relacionados do próprio questionário para melhorar a leitura, sem interpretar resultados.
+4. “(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)”
+   Relacione expressamente as limitações físicas ou mentais com as atividades do ROL do servidor (cargo), reunindo desc_limitacao, limitacao_funcional, limitacao_rol, atividades_comprometidas, sintomas_limitacoes e obs_limitacoes:
+   - Se Parecer FAVORÁVEL (ou capacidade laborativa temporariamente prejudicada): adote a fórmula padrão oficial:
+     "Apresenta limitações [físicas/mentais] funcionais temporárias para [atividades/limitações registradas], atividades estas constantes no Rol de Atividades do cargo de [cargo]."
+     (Exemplo de referência oficial: "Apresenta limitações físicas funcionais temporárias para ortostatismo prolongado, caminhadas e subir/descer escadas, atividades estas constantes no Rol de Atividades do cargo de professor.")
+   - Se Parecer CONTRÁRIO (capacidade preservada): adote a fórmula padrão oficial:
+     "Do ponto de vista médico não se observa limitações [físicas/mentais] funcionais incapacitantes para as atribuições do cargo de [cargo], constantes no rol de atividades."
+     (Exemplo de referência oficial: "Do ponto de vista médico não se observa limitações físicas funcionais incapacitantes para as atribuições do cargo de professor, constantes no rol de atividades.")
+   - É permitido reduzir repetição e formar uma redação única, mas “Sim” sozinho não autoriza criar uma limitação específica.
 
-5. “(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)”
-   Reúna somente desc_limitacao, limitacao_funcional, limitacao_rol, atividades_comprometidas, sintomas_limitacoes e obs_limitacoes quando houver conteúdo pertinente. É permitido reduzir repetição e formar uma redação única, mas “Sim” sozinho não autoriza criar uma limitação específica.
+5. “(*)Justificativa Parecer Médico”
+   Apresente a conclusão pericial fundamentada conforme o padrão do Programa de Melhoria Contínua:
+   - Se Parecer FAVORÁVEL:
+     "Capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol, em razão de limitações na esfera [psicoemocional/osteomuscular] que compromete para [atividades comprometidas informadas]."
+     Caso haja redução de dias em relação ao atestado assistente:
+     "Concedido [X] dias de afastamento a contar da data de início dos sintomas, tempo este considerado suficiente para restabelecimento da capacidade laborativa para a função periciada."
+   - Se Parecer CONTRÁRIO:
+     "Capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações de ordem [osteomuscular/psíquica] incapacitantes para as atribuições rotineiras do cargo atual."
+     Caso o parecer contrário decorra de regras periciais específicas informadas:
+     - Retroação de guia (> 3 dias): "Guia com mais de 3 dias de retroação, não havendo comprovação de internamento hospitalar ou impedimento absoluto do servidor para emissão da guia."
+     - Sobreposição: "Período solicitado já contemplado em licença anteriormente concedida, caracterizando sobreposição de períodos."
+   Se o perito tiver fornecido justificativa própria em justificativa, incorpore harmonicamente suas palavras a esta fundamentação padrão. Não acrescente o texto legal da justificativa final nem qualquer texto fixo que não esteja presente nos dados fornecidos.
 
 OUTROS CAMPOS — TRANSCRIÇÃO FIEL:
-- “Atestado/Relatório/Exames Complementares (Tipo-Data-Resultado)” usa somente documentos registrados.
+- “Atestado/Relatório/Exames Complementares (Tipo-Data-Resultado)” padroniza a solicitação assistente no formato oficial:
+  "CRM [crm_cro], solicita [dias_solicitados] dias de afastamento a partir de [data_documento], pelo CID [cid] – Relatório médico em anexo."
+  (Caso não haja relatório médico anexado, indicar conforme dados; se houver outros documentos registrados em documentos_complementares ou observacoes_documentos, relacioná-los de forma sucinta com Tipo-Data-Resultado).
 - Pressão Arterial/Sistólica/Diastólica/Pulso usam somente valores explicitamente registrados.
-- “(*)Parecer Médico” e “(*) Parecer Final” reproduzem somente os valores já escolhidos.
-- “(*)Resposta aos quesitos” reproduz somente as respostas efetivamente registradas.
+- “(*)Parecer Médico” e “(*) Parecer Final” reproduzem somente os valores já escolhidos:
+  - Nº Dias: dias concedidos/solicitados
+  - Data Início: data de início da licença/perícia
+  - CID 10: código CID informado
+  - Descrição: motivo/diagnóstico informado
+  - Médico Perito: médico responsável pelo atendimento
+  - CRM: CRM do médico perito responsável
+  - Dt/Hr Perícia: data e hora do atendimento pericial
+- “(*)Resposta aos quesitos” reproduz somente as respostas efetivamente registradas (Sim / Não / Deixar em branco se não respondido):
+  1) Há doença(s) ou sequela(s) de doença(s) prévia(s)?
+  2) A(s) doença(s) ou sequela(s) de doença(s) prévia(s) gera(m) limitação(ões) para periciando(a)?
+  3) A(s) limitação(ões) impede(m) o(a) periciando(a) de exercer alguma atividade do rol?
 - “Médico Perito” e “CRM” usam somente os dados do profissional responsável já gravados no atendimento.
 - “CRM ou CRO do médico assistente” é um campo independente e nunca deve receber automaticamente o CRM do médico responsável.
-- Não acrescente o texto legal da justificativa final nem qualquer texto fixo que não esteja presente nos dados fornecidos.
+- Não acrescente o texto legal da justificativa final nem artigos ou decretos legais.
 
 ESTILO DA REDAÇÃO:
-- Linguagem clínica profissional, objetiva, natural e legível, adequada a um registro médico.
-- Frases completas e curtas; sem listas, sem markdown e sem comentários sobre o processo de geração.
+- Linguagem clínica profissional, objetiva, natural e legível, adequada a um registro médico oficial DPME.
+- Frases completas e curtas; sem listas com marcadores nos campos contínuos, sem markdown (nada de negrito **, itálico ou hashtags # nos campos) e sem comentários sobre o processo de geração.
 - Não use linguagem que revele geração automática, IA ou assistência computacional. Não use expressões meta como “IA”, “inteligência artificial”, “sugestão”, “modelo”, “assistente”, “gerado” ou equivalentes no texto da ficha.
 - Não escreva “não informado”, “não consta”, “sem dados” ou equivalentes dentro dos campos; deixe o conteúdo vazio.
 - Não use fórmulas de normalidade como “em bom estado geral”, “sem alterações”, “afebril”, “normocárdico”, “lúcido” ou semelhantes quando isso não estiver expressamente registrado.
@@ -1130,11 +1210,11 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
         "crm_responsavel": payload.get("crm_responsavel") or a.get("crmResponsavel"),
         "cargo": payload.get("cargo") or a.get("cargo"),
         "idade": payload.get("idade") or a.get("idade"),
-        "tempo_funcao": payload.get("tempo_funcao") or a.get("tempoCargo"),
-        "unidade_tempo": payload.get("unidade_tempo") or a.get("tempoUnidade"),
-        "dias_solicitados": payload.get("dias_solicitados") or a.get("diasSolicitados"),
-        "readaptado": payload.get("readaptado") if "readaptado" in payload else payload.get("readaptado", False),
-        "atividades_readaptado": payload.get("atividades_readaptado") or a.get("atividadesReadaptado"),
+        "tempo_funcao": payload.get("tempo_funcao") or payload.get("tempoCargo") or a.get("tempoCargo"),
+        "unidade_tempo": payload.get("unidade_tempo") or payload.get("unidadeTempo") or a.get("tempoUnidade"),
+        "dias_solicitados": payload.get("dias_solicitados") or payload.get("diasSolicitados") or a.get("diasSolicitados"),
+        "readaptado": payload.get("readaptado") if "readaptado" in payload else a.get("readaptado", False),
+        "atividades_readaptado": payload.get("atividades_readaptado") or payload.get("atividadesReadaptado") or a.get("atividadesReadaptado"),
         "cid": payload.get("cid") or a.get("cid"),
         "doenca_motivo": payload.get("doenca_motivo") or a.get("doencaMotivo"),
         "queixa_duracao": payload.get("queixa_duracao") or payload.get("queixaDuracao") or a.get("queixaDuracao"),
@@ -1142,7 +1222,7 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
         "frequencia_consultas": payload.get("frequencia_consultas") or a.get("freqConsultas"),
         "sintomas_limitacoes": payload.get("sintomas_limitacoes") or a.get("sintomasLimitacao"),
         "medicamentos": payload.get("medicamentos") or payload.get("medications") or [],
-        "alteracao_dosagem": payload.get("alteracao_dosagem") or payload.get("alteracaoMed"),
+        "alteracao_dosagem": payload.get("alteracao_dosagem") or payload.get("alteracaoDosagem") or payload.get("alteracaoMed"),
         "data_alteracao_med": payload.get("data_alteracao_med") or a.get("dataAlteracaoMed"),
         "obs_alteracao_med": payload.get("obs_alteracao_med") or a.get("obsAlteracaoMed"),
         "psicoterapia": bool(payload.get("psicoterapia", False)),
@@ -1151,8 +1231,8 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
         "outras_doencas": payload.get("outras_doencas") or payload.get("outrasDoencas"),
         "condicoes": payload.get("condicoes") or payload.get("conditions") or [],
         "antecedentes": payload.get("antecedentes") or a.get("historicoPregresso"),
-        "crm_cro": payload.get("crm_cro") or a.get("crmCro"),
-        "data_documento": payload.get("data_documento") or a.get("dataDocumento"),
+        "crm_cro": payload.get("crm_cro") or payload.get("crmCro") or a.get("crmCro"),
+        "data_documento": payload.get("data_documento") or payload.get("dataDocumento") or a.get("dataDocumento"),
         "observacoes_documentos": payload.get("observacoes_documentos") or a.get("obsDocumentos"),
         "documentos_complementares": payload.get("documentos_complementares") or payload.get("documentosComplementares") or [],
         "exame_fisico_tipo": payload.get("exame_fisico_tipo") or payload.get("exameFisicoTipo"),
@@ -1737,6 +1817,183 @@ def api_admin_reset_senha_medico(user_id):
     except Exception as exc:
         app.logger.exception("admin_reset_senha_medico")
         return _error("INTERNAL_ERROR", _safe_error_message(exc), False, 500)
+
+@app.get("/api/admin/medicos/<user_id>/agendas")
+def api_admin_listar_agendas_medico(user_id):
+    denied = _require_admin()
+    if denied: return denied
+    user_id = str(user_id or "").strip()
+    if not user_id: return _error("VALIDATION_ERROR", "Médico inválido.", False, 400)
+    data_filtro = request.args.get("data", "").strip()
+    db = get_db(); cur = db.cursor()
+    cur.execute("SELECT id, nome, crm FROM usuarios WHERE id=%s", (user_id,))
+    medico = cur.fetchone()
+    if not medico:
+        cur.close(); return _error("NOT_FOUND", "Médico não encontrado.", False, 404)
+        
+    query = """
+        SELECT a.id, a.medico_id, a.data::text AS data, a.hora, a.status, a.tipo, a.protocolo,
+               a.ni, a.nome_periciado, a.compareceu, a.observacao, a.seq,
+               a.atendimento_id, a.criado_em,
+               atd.id AS atd_existente_id, atd.status AS atd_status
+          FROM agendas a
+          LEFT JOIN atendimentos atd ON (atd.numero = a.protocolo OR atd.id = a.atendimento_id)
+         WHERE a.medico_id = %s
+    """
+    params = [user_id]
+    if data_filtro:
+        query += " AND a.data = %s"
+        params.append(data_filtro)
+    query += " ORDER BY a.data DESC, a.hora ASC, a.id ASC LIMIT 500"
+    
+    cur.execute(query, tuple(params))
+    rows = cur.fetchall()
+    cur.close()
+    return _ok({
+        "medico": dict(medico),
+        "data": data_filtro or None,
+        "items": [dict(r) for r in rows],
+        "total": len(rows),
+    })
+
+@app.post("/api/admin/medicos/<user_id>/agendas")
+def api_admin_gravar_agendas_medico(user_id):
+    denied = _require_admin()
+    if denied: return denied
+    user_id = str(user_id or "").strip()
+    if not user_id: return _error("VALIDATION_ERROR", "Médico inválido.", False, 400)
+    try:
+        body = _json_body()
+        data_str = str(body.get("data") or "").strip()
+        if not re.match(r"^\d{4}-\d{2}-\d{2}$", data_str):
+            return _error("VALIDATION_ERROR", "Informe uma data válida no formato AAAA-MM-DD.", False, 400)
+        itens = body.get("itens")
+        if not isinstance(itens, list) or len(itens) == 0:
+            return _error("VALIDATION_ERROR", "Informe uma lista com ao menos 1 agendamento.", False, 400)
+            
+        substituir = bool(body.get("substituir", True))
+        now = _utc_now()
+        
+        db = get_db(); cur = db.cursor()
+        cur.execute("SELECT id, nome, crm FROM usuarios WHERE id=%s", (user_id,))
+        if not cur.fetchone():
+            cur.close(); return _error("NOT_FOUND", "Médico não encontrado.", False, 404)
+            
+        if substituir:
+            cur.execute("DELETE FROM agendas WHERE medico_id = %s AND data = %s", (user_id, data_str))
+            
+        inseridos = 0
+        for it in itens:
+            if not isinstance(it, dict): continue
+            hora = str(it.get("hora") or "").strip()[:10]
+            nome = str(it.get("nome_periciado") or it.get("nome") or "").strip()
+            if not nome: continue
+            
+            protocolo = str(it.get("protocolo") or "").strip()[:60]
+            ni = str(it.get("ni") or "").strip()[:60]
+            tipo = str(it.get("tipo") or "").strip()[:60]
+            status = str(it.get("status") or "").strip()[:60]
+            compareceu = str(it.get("compareceu") or "").strip()[:100]
+            obs = str(it.get("observacao") or it.get("obs") or "").strip()[:500]
+            seq = str(it.get("seq") or "").strip()[:20]
+            
+            cur.execute("""
+                INSERT INTO agendas (
+                    medico_id, data, hora, status, tipo, protocolo, ni,
+                    nome_periciado, compareceu, observacao, seq, criado_em, atualizado_em
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (user_id, data_str, hora, status, tipo, protocolo, ni, nome, compareceu, obs, seq, now, now))
+            inseridos += 1
+            
+        db.commit()
+        cur.close()
+        return _ok({"success": True, "count": inseridos, "data": data_str, "mensagem": f"{inseridos} agendamento(s) salvo(s) com sucesso para o dia {data_str}."})
+    except Exception as exc:
+        app.logger.exception("admin_gravar_agendas")
+        return _error("INTERNAL_ERROR", _safe_error_message(exc), False, 500)
+
+@app.delete("/api/admin/medicos/<user_id>/agendas")
+def api_admin_limpar_agendas_data(user_id):
+    denied = _require_admin()
+    if denied: return denied
+    user_id = str(user_id or "").strip()
+    data_str = request.args.get("data", "").strip()
+    if not data_str or not re.match(r"^\d{4}-\d{2}-\d{2}$", data_str):
+        return _error("VALIDATION_ERROR", "Informe o parâmetro 'data' no formato AAAA-MM-DD para exclusão.", False, 400)
+    db = get_db(); cur = db.cursor()
+    cur.execute("DELETE FROM agendas WHERE medico_id = %s AND data = %s", (user_id, data_str))
+    count = cur.rowcount
+    db.commit(); cur.close()
+    return _ok({"deleted": True, "count": count, "data": data_str, "mensagem": f"{count} agendamento(s) removido(s) para a data {data_str}."})
+
+@app.delete("/api/admin/agendas/<int:agenda_id>")
+def api_admin_excluir_agenda_item(agenda_id):
+    denied = _require_admin()
+    if denied: return denied
+    db = get_db(); cur = db.cursor()
+    cur.execute("DELETE FROM agendas WHERE id = %s", (agenda_id,))
+    count = cur.rowcount
+    db.commit(); cur.close()
+    if count == 0:
+        return _error("NOT_FOUND", "Agendamento não encontrado.", False, 404)
+    return _ok({"deleted": True, "id": agenda_id})
+
+@app.get("/api/medico/agenda")
+def api_medico_agenda():
+    if request.user_role not in {"Médico", "Administrador"}:
+        return _error("PERMISSION_DENIED", "Seu perfil não possui acesso à agenda médica.", False, 403)
+        
+    medico_id = request.user_id
+    if request.user_role == "Administrador" and request.args.get("medico_id"):
+        medico_id = request.args.get("medico_id").strip()
+        
+    data_str = request.args.get("data", "").strip()
+    if not data_str:
+        data_str = datetime.now().strftime("%Y-%m-%d")
+        
+    db = get_db(); cur = db.cursor()
+    cur.execute("""
+        SELECT a.id, a.medico_id, a.data::text AS data, a.hora, a.status, a.tipo, a.protocolo,
+               a.ni, a.nome_periciado, a.compareceu, a.observacao, a.seq,
+               a.atendimento_id, a.criado_em,
+               atd.id AS atd_existente_id, atd.numero AS atd_existente_numero, atd.status AS atd_status
+          FROM agendas a
+          LEFT JOIN atendimentos atd ON (atd.numero = a.protocolo OR atd.id = a.atendimento_id)
+         WHERE a.medico_id = %s AND a.data = %s
+         ORDER BY a.hora ASC, a.id ASC
+    """, (medico_id, data_str))
+    rows = cur.fetchall()
+    cur.close()
+    return _ok({
+        "data": data_str,
+        "itens": [dict(r) for r in rows],
+        "total": len(rows),
+    })
+
+@app.patch("/api/medico/agenda/<int:agenda_id>/status")
+def api_medico_atualizar_status_agenda(agenda_id):
+    if request.user_role not in {"Médico", "Administrador"}:
+        return _error("PERMISSION_DENIED", "Acesso restrito.", False, 403)
+    body = _json_body()
+    novo_status = str(body.get("status") or "").strip()[:60]
+    compareceu = str(body.get("compareceu") or "").strip()[:100]
+    db = get_db(); cur = db.cursor()
+    cur.execute("SELECT id, medico_id FROM agendas WHERE id = %s", (agenda_id,))
+    row = cur.fetchone()
+    if not row:
+        cur.close(); return _error("NOT_FOUND", "Agendamento não encontrado.", False, 404)
+    if request.user_role == "Médico" and str(row["medico_id"]) != str(request.user_id):
+        cur.close(); return _error("PERMISSION_DENIED", "Acesso restrito aos seus próprios agendamentos.", False, 403)
+    
+    cur.execute("""
+        UPDATE agendas
+           SET status = COALESCE(NULLIF(%s, ''), status),
+               compareceu = COALESCE(NULLIF(%s, ''), compareceu),
+               atualizado_em = %s
+         WHERE id = %s
+    """, (novo_status, compareceu, _utc_now(), agenda_id))
+    db.commit(); cur.close()
+    return _ok({"id": agenda_id, "updated": True, "status": novo_status})
 
 @app.get("/api/auth/config")
 def api_auth_config():

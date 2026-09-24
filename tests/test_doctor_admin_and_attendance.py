@@ -155,3 +155,92 @@ def test_gestao_admin_refresh_and_esisla_view():
     assert 'esisla-spinner-box' in GESTAO_ATENDIMENTOS
 
 
+def test_agenda_backend_and_database_contract():
+    # Database schema
+    assert "CREATE TABLE IF NOT EXISTS agendas (" in APP
+    assert "idx_agendas_medico_data_hora" in APP
+    assert "idx_agendas_protocolo" in APP
+
+    # Admin endpoints
+    assert '@app.get("/api/admin/medicos/<user_id>/agendas")' in APP
+    assert "def api_admin_listar_agendas_medico(user_id):" in APP
+    assert '@app.post("/api/admin/medicos/<user_id>/agendas")' in APP
+    assert "def api_admin_gravar_agendas_medico(user_id):" in APP
+    assert '@app.delete("/api/admin/medicos/<user_id>/agendas")' in APP
+    assert "def api_admin_limpar_agendas_data(user_id):" in APP
+    assert '@app.delete("/api/admin/agendas/<int:agenda_id>")' in APP
+    assert "def api_admin_excluir_agenda_item(agenda_id):" in APP
+
+    # Doctor endpoints
+    assert '@app.get("/api/medico/agenda")' in APP
+    assert "def api_medico_agenda():" in APP
+    assert '@app.patch("/api/medico/agenda/<int:agenda_id>/status")' in APP
+    assert "def api_medico_atualizar_status_agenda(agenda_id):" in APP
+
+    # API JS bindings
+    assert "agenda: (params = {})" in API_JS
+    assert "updateAgendaStatus:" in API_JS
+    assert "getAgendas:" in API_JS
+    assert "saveAgendas:" in API_JS
+    assert "deleteAgenda:" in API_JS
+    assert "clearAgendas:" in API_JS
+
+
+def test_agenda_admin_frontend_contract():
+    # Tab navigation in edit modal
+    assert 'id="tabBtnEditDados"' in GESTAO_MEDICOS_ADMIN
+    assert 'id="tabBtnEditAgenda"' in GESTAO_MEDICOS_ADMIN
+    assert 'id="tabContentEditAgenda"' in GESTAO_MEDICOS_ADMIN
+    assert 'switchEditModalTab' in GESTAO_MEDICOS_ADMIN
+
+    # Spreadsheet import and paste
+    assert 'id="agendaPasteInput"' in GESTAO_MEDICOS_ADMIN
+    assert 'id="agendaFileInput"' in GESTAO_MEDICOS_ADMIN
+    assert 'id="btnProcessarPlanilha"' in GESTAO_MEDICOS_ADMIN
+    assert 'parseAgendaCsvText' in GESTAO_MEDICOS_ADMIN
+
+    # Preview and save
+    assert 'id="agendaPreviewArea"' in GESTAO_MEDICOS_ADMIN
+    assert 'id="agendaPreviewTbody"' in GESTAO_MEDICOS_ADMIN
+    assert 'id="btnSalvarAgenda"' in GESTAO_MEDICOS_ADMIN
+    assert 'checkSubstituirAgenda' in GESTAO_MEDICOS_ADMIN
+
+    # Day management
+    assert 'id="agendaDataInput"' in GESTAO_MEDICOS_ADMIN
+    assert 'id="btnLimparAgendaDia"' in GESTAO_MEDICOS_ADMIN
+    assert 'deleteIndividualAgenda' in GESTAO_MEDICOS_ADMIN
+    assert 'data-agenda' in GESTAO_MEDICOS_ADMIN
+
+
+def test_agenda_doctor_frontend_contract():
+    # Ver agenda do dia buttons
+    assert 'id="heroAgendaDiaBtn"' in GESTAO_MEDICOS
+    assert 'id="quickAgendaDia"' in GESTAO_MEDICOS
+    assert 'id="btnAgendaHojeTop"' in GESTAO_MEDICOS
+    assert 'Ver agenda do dia' in GESTAO_MEDICOS
+
+    # Day agenda view in chronological order
+    assert 'id="agendaDaySection"' in GESTAO_MEDICOS
+    assert 'id="doctorAgendaList"' in GESTAO_MEDICOS
+    assert 'agenda-item-card' in GESTAO_MEDICOS
+    assert 'agenda-time-box' in GESTAO_MEDICOS
+
+    # Actions and Attendance integration
+    assert 'iniciarAtendimentoAgenda' in GESTAO_MEDICOS
+    assert 'toggleComparecimentoAgenda' in GESTAO_MEDICOS
+    assert 'id="modalAgendaDoDia"' in GESTAO_MEDICOS
+    assert 'openAgendaDoDiaModal' in GESTAO_MEDICOS
+
+
+def test_attendance_agenda_query_params_prefill():
+    # Pre-fills patient, protocol, time and NI from schedule
+    assert 'const pacienteParam = params.get("paciente");' in ATTENDANCE
+    assert 'const protocoloParam = params.get("protocolo") || params.get("agenda_protocolo");' in ATTENDANCE
+    assert 'const horaParam = params.get("hora");' in ATTENDANCE
+    assert 'const niParam = params.get("ni");' in ATTENDANCE
+    assert 'state.aux.nomePaciente = pacienteParam;' in ATTENDANCE
+    assert 'state.atendimento = protocoloParam;' in ATTENDANCE
+    assert 'state.aux.horaAtd = horaParam;' in ATTENDANCE
+    assert 'state.aux.ni = niParam;' in ATTENDANCE
+
+

@@ -1292,6 +1292,92 @@ main { min-width: 0; }
   .day { min-height: 52px; padding: 4px; }
   .day .event { display: none; }
 }
+
+/* Agenda do Dia Cards & Layout */
+.agenda-item-card {
+  display: grid;
+  grid-template-columns: 88px 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 18px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 2px 5px rgba(7, 63, 135, 0.03);
+  transition: all .16s ease;
+}
+.agenda-item-card:hover {
+  background: #f8fbfe;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(7, 86, 168, 0.07);
+}
+.agenda-time-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0756a8, #0b67b9);
+  color: #fff;
+  padding: 8px 10px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(7, 86, 168, 0.18);
+}
+.agenda-time-hour {
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: .02em;
+  font-variant-numeric: tabular-nums;
+}
+.agenda-time-type {
+  font-size: 8.5px;
+  font-weight: 800;
+  opacity: .85;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-top: 2px;
+}
+.agenda-patient-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.agenda-patient-name {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0f2744;
+}
+.agenda-patient-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+.agenda-patient-meta b {
+  color: var(--text-secondary);
+}
+.agenda-patient-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+@media (max-width: 768px) {
+  .agenda-item-card {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .agenda-time-box {
+    align-self: flex-start;
+    flex-direction: row;
+    gap: 8px;
+    padding: 4px 10px;
+  }
+  .agenda-patient-actions {
+    flex-wrap: wrap;
+  }
+}
 </style>
 </head>
 <body>
@@ -1393,6 +1479,9 @@ main { min-width: 0; }
           <p>Tenha em mãos o que precisa para conduzir seus atendimentos com segurança, agilidade e organização.</p>
         </div>
         <div class="hero-actions">
+          <button class="btn" id="heroAgendaDiaBtn" style="background:#fff;border-color:#bfdbfe;color:var(--brand-blue)">
+            <span>📅 Ver agenda do dia</span>
+          </button>
           <button class="btn primary" id="newBtn">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             <span>+ Novo atendimento</span>
@@ -1504,6 +1593,10 @@ main { min-width: 0; }
           </div>
           <div class="panel-body">
             <div class="quick">
+              <button id="quickAgendaDia">
+                <strong>📅 Ver agenda do dia</strong>
+                <span>Acesso imediato aos agendados em ordem de horários</span>
+              </button>
               <button id="quickNew">
                 <strong>+ Novo atendimento</strong>
                 <span>Iniciar nova avaliação médica pericial</span>
@@ -1514,11 +1607,7 @@ main { min-width: 0; }
               </button>
               <button data-view-target="agenda">
                 <strong>Minha agenda</strong>
-                <span>Visualizar mapa mensal de consultas</span>
-              </button>
-              <button data-view-target="pendencias">
-                <strong>Pendências</strong>
-                <span>Ver laudos que necessitam complementação</span>
+                <span>Visualizar compromissos e calendário</span>
               </button>
             </div>
           </div>
@@ -1551,12 +1640,50 @@ main { min-width: 0; }
       <!-- View: Agenda -->
       <section id="view-agenda" hidden>
         <div class="panel">
-          <div class="panel-head">
-            <div><b>Minha agenda</b><span>Compromissos e datas identificados nos atendimentos</span></div>
-            <span id="agendaMonth" class="counter-badge" style="text-transform:capitalize"></span>
+          <div class="panel-head" style="flex-wrap:wrap;gap:14px">
+            <div>
+              <b>Minha agenda pericial</b>
+              <span>Acompanhe seus periciados agendados por ordem de horários ou calendário mensal</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <div style="display:flex;background:#f1f5f9;padding:3px;border-radius:11px;border:1px solid var(--surface-border)">
+                <button type="button" class="btn-sm active" id="btnAgendaToggleDay" style="border:0;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08);font-weight:800;color:var(--brand-blue)">📋 Agenda do Dia</button>
+                <button type="button" class="btn-sm" id="btnAgendaToggleMonth" style="border:0;background:transparent;color:var(--text-muted)">📅 Calendário Mensal</button>
+              </div>
+              <button class="btn primary" id="btnAgendaHojeTop" style="padding:7px 14px;font-size:11px">
+                <span>⚡ Ver agenda de hoje</span>
+              </button>
+            </div>
           </div>
           <div class="panel-body">
-            <div class="calendar" id="calendar"></div>
+            <!-- Seção 1: Agenda do Dia em Ordem de Horários -->
+            <div id="agendaDaySection">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:12px;padding:12px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  <button type="button" class="btn-sm" id="btnAgendaPrevDay" title="Dia anterior">← Dia anterior</button>
+                  <button type="button" class="btn-sm" id="btnAgendaToday" title="Hoje">Hoje</button>
+                  <input type="date" id="doctorAgendaDateInput" class="search" style="width:145px;padding:6px 10px;font-weight:700">
+                  <button type="button" class="btn-sm" id="btnAgendaNextDay" title="Próximo dia">Próximo dia →</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span id="doctorAgendaDayBadge" class="counter-badge" style="background:#e0f2fe;color:#0369a1;font-weight:800">0 agendados</span>
+                  <button type="button" class="btn-sm" id="btnRefreshDoctorAgenda" title="Atualizar agenda">↻ Atualizar</button>
+                </div>
+              </div>
+
+              <!-- Lista cronológica dos agendamentos -->
+              <div id="doctorAgendaList" class="list"></div>
+              <div class="empty" id="doctorAgendaEmpty" hidden>Nenhum agendamento cadastrado para esta data.</div>
+            </div>
+
+            <!-- Seção 2: Calendário Mensal -->
+            <div id="agendaMonthSection" hidden>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+                <span id="agendaMonth" class="counter-badge" style="text-transform:capitalize"></span>
+                <span style="font-size:11px;color:var(--text-muted)">Atendimentos identificados nas avaliações</span>
+              </div>
+              <div class="calendar" id="calendar"></div>
+            </div>
           </div>
         </div>
       </section>
@@ -1607,6 +1734,27 @@ main { min-width: 0; }
         <button class="btn-sm" type="button" onclick="closeQuickView()">Fechar</button>
         <button class="btn primary" type="button" id="quickViewOpenFullBtn" style="padding:7px 14px;font-size:11px">Abrir Completo →</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Agenda do Dia (Acesso Rápido) -->
+<div id="modalAgendaDoDia" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalAgendaDoDiaTitle">
+  <div class="modal-box" style="width:min(820px, 100%)">
+    <div class="modal-head">
+      <div>
+        <h3 id="modalAgendaDoDiaTitle">Agenda do Dia — Ordem de Horários</h3>
+        <span id="modalAgendaDoDiaSub">Carregando agendamentos de hoje…</span>
+      </div>
+      <button type="button" class="modal-close-btn" onclick="closeAgendaDoDiaModal()" aria-label="Fechar modal">✕</button>
+    </div>
+    <div class="modal-body" style="padding:18px 24px">
+      <div id="modalAgendaDoDiaList" class="list"></div>
+      <div class="empty" id="modalAgendaDoDiaEmpty" hidden>Nenhum paciente agendado para hoje.</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sm" type="button" onclick="closeAgendaDoDiaModal()">Fechar</button>
+      <button class="btn primary" type="button" onclick="closeAgendaDoDiaModal(); setView('agenda');" style="padding:7px 16px;font-size:11px">Ir para Minha Agenda →</button>
     </div>
   </div>
 </div>
@@ -1947,6 +2095,202 @@ main { min-width: 0; }
     wireButtons($('calendar'));
   }
 
+  let currentDoctorAgenda = [];
+  let currentAgendaSelectedDate = todayISO();
+
+  function renderDoctorAgendaCards(items) {
+    if (!items.length) return '';
+    return items.map(it => {
+      const horaStr = esc(it.hora || '—');
+      const nomeStr = esc(it.nome_periciado || 'Não informado');
+      const protStr = esc(it.protocolo || '');
+      const niStr = esc(it.ni || '');
+      const tipoStr = esc(it.tipo || 'LICENC');
+      const statusStr = esc(it.status || 'Agendado');
+      const compareceu = it.compareceu && it.compareceu !== 'NÃO';
+      const hasAtd = Boolean(it.atd_existente_numero || it.atd_existente_id);
+      const atdNum = it.atd_existente_numero || it.atd_existente_id;
+      const atdStatus = it.atd_status ? statusLabel(it.atd_status) : '';
+
+      return `
+        <div class="agenda-item-card">
+          <div class="agenda-time-box">
+            <span class="agenda-time-hour">${horaStr}</span>
+            <span class="agenda-time-type">${tipoStr}</span>
+          </div>
+          <div class="agenda-patient-info">
+            <div class="agenda-patient-name">${nomeStr}</div>
+            <div class="agenda-patient-meta">
+              ${protStr ? `<span><b>Protocolo:</b> <code>${protStr}</code></span>` : ''}
+              ${niStr ? `<span><b>NI:</b> ${niStr}</span>` : ''}
+              <span><b>Status:</b> ${statusStr}</span>
+              ${compareceu ? `<span class="badge green">✓ Compareceu</span>` : ''}
+              ${hasAtd ? `<span class="badge ${it.atd_status === 'FINALIZADO' ? 'green' : 'blue'}">Atendimento: ${esc(atdStatus || 'Em andamento')}</span>` : ''}
+            </div>
+          </div>
+          <div class="agenda-patient-actions">
+            ${hasAtd ? `
+              <button class="btn-sm primary" type="button" onclick="location.href='/app?atendimento=${encodeURIComponent(atdNum)}'">
+                Abrir Atendimento →
+              </button>
+            ` : `
+              <button class="btn-sm primary" type="button" onclick="iniciarAtendimentoAgenda('${esc(it.nome_periciado)}', '${esc(it.protocolo || '')}', '${esc(it.ni || '')}', '${esc(it.hora || '')}')">
+                + Iniciar Atendimento
+              </button>
+            `}
+            <button class="btn-sm ${compareceu ? 'success' : ''}" type="button" onclick="toggleComparecimentoAgenda(${it.id}, '${compareceu ? '' : 'SIM'}')" title="Registrar presença">
+              ${compareceu ? '✓ Presença' : 'Confirmar Presença'}
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function loadDoctorDayAgenda(date) {
+    currentAgendaSelectedDate = date || todayISO();
+    if ($('doctorAgendaDateInput')) $('doctorAgendaDateInput').value = currentAgendaSelectedDate;
+    const listEl = $('doctorAgendaList');
+    const emptyEl = $('doctorAgendaEmpty');
+    const badgeEl = $('doctorAgendaDayBadge');
+    if (!listEl) return;
+
+    listEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted)">Carregando agendamentos do dia…</div>';
+    if (emptyEl) emptyEl.hidden = true;
+
+    try {
+      const res = await AmbientalAPI.medico.agenda({ data: currentAgendaSelectedDate });
+      currentDoctorAgenda = Array.isArray(res?.itens) ? res.itens : [];
+      if (badgeEl) badgeEl.textContent = `${currentDoctorAgenda.length} agendado(s)`;
+
+      if (!currentDoctorAgenda.length) {
+        listEl.innerHTML = '';
+        if (emptyEl) {
+          emptyEl.hidden = false;
+          emptyEl.innerHTML = `Nenhum agendamento cadastrado para ${dateDisplay(currentAgendaSelectedDate)}.<br><small style="color:var(--text-muted);margin-top:4px;display:block">Os agendamentos são disponibilizados pela gestão administrativa.</small>`;
+        }
+        return;
+      }
+
+      if (emptyEl) emptyEl.hidden = true;
+      listEl.innerHTML = renderDoctorAgendaCards(currentDoctorAgenda);
+    } catch(err) {
+      listEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--accent-red)">Erro ao carregar agenda: ${esc(err.message)}</div>`;
+      showToast(err.message || 'Erro ao carregar agenda do dia.');
+    }
+  }
+
+  function switchAgendaMode(mode) {
+    const isDay = mode === 'day';
+    $('btnAgendaToggleDay').style.background = isDay ? '#fff' : 'transparent';
+    $('btnAgendaToggleDay').style.color = isDay ? 'var(--brand-blue)' : 'var(--text-muted)';
+    $('btnAgendaToggleDay').style.fontWeight = isDay ? '800' : '600';
+    $('btnAgendaToggleDay').style.boxShadow = isDay ? '0 1px 3px rgba(0,0,0,.08)' : 'none';
+
+    $('btnAgendaToggleMonth').style.background = !isDay ? '#fff' : 'transparent';
+    $('btnAgendaToggleMonth').style.color = !isDay ? 'var(--brand-blue)' : 'var(--text-muted)';
+    $('btnAgendaToggleMonth').style.fontWeight = !isDay ? '800' : '600';
+    $('btnAgendaToggleMonth').style.boxShadow = !isDay ? '0 1px 3px rgba(0,0,0,.08)' : 'none';
+
+    $('agendaDaySection').hidden = !isDay;
+    $('agendaMonthSection').hidden = isDay;
+
+    if (isDay) {
+      loadDoctorDayAgenda(currentAgendaSelectedDate);
+    } else {
+      renderCalendar();
+    }
+  }
+
+  window.iniciarAtendimentoAgenda = function(nome, protocolo, ni, hora) {
+    const p = new URLSearchParams();
+    p.set('novo', '1');
+    if (nome) p.set('paciente', nome);
+    if (protocolo) p.set('protocolo', protocolo);
+    if (ni) p.set('ni', ni);
+    if (hora) p.set('hora', hora);
+    location.href = '/app?' + p.toString();
+  };
+
+  window.toggleComparecimentoAgenda = async function(id, novoCompareceu) {
+    try {
+      await AmbientalAPI.medico.updateAgendaStatus(id, { compareceu: novoCompareceu });
+      showToast(novoCompareceu ? 'Presença confirmada.' : 'Presença desmarcada.');
+      await loadDoctorDayAgenda(currentAgendaSelectedDate);
+    } catch(e) {
+      showToast(e.message || 'Erro ao atualizar presença.');
+    }
+  };
+
+  window.openAgendaDoDiaModal = async function() {
+    const modal = $('modalAgendaDoDia');
+    if (!modal) return;
+    modal.style.display = 'grid';
+    const today = todayISO();
+    $('modalAgendaDoDiaTitle').textContent = `Agenda do Dia — ${dateDisplay(today)}`;
+    $('modalAgendaDoDiaSub').textContent = 'Carregando agendamentos em ordem de horários…';
+    $('modalAgendaDoDiaList').innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted)">Consultando agenda de hoje…</div>';
+    $('modalAgendaDoDiaEmpty').hidden = true;
+
+    try {
+      const res = await AmbientalAPI.medico.agenda({ data: today });
+      const items = Array.isArray(res?.itens) ? res.itens : [];
+      $('modalAgendaDoDiaSub').textContent = `${items.length} periciado(s) agendado(s) para hoje em ordem cronológica.`;
+      if (!items.length) {
+        $('modalAgendaDoDiaList').innerHTML = '';
+        $('modalAgendaDoDiaEmpty').hidden = false;
+        return;
+      }
+      $('modalAgendaDoDiaEmpty').hidden = true;
+      $('modalAgendaDoDiaList').innerHTML = renderDoctorAgendaCards(items);
+    } catch(err) {
+      $('modalAgendaDoDiaList').innerHTML = `<div style="text-align:center;color:var(--accent-red)">Erro ao carregar agenda: ${esc(err.message)}</div>`;
+    }
+  };
+
+  window.closeAgendaDoDiaModal = function() {
+    if ($('modalAgendaDoDia')) $('modalAgendaDoDia').style.display = 'none';
+  };
+
+  function shiftDay(delta) {
+    const parts = (currentAgendaSelectedDate || todayISO()).split('-');
+    const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    d.setDate(d.getDate() + delta);
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    currentAgendaSelectedDate = `${d.getFullYear()}-${m}-${day}`;
+    loadDoctorDayAgenda(currentAgendaSelectedDate);
+  }
+
+  $('btnAgendaToggleDay').onclick = () => switchAgendaMode('day');
+  $('btnAgendaToggleMonth').onclick = () => switchAgendaMode('month');
+  $('btnAgendaHojeTop').onclick = () => {
+    currentAgendaSelectedDate = todayISO();
+    switchAgendaMode('day');
+  };
+  $('btnAgendaPrevDay').onclick = () => shiftDay(-1);
+  $('btnAgendaNextDay').onclick = () => shiftDay(1);
+  $('btnAgendaToday').onclick = () => {
+    currentAgendaSelectedDate = todayISO();
+    loadDoctorDayAgenda(currentAgendaSelectedDate);
+  };
+  $('doctorAgendaDateInput').onchange = (e) => {
+    if (e.target.value) {
+      currentAgendaSelectedDate = e.target.value;
+      loadDoctorDayAgenda(currentAgendaSelectedDate);
+    }
+  };
+  $('btnRefreshDoctorAgenda').onclick = () => loadDoctorDayAgenda(currentAgendaSelectedDate);
+
+  $('heroAgendaDiaBtn').onclick = () => {
+    setView('agenda');
+    switchAgendaMode('day');
+  };
+  $('quickAgendaDia').onclick = () => {
+    setView('agenda');
+    switchAgendaMode('day');
+  };
+
   async function fetchPageRecords() {
     try {
       const bar = $('topSyncBar');
@@ -1990,6 +2334,7 @@ main { min-width: 0; }
       renderAlerts();
       renderLists();
       renderCalendar();
+      loadDoctorDayAgenda(currentAgendaSelectedDate);
       
       $('pageInfo').textContent = `Página ${currentPage} de ${totalPages} (${totalItems} atendimentos)`;
       $('prevPageBtn').disabled = currentPage <= 1;
@@ -2020,10 +2365,16 @@ main { min-width: 0; }
   };
 
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeQuickView();
+    if (e.key === 'Escape') {
+      closeQuickView();
+      closeAgendaDoDiaModal();
+    }
   });
   $('quickViewModal').addEventListener('click', e => {
     if (e.target === $('quickViewModal')) closeQuickView();
+  });
+  $('modalAgendaDoDia').addEventListener('click', e => {
+    if (e.target === $('modalAgendaDoDia')) closeAgendaDoDiaModal();
   });
 
   async function start() {
@@ -2053,15 +2404,24 @@ main { min-width: 0; }
     } catch(e) {
       if (e.message !== 'AUTH_REQUIRED' && e.message !== 'PERMISSION_DENIED') {
         showToast('Não foi possível iniciar o Portal Médico.');
-        // Em caso de exceção de rede/servidor, libera a tela com mensagem
         $('appShell').hidden = false;
         $('authLoading')?.remove();
       }
     }
   }
 
-  document.querySelectorAll('.nav button[data-view]').forEach(b => b.onclick = () => setView(b.dataset.view));
-  document.querySelectorAll('[data-view-target]').forEach(b => b.onclick = () => setView(b.dataset.viewTarget));
+  document.querySelectorAll('.nav button[data-view]').forEach(b => b.onclick = () => {
+    setView(b.dataset.view);
+    if (b.dataset.view === 'agenda') {
+      loadDoctorDayAgenda(currentAgendaSelectedDate);
+    }
+  });
+  document.querySelectorAll('[data-view-target]').forEach(b => b.onclick = () => {
+    setView(b.dataset.viewTarget);
+    if (b.dataset.viewTarget === 'agenda') {
+      loadDoctorDayAgenda(currentAgendaSelectedDate);
+    }
+  });
   $('refreshBtn').onclick = load;
   $('search').oninput = renderLists;
   $('logoutBtn').onclick = () => AmbientalAuth.logout();

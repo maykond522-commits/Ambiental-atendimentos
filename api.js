@@ -77,7 +77,9 @@
     },
     medico: {
       dashboard: () => request('/api/medico/dashboard'),
-      atendimentos: (params = {}) => request(`/api/medico/atendimentos?${new URLSearchParams(params)}`)
+      atendimentos: (params = {}) => request(`/api/medico/atendimentos?${new URLSearchParams(params)}`),
+      agenda: (params = {}) => request(`/api/medico/agenda?${new URLSearchParams(params)}`),
+      updateAgendaStatus: (id, payload) => request(`/api/medico/agenda/${encodeURIComponent(id)}/status`, { method: 'PATCH', body: JSON.stringify(payload) })
     },
     atendimento: {
       get: (id) => request(`/api/atendimentos/${encodeURIComponent(id)}`),
@@ -98,7 +100,11 @@
       updateMedico: (id, payload) => request(`/api/admin/medicos/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(payload) }),
       toggleStatus: (id) => request(`/api/admin/medicos/${encodeURIComponent(id)}/status`, { method: 'PATCH' }),
       resetSenha: (id, senha) => request(`/api/admin/medicos/${encodeURIComponent(id)}/senha`, { method: 'POST', body: JSON.stringify({ senha }) }),
-      deleteMedico: (id) => request(`/api/admin/medicos/${encodeURIComponent(id)}`, { method: 'DELETE' })
+      deleteMedico: (id) => request(`/api/admin/medicos/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+      getAgendas: (medicoId, params = {}) => request(`/api/admin/medicos/${encodeURIComponent(medicoId)}/agendas?${new URLSearchParams(params)}`),
+      saveAgendas: (medicoId, payload) => request(`/api/admin/medicos/${encodeURIComponent(medicoId)}/agendas`, { method: 'POST', body: JSON.stringify(payload) }),
+      deleteAgenda: (agendaId) => request(`/api/admin/agendas/${encodeURIComponent(agendaId)}`, { method: 'DELETE' }),
+      clearAgendas: (medicoId, data) => request(`/api/admin/medicos/${encodeURIComponent(medicoId)}/agendas?data=${encodeURIComponent(data)}`, { method: 'DELETE' })
     }
   };
 

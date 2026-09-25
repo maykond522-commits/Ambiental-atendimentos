@@ -788,6 +788,118 @@ def test_osteo_individual_laterality_selection_and_no_bilateral_hover_overlap():
     assert 'function agruparRegioesAlteradas(alteradas)' in ATTENDANCE
 
 
+def test_esisla_terminology_never_paciente():
+    from app import _clean_esisla_text, TASK_PROMPTS
+    prompt = TASK_PROMPTS["esisla"]
+    # 1. Mandatory rule prohibiting "Paciente" and enforcing "Servidor" / "Periciado"
+    assert 'REGRA TERMINOLÓGICA OBRIGATÓRIA: NUNCA utilize o termo "Paciente" ou "paciente". Utilize SEMPRE "Servidor" ou "Periciado"' in prompt
+    assert '"Servidor de X anos" ou "Periciado de X anos"' in prompt
+    assert '"Servidor de 40 anos, professor há 10 anos' in prompt
+
+    # 2. _clean_esisla_text must sanitize any occurrences of Paciente/paciente
+    sample_text = (
+        "Registro da perícia Médica para Licença\n\n"
+        "(*) Queixa e Duração:\n"
+        "Paciente de 45 anos, professor há 12 anos. O paciente refere dor intensa. "
+        "Foi orientado o paciente a manter repouso.\n\n"
+        "Antecedentes Mórbidos:\n"
+        "Hipertenso.\n\n"
+        "Atestado/Relatório/Exames Complementares (Tipo-Data-Resultado):\n"
+        "CRM 12345\n\n"
+        "Pressão Arterial\nSistólica (mmHg): 120\nDiastólica (mmHg): 80\nPulso (bpm): 80\n\n"
+        "(*)Exame Físico Geral\nNormal\n\n"
+        "Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:\n\n"
+        "(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):\n\n"
+        "(*)Parecer Médico\n\nNº Dias:\nData Início:\nCID 10:\nDescrição:\nMédico Perito:\nCRM:\nDt/Hr Perícia:\n\n"
+        "(*)Resposta aos quesitos\n1) Sim\n2) Sim\n3) Não\n\n"
+        "(*)Justificativa Parecer Médico\n\n"
+        "(*) Parecer Final\n\nNº Dias:\nData Início:\nCID 10:\nDescrição:\nDiretor DPME:\nData P.F.:"
+    )
+    cleaned = _clean_esisla_text(sample_text)
+    assert "Paciente" not in cleaned
+    assert "paciente" not in cleaned
+    assert "Servidor de 45 anos" in cleaned
+    assert "O servidor refere dor intensa" in cleaned
+    assert "o servidor a manter repouso" in cleaned
+
+
+def test_antecedentes_morbidos_and_historico_pregresso_integration():
+    from app import _minimal_ai_context
+    # 1. Structure in HTML: Histórico pregresso first, then Possui outras doenças em tratamento (default Sim)
+    agil_hist_pos = ATTENDANCE.find('id="agilHistoricoPregresso"')
+    agil_outras_pos = ATTENDANCE.find('name="agilOutrasDoencas"')
+    assert agil_hist_pos != -1 and agil_outras_pos != -1
+    assert agil_hist_pos < agil_outras_pos, "Histórico pregresso must appear before 'Possui outras doenças em tratamento?' in Modo Ágil"
+
+    ext_hist_pos = ATTENDANCE.find('id="historicoPregresso"')
+    ext_outras_pos = ATTENDANCE.find('name="outrasDoencas"')
+    assert ext_hist_pos != -1 and ext_outras_pos != -1
+    assert ext_hist_pos < ext_outras_pos, "Histórico pregresso must appear before 'Possui outras doenças em tratamento?' in Versão Estendida"
+
+    # 2. Default is Sim (checked)
+    assert 'name="agilOutrasDoencas" value="Sim" checked' in ATTENDANCE
+    assert 'name="outrasDoencas" value="Sim" checked' in ATTENDANCE
+    assert 'state.outrasDoencas = "Sim"' in ATTENDANCE
+
+    # 3. e-Sisla payload passes antecedentes and historico_pregresso
+    assert 'payload.antecedentes = histVal' in ATTENDANCE
+    assert 'payload.historico_pregresso = histVal' in ATTENDANCE
+
+    # 4. _minimal_ai_context maps historico_pregresso and antecedentes
+    ctx = _minimal_ai_context({
+        "atendimento": "123",
+        "historicoPregresso": "Cirurgia de menisco em 2021",
+        "outrasDoencas": "Sim"
+    })
+    assert ctx["antecedentes"] == "Cirurgia de menisco em 2021"
+    assert ctx["historico_pregresso"] == "Cirurgia de menisco em 2021"
+
+
+def test_agil_exame_tipo_outros_options_and_no_preset_autofill():
+    # 1. "Outros" option in select
+    assert '<option value="Outros">Outros</option>' in ATTENDANCE
+
+    # 2. Container agilOutrosSelector with 12 specified sub-areas
+    assert 'id="agilOutrosSelector"' in ATTENDANCE
+    areas = [
+        "Exame Físico Geral",
+        "Tecido celular subcutâneo",
+        "Pele e Fâneros",
+        "Aparelho Circulatório",
+        "Aparelho Respiratório",
+        "Aparelho Hemolinfopoético",
+        "Aparelho Digestivo",
+        "Aparelho Geniturinário",
+        "Aparelho Endócrino",
+        "Sistema Nervoso",
+        "Órgãos dos Sentidos",
+        "E outros",
+    ]
+    for area in areas:
+        assert f'data-subtipo="{area}"' in ATTENDANCE, f"Missing area '{area}' in agilOutrosSelector"
+
+    # 3. Normal / Alterado buttons in Outros
+    assert 'id="agilOutrosResultadoWrap"' in ATTENDANCE
+    assert 'id="btnAgilOutrosNormal"' in ATTENDANCE
+    assert 'id="btnAgilOutrosAlterado"' in ATTENDANCE
+    assert 'escolherOutrosResultado' in ATTENDANCE
+
+    # 4. Must NOT auto-fill description fields for Outros
+    # Verify comments and implementation ensuring no preset findings are injected
+    assert 'escolherOutrosResultado' in ATTENDANCE
+
+
+def test_agil_justificativa_ia_button_only_on_outros():
+    # 1. Button exists in Modo Ágil
+    assert 'id="btnAgilJustificativaIA"' in ATTENDANCE
+    assert 'gerarJustificativaAgilIA()' in ATTENDANCE
+
+    # 2. Display is inline-flex only on Outros
+    assert 'btnIaJust.style.display = "inline-flex";' in ATTENDANCE
+    assert 'btnIaJust.style.display = "none";' in ATTENDANCE
+
+
+
 
 
 

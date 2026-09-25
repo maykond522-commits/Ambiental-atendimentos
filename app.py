@@ -56,7 +56,7 @@ else:
     # Em produção, a aplicação deve receber CORS_ORIGINS explicitamente.
     ALLOWED_ORIGINS = []
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
-ESISLA_PROMPT_VERSION = "esisla-v4-melhoria-continua-dpme"
+ESISLA_PROMPT_VERSION = "esisla-v5-servidor-periciado-antecedentes"
 GEMINI_FALLBACK_MODELS = [
     m.strip() for m in os.getenv("GEMINI_FALLBACK_MODELS", "gemini-3.5-flash-lite,gemini-3.5-flash").split(",")
     if m.strip() and m.strip() != GEMINI_MODEL
@@ -906,12 +906,13 @@ REGRA CENTRAL — ZERO INFORMAÇÃO NOVA:
 - Não altere nenhum valor, data, dose, unidade, CID, resposta de quesito, parecer ou número de dias.
 - Se não houver dado para um campo, deixe o conteúdo do campo vazio. DEIXE O VALOR EM BRANCO quando não houver informação.
 - NUNCA use colchetes como marcadores de preenchimento no texto final da ficha gerada.
+- REGRA TERMINOLÓGICA OBRIGATÓRIA: NUNCA utilize o termo "Paciente" ou "paciente". Utilize SEMPRE "Servidor" ou "Periciado" (ou "servidor" / "periciado", ex.: "Servidor de X anos...", "ao servidor", "o periciado"). O termo "Paciente" é terminantemente proibido em qualquer parte da ficha.
 
 REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
 
 1. “(*) Queixa e Duração”
    Reescreva e sintetize em parágrafo único, fluido e coeso, integrando os dados clínicos e ocupacionais na ordem padronizada dos 11 itens do Programa de Melhoria Contínua:
-   (1) Idade ("Paciente de X anos"),
+   (1) Idade ("Servidor de X anos" ou "Periciado de X anos"),
    (2) Cargo e (3) Tempo de cargo ("[cargo] há X anos/meses"),
    (4) Readaptação funcional e atividades atribuídas (se readaptado, indicar atividades exercidas; se não, constar "não readaptado"),
    (5) Doença motivadora informada ("com queixa de ..."),
@@ -922,18 +923,20 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
    (11) Terapias não medicamentosas ("Realiza psicoterapia semanal" / "Realiza fisioterapia ...").
    Fontes a integrar: idade, cargo, tempo_funcao, unidade_tempo, readaptado, atividades_readaptado, doenca_motivo, queixa_duracao, inicio_tratamento, frequencia_consultas, sintomas_limitacoes, medicamentos, alteracao_dosagem, data_alteracao_med, obs_alteracao_med, psicoterapia, fisioterapia, obs_terapias.
    Exemplo de referência oficial DPME:
-   "Paciente de 40 anos, professor há 10 anos, não readaptado, com queixa de depressão desde 2020. Refere início do tratamento há 2 anos, com consultas a cada 2 meses. Queixa-se de tristeza, desânimo, choro fácil e insônia, com dificuldade para planejar aulas e manter a atenção. Em uso de Sertralina 100 mg/dia e Clonazepam 2 mg/dia, sem trocas recentes de medicação. Realiza psicoterapia semanal."
+   "Servidor de 40 anos, professor há 10 anos, não readaptado, com queixa de depressão desde 2020. Refere início do tratamento há 2 anos, com consultas a cada 2 meses. Queixa-se de tristeza, desânimo, choro fácil e insônia, com dificuldade para planejar aulas e manter a atenção. Em uso de Sertralina 100 mg/dia e Clonazepam 2 mg/dia, sem trocas recentes de medicação. Realiza psicoterapia semanal."
    Apenas inclua elementos presentes nos dados registrados, conectando-os de forma natural. Não invente dados não registrados nem acrescente diagnóstico ou interpretação que não esteja escrita nos dados.
 
 2. “Antecedentes Mórbidos”
-   Consolide de forma sintética, clara e técnica os dados de outras_doencas, condicoes e antecedentes, cobrindo os 4 itens padronizados:
+   Consolide de forma sintética, clara e técnica os dados de outras_doencas, condicoes, antecedentes e historico_pregresso, cobrindo os 4 itens padronizados:
    (1) Doenças de base crônicas (HAS, DM, etc.) e tratamentos em curso,
    (2) Cirurgias prévias e tempo decorrido,
    (3) Hábitos e vícios (uso ou negação registrada de bebida alcoólica, tabagismo ou substâncias ilícitas),
    (4) Histórico de neoplasias e tratamentos associados.
+   Fontes a integrar: antecedentes, historico_pregresso, outras_doencas, condicoes.
+   ATENÇÃO: O conteúdo registrado em antecedentes / historico_pregresso ("Histórico pregresso" no questionário) DEVE OBRIGATORIAMENTE ser integrado e considerado nesta seção de Antecedentes Mórbidos.
    Exemplo de referência oficial DPME:
    "Hipertenso e diabético há 5 anos, em tratamento medicamentoso. Apendicectomia há 10 anos. Nega tabagismo, etilismo ou uso de substâncias ilícitas. Nega histórico de neoplasias."
-   Consolide somente outras_doencas, condicoes e antecedentes. Pode eliminar repetição e organizar o conteúdo quando isso melhora a leitura, mas não introduza condições, diagnósticos ou tratamentos não registrados.
+   Consolide somente outras_doencas, condicoes, antecedentes e historico_pregresso. Pode eliminar repetição e organizar o conteúdo quando isso melhora a leitura, mas não introduza condições, diagnósticos ou tratamentos não registrados.
 
 3. “(*)Exame Físico Geral” e “Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares”
    Redija usando exclusivamente exame_fisico_tipo, exame_fisico_descricao e os valores de pressão/pulso expressamente registrados. Reorganize a apresentação dos achados direcionando para a patologia em questão:
@@ -1305,7 +1308,26 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
         "obs_terapias": payload.get("obs_terapias") or a.get("obsTerapias"),
         "outras_doencas": payload.get("outras_doencas") or payload.get("outrasDoencas"),
         "condicoes": payload.get("condicoes") or payload.get("conditions") or [],
-        "antecedentes": payload.get("antecedentes") or a.get("historicoPregresso"),
+        "antecedentes": (
+            payload.get("antecedentes")
+            or payload.get("historico_pregresso")
+            or payload.get("historicoPregresso")
+            or payload.get("agilHistoricoPregresso")
+            or a.get("antecedentes")
+            or a.get("historico_pregresso")
+            or a.get("historicoPregresso")
+            or a.get("agilHistoricoPregresso")
+        ),
+        "historico_pregresso": (
+            payload.get("historico_pregresso")
+            or payload.get("historicoPregresso")
+            or payload.get("antecedentes")
+            or payload.get("agilHistoricoPregresso")
+            or a.get("historico_pregresso")
+            or a.get("historicoPregresso")
+            or a.get("antecedentes")
+            or a.get("agilHistoricoPregresso")
+        ),
         "crm_cro": payload.get("crm_cro") or payload.get("crmCro") or a.get("crmCro"),
         "data_documento": payload.get("data_documento") or payload.get("dataDocumento") or a.get("dataDocumento"),
         "observacoes_documentos": payload.get("observacoes_documentos") or a.get("obsDocumentos"),
@@ -1574,6 +1596,13 @@ def _clean_esisla_text(text: str) -> str:
         raise ValueError("A ficha e-Sisla retornou texto meta que não pertence ao formulário.")
     if re.search(r"\[[^\]]{1,120}\]", text):
         raise ValueError("A ficha e-Sisla retornou marcador de preenchimento em vez de dado do atendimento.")
+
+    # Regra terminológica obrigatória: Servidor ou Periciado (nunca Paciente)
+    text = re.sub(r"\bPaciente\b", "Servidor", text)
+    text = re.sub(r"\bpaciente\b", "servidor", text)
+    text = re.sub(r"\bPacientes\b", "Servidores", text)
+    text = re.sub(r"\bpacientes\b", "servidores", text)
+
     return text
 
 

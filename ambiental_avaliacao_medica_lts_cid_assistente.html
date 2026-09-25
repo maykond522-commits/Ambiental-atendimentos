@@ -981,6 +981,34 @@ body:not(.mode-agil-active) #containerModoAgil {
 .mental-opt-btn.selected-alterado {
   box-shadow: 0 0 0 3px rgba(217,119,6,0.22);
 }
+.outros-chip-btn {
+  background: #FFFFFF;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+}
+.outros-chip-btn:hover {
+  background: #F1F5F9;
+  border-color: #94A3B8;
+  transform: translateY(-1px);
+}
+.outros-chip-btn.selected-chip {
+  background: #EFF6FF;
+  border-color: #0070F3;
+  color: #0F3254;
+  box-shadow: 0 0 0 2.5px rgba(0,112,243,0.2);
+  font-weight: 700;
+}
 .cid-autocomplete-box {
   position: absolute;
   top: 100%;
@@ -1724,22 +1752,22 @@ body:not(.mode-agil-active) #containerModoAgil {
           <!-- Subpainel Antecedentes mórbidos & Outras Doenças -->
           <div class="subpanel" style="margin-top:16px">
             <h4 style="margin-bottom:8px">Antecedentes mórbidos</h4>
-            <div class="field">
-              <label>Possui outras doenças em tratamento?</label>
-              <div class="radio-row">
-                <label class="choice"><input type="radio" name="agilOutrasDoencas" value="Sim" onchange="syncAgilOutrasDoencas('Sim')"><span>Sim</span></label>
-                <label class="choice"><input type="radio" name="agilOutrasDoencas" value="Não" onchange="syncAgilOutrasDoencas('Não')"><span>Não</span></label>
-              </div>
-            </div>
-            <div id="agilDoencasPanel" class="subpanel hidden" style="margin-top:12px">
-              <h4 style="margin-bottom:8px">Doenças / condições e tratamentos</h4>
-              <div id="agilCondRows"></div>
-              <div class="add-row"><button class="btn-add" type="button" onclick="addCondition()">+ Adicionar condição</button></div>
-            </div>
-            <div class="subpanel" style="margin-top:14px">
+            <div class="subpanel" style="margin-top:8px;margin-bottom:14px">
               <h4 style="margin-bottom:6px">Histórico pregresso</h4>
               <p class="help" style="margin-top:0;margin-bottom:8px">Use este espaço para registrar ou consultar informações relevantes do histórico pregresso.</p>
               <textarea class="textarea" id="agilHistoricoPregresso" style="min-height:74px" placeholder="Registre ou revise informações do histórico pregresso..." oninput="syncAgilField('historicoPregresso', this.value)"></textarea>
+            </div>
+            <div class="field">
+              <label>Possui outras doenças em tratamento?</label>
+              <div class="radio-row">
+                <label class="choice"><input type="radio" name="agilOutrasDoencas" value="Sim" checked onchange="syncAgilOutrasDoencas('Sim')"><span>Sim</span></label>
+                <label class="choice"><input type="radio" name="agilOutrasDoencas" value="Não" onchange="syncAgilOutrasDoencas('Não')"><span>Não</span></label>
+              </div>
+            </div>
+            <div id="agilDoencasPanel" class="subpanel" style="margin-top:12px">
+              <h4 style="margin-bottom:8px">Doenças / condições e tratamentos</h4>
+              <div id="agilCondRows"></div>
+              <div class="add-row"><button class="btn-add" type="button" onclick="addCondition()">+ Adicionar condição</button></div>
             </div>
           </div>
         </div>
@@ -2146,6 +2174,46 @@ body:not(.mode-agil-active) #containerModoAgil {
             </div>
           </div>
 
+          <!-- Resultado de Outros Exames (abre ao escolher Outros no Tipo de Exame) -->
+          <div class="outros-selector-wrap" id="agilOutrosSelector" style="display:none;margin-top:14px;padding:14px;background:#F8FAFC;border:1.5px solid #CBD5E1;border-radius:12px">
+            <div style="font-weight:800;font-size:13px;color:#0F3254;display:flex;align-items:center;gap:6px;margin-bottom:10px">
+              <span>📋</span>
+              <span>Selecione a área do exame clínico:</span>
+            </div>
+            <div class="outros-chips-grid" id="agilOutrosChips" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px">
+              <button type="button" class="outros-chip-btn" data-subtipo="Exame Físico Geral" onclick="escolherOutrosSubtipo('Exame Físico Geral')">Exame Físico Geral</button>
+              <button type="button" class="outros-chip-btn" data-subtipo="Tecido celular subcutâneo" onclick="escolherOutrosSubtipo('Tecido celular subcutâneo')">Tecido celular subcutâneo</button>
+              <button type="button" class="outros-chip-btn" data-subtipo="Pele e Fâneros" onclick="escolherOutrosSubtipo('Pele e Fâneros')">Pele e Fâneros</button>
+              <button type="button" class="outros-chip-btn" data-subtipo="Aparelho Circulatório" onclick="escolherOutrosSubtipo('Aparelho Circulatório')">Aparelho Circulatório</button>
+              <button type="button" class="outros-chip-btn" data-subtipo="Aparelho Respiratório" onclick="escolherOutrosSubtipo('Aparelho Respiratório')">Aparelho Respiratório</button>
+              <button type="button" class="outros-chip-btn" data-subtipo="Aparelho Hemolinfopoético" onclick="escolherOutrosSubtipo('Aparelho Hemolinfopoético')">Aparelho Hemolinfopoético</button>
+              <button type="button" class="outros-chip-btn" data-subtipo="Aparelho Digestivo" onclick="escolherOutrosSubtipo('Aparelho Digestivo')">Aparelho Digestivo</button>
+              <button type="button" class="outros-chip-btn" data-subtipo="Aparelho Geniturinário" onclick="escolherOutrosSubtipo('Aparelho Geniturinário')">Aparelho Geniturinário</button>
+              <button type="button" class="outros-chip-btn" data-subtipo="Aparelho Endócrino" onclick="escolherOutrosSubtipo('Aparelho Endócrino')">Aparelho Endócrino</button>
+              <button type="button" class="outros-chip-btn" data-subtipo="Sistema Nervoso" onclick="escolherOutrosSubtipo('Sistema Nervoso')">Sistema Nervoso</button>
+              <button type="button" class="outros-chip-btn" data-subtipo="Órgãos dos Sentidos" onclick="escolherOutrosSubtipo('Órgãos dos Sentidos')">Órgãos dos Sentidos</button>
+              <button type="button" class="outros-chip-btn" data-subtipo="E outros" onclick="escolherOutrosSubtipo('E outros')">E outros</button>
+            </div>
+
+            <!-- Seleção Normal / Alterado que surge ao selecionar um dos 12 campos -->
+            <div id="agilOutrosResultadoWrap" style="display:none;margin-top:14px;padding-top:12px;border-top:1px dashed #CBD5E1">
+              <div style="font-weight:800;font-size:13px;color:#0F3254;display:flex;align-items:center;gap:6px;margin-bottom:8px">
+                <span>⚖️</span>
+                <span id="agilOutrosResultadoTitulo">Resultado da avaliação:</span>
+              </div>
+              <div class="mental-options-grid">
+                <button type="button" class="mental-opt-btn opt-normal" id="btnAgilOutrosNormal" onclick="escolherOutrosResultado('Normal')">
+                  <strong>🟢 Normal</strong>
+                  <span>Sem alterações clínicas ou funcionais observadas no segmento avaliado.</span>
+                </button>
+                <button type="button" class="mental-opt-btn opt-alterado" id="btnAgilOutrosAlterado" onclick="escolherOutrosResultado('Alterado')">
+                  <strong>🔴 Alterado</strong>
+                  <span>Alterações clínicas encontradas no segmento avaliado (descreva nos achados abaixo).</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- Barra de Predefinição Padrão de Sinais Vitais -->
           <div class="agil-vitals-preset-bar" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:18px;padding:10px 14px;background:#F8FAFC;border:1.5px solid #CBD5E1;border-radius:10px">
             <div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#334155">
@@ -2185,7 +2253,12 @@ body:not(.mode-agil-active) #containerModoAgil {
         </div>
         <div class="agil-card-body">
           <div class="field col-12">
-            <label class="required">Justificativa Parecer Final</label>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <label class="required" style="margin-bottom:0">Justificativa Parecer Final</label>
+              <button class="btn-ai" type="button" id="btnAgilJustificativaIA" onclick="gerarJustificativaAgilIA()" title="Gera a fundamentação técnica completa com Inteligência Artificial baseada nos fatos do atendimento" style="display:none;padding:5px 12px;font-size:12px;font-weight:700;gap:6px;align-items:center">
+                ✨ Gerar Justificativa com IA
+              </button>
+            </div>
             <textarea class="textarea" id="agilJustificativa" style="min-height:90px" placeholder="Justificativa da conclusão pericial..." oninput="syncAgilField('justificativa', this.value)"></textarea>
             <div class="help">Texto fundamentado automaticamente (o Parecer técnico Favorável/Contrário é associado em segundo plano).</div>
           </div>
@@ -2295,22 +2368,22 @@ body:not(.mode-agil-active) #containerModoAgil {
       <div class="section-head"><h2>03 — Antecedentes mórbidos</h2><p>Registrar outras doenças em tratamento e informações do histórico pregresso.</p></div>
       <div class="section-body">
         <div class="notice warning"><strong>Importante:</strong> não deixar em branco. Perguntar sobre outras doenças em tratamento e consultar o histórico pregresso.</div>
-        <div class="field"><label>Possui outras doenças em tratamento?</label>
-          <div class="radio-row">
-            <label class="choice"><input type="radio" name="outrasDoencas" value="Sim" onchange="toggleDoencas()"><span>Sim</span></label>
-            <label class="choice"><input type="radio" name="outrasDoencas" value="Não" onchange="toggleDoencas()"><span>Não</span></label>
-          </div>
-        </div>
-        <div id="doencasPanel" class="subpanel hidden">
-          <h4>Doenças / condições e tratamentos</h4>
-          <div id="condRows"></div>
-          <button class="btn-add" type="button" onclick="addCondition()">+ Adicionar condição</button>
-        </div>
-        <div class="subpanel">
+        <div class="subpanel" style="margin-bottom:16px">
           <h4>Histórico pregresso</h4>
           <p class="help" style="margin-top:0;margin-bottom:10px">Use este espaço para registrar ou consultar informações relevantes do histórico pregresso.</p>
           <textarea class="textarea" id="historicoPregresso" placeholder="Registre informações do histórico pregresso, quando necessário."></textarea>
           <div class="add-row"><button class="btn btn-outline" type="button" onclick="openHistory()">Consultar Histórico Pregresso</button></div>
+        </div>
+        <div class="field"><label>Possui outras doenças em tratamento?</label>
+          <div class="radio-row">
+            <label class="choice"><input type="radio" name="outrasDoencas" value="Sim" checked onchange="toggleDoencas()"><span>Sim</span></label>
+            <label class="choice"><input type="radio" name="outrasDoencas" value="Não" onchange="toggleDoencas()"><span>Não</span></label>
+          </div>
+        </div>
+        <div id="doencasPanel" class="subpanel">
+          <h4>Doenças / condições e tratamentos</h4>
+          <div id="condRows"></div>
+          <button class="btn-add" type="button" onclick="addCondition()">+ Adicionar condição</button>
         </div>
         <div class="footer-actions"><button class="btn btn-outline" onclick="go(2)">← Anterior</button><div class="actions-right"><button class="btn btn-primary" onclick="go(4)">Próximo →</button></div></div>
       </div>
@@ -2655,7 +2728,7 @@ const examItems = [
 ];
 
 const state = {
-  current:1, atendimento:"", medico:"", capacidade:"", parecer:"",
+  current:1, atendimento:"", medico:"", capacidade:"", parecer:"", outrasDoencas:"Sim",
   medications:[], conditions:[], quesitos:[], exam:{}, documentosComplementares:[], exameFisicoTipo:"", alteracoesClinicasExames:"", queixaDuracao:""
 };
 
@@ -3034,6 +3107,13 @@ async function copiarFichaEsislaRapida(){
     const payload = JSON.parse(JSON.stringify(state));
     payload.quesitos = QuesitoService.get();
     payload.data_hora_atual = new Date().toISOString();
+    const histVal = state.aux?.historicoPregresso || state.historicoPregresso || $("agilHistoricoPregresso")?.value || $("historicoPregresso")?.value || "";
+    payload.antecedentes = histVal;
+    payload.historico_pregresso = histVal;
+    payload.historicoPregresso = histVal;
+    if (!payload.aux) payload.aux = {};
+    payload.aux.historicoPregresso = histVal;
+    payload.aux.antecedentes = histVal;
 
     const res = await AmbientalAuth.authFetch(`${getApiBase()}/api/ai/esisla`, {
       method: 'POST',
@@ -3280,6 +3360,10 @@ async function applyAIText(mode) {
     state._justificativa_anterior = cur;
     f.value=cur?cur+"\n\n"+text:text;
   }
+  if ($("agilJustificativa")) $("agilJustificativa").value = f.value;
+  if (!state.aux) state.aux = {};
+  state.aux.justificativa = f.value;
+  state.justificativa = f.value;
   const btnUndo = $("btnUndoJustificativa");
   if(btnUndo) btnUndo.style.display = "inline-flex";
   invalidateAICache();autoSave();
@@ -3291,6 +3375,10 @@ function undoJustificativa() {
     const f = $("justificativa");
     const current = f.value;
     f.value = state._justificativa_anterior;
+    if ($("agilJustificativa")) $("agilJustificativa").value = f.value;
+    if (!state.aux) state.aux = {};
+    state.aux.justificativa = f.value;
+    state.justificativa = f.value;
     state._justificativa_anterior = current;
     autoSave();
     toast("Texto anterior da justificativa restaurado.");
@@ -3298,6 +3386,29 @@ function undoJustificativa() {
 }
 async function gerarJustificativaIA(){return apiAI("/api/ai/justificativa",getJustificativaContext(),"justificativa","Gerando justificativa...");}
 async function verSugestaoJustificativaIA(){go(8);return gerarJustificativaIA();}
+async function gerarJustificativaAgilIA(){
+  syncAgilToExtended();
+  const btn = $("btnAgilJustificativaIA");
+  const oldText = btn ? btn.innerHTML : "✨ Gerar Justificativa com IA";
+  if (btn) { btn.disabled = true; btn.innerHTML = "<span>⏳</span> Gerando..."; }
+  try {
+    const res = await apiAI("/api/ai/justificativa", getJustificativaContext(), "justificativa", "Gerando justificativa...");
+    if (res && res.justificativa) {
+      const text = String(res.justificativa).trim();
+      if ($("agilJustificativa")) $("agilJustificativa").value = text;
+      if ($("justificativa")) $("justificativa").value = text;
+      if (!state.aux) state.aux = {};
+      state.aux.justificativa = text;
+      state.justificativa = text;
+      autoSave();
+      toast("Justificativa sugerida pela IA aplicada com sucesso!");
+    }
+  } catch (err) {
+    toast(err?.message || "Erro ao gerar justificativa com IA.");
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = oldText; }
+  }
+}
 const EXAME_FISICO_OPTIONS=["Exame Físico Geral","Tecido celular subcutâneo","Pele e Fâneros","Aparelho Circulatório","Aparelho Respiratório","Aparelho Hemolinfopoiético","Aparelho Digestivo","Aparelho Genitourinário","Aparelho Osteomuscular e Tecido Conjutivo","Aparelho Endócrino","Sistema Nervoso","Órgãos dos Sentidos","Exame Mental","Outros"];
 function renderFillSuggestion(result){
   const box=$("reviewFillOutput");if(!box)return;
@@ -3470,7 +3581,7 @@ function syncState(){
 
     state.atendimento=$("atd")?.value || state.atendimento || ""; state.medico=$("medico")?.value || state.medico || "";
     state.readaptado=getRadio("readaptado")||state.readaptado||prevAux.readaptado||"";
-    state.outrasDoencas=getRadio("outrasDoencas")||state.outrasDoencas||"Não";
+    state.outrasDoencas=getRadio("outrasDoencas")||getRadio("agilOutrasDoencas")||state.outrasDoencas||"Sim";
     state.alteracaoMed=getRadio("alteracaoMed")||state.alteracaoMed||"Não";
     state.limitacaoFuncional=getRadio("limitacaoFuncional")||state.limitacaoFuncional||"Não";
     state.limitacaoRol=getRadio("limitacaoRol")||state.limitacaoRol||"Não";
@@ -3527,7 +3638,7 @@ function applyState(){
   state.limitacaoFuncional=normalizeLegacyYesNo(state.limitacaoFuncional||state.aux.limitacaoFuncional);
   state.limitacaoRol=normalizeLegacyYesNo(state.limitacaoRol||state.aux.limitacaoRol);
   state.readaptado=normalizeLegacyYesNo(state.readaptado||state.aux.readaptado);
-  state.outrasDoencas=normalizeLegacyYesNo(state.outrasDoencas||state.aux.outrasDoencas);
+  state.outrasDoencas=normalizeLegacyYesNo(state.outrasDoencas||state.aux.outrasDoencas)||"Sim";
   state.alteracaoMed=normalizeLegacyYesNo(state.alteracaoMed||state.aux.alteracaoMed);
   state.queixaDuracao=state.queixaDuracao||state.aux.queixaDuracao||""; state.exameFisicoTipo=state.exameFisicoTipo||state.exam.selected||""; state.exameFisicoDescricao=state.exameFisicoDescricao||state.exam.descricao||""; state.alteracoesClinicasExames=state.alteracoesClinicasExames||state.examDescription||"";
   state.aux.nomePaciente=state.aux.nomePaciente||state.nomePaciente||""; state.aux.cpfPaciente=state.aux.cpfPaciente||state.cpfPaciente||"";
@@ -5241,9 +5352,18 @@ function syncExtendedToAgil() {
   }
   
   const exTipo = state.exameFisicoTipo || $("exameFisicoTipo")?.value || "";
+  const isOsteo = (exTipo === "Aparelho Osteomuscular e Tecido Conjutivo");
+  const isMental = (exTipo === "Exame Mental");
+  const isOutros = (exTipo === "Outros" || (!isOsteo && !isMental && exTipo !== ""));
+
   if ($("agilExameFisicoTipo")) {
-    if (exTipo === "Aparelho Osteomuscular e Tecido Conjutivo" || exTipo === "Exame Mental") {
+    if (isOsteo || isMental) {
       $("agilExameFisicoTipo").value = exTipo;
+    } else if (isOutros) {
+      $("agilExameFisicoTipo").value = "Outros";
+      if (!state.outrosSubtipo && exTipo !== "Outros") {
+        state.outrosSubtipo = exTipo;
+      }
     } else {
       $("agilExameFisicoTipo").value = "";
     }
@@ -5251,14 +5371,25 @@ function syncExtendedToAgil() {
   
   const mentalWrap = $("agilMentalSelector");
   if (mentalWrap) {
-    mentalWrap.style.display = (exTipo === "Exame Mental") ? "block" : "none";
+    mentalWrap.style.display = isMental ? "block" : "none";
   }
   const osteoWrap = $("agilOsteomuscularSelector");
   if (osteoWrap) {
-    osteoWrap.style.display = (exTipo === "Aparelho Osteomuscular e Tecido Conjutivo") ? "block" : "none";
-    if (exTipo === "Aparelho Osteomuscular e Tecido Conjutivo" && typeof updateOsteoUI === "function") {
+    osteoWrap.style.display = isOsteo ? "block" : "none";
+    if (isOsteo && typeof updateOsteoUI === "function") {
       updateOsteoUI();
     }
+  }
+  const outrosWrap = $("agilOutrosSelector");
+  if (outrosWrap) {
+    outrosWrap.style.display = isOutros ? "block" : "none";
+    if (isOutros && typeof renderOutrosUI === "function") {
+      renderOutrosUI();
+    }
+  }
+  const btnIaJust = $("btnAgilJustificativaIA");
+  if (btnIaJust) {
+    btnIaJust.style.display = isOutros ? "inline-flex" : "none";
   }
   
   const mentalRes = state.exameMentalResultado;
@@ -5516,33 +5647,129 @@ function onAgilDoencaMotivoInput(val) {
 
 function onAgilExameTipoChange(val) {
   state.exameFisicoTipo = val;
-  if ($("exameFisicoTipo")) $("exameFisicoTipo").value = val;
+  if ($("exameFisicoTipo")) $("exameFisicoTipo").value = (val === "Outros" && state.outrosSubtipo) ? state.outrosSubtipo : val;
   const mentalWrap = $("agilMentalSelector");
   const osteoWrap = $("agilOsteomuscularSelector");
+  const outrosWrap = $("agilOutrosSelector");
+  const btnIaJust = $("btnAgilJustificativaIA");
+
   if (val === "Exame Mental") {
     if (mentalWrap) mentalWrap.style.display = "block";
     if (osteoWrap) osteoWrap.style.display = "none";
+    if (outrosWrap) outrosWrap.style.display = "none";
+    if (btnIaJust) btnIaJust.style.display = "none";
   } else if (val === "Aparelho Osteomuscular e Tecido Conjutivo") {
     if (mentalWrap) mentalWrap.style.display = "none";
     if (osteoWrap) osteoWrap.style.display = "block";
+    if (outrosWrap) outrosWrap.style.display = "none";
+    if (btnIaJust) btnIaJust.style.display = "none";
     if (typeof updateOsteoUI === "function") updateOsteoUI();
+  } else if (val === "Outros") {
+    if (mentalWrap) mentalWrap.style.display = "none";
+    if (osteoWrap) osteoWrap.style.display = "none";
+    if (outrosWrap) outrosWrap.style.display = "block";
+    if (btnIaJust) btnIaJust.style.display = "inline-flex";
+
+    state.exameMentalResultado = "";
+    state.osteomuscularResultado = "";
+    state.osteomuscularRegioes = {};
+    if (typeof updateOsteoUI === "function") updateOsteoUI();
+    const cur = state.exameFisicoDescricao || "";
+    if (cur === TEXTO_EXAME_MENTAL_NORMAL || cur === TEXTO_EXAME_MENTAL_ALTERADO || cur === TEXTO_OSTEO_NORMAL || cur.includes("Trapézios sem contraturas") || cur.includes("mobilidade ativa e passiva normais")) {
+      state.exameFisicoDescricao = "";
+      state.alteracoesClinicasExames = "";
+      if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = "";
+      if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = "";
+      if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = "";
+    }
+    renderOutrosUI();
   } else {
     if (mentalWrap) mentalWrap.style.display = "none";
     if (osteoWrap) osteoWrap.style.display = "none";
-    if (val === "Outros") {
-      state.exameMentalResultado = "";
-      state.osteomuscularResultado = "";
-      state.osteomuscularRegioes = {};
-      if (typeof updateOsteoUI === "function") updateOsteoUI();
-      const cur = state.exameFisicoDescricao || "";
-      if (cur === TEXTO_EXAME_MENTAL_NORMAL || cur === TEXTO_EXAME_MENTAL_ALTERADO || cur === TEXTO_OSTEO_NORMAL || cur.includes("Trapézios sem contraturas") || cur.includes("mobilidade ativa e passiva normais")) {
-        state.exameFisicoDescricao = "";
-        state.alteracoesClinicasExames = "";
-        if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = "";
-        if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = "";
-        if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = "";
-      }
+    if (outrosWrap) outrosWrap.style.display = "none";
+    if (btnIaJust) btnIaJust.style.display = "none";
+  }
+  autoSave();
+}
+
+function renderOutrosUI() {
+  const chips = document.querySelectorAll("#agilOutrosChips .outros-chip-btn");
+  chips.forEach(btn => {
+    const subtipo = btn.dataset.subtipo;
+    if (subtipo === state.outrosSubtipo) {
+      btn.classList.add("selected-chip");
+    } else {
+      btn.classList.remove("selected-chip");
     }
+  });
+
+  const resWrap = $("agilOutrosResultadoWrap");
+  if (state.outrosSubtipo) {
+    if (resWrap) resWrap.style.display = "block";
+    const tit = $("agilOutrosResultadoTitulo");
+    if (tit) tit.textContent = `Resultado da avaliação (${state.outrosSubtipo}):`;
+  } else {
+    if (resWrap) resWrap.style.display = "none";
+  }
+
+  const btnNorm = $("btnAgilOutrosNormal");
+  const btnAlt = $("btnAgilOutrosAlterado");
+  if (btnNorm && btnAlt) {
+    if (state.outrosResultado === "Normal") {
+      btnNorm.classList.add("selected-normal");
+      btnAlt.classList.remove("selected-alterado");
+    } else if (state.outrosResultado === "Alterado") {
+      btnAlt.classList.add("selected-alterado");
+      btnNorm.classList.remove("selected-normal");
+    } else {
+      btnNorm.classList.remove("selected-normal");
+      btnAlt.classList.remove("selected-alterado");
+    }
+  }
+}
+
+function escolherOutrosSubtipo(nome) {
+  state.outrosSubtipo = nome;
+  if ($("exameFisicoTipo")) $("exameFisicoTipo").value = nome;
+  renderOutrosUI();
+  autoSave();
+  toast(`Segmento ${nome} selecionado.`);
+}
+
+function escolherOutrosResultado(resultado) {
+  state.outrosResultado = resultado;
+  renderOutrosUI();
+
+  // "mas não preencha os campos, pois ainda não temos uma base para eles."
+  // O médico redige os achados clínicos ou usa IA para gerar a justificativa.
+  if (resultado === "Normal") {
+    state.limitacaoFuncional = "Não";
+    state.limitacaoRol = "Não";
+    setRadio("limitacaoFuncional", "Não");
+    setRadio("limitacaoRol", "Não");
+    state.capacidade = "Capacidade laborativa preservada";
+    setRadio("capacidade", "Capacidade laborativa preservada");
+    state.parecer = "CONTRÁRIO";
+    setRadio("parecer", "CONTRÁRIO");
+    QuesitoService.set(0, "Sim");
+    QuesitoService.set(1, "Sim");
+    QuesitoService.set(2, "Não");
+    renderQuesitos();
+    toast(`Avaliação (${state.outrosSubtipo || "Outros"}): NORMAL.`);
+  } else if (resultado === "Alterado") {
+    state.limitacaoFuncional = "Sim";
+    state.limitacaoRol = "Sim";
+    setRadio("limitacaoFuncional", "Sim");
+    setRadio("limitacaoRol", "Sim");
+    state.capacidade = "Capacidade parcial e temporariamente prejudicada";
+    setRadio("capacidade", "Capacidade parcial e temporariamente prejudicada");
+    state.parecer = "FAVORÁVEL";
+    setRadio("parecer", "FAVORÁVEL");
+    QuesitoService.set(0, "Sim");
+    QuesitoService.set(1, "Sim");
+    QuesitoService.set(2, "Sim");
+    renderQuesitos();
+    toast(`Avaliação (${state.outrosSubtipo || "Outros"}): ALTERADO.`);
   }
   autoSave();
 }
@@ -5760,10 +5987,10 @@ function ensureAgileBackgroundDefaults() {
   if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = state.aux.historicoPregresso;
   
   if (!state.outrasDoencas) {
-    state.outrasDoencas = "Não";
-    state.aux.outrasDoencas = "Não";
-    setRadio("outrasDoencas", "Não");
-    setRadio("agilOutrasDoencas", "Não");
+    state.outrasDoencas = "Sim";
+    state.aux.outrasDoencas = "Sim";
+    setRadio("outrasDoencas", "Sim");
+    setRadio("agilOutrasDoencas", "Sim");
   }
   
   // 04 — Atestado / Relatório / Exames: "Em anexo"
@@ -5855,6 +6082,28 @@ function ensureAgileBackgroundDefaults() {
       QuesitoService.set(1, "Sim");
       QuesitoService.set(2, "Não");
     }
+  } else if (state.exameFisicoTipo === "Outros") {
+    if (state.outrosResultado === "Alterado") {
+      state.limitacaoFuncional = "Sim";
+      state.limitacaoRol = "Sim";
+      state.capacidade = "Capacidade parcial e temporariamente prejudicada";
+      state.parecer = "FAVORÁVEL";
+      state.aux.justificativa = state.aux.justificativa || $("agilJustificativa")?.value || "";
+      state.justificativa = state.aux.justificativa;
+      QuesitoService.set(0, "Sim");
+      QuesitoService.set(1, "Sim");
+      QuesitoService.set(2, "Sim");
+    } else {
+      state.limitacaoFuncional = "Não";
+      state.limitacaoRol = "Não";
+      state.capacidade = "Capacidade laborativa preservada";
+      state.parecer = "CONTRÁRIO";
+      state.aux.justificativa = state.aux.justificativa || $("agilJustificativa")?.value || "";
+      state.justificativa = state.aux.justificativa;
+      QuesitoService.set(0, "Sim");
+      QuesitoService.set(1, "Sim");
+      QuesitoService.set(2, "Não");
+    }
   } else {
     state.limitacaoFuncional = state.limitacaoFuncional || "Não";
     state.limitacaoRol = state.limitacaoRol || "Não";
@@ -5901,6 +6150,12 @@ function finalizarAtendimentoAgil() {
     }
   }
   if (state.exameFisicoTipo === "Outros") {
+    if (!state.outrosSubtipo) {
+      missing.push("Área do exame clínico em Outros");
+    }
+    if (!state.outrosResultado) {
+      missing.push("Resultado da avaliação (Normal ou Alterado)");
+    }
     const desc = state.exameFisicoDescricao || $("agilExameFisicoDescricao")?.value?.trim();
     if (!desc) {
       missing.push("Exame Físico Geral — achados observados");
@@ -5923,6 +6178,8 @@ function finalizarAtendimentoAgil() {
       "Tipo de exame físico / mental": "agilExameFisicoTipo",
       "Resultado do Exame Mental (Normal ou Alterado)": "btnAgilMentalNormal",
       "Avaliação Osteomuscular (Selecione ao menos uma região como Alterada ou Normal, ou clique em Sem Alterações / Normal)": "agilOsteomuscularSelector",
+      "Área do exame clínico em Outros": "agilOutrosChips",
+      "Resultado da avaliação (Normal ou Alterado)": "btnAgilOutrosNormal",
       "Exame Físico Geral — achados observados": "agilExameFisicoDescricao",
       "Justificativa Parecer Final": "agilJustificativa"
     };

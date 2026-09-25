@@ -19,7 +19,8 @@ def test_example_env_contains_no_real_secrets():
 
 def test_server_authorization_has_single_source_of_truth():
     block = APP[APP.index("def _role_from_profile"):APP.index("def _authenticate_request")]
-    assert 'SELECT id, nome, perfil, ativo, crm FROM usuarios WHERE id=%s' in block
+    assert ('SELECT id, nome, perfil, ativo, crm, email, modo_atendimento FROM usuarios WHERE id=%s' in block or
+            'SELECT id, nome, perfil, ativo, crm FROM usuarios WHERE id=%s' in block)
     assert "app_metadata.get(\"role\")" not in APP
     assert "ADMIN_EMAILS" not in APP
     assert "X-User-Role" not in APP

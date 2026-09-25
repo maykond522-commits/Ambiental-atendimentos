@@ -842,7 +842,700 @@ body::before{
 @keyframes fpLoading{0%{width:16%;transform:translateX(-8%)}50%{width:68%;transform:translateX(42%)}100%{width:26%;transform:translateX(295%)}}
 @keyframes fpBar{0%{background-position:0 0}100%{background-position:240% 0}}
 @media(max-width:520px){.finalize-progress-card{padding:28px 20px 24px;border-radius:22px}.finalize-progress-title{font-size:18px}.finalize-progress-steps{grid-template-columns:1fr;gap:6px}.finalize-progress-step{padding:7px}}
-</style></style></style>
+
+/* ===== MODO ÁGIL ===== */
+.view-mode-pill {
+  display: inline-flex;
+  align-items: center;
+  background: #E8EEF5;
+  padding: 3px;
+  border-radius: 24px;
+  border: 1px solid #CBD5E1;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.06);
+}
+.mode-btn {
+  border: none;
+  background: transparent;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.mode-btn:hover {
+  color: #0F172A;
+}
+.mode-btn.active {
+  background: #004D9D;
+  color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(0,77,157,0.3);
+}
+
+body.mode-agil-active .sidebar,
+body.mode-agil-active .progress-wrap,
+body.mode-agil-active .section {
+  display: none !important;
+}
+body.mode-agil-active .layout {
+  grid-template-columns: 1fr !important;
+}
+body:not(.mode-agil-active) #containerModoAgil {
+  display: none !important;
+}
+
+#containerModoAgil {
+  display: block;
+}
+.agil-card {
+  background: #fff;
+  border: 1px solid #D9E2EC;
+  border-radius: 16px;
+  box-shadow: 0 4px 18px rgba(16,42,67,0.04);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.agil-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 22px;
+  border-bottom: 1px solid #EDF2F7;
+  background: linear-gradient(180deg, #FAFCFE, #F3F7FA);
+}
+.agil-card-head h3 {
+  margin: 0;
+  color: #0F3254;
+  font-size: 15px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.agil-card-head p {
+  margin: 4px 0 0;
+  color: #64748B;
+  font-size: 12px;
+}
+.agil-card-body {
+  padding: 22px;
+}
+.mental-selector-wrap {
+  margin: 16px 0;
+  padding: 16px;
+  border-radius: 14px;
+  background: #F8FAFD;
+  border: 1px dashed #BFD5EA;
+}
+.mental-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 10px;
+}
+.mental-opt-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 2px solid #D0DFEE;
+  background: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
+}
+.mental-opt-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(16,42,67,0.08);
+}
+.mental-opt-btn.opt-normal:hover, .mental-opt-btn.opt-normal.selected-normal {
+  border-color: #16A34A;
+  background: #F0FDF4;
+}
+.mental-opt-btn.opt-alterado:hover, .mental-opt-btn.opt-alterado.selected-alterado {
+  border-color: #D97706;
+  background: #FFFBEB;
+}
+.mental-opt-btn strong {
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mental-opt-btn.opt-normal strong { color: #15803D; }
+.mental-opt-btn.opt-alterado strong { color: #B45309; }
+.mental-opt-btn span {
+  font-size: 11px;
+  color: #64748B;
+  margin-top: 6px;
+  line-height: 1.4;
+}
+.mental-opt-btn.selected-normal {
+  box-shadow: 0 0 0 3px rgba(22,163,74,0.22);
+}
+.mental-opt-btn.selected-alterado {
+  box-shadow: 0 0 0 3px rgba(217,119,6,0.22);
+}
+.cid-autocomplete-box {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  max-height: 240px;
+  overflow-y: auto;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  display: none;
+  margin-top: 4px;
+}
+.cid-autocomplete-box.show {
+  display: block;
+}
+.cid-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  color: #1D4ED8;
+  font-size: 12px;
+  font-weight: 600;
+}
+@media(max-width:768px) {
+  .mental-options-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== SELETOR INTERATIVO OSTEOMUSCULAR & MAPA CORPORAL ===== */
+.osteo-selector-wrap {
+  margin: 16px 0;
+  padding: 18px;
+  border-radius: 16px;
+  background: #F8FAFD;
+  border: 1px solid #BFD5EA;
+  box-shadow: 0 4px 16px rgba(15,50,84,0.04);
+}
+.osteo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.osteo-header-title {
+  font-weight: 800;
+  font-size: 14px;
+  color: #0F3254;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.osteo-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.osteo-btn-quick {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 1px solid #CBD5E1;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.osteo-btn-quick:hover {
+  background: #F1F5F9;
+  border-color: #94A3B8;
+}
+.osteo-btn-quick.btn-normal-all {
+  background: #F0FDF4;
+  border-color: #86EFAC;
+  color: #166534;
+}
+.osteo-btn-quick.btn-normal-all:hover {
+  background: #DCFCE7;
+}
+
+.osteo-main-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  width: 100%;
+}
+
+/* Mapa Corporal Interativo — Design Médico Premium Ampliado */
+.osteo-body-map-container {
+  position: relative;
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  background: linear-gradient(180deg, #F8FAFC 0%, #EFF4F9 100%);
+  border: 1px solid #CBD5E1;
+  border-radius: 18px;
+  padding: 16px 18px;
+  box-shadow: 0 4px 24px rgba(15, 50, 84, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.osteo-body-map-legend {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+.osteo-view-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.osteo-view-arrow {
+  color: #0284C7;
+  font-size: 10px;
+}
+.osteo-body-img-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  background: #FFFFFF;
+  border-radius: 16px;
+  border: 1px solid #E2E8F0;
+  padding: 10px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.02), 0 3px 12px rgba(0, 0, 0, 0.03);
+}
+.osteo-body-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  user-select: none;
+  pointer-events: none;
+  border-radius: 10px;
+}
+
+/* Hotspots Anatômicos — Estilo Marcador Clínico Elegante e Ticado */
+.osteo-hotspot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.96);
+  border: 2px solid #94A3B8;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
+  user-select: none;
+}
+.osteo-hotspot::after {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #64748B;
+  transition: all 0.2s ease;
+}
+.osteo-hotspot:hover,
+.osteo-hotspot.is-hovered {
+  transform: translate(-50%, -50%) scale(1.35);
+  background: #FFFFFF;
+  border-color: #2563EB;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.25), 0 4px 14px rgba(37, 99, 235, 0.35);
+  z-index: 25;
+}
+.osteo-hotspot:hover::after,
+.osteo-hotspot.is-hovered::after {
+  width: 6px;
+  height: 6px;
+  background: #2563EB;
+}
+
+/* Estado Alterado: Destaque de Alerta Vermelho Pulsante Ticado com Checkmark */
+@keyframes osteoPulseAlterado {
+  0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.65), 0 3px 10px rgba(220, 38, 38, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0), 0 3px 10px rgba(220, 38, 38, 0.4); }
+  100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0), 0 3px 10px rgba(220, 38, 38, 0.4); }
+}
+.osteo-hotspot.is-alterado {
+  width: 22px;
+  height: 22px;
+  background: #DC2626 !important;
+  border-color: #FFFFFF !important;
+  border-width: 2px !important;
+  animation: osteoPulseAlterado 1.8s infinite;
+  z-index: 22;
+}
+.osteo-hotspot.is-alterado::after {
+  content: "✓";
+  font-size: 13px;
+  font-weight: 900;
+  color: #FFFFFF;
+  background: transparent;
+  width: auto;
+  height: auto;
+  line-height: 1;
+}
+
+/* Estado Normal: Confirmação Verde Limpa Ticada com Checkmark */
+.osteo-hotspot.is-normal {
+  width: 20px;
+  height: 20px;
+  background: #16A34A !important;
+  border-color: #FFFFFF !important;
+  border-width: 2px !important;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.3), 0 2px 8px rgba(22, 163, 74, 0.4) !important;
+  z-index: 18;
+}
+.osteo-hotspot.is-normal::after {
+  content: "✓";
+  font-size: 12px;
+  font-weight: 900;
+  color: #FFFFFF;
+  background: transparent;
+  width: auto;
+  height: auto;
+  line-height: 1;
+}
+
+/* Tooltip Moderno com Seta */
+.osteo-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+  padding: 5px 11px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 30;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+.osteo-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 4px;
+  border-style: solid;
+  border-color: rgba(15, 23, 42, 0.95) transparent transparent transparent;
+}
+.osteo-hotspot:hover .osteo-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-2px);
+}
+
+/* Legenda de Status no Rodapé do Mapa */
+.osteo-legend-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #E2E8F0;
+  width: 100%;
+}
+.osteo-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748B;
+}
+.osteo-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.osteo-legend-dot.dot-idle {
+  background: #CBD5E1;
+  border: 1.5px solid #94A3B8;
+}
+.osteo-legend-dot.dot-normal {
+  background: #16A34A;
+}
+.osteo-legend-dot.dot-alterado {
+  background: #DC2626;
+}
+
+/* Detalhes / Tabela de 9 Regiões (abre ao clicar em Detalhes) */
+.osteo-regions-container {
+  width: 100%;
+  max-width: 780px;
+  background: #F8FAFC;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 6px;
+  box-shadow: 0 4px 16px rgba(15, 50, 84, 0.05);
+}
+.osteo-details-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #E2E8F0;
+}
+.osteo-details-header h4 {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1E293B;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.osteo-regions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+.osteo-region-card {
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.osteo-region-card:hover {
+  border-color: #93C5FD;
+  box-shadow: 0 4px 12px rgba(15,50,84,0.05);
+}
+.osteo-region-card.active-alterado {
+  border-color: #DC2626;
+  background: #FEF2F2;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.18);
+}
+.osteo-region-card.active-normal {
+  border-color: #16A34A;
+  background: #F0FDF4;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.18);
+}
+.osteo-region-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+.osteo-region-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #EFF6FF;
+  color: #1D4ED8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.osteo-region-card.active-alterado .osteo-region-icon {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+.osteo-region-card.active-normal .osteo-region-icon {
+  background: #DCFCE7;
+  color: #15803D;
+}
+.osteo-badge-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #DC2626;
+  color: #FFFFFF;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: 10px;
+  margin-left: 4px;
+}
+.osteo-btn-quick.btn-detalhes {
+  background: #EFF6FF;
+  border-color: #93C5FD;
+  color: #1D4ED8;
+}
+.osteo-btn-quick.btn-detalhes:hover {
+  background: #DBEAFE;
+}
+.osteo-region-name {
+  font-weight: 700;
+  font-size: 13px;
+  color: #1E293B;
+}
+.osteo-region-desc {
+  font-size: 11px;
+  color: #64748B;
+  margin-top: 2px;
+  line-height: 1.3;
+}
+.osteo-region-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.osteo-status-btn {
+  padding: 6px 11px;
+  border-radius: 8px;
+  border: 1px solid #CBD5E1;
+  background: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.osteo-status-btn.btn-alterado {
+  color: #B45309;
+}
+.osteo-status-btn.btn-alterado:hover {
+  background: #FEF3C7;
+  border-color: #F59E0B;
+}
+.osteo-status-btn.btn-alterado.selected {
+  background: #D97706;
+  border-color: #B45309;
+  color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.35);
+}
+.osteo-status-btn.btn-normal {
+  color: #15803D;
+}
+.osteo-status-btn.btn-normal:hover {
+  background: #DCFCE7;
+  border-color: #22C55E;
+}
+.osteo-status-btn.btn-normal.selected {
+  background: #16A34A;
+  border-color: #15803D;
+  color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.35);
+}
+.osteo-hotspot:not(.is-alterado):not(.is-normal).is-hovered {
+  border-color: #2563EB;
+  background: #EFF6FF;
+  transform: translate(-50%, -50%) scale(1.35);
+  z-index: 25;
+  box-shadow: 0 0 12px rgba(37, 99, 235, 0.5);
+}
+.osteo-hotspot.is-alterado.is-hovered {
+  transform: translate(-50%, -50%) scale(1.35);
+  background: #DC2626 !important;
+  border-color: #FFFFFF !important;
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.5), 0 4px 14px rgba(220, 38, 38, 0.6) !important;
+  z-index: 25;
+}
+.osteo-hotspot.is-normal.is-hovered {
+  transform: translate(-50%, -50%) scale(1.35);
+  background: #16A34A !important;
+  border-color: #FFFFFF !important;
+  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.4), 0 4px 14px rgba(22, 163, 74, 0.5) !important;
+  z-index: 25;
+}
+.osteo-region-card.is-hovered {
+  border-color: #3B82F6;
+  background: #EFF6FF;
+  transform: translateX(4px);
+}
+.osteo-hotspot.is-card-hovered {
+  border-color: #2563EB;
+  transform: translate(-50%, -50%) scale(1.2);
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.4);
+  z-index: 24;
+}
+.osteo-bilateral-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 145px;
+}
+.osteo-side-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.osteo-side-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #475569;
+  width: 50px;
+  text-align: right;
+}
+.osteo-both-row {
+  margin-top: 2px;
+  padding-top: 2px;
+  border-top: 1px dashed #CBD5E1;
+}
+.osteo-both-label {
+  color: #64748B;
+  font-size: 9.5px;
+  font-weight: 800;
+}
+.osteo-bilateral-actions .osteo-status-btn {
+  padding: 3px 6px;
+  font-size: 10px;
+  border-radius: 6px;
+}
+.osteo-bilateral-actions .btn-both {
+  font-size: 9.5px;
+  padding: 2px 5px;
+}
+</style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/auth.js"></script><script src="/api.js"></script></head>
 <body><div id="authLoading" style="position:fixed;inset:0;background:#F2F6FA;z-index:999999;display:grid;place-items:center;font-family:Inter,system-ui,sans-serif;color:#073F87"><div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #DDE6EF;border-radius:14px;padding:13px 16px;box-shadow:0 12px 35px rgba(10,30,55,.1);font-size:12px;font-weight:800"><img src="/logo.png" alt="" style="width:28px;height:28px;object-fit:contain"><span>Verificando sessão...</span></div></div>
 <div class="app">
@@ -856,6 +1549,10 @@ body::before{
       </div>
     </div>
     <div class="header-center">
+      <div class="view-mode-pill" style="display:none !important;" aria-hidden="true">
+        <button type="button" class="mode-btn active" id="btnModoAgil" onclick="setAttendanceMode('agil')" title="Modo rápido com preenchimento simplificado e automação clínica">⚡ Modo Ágil</button>
+        <button type="button" class="mode-btn" id="btnModoEstendido" onclick="setAttendanceMode('estendido')" title="Questionário completo detalhado etapa a etapa">📋 Versão Estendida</button>
+      </div>
       <div class="save-status"><span id="saveDot" class="save-dot"></span><span id="saveText">Rascunho não iniciado</span></div>
     </div>
     <div class="header-actions">
@@ -896,6 +1593,621 @@ body::before{
       <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:11%"></div></div>
     </div>
 
+    <!-- CONTAINER MODO ÁGIL -->
+    <!-- CONTAINER MODO ÁGIL -->
+    <div id="containerModoAgil">
+      <!-- Bloco 01 — Identificação do Atendimento & Colaborador -->
+      <div class="agil-card">
+        <div class="agil-card-head">
+          <div>
+            <h3><span>👤</span> 01 — Identificação do Atendimento &amp; Colaborador</h3>
+            <p>Dados cadastrais essenciais do colaborador.</p>
+          </div>
+        </div>
+        <div class="agil-card-body">
+          <div class="form-grid">
+            <div class="field col-8">
+              <label class="required">Nome completo do paciente</label>
+              <input class="input" id="agilNomePaciente" placeholder="Digite o nome completo" oninput="syncAgilField('nomePaciente', this.value)">
+            </div>
+            <div class="field col-4">
+              <label>CPF do paciente</label>
+              <input class="input" id="agilCpfPaciente" inputmode="numeric" placeholder="000.000.000-00" maxlength="14" oninput="syncAgilCpf(this.value)">
+            </div>
+            <div class="field col-6">
+              <label class="required">Cargo</label>
+              <input class="input" id="agilCargo" placeholder="Ex: Assistente Administrativo" oninput="syncAgilField('cargo', this.value)">
+            </div>
+            <div class="field col-3">
+              <label>Tempo no cargo</label>
+              <input class="input" type="number" min="0" step="0.1" id="agilTempoCargo" oninput="syncAgilField('tempoCargo', this.value)">
+            </div>
+            <div class="field col-3">
+              <label>Unidade</label>
+              <select class="select" id="agilTempoUnidade" onchange="syncAgilField('tempoUnidade', this.value)">
+                <option value="">Selecione</option>
+                <option>Anos</option>
+                <option>Meses</option>
+                <option>Dias</option>
+              </select>
+            </div>
+            <div class="field col-3">
+              <label class="required">Idade</label>
+              <input class="input" type="number" min="0" max="120" id="agilIdade" oninput="syncAgilField('idade', this.value)">
+            </div>
+            <div class="field col-9">
+              <label class="required">É readaptado?</label>
+              <div class="radio-row">
+                <label class="choice"><input type="radio" id="agilReadaptado_Sim" name="agilReadaptado" value="Sim" onchange="syncAgilReadaptado('Sim')"><span>Sim</span></label>
+                <label class="choice"><input type="radio" id="agilReadaptado_Nao" name="agilReadaptado" value="Não" onchange="syncAgilReadaptado('Não')"><span>Não</span></label>
+              </div>
+            </div>
+            <div class="field col-12 hidden" id="agilReadaptadoPanel">
+              <label>Quais atividades realiza atualmente?</label>
+              <textarea class="textarea" id="agilAtividadesReadaptado" placeholder="Descreva as atividades atuais." oninput="syncAgilField('atividadesReadaptado', this.value)"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco 02 — Queixa e Duração & Antecedentes -->
+      <div class="agil-card">
+        <div class="agil-card-head">
+          <div>
+            <h3><span>📋</span> 02 — Queixa e Duração &amp; Antecedentes</h3>
+            <p>Queixa principal que motivou o afastamento, medicações, terapias e antecedentes.</p>
+          </div>
+        </div>
+        <div class="agil-card-body">
+          <div class="form-grid">
+            <div class="field col-12">
+              <label class="required">Qual a doença está tratando que motivou o afastamento?</label>
+              <textarea class="textarea" id="agilDoencaMotivo" style="min-height:74px" placeholder="Descreva a doença e o motivo do afastamento..." oninput="onAgilDoencaMotivoInput(this.value)"></textarea>
+              <div class="help">O que for respondido aqui preenche automaticamente o Histórico Pregresso abaixo.</div>
+            </div>
+            <div class="field col-6">
+              <label>Quando começou o tratamento?</label>
+              <input class="input" type="date" id="agilInicioTratamento" oninput="syncAgilField('inicioTratamento', this.value)">
+            </div>
+            <div class="field col-6">
+              <label>Com que frequência realiza consultas?</label>
+              <input class="input" id="agilFreqConsultas" placeholder="Ex.: semanal, quinzenal, mensal, conforme necessidade" oninput="syncAgilField('freqConsultas', this.value)">
+            </div>
+            <div class="field col-12">
+              <label class="required">Quais sintomas / limitações são referidos?</label>
+              <textarea class="textarea" id="agilSintomasLimitacao" style="min-height:74px" placeholder="Descreva os sintomas relatados e as limitações..." oninput="syncAgilField('sintomasLimitacao', this.value)"></textarea>
+            </div>
+          </div>
+
+          <!-- Subpainel Medicações -->
+          <div class="subpanel" style="margin-top:16px">
+            <h4 style="margin-bottom:6px">Medicações</h4>
+            <div class="notice" style="margin-bottom:12px">Registre todas as medicações informadas no atendimento, incluindo dosagem em mg/dia quando aplicável.</div>
+            <div class="table-card">
+              <div class="table-head"><div>Medicamento</div><div>Dosagem</div><div>Frequência</div><div>Observação</div><div></div></div>
+              <div id="agilMedRows"></div>
+            </div>
+            <div class="add-row"><button class="btn-add" type="button" onclick="addMedication()">+ Adicionar medicamento</button></div>
+
+            <div class="subpanel" style="margin-top:14px">
+              <h4 style="margin-bottom:8px">Quando aplicável ao CID F</h4>
+              <div class="field">
+                <label>Houve troca ou alteração de dosagem da medicação?</label>
+                <div class="radio-row">
+                  <label class="choice"><input type="radio" name="agilAlteracaoMed" value="Sim" onchange="syncAgilAlteracaoMed('Sim')"><span>Sim</span></label>
+                  <label class="choice"><input type="radio" name="agilAlteracaoMed" value="Não" onchange="syncAgilAlteracaoMed('Não')"><span>Não</span></label>
+                </div>
+              </div>
+              <div class="form-grid hidden" id="agilAlteracaoPanel" style="margin-top:12px">
+                <div class="field col-6"><label>Quando ocorreu a troca/alteração?</label><input class="input" id="agilDataAlteracaoMed" type="date" oninput="syncAgilField('dataAlteracaoMed', this.value)"></div>
+                <div class="field col-6"><label>Observação</label><input class="input" id="agilObsAlteracaoMed" placeholder="Detalhes da alteração de dosagem..." oninput="syncAgilField('obsAlteracaoMed', this.value)"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Subpainel Psicoterapia / Fisioterapia -->
+          <div class="subpanel" style="margin-top:16px">
+            <h4 style="margin-bottom:8px">Psicoterapia / Fisioterapia</h4>
+            <div class="field">
+              <label>Realiza psicoterapia ou fisioterapia?</label>
+              <div class="check-row" style="margin-top:6px">
+                <label class="choice"><input type="checkbox" id="agilPsicoterapia" onchange="syncAgilCheckbox('psicoterapia', this.checked)"><span>Psicoterapia</span></label>
+                <label class="choice"><input type="checkbox" id="agilFisioterapia" onchange="syncAgilCheckbox('fisioterapia', this.checked)"><span>Fisioterapia</span></label>
+              </div>
+            </div>
+            <div class="field" style="margin-top:12px">
+              <label>Periodicidade / observações</label>
+              <textarea class="textarea" id="agilObsTerapias" style="min-height:64px" placeholder="Descreva frequência e detalhes das terapias..." oninput="syncAgilField('obsTerapias', this.value)"></textarea>
+            </div>
+          </div>
+
+          <!-- Subpainel Antecedentes mórbidos & Outras Doenças -->
+          <div class="subpanel" style="margin-top:16px">
+            <h4 style="margin-bottom:8px">Antecedentes mórbidos</h4>
+            <div class="field">
+              <label>Possui outras doenças em tratamento?</label>
+              <div class="radio-row">
+                <label class="choice"><input type="radio" name="agilOutrasDoencas" value="Sim" onchange="syncAgilOutrasDoencas('Sim')"><span>Sim</span></label>
+                <label class="choice"><input type="radio" name="agilOutrasDoencas" value="Não" onchange="syncAgilOutrasDoencas('Não')"><span>Não</span></label>
+              </div>
+            </div>
+            <div id="agilDoencasPanel" class="subpanel hidden" style="margin-top:12px">
+              <h4 style="margin-bottom:8px">Doenças / condições e tratamentos</h4>
+              <div id="agilCondRows"></div>
+              <div class="add-row"><button class="btn-add" type="button" onclick="addCondition()">+ Adicionar condição</button></div>
+            </div>
+            <div class="subpanel" style="margin-top:14px">
+              <h4 style="margin-bottom:6px">Histórico pregresso</h4>
+              <p class="help" style="margin-top:0;margin-bottom:8px">Use este espaço para registrar ou consultar informações relevantes do histórico pregresso.</p>
+              <textarea class="textarea" id="agilHistoricoPregresso" style="min-height:74px" placeholder="Registre ou revise informações do histórico pregresso..." oninput="syncAgilField('historicoPregresso', this.value)"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco 03 — Exame Físico Geral / Mental -->
+      <div class="agil-card">
+        <div class="agil-card-head">
+          <div>
+            <h3><span>🩺</span> 03 — Exame Físico Geral / Mental</h3>
+            <p>CID motivador do afastamento, exame clínico direcionado e biometria.</p>
+          </div>
+        </div>
+        <div class="agil-card-body">
+          <div class="form-grid">
+            <div class="field col-12" style="position:relative">
+              <label class="required">CID da doença referida pelo médico assistente</label>
+              <input class="input" id="agilCid" placeholder="Digite o código ou nome da patologia (ex: F32, depressão, M54...)" autocomplete="off" oninput="onAgilCidInput(this.value)">
+              <div id="agilCidBadge" class="cid-badge-pill" style="display:none;margin-top:6px"></div>
+              <div id="agilCidSuggestions" class="cid-autocomplete-box"></div>
+            </div>
+
+            <div class="field col-12">
+              <label class="required">Tipo de exame físico / mental</label>
+              <select class="select" id="agilExameFisicoTipo" onchange="onAgilExameTipoChange(this.value)">
+                <option value="">Selecione apenas uma opção</option>
+                <option value="Aparelho Osteomuscular e Tecido Conjutivo">Aparelho Osteomuscular e Tecido Conjutivo</option>
+                <option value="Exame Mental">Exame Mental</option>
+                <option value="Outros">Outros</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Resultado do Exame Mental (abre ao escolher Exame Mental) -->
+          <div class="mental-selector-wrap" id="agilMentalSelector" style="display:none">
+            <div style="font-weight:800;font-size:13px;color:#0F3254;display:flex;align-items:center;gap:6px">
+              <span>🧠</span>
+              <span>Resultado do Exame Mental:</span>
+            </div>
+            <div class="mental-options-grid">
+              <button type="button" class="mental-opt-btn opt-normal" id="btnAgilMentalNormal" onclick="escolherExameMental('Normal')">
+                <strong>🟢 Normal</strong>
+                <span>Nível de consciência, orientação, atenção, memória, pensamento, humor e juízo preservados. Limitações incapacitantes não identificadas.</span>
+              </button>
+              <button type="button" class="mental-opt-btn opt-alterado" id="btnAgilMentalAlterado" onclick="escolherExameMental('Alterado')">
+                <strong>🟡 Alterado</strong>
+                <span>Fácies entristecida, hipotímica, labilidade emocional, insight negativo, pensamentos ruminantes e limitações psicossociais.</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Resultado do Exame Osteomuscular (abre ao escolher Aparelho Osteomuscular e Tecido Conjutivo) -->
+          <div class="osteo-selector-wrap" id="agilOsteomuscularSelector" style="display:none">
+            <div class="osteo-header">
+              <div class="osteo-header-title">
+                <span>🦴</span>
+                <span>Aparelho Osteomuscular e Tecido Conjuntivo — Mapa Anatômico Interativo</span>
+              </div>
+              <div class="osteo-header-actions">
+                <button type="button" class="osteo-btn-quick btn-normal-all" onclick="aplicarOsteomuscularNormal()" title="Define todas as regiões como normais e capacidade laborativa preservada">
+                  🟢 Sem Alterações / Normal
+                </button>
+                <button type="button" class="osteo-btn-quick btn-detalhes" id="btnToggleOsteoDetalhes" onclick="toggleOsteoDetalhes()" title="Exibir tabela detalhada das 9 regiões anatômicas">
+                  <span>📋</span> <span id="lblToggleOsteoDetalhes">Detalhes</span> <span id="osteoBadgeCount" class="osteo-badge-count" style="display:none">0</span>
+                </button>
+                <button type="button" class="osteo-btn-quick" onclick="limparOsteomuscular()" title="Limpar seleções e campos preenchidos">
+                  🗑️ Limpar
+                </button>
+              </div>
+            </div>
+            
+            <p style="font-size:12px;color:#475569;margin:0 0 14px 0">
+              Passe o mouse sobre os pontos anatômicos do corpo humano (frente/verso) ou use as opções ao lado para selecionar o segmento. Ao marcar <strong>"Alterado"</strong>, os achados clínicos, limitações e justificativa pericial são autopreenchidos instantaneamente.
+            </p>
+
+            <div class="osteo-main-layout">
+              <!-- Mapa Corporal -->
+              <div class="osteo-body-map-container">
+                <div class="osteo-body-map-legend">
+                  <span class="osteo-view-pill">
+                    <span class="osteo-view-arrow">◀</span>
+                    <span>Vista Anterior (Frente)</span>
+                  </span>
+                  <span class="osteo-view-pill">
+                    <span>Vista Posterior (Verso)</span>
+                    <span class="osteo-view-arrow">▶</span>
+                  </span>
+                </div>
+                <div class="osteo-body-img-wrapper" id="osteoBodyWrapper">
+                  <img src="/corpo_humano.png" alt="Corpo Humano Frente e Verso" class="osteo-body-img">
+                  
+                  <!-- Hotspots VISTA POSTERIOR (VERSO) - Regiões Axiais e Dorsais -->
+                  <!-- Cervical (Coluna Cervical / Nuca) -->
+                  <div class="osteo-hotspot" data-regiao="cervical" data-group="cervical" style="top:15.4%;left:66.2%" onclick="toggleRegiaoOsteomuscular('cervical')" title="Cervical">
+                    <span class="osteo-tooltip">Cervical</span>
+                  </div>
+
+                  <!-- Coluna Lombar -->
+                  <div class="osteo-hotspot" data-regiao="lombar" data-group="lombar" style="top:37.4%;left:66.2%" onclick="toggleRegiaoOsteomuscular('lombar')" title="Coluna lombar">
+                    <span class="osteo-tooltip">Coluna lombar</span>
+                  </div>
+
+                  <!-- Quadril / Báscula de Bacia / Glúteos -->
+                  <div class="osteo-hotspot" data-regiao="quadril" data-group="quadril" style="top:49.1%;left:66.2%" onclick="toggleRegiaoOsteomuscular('quadril')" title="Quadril">
+                    <span class="osteo-tooltip">Quadril</span>
+                  </div>
+
+                  <!-- Hotspots VISTA ANTERIOR (FRENTE) - Articulações Periféricas com Lateralidade Individual -->
+                  <!-- Ombros -->
+                  <div class="osteo-hotspot" data-regiao="ombro_direito" data-group="ombros" style="top:20.5%;left:24.2%" onclick="toggleRegiaoOsteomuscular('ombro_direito')" title="Ombro Direito">
+                    <span class="osteo-tooltip">Ombro Direito</span>
+                  </div>
+                  <div class="osteo-hotspot" data-regiao="ombro_esquerdo" data-group="ombros" style="top:20.5%;left:39.8%" onclick="toggleRegiaoOsteomuscular('ombro_esquerdo')" title="Ombro Esquerdo">
+                    <span class="osteo-tooltip">Ombro Esquerdo</span>
+                  </div>
+
+                  <!-- Cotovelos -->
+                  <div class="osteo-hotspot" data-regiao="cotovelo_direito" data-group="cotovelos" style="top:38.8%;left:21.7%" onclick="toggleRegiaoOsteomuscular('cotovelo_direito')" title="Cotovelo Direito">
+                    <span class="osteo-tooltip">Cotovelo Direito</span>
+                  </div>
+                  <div class="osteo-hotspot" data-regiao="cotovelo_esquerdo" data-group="cotovelos" style="top:38.8%;left:42.4%" onclick="toggleRegiaoOsteomuscular('cotovelo_esquerdo')" title="Cotovelo Esquerdo">
+                    <span class="osteo-tooltip">Cotovelo Esquerdo</span>
+                  </div>
+
+                  <!-- Antebraços -->
+                  <div class="osteo-hotspot" data-regiao="antebraco_direito" data-group="antebracos" style="top:46.2%;left:20.7%" onclick="toggleRegiaoOsteomuscular('antebraco_direito')" title="Antebraço Direito">
+                    <span class="osteo-tooltip">Antebraço Direito</span>
+                  </div>
+                  <div class="osteo-hotspot" data-regiao="antebraco_esquerdo" data-group="antebracos" style="top:46.2%;left:43.4%" onclick="toggleRegiaoOsteomuscular('antebraco_esquerdo')" title="Antebraço Esquerdo">
+                    <span class="osteo-tooltip">Antebraço Esquerdo</span>
+                  </div>
+
+                  <!-- Mãos -->
+                  <div class="osteo-hotspot" data-regiao="mao_direita" data-group="maos" style="top:55.0%;left:20.0%" onclick="toggleRegiaoOsteomuscular('mao_direita')" title="Mão Direita">
+                    <span class="osteo-tooltip">Mão Direita</span>
+                  </div>
+                  <div class="osteo-hotspot" data-regiao="mao_esquerda" data-group="maos" style="top:55.0%;left:44.0%" onclick="toggleRegiaoOsteomuscular('mao_esquerda')" title="Mão Esquerda">
+                    <span class="osteo-tooltip">Mão Esquerda</span>
+                  </div>
+
+                  <!-- Joelhos -->
+                  <div class="osteo-hotspot" data-regiao="joelho_direito" data-group="joelhos" style="top:69.6%;left:28.6%" onclick="toggleRegiaoOsteomuscular('joelho_direito')" title="Joelho Direito">
+                    <span class="osteo-tooltip">Joelho Direito</span>
+                  </div>
+                  <div class="osteo-hotspot" data-regiao="joelho_esquerdo" data-group="joelhos" style="top:69.6%;left:35.4%" onclick="toggleRegiaoOsteomuscular('joelho_esquerdo')" title="Joelho Esquerdo">
+                    <span class="osteo-tooltip">Joelho Esquerdo</span>
+                  </div>
+
+                  <!-- Tornozelos -->
+                  <div class="osteo-hotspot" data-regiao="tornozelo_direito" data-group="tornozelos" style="top:91.6%;left:27.7%" onclick="toggleRegiaoOsteomuscular('tornozelo_direito')" title="Tornozelo / Pé Direito">
+                    <span class="osteo-tooltip">Tornozelo / Pé Direito</span>
+                  </div>
+                  <div class="osteo-hotspot" data-regiao="tornozelo_esquerdo" data-group="tornozelos" style="top:91.6%;left:36.3%" onclick="toggleRegiaoOsteomuscular('tornozelo_esquerdo')" title="Tornozelo / Pé Esquerdo">
+                    <span class="osteo-tooltip">Tornozelo / Pé Esquerdo</span>
+                  </div>
+                </div>
+                <div class="osteo-legend-footer">
+                  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+                    <span class="osteo-legend-item"><span class="osteo-legend-dot dot-idle"></span> Não avaliado</span>
+                    <span class="osteo-legend-item"><span class="osteo-legend-dot dot-normal"></span> Normal</span>
+                    <span class="osteo-legend-item"><span class="osteo-legend-dot dot-alterado"></span> Alterado (Ticado)</span>
+                  </div>
+                  <button type="button" class="osteo-link-detalhes" onclick="toggleOsteoDetalhes()" style="background:none;border:none;color:#2563EB;font-size:11.5px;font-weight:700;cursor:pointer;text-decoration:underline">
+                    <span id="linkToggleOsteoDetalhes">Ver Detalhes em Tabela (9 regiões) ▼</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Painel de Detalhes (Tabela / Grid das 9 Regiões) — Abre ao clicar em "Detalhes" -->
+              <div class="osteo-regions-container" id="osteoRegionsContainer" style="display:none">
+                <div class="osteo-details-header">
+                  <h4><span>📋</span> Tabela de Detalhes das 9 Regiões Anatômicas</h4>
+                  <span style="font-size:11.5px;color:#64748B">Ajuste individual por botões clínicos rápidos:</span>
+                </div>
+                <div class="osteo-regions-grid" id="osteoRegionsGrid">
+                
+                <!-- 1. Cervical -->
+                <div class="osteo-region-card" id="cardOsteo_cervical" data-card-regiao="cervical">
+                  <div class="osteo-region-info">
+                    <div class="osteo-region-icon">🦴</div>
+                    <div>
+                      <div class="osteo-region-name">Cervical</div>
+                      <div class="osteo-region-desc">Mobilidade ativa/passiva, trapézios e sensibilidade MMSS</div>
+                    </div>
+                  </div>
+                  <div class="osteo-region-actions">
+                    <button type="button" class="osteo-status-btn btn-alterado" id="btnOsteoAlt_cervical" onclick="setRegiaoStatus('cervical', 'Alterado')">
+                      ⚠️ Alterado
+                    </button>
+                    <button type="button" class="osteo-status-btn btn-normal" id="btnOsteoNorm_cervical" onclick="setRegiaoStatus('cervical', 'Normal')">
+                      ✓ Normal
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 2. Coluna lombar -->
+                <div class="osteo-region-card" id="cardOsteo_lombar" data-card-regiao="lombar">
+                  <div class="osteo-region-info">
+                    <div class="osteo-region-icon">🦴</div>
+                    <div>
+                      <div class="osteo-region-name">Coluna lombar</div>
+                      <div class="osteo-region-desc">Flexo-extensão, musculatura paravertebral, Lasègue e reflexos MMII</div>
+                    </div>
+                  </div>
+                  <div class="osteo-region-actions">
+                    <button type="button" class="osteo-status-btn btn-alterado" id="btnOsteoAlt_lombar" onclick="setRegiaoStatus('lombar', 'Alterado')">
+                      ⚠️ Alterado
+                    </button>
+                    <button type="button" class="osteo-status-btn btn-normal" id="btnOsteoNorm_lombar" onclick="setRegiaoStatus('lombar', 'Normal')">
+                      ✓ Normal
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 3. Ombros -->
+                <div class="osteo-region-card" id="cardOsteo_ombros" data-card-regiao="ombros">
+                  <div class="osteo-region-info">
+                    <div class="osteo-region-icon">🦴</div>
+                    <div>
+                      <div class="osteo-region-name">Ombros</div>
+                      <div class="osteo-region-desc">Amplitude de flexão/abdução/rotação, testes Neer, Jobe e Hawkins</div>
+                    </div>
+                  </div>
+                  <div class="osteo-region-actions osteo-bilateral-actions">
+                    <div class="osteo-side-row">
+                      <span class="osteo-side-label">Direito:</span>
+                      <button type="button" class="osteo-status-btn btn-alterado" id="btnOsteoAlt_ombro_direito" onclick="setRegiaoStatus('ombro_direito', 'Alterado')">⚠️ Alt</button>
+                      <button type="button" class="osteo-status-btn btn-normal" id="btnOsteoNorm_ombro_direito" onclick="setRegiaoStatus('ombro_direito', 'Normal')">✓ Norm</button>
+                    </div>
+                    <div class="osteo-side-row">
+                      <span class="osteo-side-label">Esquerdo:</span>
+                      <button type="button" class="osteo-status-btn btn-alterado" id="btnOsteoAlt_ombro_esquerdo" onclick="setRegiaoStatus('ombro_esquerdo', 'Alterado')">⚠️ Alt</button>
+                      <button type="button" class="osteo-status-btn btn-normal" id="btnOsteoNorm_ombro_esquerdo" onclick="setRegiaoStatus('ombro_esquerdo', 'Normal')">✓ Norm</button>
+                    </div>
+                    <div class="osteo-side-row osteo-both-row">
+                      <span class="osteo-side-label osteo-both-label">Ambos:</span>
+                      <button type="button" class="osteo-status-btn btn-alterado btn-both" id="btnOsteoAlt_ombros" onclick="setGrupoStatus('ombros', 'Alterado')">⚠️ Alt</button>
+                      <button type="button" class="osteo-status-btn btn-normal btn-both" id="btnOsteoNorm_ombros" onclick="setGrupoStatus('ombros', 'Normal')">✓ Norm</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 4. Cotovelos -->
+                <div class="osteo-region-card" id="cardOsteo_cotovelos" data-card-regiao="cotovelos">
+                  <div class="osteo-region-info">
+                    <div class="osteo-region-icon">🦴</div>
+                    <div>
+                      <div class="osteo-region-name">Cotovelos</div>
+                      <div class="osteo-region-desc">Palpação dos epicôndilos/olecrano, prono-supinação e força motriz</div>
+                    </div>
+                  </div>
+                  <div class="osteo-region-actions osteo-bilateral-actions">
+                    <div class="osteo-side-row">
+                      <span class="osteo-side-label">Direito:</span>
+                      <button type="button" class="osteo-status-btn btn-alterado" id="btnOsteoAlt_cotovelo_direito" onclick="setRegiaoStatus('cotovelo_direito', 'Alterado')">⚠️ Alt</button>
+                      <button type="button" class="osteo-status-btn btn-normal" id="btnOsteoNorm_cotovelo_direito" onclick="setRegiaoStatus('cotovelo_direito', 'Normal')">✓ Norm</button>
+                    </div>
+                    <div class="osteo-side-row">
+                      <span class="osteo-side-label">Esquerdo:</span>
+                      <button type="button" class="osteo-status-btn btn-alterado" id="btnOsteoAlt_cotovelo_esquerdo" onclick="setRegiaoStatus('cotovelo_esquerdo', 'Alterado')">⚠️ Alt</button>
+                      <button type="button" class="osteo-status-btn btn-normal" id="btnOsteoNorm_cotovelo_esquerdo" onclick="setRegiaoStatus('cotovelo_esquerdo', 'Normal')">✓ Norm</button>
+                    </div>
+                    <div class="osteo-side-row osteo-both-row">
+                      <span class="osteo-side-label osteo-both-label">Ambos:</span>
+                      <button type="button" class="osteo-status-btn btn-alterado btn-both" id="btnOsteoAlt_cotovelos" onclick="setGrupoStatus('cotovelos', 'Alterado')">⚠️ Alt</button>
+                      <button type="button" class="osteo-status-btn btn-normal btn-both" id="btnOsteoNorm_cotovelos" onclick="setGrupoStatus('cotovelos', 'Normal')">✓ Norm</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 5. Antebraços -->
+                <div class="osteo-region-card" id="cardOsteo_antebracos" data-card-regiao="antebracos">
+                  <div class="osteo-region-info">
+                    <div class="osteo-region-icon">🦴</div>
+                    <div>
+                      <div class="osteo-region-name">Antebraços</div>
+                      <div class="osteo-region-desc">Punho, desvios radial/ulnar, testes Finkelstein, Tinel e Phalen</div>
+                    </div>
+                  </div>
+                  <div class="osteo-region-actions osteo-bilateral-actions">
+                    <div class="osteo-side-row">
+                      <span class="osteo-side-label">Direito:</span>
+                      <button type="button" class="osteo-status-btn btn-alterado" id="btnOsteoAlt_antebraco_direito" onclick="setRegiaoStatus('antebraco_direito', 'Alterado')">⚠️ Alt</button>
+                      <button type="button" class="osteo-status-btn btn-normal" id="btnOsteoNorm_antebraco_direito" onclick="setRegiaoStatus('antebraco_direito', 'Normal')">✓ Norm</button>
+                    </div>
+                    <div class="osteo-side-row">
+                      <span class="osteo-side-label">Esquerdo:</span>
+                      <button type="button" class="osteo-status-btn btn-alterado" id="btnOsteoAlt_antebraco_esquerdo" onclick="setRegiaoStatus('antebraco_esquerdo', 'Alterado')">⚠️ Alt</button>
+                      <button type="button" class="osteo-status-btn btn-normal" id="btnOsteoNorm_antebraco_esquerdo" onclick="setRegiaoStatus('antebraco_esquerdo', 'Normal')">✓ Norm</button>
+                    </div>
+                    <div class="osteo-side-row osteo-both-row">
+                      <span class="osteo-side-label osteo-both-label">Ambos:</span>
+                      <button type="button" class="osteo-status-btn btn-alterado btn-both" id="btnOsteoAlt_antebracos" onclick="setGrupoStatus('antebracos', 'Alterado')">⚠️ Alt</button>
+                      <button type="button" class="osteo-status-btn btn-normal btn-both" id="btnOsteoNorm_antebracos" onclick="setGrupoStatus('antebracos', 'Normal')">✓ Norm</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 6. Mãos -->
+                <div class="osteo-region-card" id="cardOsteo_maos" data-card-regiao="maos">
+                  <div class="osteo-region-info">
+                    <div class="osteo-region-icon">🦴</div>
+                    <div>
+                      <div class="osteo-region-name">Mãos</div>
+                      <div class="osteo-region-desc">Regiões tenar/hipotenar, pinças fina/grossa, destreza e digitação</div>
+                    </div>
+                  </div>
+                  <div class="osteo-region-actions osteo-bilateral-actions">
+                    <div class="osteo-side-row">
+                      <span class="osteo-side-label">Direito:</span>
+                      <button type="button" class="osteo-status-btn btn-alterado" id="btnOsteoAlt_mao_direita" onclick="setRegiaoStatus('mao_direita', 'Alterado')">⚠️ Alt</button>
+                      <button type="button" class="osteo-status-btn btn-normal" id="btnOsteoNorm_mao_direita" onclick="setRegiaoStatus('mao_direita', 'Normal')">✓ Norm</button>
+                    </div>
+                    <div class="osteo-side-row">
+                      <span class="osteo-side-label">Esquerdo:</span>
+                      <button type="button" class="osteo-status-btn btn-alterado" id="btnOsteoAlt_mao_esquerda" onclick="setRegiaoStatus('mao_esquerda', 'Alterado')">⚠️ Alt</button>
+                      <button type="button" class="osteo-status-btn btn-normal" id="btnOsteoNorm_mao_esquerda" onclick="setRegiaoStatus('mao_esquerda', 'Normal')">✓ Norm</button>
+                    </div>
+                    <div class="osteo-side-row osteo-both-row">
+                      <span class="osteo-side-label osteo-both-label">Ambos:</span>
+                      <button type="button" class="osteo-status-btn btn-alterado btn-both" id="btnOsteoAlt_maos" onclick="setGrupoStatus('maos', 'Alterado')">⚠️ Alt</button>
+                      <button type="button" class="osteo-status-btn btn-normal btn-both" id="btnOsteoNorm_maos" onclick="setGrupoStatus('maos', 'Normal')">✓ Norm</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 7. Quadril -->
+                <div class="osteo-region-card" id="cardOsteo_quadril" data-card-regiao="quadril">
+                  <div class="osteo-region-info">
+                    <div class="osteo-region-icon">🦴</div>
+                    <div>
+                      <div class="osteo-region-name">Quadril</div>
+                      <div class="osteo-region-desc">Báscula da bacia, rotações interna/externa, Bursa trocanteriana e ciático</div>
+                    </div>
+                  </div>
+                  <div class="osteo-region-actions">
+                    <button type="button" class="osteo-status-btn btn-alterado" id="btnOsteoAlt_quadril" onclick="setRegiaoStatus('quadril', 'Alterado')">
+                      ⚠️ Alterado
+                    </button>
+                    <button type="button" class="osteo-status-btn btn-normal" id="btnOsteoNorm_quadril" onclick="setRegiaoStatus('quadril', 'Normal')">
+                      ✓ Normal
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 8. Joelhos -->
+                <div class="osteo-region-card" id="cardOsteo_joelhos" data-card-regiao="joelhos">
+                  <div class="osteo-region-info">
+                    <div class="osteo-region-icon">🦴</div>
+                    <div>
+                      <div class="osteo-region-name">Joelhos</div>
+                      <div class="osteo-region-desc">Estabilidade ligamentar, estresse valgo/varo, gaveta, Lachman e meniscos</div>
+                    </div>
+                  </div>
+                  <div class="osteo-region-actions osteo-bilateral-actions">
+                    <div class="osteo-side-row">
+                      <span class="osteo-side-label">Direito:</span>
+                      <button type="button" class="osteo-status-btn btn-alterado" id="btnOsteoAlt_joelho_direito" onclick="setRegiaoStatus('joelho_direito', 'Alterado')">⚠️ Alt</button>
+                      <button type="button" class="osteo-status-btn btn-normal" id="btnOsteoNorm_joelho_direito" onclick="setRegiaoStatus('joelho_direito', 'Normal')">✓ Norm</button>
+                    </div>
+                    <div class="osteo-side-row">
+                      <span class="osteo-side-label">Esquerdo:</span>
+                      <button type="button" class="osteo-status-btn btn-alterado" id="btnOsteoAlt_joelho_esquerdo" onclick="setRegiaoStatus('joelho_esquerdo', 'Alterado')">⚠️ Alt</button>
+                      <button type="button" class="osteo-status-btn btn-normal" id="btnOsteoNorm_joelho_esquerdo" onclick="setRegiaoStatus('joelho_esquerdo', 'Normal')">✓ Norm</button>
+                    </div>
+                    <div class="osteo-side-row osteo-both-row">
+                      <span class="osteo-side-label osteo-both-label">Ambos:</span>
+                      <button type="button" class="osteo-status-btn btn-alterado btn-both" id="btnOsteoAlt_joelhos" onclick="setGrupoStatus('joelhos', 'Alterado')">⚠️ Alt</button>
+                      <button type="button" class="osteo-status-btn btn-normal btn-both" id="btnOsteoNorm_joelhos" onclick="setGrupoStatus('joelhos', 'Normal')">✓ Norm</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 9. Tornozelos -->
+                <div class="osteo-region-card" id="cardOsteo_tornozelos" data-card-regiao="tornozelos">
+                  <div class="osteo-region-info">
+                    <div class="osteo-region-icon">🦴</div>
+                    <div>
+                      <div class="osteo-region-name">Tornozelos</div>
+                      <div class="osteo-region-desc">Maléolos, ligamento deltóide/talo-fibular, dorsiflexão, pulsos e pés</div>
+                    </div>
+                  </div>
+                  <div class="osteo-region-actions osteo-bilateral-actions">
+                    <div class="osteo-side-row">
+                      <span class="osteo-side-label">Direito:</span>
+                      <button type="button" class="osteo-status-btn btn-alterado" id="btnOsteoAlt_tornozelo_direito" onclick="setRegiaoStatus('tornozelo_direito', 'Alterado')">⚠️ Alt</button>
+                      <button type="button" class="osteo-status-btn btn-normal" id="btnOsteoNorm_tornozelo_direito" onclick="setRegiaoStatus('tornozelo_direito', 'Normal')">✓ Norm</button>
+                    </div>
+                    <div class="osteo-side-row">
+                      <span class="osteo-side-label">Esquerdo:</span>
+                      <button type="button" class="osteo-status-btn btn-alterado" id="btnOsteoAlt_tornozelo_esquerdo" onclick="setRegiaoStatus('tornozelo_esquerdo', 'Alterado')">⚠️ Alt</button>
+                      <button type="button" class="osteo-status-btn btn-normal" id="btnOsteoNorm_tornozelo_esquerdo" onclick="setRegiaoStatus('tornozelo_esquerdo', 'Normal')">✓ Norm</button>
+                    </div>
+                    <div class="osteo-side-row osteo-both-row">
+                      <span class="osteo-side-label osteo-both-label">Ambos:</span>
+                      <button type="button" class="osteo-status-btn btn-alterado btn-both" id="btnOsteoAlt_tornozelos" onclick="setGrupoStatus('tornozelos', 'Alterado')">⚠️ Alt</button>
+                      <button type="button" class="osteo-status-btn btn-normal btn-both" id="btnOsteoNorm_tornozelos" onclick="setGrupoStatus('tornozelos', 'Normal')">✓ Norm</button>
+                    </div>
+                  </div>
+                </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Barra de Predefinição Padrão de Sinais Vitais -->
+          <div class="agil-vitals-preset-bar" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:18px;padding:10px 14px;background:#F8FAFC;border:1.5px solid #CBD5E1;border-radius:10px">
+            <div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#334155">
+              <span>🩺</span> <span>Sinais Vitais & Biometria</span>
+            </div>
+            <div>
+              <label style="display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:#1E293B;cursor:pointer;background:#FFFFFF;border:1.5px solid #CBD5E1;padding:6px 14px;border-radius:8px;user-select:none;box-shadow:0 1px 3px rgba(0,0,0,0.04);transition:all 0.2s">
+                <input type="checkbox" id="agilVitalsPadraoCheck" onchange="toggleVitalsPadrao(this.checked)" style="width:17px;height:17px;accent-color:#2563EB;cursor:pointer">
+                <span>Padrão habitual: <strong>120 por 80 mmHg</strong> e <strong>pulso 80 bpm</strong></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="agil-vitals-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:12px">
+            <div class="field"><label>Pressão sistólica (mmHg)</label><input class="input" type="number" min="0" id="agilPressaoSistolica" placeholder="Aferida" oninput="syncAgilField('pressaoSistolica', this.value)"></div>
+            <div class="field"><label>Pressão diastólica (mmHg)</label><input class="input" type="number" min="0" id="agilPressaoDiastolica" placeholder="Aferida" oninput="syncAgilField('pressaoDiastolica', this.value)"></div>
+            <div class="field"><label>Pulso (bpm)</label><input class="input" type="number" min="0" id="agilPulso" placeholder="Aferido" oninput="syncAgilField('pulso', this.value)"></div>
+            <div class="field"><label>Altura</label><input class="input" id="agilAltura" placeholder="Ex: 1,75" oninput="syncAgilField('altura', this.value)"></div>
+            <div class="field"><label>Peso</label><input class="input" id="agilPeso" placeholder="Ex: 70" oninput="syncAgilField('peso', this.value)"></div>
+          </div>
+
+          <div class="field col-12" style="margin-top:16px">
+            <label>(*)Exame Físico Geral — achados observados</label>
+            <textarea class="textarea" id="agilExameFisicoDescricao" style="min-height:120px" placeholder="Achados clínicos e observações do exame físico/mental..." oninput="syncAgilField('exameFisicoDescricao', this.value)"></textarea>
+            <div class="help">Preenchido automaticamente ao selecionar o exame clínico/mental ou segmentos anatômicos, disponível para revisão do médico. Alimenta o e-Sisla.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco 04 — Justificativa e Parecer -->
+      <div class="agil-card">
+        <div class="agil-card-head">
+          <div>
+            <h3><span>📝</span> 04 — Justificativa Parecer Final</h3>
+            <p>Conclusão pericial fundamentada automaticamente conforme achados clínicos para rápida revisão médica.</p>
+          </div>
+        </div>
+        <div class="agil-card-body">
+          <div class="field col-12">
+            <label class="required">Justificativa Parecer Final</label>
+            <textarea class="textarea" id="agilJustificativa" style="min-height:90px" placeholder="Justificativa da conclusão pericial..." oninput="syncAgilField('justificativa', this.value)"></textarea>
+            <div class="help">Texto fundamentado automaticamente (o Parecer técnico Favorável/Contrário é associado em segundo plano).</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra de Ações do Modo Ágil -->
+      <div class="agil-actions-bar" style="display:flex;justify-content:space-between;align-items:center;padding:18px 22px;background:#fff;border:1px solid #D9E2EC;border-radius:16px;box-shadow:0 4px 18px rgba(16,42,67,0.04);margin-bottom:30px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="badge" style="background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE;font-weight:700;padding:6px 14px;border-radius:20px;font-size:12px">⚡ Modo Ágil Ativo</span>
+          <span style="font-size:12px;color:#64748B">Questionário extenso ativo e sincronizado em segundo plano.</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button type="button" class="btn btn-outline" onclick="saveNow()">Salvar rascunho</button>
+          <button type="button" class="btn btn-green" id="btnAgilFinalizar" onclick="finalizarAtendimentoAgil()" style="padding:10px 24px;font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px">
+            <span>Finalizar atendimento</span>
+            <span>✓</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 1 -->
     <section class="section active" id="section-1">
       <div class="section-head"><h2>01 — Identificação do atendimento</h2><p>Informações administrativas do atendimento.</p></div>
@@ -920,7 +2232,7 @@ body::before{
           <div class="field col-8"><label>Nome completo do paciente</label><input class="input" id="nomePaciente" autocomplete="name" placeholder="Digite o nome completo"></div>
           <div class="field col-4"><label>CPF do paciente</label><input class="input" id="cpfPaciente" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="000.000.000-00"></div>
           <div class="field col-6"><label class="required">Cargo</label><input class="input" id="cargo"></div>
-          <div class="field col-3"><label class="required">Tempo no cargo</label><input class="input" type="number" min="0" step="0.1" id="tempoCargo"></div>
+          <div class="field col-3"><label>Tempo no cargo</label><input class="input" type="number" min="0" step="0.1" id="tempoCargo"></div>
           <div class="field col-3"><label>Unidade</label><select class="select" id="tempoUnidade"><option value="">Selecione</option><option>Anos</option><option>Meses</option><option>Dias</option></select></div>
 
           <div class="field col-3"><label class="required">Idade</label><input class="input" type="number" min="0" max="120" id="idade"></div>
@@ -934,7 +2246,7 @@ body::before{
           <div class="field col-12 hidden" id="readaptadoPanel"><label>Quais atividades realiza atualmente?</label><textarea class="textarea" id="atividadesReadaptado" placeholder="Descreva as atividades atuais."></textarea></div>
 
           <div class="field col-12"><label class="required">Qual a doença está tratando que motivou o afastamento?</label><textarea class="textarea" id="doencaMotivo"></textarea></div>
-          <div class="field col-6"><label class="required">Quando começou o tratamento?</label><input class="input" type="date" id="inicioTratamento"></div>
+          <div class="field col-6"><label>Quando começou o tratamento?</label><input class="input" type="date" id="inicioTratamento"></div>
           <div class="field col-6"><label>Com que frequência realiza consultas?</label><input class="input" id="freqConsultas" placeholder="Ex.: semanal, mensal, conforme necessidade"></div>
           <div class="field col-12"><label class="required">Quais sintomas / limitações são referidos?</label><textarea class="textarea" id="sintomasLimitacao"></textarea></div>
         </div>
@@ -983,7 +2295,7 @@ body::before{
       <div class="section-head"><h2>03 — Antecedentes mórbidos</h2><p>Registrar outras doenças em tratamento e informações do histórico pregresso.</p></div>
       <div class="section-body">
         <div class="notice warning"><strong>Importante:</strong> não deixar em branco. Perguntar sobre outras doenças em tratamento e consultar o histórico pregresso.</div>
-        <div class="field"><label class="required">Possui outras doenças em tratamento?</label>
+        <div class="field"><label>Possui outras doenças em tratamento?</label>
           <div class="radio-row">
             <label class="choice"><input type="radio" name="outrasDoencas" value="Sim" onchange="toggleDoencas()"><span>Sim</span></label>
             <label class="choice"><input type="radio" name="outrasDoencas" value="Não" onchange="toggleDoencas()"><span>Não</span></label>
@@ -1009,7 +2321,7 @@ body::before{
       <div class="section-head"><h2>04 — Atestado / Relatório / Exames</h2><p>Dados do documento apresentado pelo médico assistente.</p></div>
       <div class="section-body">
         <div class="form-grid">
-          <div class="field col-6"><label class="required">CRM ou CRO do médico assistente</label><input class="input" id="crmCro"><small class="help">Campo diferente do CRM/CRO do médico responsável, quando informado separadamente.</small></div>
+          <div class="field col-6"><label>CRM ou CRO do médico assistente</label><input class="input" id="crmCro"><small class="help">Campo diferente do CRM/CRO do médico responsável, quando informado separadamente.</small></div>
           <div class="field col-6">
   <label class="required">CID da doença referida pelo médico assistente</label>
   <div class="cid-wrap">
@@ -1041,8 +2353,8 @@ body::before{
     </div>
   </div>
 </div>
-          <div class="field col-6"><label class="required">Data do atestado ou relatório médico</label><input class="input" type="date" id="dataDocumento"></div>
-          <div class="field col-6"><label class="required">Dias solicitados pelo médico assistente</label><input class="input" type="number" min="0" id="diasSolicitados"></div>
+          <div class="field col-6"><label>Data do atestado ou relatório médico</label><input class="input" type="date" id="dataDocumento"></div>
+          <div class="field col-6"><label>Dias solicitados pelo médico assistente</label><input class="input" type="number" min="0" id="diasSolicitados"></div>
           <div class="field col-12">
             <label>Atestado / Relatório / Exames Complementares (Tipo - Data - Resultado)</label>
             <div id="documentRows"></div>
@@ -1713,7 +3025,12 @@ async function copiarFichaEsislaRapida(){
   const oldText = btn ? btn.textContent : "Copiar e-Sisla";
   if(btn){ btn.disabled = true; btn.textContent = "Gerando e-Sisla…"; }
   try {
-    syncState();
+    if (currentAttendanceMode === "agil") {
+      syncAgilToExtended();
+      ensureAgileBackgroundDefaults();
+    } else {
+      syncState();
+    }
     const payload = JSON.parse(JSON.stringify(state));
     payload.quesitos = QuesitoService.get();
     payload.data_hora_atual = new Date().toISOString();
@@ -2135,13 +3452,74 @@ $("exameFisicoTipo")?.addEventListener("change",e=>setExamType(e.target.value));
 $("alteracoesClinicasExames")?.addEventListener("input",e=>setExamDescription(e.target.value));
 $("dataAtd").value=today(); $("horaAtd").value=timeNow();
 
+let __isSyncingState = false;
 function syncState(){
-  state.atendimento=$("atd").value; state.medico=$("medico").value;
-  state.readaptado=getRadio("readaptado"); state.outrasDoencas=getRadio("outrasDoencas"); state.alteracaoMed=getRadio("alteracaoMed");
-  state.limitacaoFuncional=getRadio("limitacaoFuncional"); state.limitacaoRol=getRadio("limitacaoRol"); state.psicoterapia=$("psicoterapia").checked; state.fisioterapia=$("fisioterapia").checked;
-  state.capacidade=getRadio("capacidade"); state.parecer=getRadio("parecer");
-  state.exameFisicoTipo=$("exameFisicoTipo")?.value||state.exameFisicoTipo||""; state.exameFisicoDescricao=$("exameFisicoDescricao")?.value||state.exameFisicoDescricao||""; state.alteracoesClinicasExames=$("alteracoesClinicasExames")?.value||state.alteracoesClinicasExames||""; state.exam={selected:state.exameFisicoTipo,descricao:state.exameFisicoDescricao};
-  state.aux={dataAtd:$("dataAtd").value,horaAtd:$("horaAtd").value,crmResponsavel:$("crmResponsavel").value,nomePaciente:$("nomePaciente").value,cpfPaciente:$("cpfPaciente").value,cargo:$("cargo").value,tempoCargo:$("tempoCargo").value,tempoUnidade:$("tempoUnidade").value,idade:$("idade").value,atividadesReadaptado:$("atividadesReadaptado").value,queixaDuracao:$("queixaDuracao")?$("queixaDuracao").value:(state.queixaDuracao||state.aux?.queixaDuracao||""),doencaMotivo:$("doencaMotivo").value,inicioTratamento:$("inicioTratamento").value,freqConsultas:$("freqConsultas").value,sintomasLimitacao:$("sintomasLimitacao").value,dataAlteracaoMed:$("dataAlteracaoMed").value,obsAlteracaoMed:$("obsAlteracaoMed").value,obsTerapias:$("obsTerapias").value,historicoPregresso:$("historicoPregresso").value,crmCro:$("crmCro").value,cid:$("cid").value,dataDocumento:$("dataDocumento").value,diasSolicitados:$("diasSolicitados").value,obsDocumentos:$("obsDocumentos").value,descLimitacao:$("descLimitacao").value,atividadesComprometidas:$("atividadesComprometidas").value,obsLimitacoes:$("obsLimitacoes").value,exameFisicoDescricao:$("exameFisicoDescricao")?.value||"",pressaoSistolica:$("pressaoSistolica")?.value||"",pressaoDiastolica:$("pressaoDiastolica")?.value||"",pulso:$("pulso")?.value||"",justificativa:$("justificativa").value};
+  if (__isSyncingState) return;
+  __isSyncingState = true;
+  try {
+    if (typeof currentAttendanceMode !== "undefined" && currentAttendanceMode === "agil") {
+      syncAgilToExtended();
+    }
+    const prevAux = state.aux || {};
+    const getVal = (id, fallback) => {
+      const el = $(id);
+      const val = el ? el.value : "";
+      if (val && val.trim() !== "") return val;
+      return fallback !== undefined ? fallback : "";
+    };
+
+    state.atendimento=$("atd")?.value || state.atendimento || ""; state.medico=$("medico")?.value || state.medico || "";
+    state.readaptado=getRadio("readaptado")||state.readaptado||prevAux.readaptado||"";
+    state.outrasDoencas=getRadio("outrasDoencas")||state.outrasDoencas||"Não";
+    state.alteracaoMed=getRadio("alteracaoMed")||state.alteracaoMed||"Não";
+    state.limitacaoFuncional=getRadio("limitacaoFuncional")||state.limitacaoFuncional||"Não";
+    state.limitacaoRol=getRadio("limitacaoRol")||state.limitacaoRol||"Não";
+    state.psicoterapia=$("psicoterapia")?$("psicoterapia").checked:!!state.psicoterapia;
+    state.fisioterapia=$("fisioterapia")?$("fisioterapia").checked:!!state.fisioterapia;
+    state.capacidade=getRadio("capacidade")||state.capacidade||"";
+    state.parecer=getRadio("parecer")||state.parecer||"";
+    state.exameFisicoTipo=$("exameFisicoTipo")?.value||state.exameFisicoTipo||"";
+    state.exameFisicoDescricao=$("exameFisicoDescricao")?.value||state.exameFisicoDescricao||"";
+    state.alteracoesClinicasExames=$("alteracoesClinicasExames")?.value||state.alteracoesClinicasExames||"";
+    state.exam={selected:state.exameFisicoTipo,descricao:state.exameFisicoDescricao};
+
+    state.aux={
+      dataAtd:getVal("dataAtd", prevAux.dataAtd || today()),
+      horaAtd:getVal("horaAtd", prevAux.horaAtd || timeNow()),
+      crmResponsavel:getVal("crmResponsavel", prevAux.crmResponsavel),
+      nomePaciente:getVal("nomePaciente", prevAux.nomePaciente),
+      cpfPaciente:getVal("cpfPaciente", prevAux.cpfPaciente),
+      cargo:getVal("cargo", prevAux.cargo),
+      tempoCargo:getVal("tempoCargo", prevAux.tempoCargo),
+      tempoUnidade:getVal("tempoUnidade", prevAux.tempoUnidade),
+      idade:getVal("idade", prevAux.idade),
+      atividadesReadaptado:getVal("atividadesReadaptado", prevAux.atividadesReadaptado),
+      queixaDuracao:$("queixaDuracao")?$("queixaDuracao").value:(state.queixaDuracao||prevAux.queixaDuracao||""),
+      doencaMotivo:getVal("doencaMotivo", prevAux.doencaMotivo),
+      inicioTratamento:getVal("inicioTratamento", prevAux.inicioTratamento),
+      freqConsultas:getVal("freqConsultas", prevAux.freqConsultas),
+      sintomasLimitacao:getVal("sintomasLimitacao", prevAux.sintomasLimitacao),
+      dataAlteracaoMed:getVal("dataAlteracaoMed", prevAux.dataAlteracaoMed),
+      obsAlteracaoMed:getVal("obsAlteracaoMed", prevAux.obsAlteracaoMed),
+      obsTerapias:getVal("obsTerapias", prevAux.obsTerapias),
+      historicoPregresso:getVal("historicoPregresso", prevAux.historicoPregresso || prevAux.doencaMotivo || ""),
+      crmCro:getVal("crmCro", prevAux.crmCro),
+      cid:getVal("cid", prevAux.cid || state.cid),
+      dataDocumento:getVal("dataDocumento", prevAux.dataDocumento),
+      diasSolicitados:getVal("diasSolicitados", prevAux.diasSolicitados),
+      obsDocumentos:getVal("obsDocumentos", prevAux.obsDocumentos),
+      descLimitacao:getVal("descLimitacao", prevAux.descLimitacao),
+      atividadesComprometidas:getVal("atividadesComprometidas", prevAux.atividadesComprometidas),
+      obsLimitacoes:getVal("obsLimitacoes", prevAux.obsLimitacoes),
+      exameFisicoDescricao:getVal("exameFisicoDescricao", prevAux.exameFisicoDescricao || state.exameFisicoDescricao),
+      pressaoSistolica:getVal("pressaoSistolica", prevAux.pressaoSistolica),
+      pressaoDiastolica:getVal("pressaoDiastolica", prevAux.pressaoDiastolica),
+      pulso:getVal("pulso", prevAux.pulso),
+      justificativa:getVal("justificativa", prevAux.justificativa || state.justificativa)
+    };
+  } finally {
+    __isSyncingState = false;
+  }
 }
 function normalizeLegacyYesNo(value){ const v=String(value??"").trim().toLowerCase(); if(v==="sim")return "Sim"; if(v==="não"||v==="nao")return "Não"; return ""; }
 function applyState(){
@@ -2160,9 +3538,24 @@ function applyState(){
   $("exameFisicoDescricao") && ($("exameFisicoDescricao").value=state.exameFisicoDescricao||"");
   $("alteracoesClinicasExames") && ($("alteracoesClinicasExames").value=state.alteracoesClinicasExames||"");
   setRadio("readaptado",state.readaptado);setRadio("outrasDoencas",state.outrasDoencas);setRadio("alteracaoMed",state.alteracaoMed);setRadio("limitacaoFuncional",state.limitacaoFuncional);setRadio("limitacaoRol",state.limitacaoRol);setRadio("parecer",state.parecer);setRadio("capacidade",state.capacidade); $("psicoterapia").checked=!!state.psicoterapia;$("fisioterapia").checked=!!state.fisioterapia;
-  togglePanelsOnly(); updateLimitacaoStatus(); renderMedications();renderConditions();renderDocumentRecords();renderQuesitos();renderExam();renderParecerHint();applyFinalizedLock(); if($("cid").value)renderCIDAssist(findCID($("cid").value)||null); go(Math.min(9,Math.max(1,Number(state.current)||1)));
+  togglePanelsOnly(); updateLimitacaoStatus(); renderMedications();renderConditions();renderDocumentRecords();renderQuesitos();renderExam();renderParecerHint();applyFinalizedLock(); if($("cid").value)renderCIDAssist(findCID($("cid").value)||null); syncExtendedToAgil(); go(Math.min(9,Math.max(1,Number(state.current)||1)));
 }
-function togglePanelsOnly(){ $("readaptadoPanel").classList.toggle("hidden",getRadio("readaptado")!=="Sim");$("alteracaoPanel").classList.toggle("hidden",getRadio("alteracaoMed")!=="Sim");$("doencasPanel").classList.toggle("hidden",getRadio("outrasDoencas")!=="Sim");$("limitacao1Panel").classList.toggle("hidden",getRadio("limitacaoFuncional")!=="Sim");$("limitacao2Panel").classList.toggle("hidden",getRadio("limitacaoRol")!=="Sim"); }
+function togglePanelsOnly(){
+  const readapVal = getRadio("readaptado") || getRadio("agilReadaptado");
+  $("readaptadoPanel")?.classList.toggle("hidden", readapVal !== "Sim");
+  $("agilReadaptadoPanel")?.classList.toggle("hidden", readapVal !== "Sim");
+
+  const altVal = getRadio("alteracaoMed") || getRadio("agilAlteracaoMed");
+  $("alteracaoPanel")?.classList.toggle("hidden", altVal !== "Sim");
+  $("agilAlteracaoPanel")?.classList.toggle("hidden", altVal !== "Sim");
+
+  const outrasVal = getRadio("outrasDoencas") || getRadio("agilOutrasDoencas");
+  $("doencasPanel")?.classList.toggle("hidden", outrasVal !== "Sim");
+  $("agilDoencasPanel")?.classList.toggle("hidden", outrasVal !== "Sim");
+
+  $("limitacao1Panel")?.classList.toggle("hidden", getRadio("limitacaoFuncional") !== "Sim");
+  $("limitacao2Panel")?.classList.toggle("hidden", getRadio("limitacaoRol") !== "Sim");
+}
 async function syncToRegistry(){
   try{
     const id=state.atendimento;
@@ -2335,17 +3728,24 @@ async function flushOfflineQueue(){
   }
   return changed || (await queue.count())===0;
 }
+let __isAutoSaving = false;
 function autoSave(){
-  if(isFinalizedReadOnly())return;
-  syncState(); QuesitoService.get(); updateProgress(); invalidateAICache();
-  if(!state.atendimento){
-    setPersistStatus("","Não salvo — clique em Salvar rascunho");
+  if(__isAutoSaving) return;
+  __isAutoSaving = true;
+  try {
+    if(isFinalizedReadOnly())return;
+    syncState(); QuesitoService.get(); updateProgress(); invalidateAICache();
+    if(!state.atendimento){
+      setPersistStatus("","Não salvo — clique em Salvar rascunho");
+      clearTimeout(window.__saveTimer);
+      return;
+    }
+    setPersistStatus("saving","Salvando...");
     clearTimeout(window.__saveTimer);
-    return;
+    window.__saveTimer=setTimeout(()=>persistNow(true),650);
+  } finally {
+    __isAutoSaving = false;
   }
-  setPersistStatus("saving","Salvando...");
-  clearTimeout(window.__saveTimer);
-  window.__saveTimer=setTimeout(()=>persistNow(true),650);
 }
 async function persistNow(updateStatus=false){
   try{
@@ -2387,22 +3787,42 @@ async function persistNow(updateStatus=false){
 }
 async function saveNow(){
   if(isFinalizedReadOnly()){toast("Atendimento finalizado: edição bloqueada. Use a Gestão para reabrir.");return false;}
+  if(typeof currentAttendanceMode !== "undefined" && currentAttendanceMode === "agil"){
+    syncAgilToExtended();
+  }
   syncState();
   if(!state.atendimento){
     state.atendimento=generateId();
-    $("atd").value=state.atendimento;
-    if($("atdDisplay"))$("atdDisplay").textContent="Identificação registrada";
-    $("atdNumber").textContent="Atendimento salvo";
+    if($("atd")) $("atd").value=state.atendimento;
+    if($("atdDisplay")) $("atdDisplay").textContent="Identificação registrada";
+    if($("atdNumber")) $("atdNumber").textContent=state.atendimento;
   }
   setPersistStatus("saving","Salvando rascunho...");
   const result=await persistNow(true);
-  if(result?.ok)toast("Rascunho salvo com sucesso.");
-  return !!result?.ok;
+  if(result?.ok){
+    toast("Rascunho salvo com sucesso.");
+    return true;
+  } else {
+    toast(result?.error?.message || "Erro ao salvar rascunho no servidor.");
+    return false;
+  }
 }
 
-function toggleReadaptado(){ $("readaptadoPanel").classList.toggle("hidden",getRadio("readaptado")!=="Sim"); autoSave(); }
-function toggleAlteracaoMed(){ $("alteracaoPanel").classList.toggle("hidden",getRadio("alteracaoMed")!=="Sim"); autoSave(); }
-function toggleDoencas(){ $("doencasPanel").classList.toggle("hidden",getRadio("outrasDoencas")!=="Sim"); autoSave(); }
+function toggleReadaptado(){
+  const val = getRadio("readaptado") || getRadio("agilReadaptado");
+  $("readaptadoPanel")?.classList.toggle("hidden", val !== "Sim");
+  $("agilReadaptadoPanel")?.classList.toggle("hidden", val !== "Sim");
+}
+function toggleAlteracaoMed(){
+  const val = getRadio("alteracaoMed") || getRadio("agilAlteracaoMed");
+  $("alteracaoPanel")?.classList.toggle("hidden", val !== "Sim");
+  $("agilAlteracaoPanel")?.classList.toggle("hidden", val !== "Sim");
+}
+function toggleDoencas(){
+  const val = getRadio("outrasDoencas") || getRadio("agilOutrasDoencas");
+  $("doencasPanel")?.classList.toggle("hidden", val !== "Sim");
+  $("agilDoencasPanel")?.classList.toggle("hidden", val !== "Sim");
+}
 function updateLimitacaoStatus(){
   const checks=[
     ["limitacaoFuncional","limitacaoFunctionalStatus","Limitação funcional"],
@@ -2431,16 +3851,18 @@ function editDocumentRecord(i,k,v){state.documentosComplementares[i][k]=v;autoSa
 function removeDocumentRecord(i){state.documentosComplementares.splice(i,1);renderDocumentRecords();autoSave()}
 
 function renderMedications(){
-  const box=$("medRows");
-  if(!state.medications.length){box.innerHTML='<div class="empty">Nenhuma medicação adicionada.</div>';return;}
-  box.innerHTML=state.medications.map((m,i)=>`
-    <div class="med-row">
-      <input class="input small-input field-span" placeholder="Medicamento" value="${esc(m.medicamento)}" oninput="editMedication(${i},'medicamento',this.value)">
-      <input class="input small-input" placeholder="Dosagem" value="${esc(m.dosagem)}" oninput="editMedication(${i},'dosagem',this.value)">
-      <input class="input small-input" placeholder="Frequência" value="${esc(m.frequencia)}" oninput="editMedication(${i},'frequencia',this.value)">
-      <input class="input small-input field-span" placeholder="Observação" value="${esc(m.observacao)}" oninput="editMedication(${i},'observacao',this.value)">
-      <button class="remove" onclick="removeMedication(${i})" title="Remover">×</button>
-    </div>`).join("");
+  const boxes=[$("medRows"),$("agilMedRows")].filter(Boolean);
+  boxes.forEach(box=>{
+    if(!state.medications.length){box.innerHTML='<div class="empty">Nenhuma medicação adicionada.</div>';return;}
+    box.innerHTML=state.medications.map((m,i)=>`
+      <div class="med-row">
+        <input class="input small-input field-span" placeholder="Medicamento" value="${esc(m.medicamento)}" oninput="editMedication(${i},'medicamento',this.value)">
+        <input class="input small-input" placeholder="Dosagem" value="${esc(m.dosagem)}" oninput="editMedication(${i},'dosagem',this.value)">
+        <input class="input small-input" placeholder="Frequência" value="${esc(m.frequencia)}" oninput="editMedication(${i},'frequencia',this.value)">
+        <input class="input small-input field-span" placeholder="Observação" value="${esc(m.observacao)}" oninput="editMedication(${i},'observacao',this.value)">
+        <button class="remove" onclick="removeMedication(${i})" title="Remover">×</button>
+      </div>`).join("");
+  });
 }
 function editMedication(i,k,v){state.medications[i][k]=v;autoSave()}
 function removeMedication(i){state.medications.splice(i,1);renderMedications();autoSave()}
@@ -2450,14 +3872,16 @@ function addCondition(data={}){
   renderConditions(); autoSave();
 }
 function renderConditions(){
-  const box=$("condRows");
-  if(!state.conditions.length){box.innerHTML='<div class="empty">Nenhuma condição adicionada.</div>';return;}
-  box.innerHTML=state.conditions.map((c,i)=>`
-    <div class="med-row" style="grid-template-columns:1fr 1.5fr auto">
-      <input class="input small-input" placeholder="Doença / condição" value="${esc(c.nome)}" oninput="editCondition(${i},'nome',this.value)">
-      <input class="input small-input" placeholder="Tratamento" value="${esc(c.tratamento)}" oninput="editCondition(${i},'tratamento',this.value)">
-      <button class="remove" onclick="removeCondition(${i})">×</button>
-    </div>`).join("");
+  const boxes=[$("condRows"),$("agilCondRows")].filter(Boolean);
+  boxes.forEach(box=>{
+    if(!state.conditions.length){box.innerHTML='<div class="empty">Nenhuma condição adicionada.</div>';return;}
+    box.innerHTML=state.conditions.map((c,i)=>`
+      <div class="med-row" style="grid-template-columns:1fr 1.5fr auto">
+        <input class="input small-input" placeholder="Doença / condição" value="${esc(c.nome)}" oninput="editCondition(${i},'nome',this.value)">
+        <input class="input small-input" placeholder="Tratamento" value="${esc(c.tratamento)}" oninput="editCondition(${i},'tratamento',this.value)">
+        <button class="remove" onclick="removeCondition(${i})">×</button>
+      </div>`).join("");
+  });
 }
 function editCondition(i,k,v){state.conditions[i][k]=v;autoSave()}
 function removeCondition(i){state.conditions.splice(i,1);renderConditions();autoSave()}
@@ -2533,12 +3957,8 @@ const ValidationEngine={
       [2,"Idade",state.aux.idade],
       [2,"Readaptado",state.readaptado],
       [2,"Doença que motivou o afastamento",state.aux.doencaMotivo],
-      [2,"Início do tratamento",state.aux.inicioTratamento],
       [2,"Sintomas / limitações referidos",state.aux.sintomasLimitacao],
-      [4,"CRM/CRO do médico assistente",state.aux.crmCro],
       [4,"CID",state.aux.cid],
-      [4,"Data do atestado/relatório",state.aux.dataDocumento],
-      [4,"Dias solicitados",state.aux.diasSolicitados],
       [5,"Tipo de exame físico/mental",state.exameFisicoTipo],
       [6,"Limitação funcional",state.limitacaoFuncional],
       [6,"Limitação das atividades do Rol",state.limitacaoRol],
@@ -2551,12 +3971,18 @@ const ValidationEngine={
       const ok=(step===6 ? isYesNoAnswer(v) : String(v??"").trim()!=="");
       if(!ok)by[step].push(label);
     });
+    if (String(state.exameFisicoTipo || "").trim().toLowerCase() === "outros") {
+      const descExame = state.exameFisicoDescricao || state.alteracoesClinicasExames || "";
+      if (!String(descExame).trim()) {
+        by[5].push("Exame Físico Geral — achados observados");
+      }
+    }
     const blocking=[...Object.values(by).flat(), ...q.blocking.filter(x=>!String(x).startsWith("Quesitos:"))];
     const warnings=[...q.warnings];
     const recommendations=[];
     if(q.answered===3&&q.allSame) recommendations.push("Revisar as três respostas dos quesitos com base nos achados registrados.");
     const stepData=Object.fromEntries(Object.entries(by).map(([step,items])=>[step,{status:items.length?"PENDENTE":"CONCLUIDA",pending:items,count:items.length}]));
-    return {valid:blocking.length===0,blocking,warnings,recommendations,steps:stepData,quesitos:q,score:Math.max(0,Math.round((17-blocking.length)/17*100))};
+    return {valid:blocking.length===0,blocking,warnings,recommendations,steps:stepData,quesitos:q,score:Math.max(0,Math.round((13-blocking.length)/13*100))};
   },
   summary(){ return this.get(); }
 };
@@ -2579,6 +4005,7 @@ function focusValidationItem(step,label){
     "Início do tratamento":"inicioTratamento",
     "Sintomas / limitações referidos":"sintomasLimitacao",
     "Tipo de exame físico/mental":"exameFisicoTipo",
+    "Exame Físico Geral — achados observados":"alteracoesClinicasExames",
     "Limitação funcional":"limitacaoFuncional",
     "Limitação das atividades do Rol":"limitacaoRol",
     "Capacidade laborativa":"capacidade",
@@ -2822,7 +4249,7 @@ async function openFinalReport(){
 }
 async function downloadFinalPDF(){ const miss=missingFields();if(miss.length){go(9);renderReview();toast("Há bloqueios críticos; corrija-os antes do PDF.");return;} const html=buildReportHTML(); try{setAIStatus("loading","Gerando PDF...");const r=await AmbientalAuth.authFetch(`${getApiBase()}/api/relatorios/pdf`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({atendimento:state.atendimento,html})});if(!r.ok)throw new Error("Falha ao gerar PDF");const blob=await r.blob();const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`ATD-${state.atendimento||"Ambiental"}.pdf`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);toast("PDF gerado com sucesso.");}catch(e){toast("Não foi possível gerar o PDF pelo servidor. Abra a prévia e use Imprimir → Salvar como PDF.");openFinalReport();}finally{setAIStatus("online","Sistema Online");}}
 function previewFinalReport(){const miss=missingFields();if(miss.length){go(9);renderReview();toast("Há campos pendentes. Revise antes de visualizar o relatório.");return;}openFinalReport();}
-function finalizeFromHeader(){if(isFinalizedReadOnly()){toast("Atendimento já finalizado. Reabra pela Gestão para editar.");return;}go(9);setTimeout(openFinalizeDialog,100);}
+function finalizeFromHeader(){if(isFinalizedReadOnly()){toast("Atendimento já finalizado. Reabra pela Gestão para editar.");return;}if(currentAttendanceMode === "agil"){finalizarAtendimentoAgil();return;}go(9);setTimeout(openFinalizeDialog,100);}
 function openFinalizeDialog(){const validation=ValidationEngine.get();if(!validation.valid){renderReview();toast("Há bloqueios críticos. Revise o checklist antes de finalizar.");return;}syncState();const q=getQuesitoValidation();const el=$("finalizeSummary");if(!el)return;const items=[["Atendimento",state.atendimento],["Situação","Todos os campos obrigatórios preenchidos"],["Quesitos",`${q.answered}/3 respondidos`],["Capacidade laborativa",state.capacidade||"Não definida"],["Parecer",state.parecer||"Não definido"],["Inconsistências críticas",String(validation.blocking.length)],["Documento final",missingFields().length?"Pendente":"Disponível para visualização"]];el.innerHTML=items.map(([l,v])=>`<div class="finalize-item"><span>${esc(l)}</span><b>${esc(v)}</b></div>`).join("");$("finalizeOverlay")?.classList.add("open");}
 function closeFinalizeDialog(){$("finalizeOverlay")?.classList.remove("open");}
 function openFinalizeProgress(){const o=$("finalizeProgressOverlay");if(!o)return;o.classList.remove("success");o.classList.add("open");o.setAttribute("aria-hidden","false");$("finalizeProgressTitle").textContent="Finalizando atendimento";$("finalizeProgressSubtitle").textContent="Salvando os dados e registrando a finalização com segurança.";$("fpStepSave").className="finalize-progress-step active";$("fpStepFinalize").className="finalize-progress-step";$("fpStepDone").className="finalize-progress-step";}
@@ -2842,7 +4269,48 @@ const saved=await syncToServer(true);if(!saved.ok)throw new Error("Não foi poss
 
 function formatCPF(value){ const digits=String(value||"").replace(/\D/g,"").slice(0,11); if(digits.length<=3)return digits; if(digits.length<=6)return digits.slice(0,3)+"."+digits.slice(3); if(digits.length<=9)return digits.slice(0,3)+"."+digits.slice(3,6)+"."+digits.slice(6); return digits.slice(0,3)+"."+digits.slice(3,6)+"."+digits.slice(6,9)+"-"+digits.slice(9); }
 $("cpfPaciente")?.addEventListener("input",e=>{ e.target.value=formatCPF(e.target.value); autoSave(); });
-function newEmptyState(){ state.current=1; state.atendimento=""; state.medico=""; state.capacidade=""; state.parecer=""; state.finalizado=false; state.finalizadoEm=""; state.workflowStatus="RASCUNHO"; state.statusHistory=[]; state.medications=[]; state.conditions=[]; state.quesitos=[]; state.exam={}; state.documentosComplementares=[]; state.exameFisicoTipo=""; state.exameFisicoDescricao=""; state.alteracoesClinicasExames=""; state.queixaDuracao=""; state.aux={}; applyProfessionalDefaults(currentProfile); }
+function newEmptyState(){
+  state.current = 1;
+  state.atendimento = generateId();
+  delete state.__serverId;
+  delete state.__serverVersion;
+  delete state.__serverSyncedAt;
+  state.medico = "";
+  state.capacidade = "";
+  state.parecer = "";
+  state.finalizado = false;
+  state.finalizadoEm = "";
+  state.workflowStatus = "RASCUNHO";
+  state.statusHistory = [];
+  state.medications = [];
+  state.conditions = [];
+  state.quesitos = [];
+  state.exam = {};
+  state.documentosComplementares = [];
+  state.exameFisicoTipo = "";
+  state.exameFisicoDescricao = "";
+  state.alteracoesClinicasExames = "";
+  state.queixaDuracao = "";
+  state.aux = {};
+  state.exameMentalResultado = "";
+  state.osteomuscularRegioes = {};
+  state.osteomuscularResultado = "";
+  
+  applyFinalizedLock();
+  
+  const btnN = $("btnAgilMentalNormal");
+  const btnA = $("btnAgilMentalAlterado");
+  if(btnN) btnN.classList.remove("selected-normal");
+  if(btnA) btnA.classList.remove("selected-alterado");
+  
+  if(typeof updateOsteoUI === "function") updateOsteoUI();
+  
+  if($("atd")) $("atd").value = state.atendimento;
+  if($("atdNumber")) $("atdNumber").textContent = state.atendimento;
+  if($("atdDisplay")) $("atdDisplay").textContent = "Identificação registrada";
+  
+  applyProfessionalDefaults(currentProfile);
+}
 function isFinalizedReadOnly(){return workflowStatus()==="FINALIZADO" && new URLSearchParams(location.search).get("reabrir")!=="1";}
 function isReadOnlySafeButton(el){
   if(!el || el.tagName!=="BUTTON") return false;
@@ -2891,9 +4359,15 @@ async function init(){
  await authReady;
  await loadCIDs().catch(err => console.warn("Erro ao carregar base de CIDs:", err));
  const params=new URLSearchParams(location.search); const recordId=params.get("atendimento"); const isNew=params.get("novo")==="1"; const openDocumentOnLoad=params.get("documento")==="1";
+ const doctorDefaultMode = (currentProfile?.modo_atendimento === "extenso" || currentProfile?.modo_atendimento === "estendido") ? "estendido" : "agil";
   if(isNew || !recordId){
    newEmptyState();
    applyState();
+   if (doctorDefaultMode === "estendido") {
+     setAttendanceMode("estendido");
+   } else {
+     setAttendanceMode("agil");
+   }
  } else {
    recovered=await tryServerLoad(recordId);
    if(!recovered) recovered=await loadRegistryRecord(recordId);
@@ -2903,6 +4377,8 @@ async function init(){
      applyProfessionalDefaults(currentProfile);
      applyState();
    }
+   const savedMode = localStorage.getItem("ambiental_attendance_mode") || doctorDefaultMode;
+   setAttendanceMode(savedMode);
  }
  const pacienteParam = params.get("paciente");
  const protocoloParam = params.get("protocolo") || params.get("agenda_protocolo");
@@ -2912,10 +4388,14 @@ async function init(){
    if (!state.aux) state.aux = {};
    if (pacienteParam) {
      state.aux.nomePaciente = pacienteParam;
+     state.nomePaciente = pacienteParam;
      if ($("nomePaciente")) $("nomePaciente").value = pacienteParam;
+     if ($("agilNomePaciente")) $("agilNomePaciente").value = pacienteParam;
    }
    if (protocoloParam) {
      state.atendimento = protocoloParam;
+     if ($("atd")) $("atd").value = protocoloParam;
+     if ($("atdNumber")) $("atdNumber").textContent = protocoloParam;
      if ($("atendimento")) $("atendimento").value = protocoloParam;
    }
    if (horaParam) {
@@ -2945,6 +4425,8 @@ async function init(){
  });
  document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeModal("historyModal");closeModal("diagnosticModal");}});
  window.addEventListener("beforeunload",()=>{void syncToRegistry();});
+
+ if(typeof setupOsteoHoverEffects === "function") setupOsteoHoverEffects();
 }
 init().catch(e=>{console.error("Falha na inicialização:",e);toast("Erro ao iniciar o sistema.");});
 
@@ -2963,6 +4445,1498 @@ $("cid")?.addEventListener("keydown", e => {
     }
   }
 });
+
+
+$("agilCid")?.addEventListener("keydown", e => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const first = $("agilCidSuggestions")?.querySelector(".cid-option");
+    if (first && $("agilCidSuggestions")?.classList.contains("show")) {
+      const code = first.querySelector(".cid-code")?.textContent?.trim() || "";
+      if (code) selectAgilCID(code);
+    }
+  }
+});
+document.addEventListener("click", e => {
+  if (!e.target.closest("#agilCid") && !e.target.closest("#agilCidSuggestions")) {
+    $("agilCidSuggestions")?.classList.remove("show");
+  }
+});
+
+/* =========================================================
+   MODO ÁGIL & AUTOMAÇÃO CLÍNICA
+   ========================================================= */
+
+const TEXTO_EXAME_MENTAL_NORMAL = `Nível de consciência: Preservado
+Orientação: Global preservada em tempo e espaço
+Atenção e concentração:  Sem desvios, preservados.
+Memória:  Não demostrou dificuldades em responder questões sobre fatos e datas recente e remotas sobre sua saúde e vida laboral
+Atitude/comportamento: Sem desvios, demostra autocontrole.
+Inteligência: Produz conteúdo compatível com sua formação e profissão. 
+Pensamento: Curso, forma e conteúdo sem comprometimentos. 
+Linguagem: Apropriada, sem alteração do tom, fala pausadamente, sem se exaltar ou gaguejar. 
+Afetividade: Preservada.
+Humor: Eutímico, polarizado ao positivo.
+Pragmatismo: Preservado, produz conteúdo satisfatório ao plano futuro.
+Volição: Sem prejuízos 
+Sensopercepção: Sem sinais diretos ou indiretos que possam indicar comprometimento
+Psicomotricidade: Sem comprometimento.
+Juízo: Preservado.`;
+
+const TEXTO_LIMITACAO_NORMAL = `Não se identificam limitações funcionais em níveis que possam ser considerados incapacitantes neste momento.`;
+
+const TEXTO_JUSTIFICATIVA_NORMAL = `Capacidade laborativa preservada, não se identificam limitações funcionais em níveis que possam ser considerados incapacitantes neste momento.`;
+
+const TEXTO_EXAME_MENTAL_ALTERADO = `Apresentas-e consciente, boa orientação, apresentação e cuidado pessoal sem vaidades, boa higiene, se veste de forma adequada ao clima. Facie entristecida, hipotimica, manifestação de labilidade emocional, seu diálogo é claro, produtivo, com tom de voz baixa, com afetividade prejudicada, nota-se insight negativo sobre seu quadro clinico, com prejuízos de memorização, dificuldade para relatar datas e fatos recentes, apresenta perfil intelecto natural, compatível com sua formação acadêmica, demostra Juízo crítico da realidade preservado, pensamentos ruminantes com conteúdo de ressentimentos, desesperança, desestruturado. Hipopragamatica, com volição prejudicada, sem traços sugestivos de ideação suicida ou conteúdo persecutório.`;
+
+const TEXTO_LIMITACAO_ALTERADO = `Apresenta limitações psicossociais e psicoemocionais que repercutem nas habilidades necessárias para interatividade social, planejamentos, manter concentração e ter autodomínio.`;
+
+const TEXTO_JUSTIFICATIVA_ALTERADO = `Capacidade laborativa parcial e temporariamente prejudicada, limitações psicossociais e psicoemocionais que repercutem nas habilidades necessárias para interatividade social, planejamentos, manter concentração e ter autodomínio, referente ao período pleiteado.`;
+
+/* =========================================================
+   DADOS E AUTOMAÇÃO — APARELHO OSTEOMUSCULAR E TECIDO CONJUNTIVO
+   ========================================================= */
+
+const REGIOES_PAREADAS = {
+  ombros: ["ombro_direito", "ombro_esquerdo"],
+  cotovelos: ["cotovelo_direito", "cotovelo_esquerdo"],
+  antebracos: ["antebraco_direito", "antebraco_esquerdo"],
+  maos: ["mao_direita", "mao_esquerda"],
+  joelhos: ["joelho_direito", "joelho_esquerdo"],
+  tornozelos: ["tornozelo_direito", "tornozelo_esquerdo"]
+};
+
+const LABELS_BILATERAIS = {
+  ombros: "Ombro esquerdo e direito",
+  cotovelos: "Cotovelo esquerdo e direito",
+  antebracos: "Antebraço esquerdo e direito",
+  maos: "Mão esquerda e direita",
+  joelhos: "Joelho esquerdo e direito",
+  tornozelos: "Tornozelo esquerdo e direito"
+};
+
+function normalizarRegioesOsteo(regMap) {
+  if (!regMap) return;
+  Object.keys(REGIOES_PAREADAS).forEach(group => {
+    if (regMap[group]) {
+      const val = regMap[group];
+      REGIOES_PAREADAS[group].forEach(sideKey => {
+        if (!regMap[sideKey]) regMap[sideKey] = val;
+      });
+      delete regMap[group];
+    }
+  });
+}
+
+const DADOS_OSTEOMUSCULAR = {
+  cervical: {
+    label: "Cervical",
+    exame: "Apresenta mobilidade ativa e passiva normais, sem alterações de pele, ausência de cicatrizes, ausência de deformidades, coluna cervical com MM. Trapézios sem contraturas, com mobilidade ativa e passiva de flexão 65º, extensão 50º, lateralizações 40º e rotações 55º, sem alterações de sensibilidade em dermátomos nos MMSS, reflexos preservados tricipital e bicipital bilateralmente.",
+    limitacao: "Limitações para mudança do campo visual de forma brusca ou habitual, elevação ou movimentação de membros superiores acimada linha escapular de modo habitual",
+    justificativa: "Capacidade parcial e temporariamente prejudicada, limitações para mudança do campo visual de forma brusca ou habitual, elevação ou movimentação de membros superiores acimada linha escapular de modo habitual."
+  },
+  lombar: {
+    label: "Coluna lombar",
+    exame: "Com mobilidade ativa e passiva normais, sem alterações de pele, sem cicatrizes, ausência de deformidades, coluna sem contraturas paravertebrais, com mobilidade em flexão de 95º, extensão 35º, lateralização 40º Rotação 35º, sem prejuízos de sensibilidade em dermátomos dos MMII, com reflexos aquileanos e patelares normais, apresenta Lasegue + a 45º, Giordano, Kernig, Hoover e Milgran inalterados.",
+    limitacao: "Limitações para realizar dosiflexão e extensão, de forma abrupta ou de modo habitual, deambulação de modo frequente e longos trajetos, permanência em ostostatismo prolongado, posição sentado de modo permanente e ou habitual sem opção de alternância postural",
+    justificativa: "Capacidade parcial e temporariamente prejudicada, limitações para realizar dosiflexão e extensão, de forma abrupta ou de modo habitual, deambulação de modo frequente e longos trajetos, permanência em ostostatismo prolongado, posição sentado de modo permanente e ou habitual sem opção de alternância postural."
+  },
+  ombro_direito: {
+    label: "Ombro direito",
+    exame: "Ausência de deformidades ou hipotrofias musculares, sem alterações de pele, sem cicatrizes, com mobilidade ativa e passiva normais e capacidade de movimentos ativos com amplitude de Flexão (90°) - extensão (180°) Abudção (180°) - adução (30°) Rotação interna (90°) - rotação externa (90°) tendo os testes Neer, Jobe, Patte, Gerber, Howkins e Queda negativos.",
+    limitacao: "Limitações para ação braçal, com execução de elevação ou movimentação de membros superiores acimada linha escapular de modo habitual",
+    justificativa: "Capacidade parcial e temporariamente prejudicada, Limitações para ação braçal, com execução de elevação ou movimentação de membros superiores acimada linha escapular de modo habitual."
+  },
+  ombro_esquerdo: {
+    label: "Ombro esquerdo",
+    exame: "Ausência de deformidades ou hipotrofias musculares, sem alterações de pele, sem cicatrizes, com mobilidade ativa e passiva normais e capacidade de movimentos ativos com amplitude de Flexão (90°) - extensão (180°) Abudção (180°) - adução (30°) Rotação interna (90°) - rotação externa (90°) tendo os testes Neer, Jobe, Patte, Gerber, Howkins e Queda negativos.",
+    limitacao: "Limitações para ação braçal, com execução de elevação ou movimentação de membros superiores acimada linha escapular de modo habitual",
+    justificativa: "Capacidade parcial e temporariamente prejudicada, Limitações para ação braçal, com execução de elevação ou movimentação de membros superiores acimada linha escapular de modo habitual."
+  },
+  cotovelo_direito: {
+    label: "Cotovelo direito",
+    exame: "Sem atrofias, sem deformidades, ausência de edemas ou hematomas, palpação dos epicôndilos e olecrano sem alterações, amplitudes de prono-supinação 90 º e flexão 145 º, extensão -145 º, força muscular preservada.",
+    limitacao: "Observo através de exame físico que possui limitações da ADM que comprometem a ação braçal, limitam a aplicação de força motriz, diminuem a destreza manual, comprometem execução de manuscritos de forma habitual e sistemática",
+    justificativa: "Capacidade parcial e temporariamente prejudicada, limitações da ADM que comprometem a ação braçal, limitam a aplicação de força motriz, diminuem a destreza manual, comprometem execução de manuscritos de forma habitual e sistemática."
+  },
+  cotovelo_esquerdo: {
+    label: "Cotovelo esquerdo",
+    exame: "Sem atrofias, sem deformidades, ausência de edemas ou hematomas, palpação dos epicôndilos e olecrano sem alterações, amplitudes de prono-supinação 90 º e flexão 145 º, extensão -145 º, força muscular preservada.",
+    limitacao: "Observo através de exame físico que possui limitações da ADM que comprometem a ação braçal, limitam a aplicação de force motriz, diminuem a destreza manual, comprometem execução de manuscritos de forma habitual e sistemática",
+    justificativa: "Capacidade parcial e temporariamente prejudicada, limitações da ADM que comprometem a ação braçal, limitam a aplicação de force motriz, diminuem a destreza manual, comprometem execução de manuscritos de forma habitual e sistemática."
+  },
+  antebraco_direito: {
+    label: "Antebraço direito",
+    exame: "Sem atrofias, sem deformidades, ausência de cicatrizes, edemas ou hematomas. Punho: ausência de deformidades, cicatrizes, cistos, atrofias, edemas ou hematomas; mobilidade em flexão 90 º, extensão 70 º, desvios ulnar 45 º, radial 20 º, palpação de túneis dorsais sem alterações, apresenta testes Filkeinstein, Tinel do Mediano e Phalen negativos.",
+    limitacao: "Identifico através de exame físico, limitações da ADM que comprometem a ação braçal, limitam a aplicação de força motriz, diminuem a destreza manual, comprometem execução de manuscritos de forma habitual e sistemática",
+    justificativa: "Capacidade parcial e temporariamente prejudicada, Identifico através de exame físico, limitações da ADM que comprometem a ação braçal, limitam a aplicação de force motriz, diminuem a destreza manual, comprometem execução de manuscritos de forma habitual e sistemática."
+  },
+  antebraco_esquerdo: {
+    label: "Antebraço esquerdo",
+    exame: "Sem atrofias, sem deformidades, ausência de cicatrizes, edemas ou hematomas. Punho: ausência de deformidades, cicatrizes, cistos, atrofias, edemas ou hematomas; mobilidade em flexão 90 º, extensão 70 º, desvios ulnar 45 º, radial 20 º, palpação de túneis dorsais sem alterações, apresenta testes Filkeinstein, Tinel do Mediano e Phalen negativos.",
+    limitacao: "Identifico através de exame físico, limitações da ADM que comprometem a ação braçal, limitam a aplicação de força motriz, diminuem a destreza manual, comprometem execução de manuscritos de forma habitual e sistemática",
+    justificativa: "Capacidade parcial e temporariamente prejudicada, Identifico através de exame físico, limitações da ADM que comprometem a ação braçal, limitam a aplicação de force motriz, diminuem a destreza manual, comprometem execução de manuscritos de forma habitual e sistemática."
+  },
+  mao_direita: {
+    label: "Mão direita",
+    exame: "Ausência de edemas, hematomas, cicatrizes, atrofias de regiões tenar e hipotenar, presença de calosidades de pressão, movimentos de flexão e extensão dos dedos sem alterações, pinças fina e grossa preservadas, enchimento capilar sem alterações.",
+    limitacao: "Apresenta limitações da ADM que comprometem o desempenho esperado para atividades manipulativas, limitam a ação manual, limitam movimentos finos, limitam a destreza manual, comprometem execução de manuscritos e digitação de forma habitual",
+    justificativa: "Capacidade parcial e temporariamente prejudicada, Apresenta limitações da ADM que comprometem o desempenho esperado para atividades manipulativas, limitam a ação manual, limitam movimentos finos, limitam a destreza manual, comprometem execução de manuscritos e digitação de forma habitual."
+  },
+  mao_esquerda: {
+    label: "Mão esquerda",
+    exame: "Ausência de edemas, hematomas, cicatrizes, atrofias de regiões tenar e hipotenar, presença de calosidades de pressão, movimentos de flexão e extensão dos dedos sem alterações, pinças fina e grossa preservadas, enchimento capilar sem alterações.",
+    limitacao: "Apresenta limitações da ADM que comprometem o desempenho esperado para atividades manipulativas, limitam a ação manual, limitam movimentos finos, limitam a destreza manual, comprometem execução de manuscritos e digitação de forma habitual",
+    justificativa: "Capacidade parcial e temporariamente prejudicada, Apresenta limitações da ADM que comprometem o desempenho esperado para atividades manipulativas, limitam a ação manual, limitam movimentos finos, limitam a destreza manual, comprometem execução de manuscritos e digitação de forma habitual."
+  },
+  quadril: {
+    label: "Quadril",
+    exame: "Deambula sem alterações na báscula da bacia, ausência de edemas, ausência de cicatrizes, capacidade de rotações externa 45 º e interna 45 º, e de flexão 125 º, extensão 10 º, palpação da Bursa trocanteriana indolor; palpação do trajeto do N. Ciático indolor.",
+    limitacao: "Apresenta limitações para realizar rotação do tronco de forma abrupta ou de modo habitual, deambulação de modo frequente e longos trajetos, permanência em ostostatismo prolongado, posição sentado de modo permanente e ou habitual sem opção de alternância postural",
+    justificativa: "Capacidade laborativa parcial e temporariamente prejudicada, apresenta limitações para realizar rotação do tronco de forma abrupta ou de modo habitual, deambulação de modo frequente e longos trajetos, permanência em ostostatismo prolongado, posição sentado de modo permanente e ou habitual sem opção de alternância postural."
+  },
+  joelho_direito: {
+    label: "Joelho direito",
+    exame: "Ausência de deformidades, edemas ou derrame articular; mobilidade de flexão 140 º e extensão - 140 º, sem deformidades (valgo ou varo), com ligamentos estáveis (testes estresse valgo e varo para os ligamentos colaterais; testes gaveta anterior e Lackman para o LCA; teste gaveta posterior para o LCP); palpação das interlinhas sem alterações (teste McMurray para os meniscos).",
+    limitacao: "Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ostostatismo prolongado, realizar agachamentos, subir e descer escadarias de modo habitual e sem apoio",
+    justificativa: "Capacidade laborativa parcial e temporariamente prejudicada, devido limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ostostatismo prolongado, realizar agachamentos, subir e descer escadarias de modo habitual e sem apoio."
+  },
+  joelho_esquerdo: {
+    label: "Joelho esquerdo",
+    exame: "Ausência de deformidades, edemas ou derrame articular; mobilidade de flexão 140 º e extensão - 140 º, sem deformidades (valgo ou varo), com ligamentos estáveis (testes estresse valgo e varo para os ligamentos colaterais; testes gaveta anterior e Lackman para o LCA; teste gaveta posterior para o LCP); palpação das interlinhas sem alterações (teste McMurray para os meniscos).",
+    limitacao: "Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ostostatismo prolongado, realizar agachamentos, subir e descer escadarias de modo habitual e sem apoio",
+    justificativa: "Capacidade laborativa parcial e temporariamente prejudicada, devido limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ostostatismo prolongado, realizar agachamentos, subir e descer escadarias de modo habitual e sem apoio."
+  },
+  tornozelo_direito: {
+    label: "Tornozelo direito",
+    exame: "Ausência de deformidades, edemas ou hematomas, e de instabilidade tíbio-talar; palpação dos maléolos sem alterações, com palpação dos ligamentos Deltóide (medial), e talo-fibular anterior e posterior indolores, apresenta pulso tibial posterior preservado. Flexão dorsal a 20 º flexão plantar a 45 º.\nPé: ausência de deformidades, edemas ou hematomas; palpação do pulso pedioso sem alterações; palpação do tarso, metatarsos e dedos sem alterações.",
+    limitacao: "Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ostostatismo prolongado, subir e descer escadarias de modo habitual",
+    justificativa: "Capacidade parcial e temporariamente prejudicada, Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ostostatismo prolongado, subir e descer escadarias de modo habitual."
+  },
+  tornozelo_esquerdo: {
+    label: "Tornozelo esquerdo",
+    exame: "Ausência de deformidades, edemas ou hematomas, e de instabilidade tíbio-talar; palpação dos maléolos sem alterações, com palpação dos ligamentos Deltóide (medial), e talo-fibular anterior e posterior indolores, apresenta pulso tibial posterior preservado. Flexão dorsal a 20 º flexão plantar a 45 º.\nPé: ausência de deformidades, edemas ou hematomas; palpação do pulso pedioso sem alterações; palpação do tarso, metatarsos e dedos sem alterações.",
+    limitacao: "Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ostostatismo prolongado, subir e descer escadarias de modo habitual",
+    justificativa: "Capacidade parcial e temporariamente prejudicada, Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ostostatismo prolongado, subir e descer escadarias de modo habitual."
+  }
+};
+
+// Aliases para retrocompatibilidade
+DADOS_OSTEOMUSCULAR.ombros = DADOS_OSTEOMUSCULAR.ombro_direito;
+DADOS_OSTEOMUSCULAR.cotovelos = DADOS_OSTEOMUSCULAR.cotovelo_direito;
+DADOS_OSTEOMUSCULAR.antebracos = DADOS_OSTEOMUSCULAR.antebraco_direito;
+DADOS_OSTEOMUSCULAR.maos = DADOS_OSTEOMUSCULAR.mao_direita;
+DADOS_OSTEOMUSCULAR.joelhos = DADOS_OSTEOMUSCULAR.joelho_direito;
+DADOS_OSTEOMUSCULAR.tornozelos = DADOS_OSTEOMUSCULAR.tornozelo_direito;
+
+const TEXTO_OSTEO_NORMAL_EXAME = "Aparelho Osteomuscular e Tecido Conjuntivo com trofismo e tônus musculares preservados globalmente, ausência de edemas, deformidades articulares ou cicatrizes patológicas. Mobilidade ativa e passiva preservadas em coluna vertebral (cervical e lombar) e articulações periféricas (ombros, cotovelos, punhos, mãos, quadris, joelhos e tornozelos). Testes ortopédicos especiais negativos bilateralmente. Marcha típica sem claudicação.";
+const TEXTO_OSTEO_NORMAL_LIMITACAO = "Não se identificam limitações funcionais incapacitantes no exame físico pericial osteomuscular.";
+const TEXTO_OSTEO_NORMAL_JUSTIFICATIVA = "Capacidade laborativa preservada, avaliação pericial clínica do aparelho osteomuscular sem evidências de incapacidade laborativa no momento do exame pericial.";
+
+function capitalizeFirstLetter(str) {
+  if (!str) return "";
+  const s = String(str).trim();
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function formatarLimitacoesOsteo(lista) {
+  const itensUnicos = Array.from(new Set(
+    (lista || [])
+      .map(s => String(s || "").trim().replace(/[.;,]+$/, ""))
+      .filter(Boolean)
+  ));
+  if (itensUnicos.length === 0) return "";
+  if (itensUnicos.length === 1) return itensUnicos[0];
+  if (itensUnicos.length === 2) return `${itensUnicos[0]} e ${itensUnicos[1]}`;
+  return `${itensUnicos.slice(0, -1).join(", ")} e ${itensUnicos[itensUnicos.length - 1]}`;
+}
+
+function setGrupoStatus(grupo, status) {
+  if (REGIOES_PAREADAS[grupo]) {
+    if (!state.osteomuscularRegioes) state.osteomuscularRegioes = {};
+    REGIOES_PAREADAS[grupo].forEach(sideKey => {
+      if (status) {
+        state.osteomuscularRegioes[sideKey] = status;
+      } else {
+        delete state.osteomuscularRegioes[sideKey];
+      }
+    });
+    const vals = Object.values(state.osteomuscularRegioes);
+    const hasAlterado = vals.some(v => v === "Alterado");
+    const hasNormal = vals.some(v => v === "Normal");
+    if (hasAlterado) {
+      state.osteomuscularResultado = "Alterado";
+      aplicarRegioesOsteomusculares();
+    } else if (hasNormal) {
+      state.osteomuscularResultado = "Normal";
+      aplicarRegioesOsteomusculares();
+    } else {
+      state.osteomuscularResultado = "";
+      limparOsteomuscular(true);
+    }
+    updateOsteoUI();
+  } else {
+    setRegiaoStatus(grupo, status);
+  }
+}
+
+function setRegiaoStatus(regiao, status) {
+  if (REGIOES_PAREADAS[regiao]) {
+    setGrupoStatus(regiao, status);
+    return;
+  }
+  if (!state.osteomuscularRegioes) state.osteomuscularRegioes = {};
+  if (status) {
+    state.osteomuscularRegioes[regiao] = status;
+  } else {
+    delete state.osteomuscularRegioes[regiao];
+  }
+  
+  const vals = Object.values(state.osteomuscularRegioes);
+  const hasAlterado = vals.some(v => v === "Alterado");
+  const hasNormal = vals.some(v => v === "Normal");
+  
+  if (hasAlterado) {
+    state.osteomuscularResultado = "Alterado";
+    aplicarRegioesOsteomusculares();
+  } else if (hasNormal) {
+    state.osteomuscularResultado = "Normal";
+    aplicarRegioesOsteomusculares();
+  } else {
+    state.osteomuscularResultado = "";
+    limparOsteomuscular(true);
+  }
+  
+  updateOsteoUI();
+}
+
+function toggleRegiaoOsteomuscular(regiao) {
+  if (!state.osteomuscularRegioes) state.osteomuscularRegioes = {};
+  const current = state.osteomuscularRegioes[regiao];
+  // Ciclo intuitivo de 3 estados ao tocar no corpo:
+  // Não avaliado -> Alterado (ticado vermelho) -> Normal (ticado verde) -> Não avaliado (limpo)
+  let next = "Alterado";
+  if (current === "Alterado") {
+    next = "Normal";
+  } else if (current === "Normal") {
+    next = "";
+  } else {
+    next = "Alterado";
+  }
+  setRegiaoStatus(regiao, next);
+}
+
+function agruparRegioesAlteradas(alteradas) {
+  const alteradasSet = new Set(alteradas);
+  const processadas = new Set();
+  const gruposResultado = [];
+
+  const gruposOrdenados = [
+    { key: "cervical", isGroup: false },
+    { key: "lombar", isGroup: false },
+    { key: "quadril", isGroup: false },
+    { key: "ombros", isGroup: true, sides: ["ombro_esquerdo", "ombro_direito"] },
+    { key: "cotovelos", isGroup: true, sides: ["cotovelo_esquerdo", "cotovelo_direito"] },
+    { key: "antebracos", isGroup: true, sides: ["antebraco_esquerdo", "antebraco_direito"] },
+    { key: "maos", isGroup: true, sides: ["mao_esquerda", "mao_direita"] },
+    { key: "joelhos", isGroup: true, sides: ["joelho_esquerdo", "joelho_direito"] },
+    { key: "tornozelos", isGroup: true, sides: ["tornozelo_esquerdo", "tornozelo_direito"] }
+  ];
+
+  gruposOrdenados.forEach(item => {
+    if (!item.isGroup) {
+      if (alteradasSet.has(item.key) && DADOS_OSTEOMUSCULAR[item.key]) {
+        processadas.add(item.key);
+        gruposResultado.push({
+          label: DADOS_OSTEOMUSCULAR[item.key].label,
+          exame: DADOS_OSTEOMUSCULAR[item.key].exame,
+          keys: [item.key]
+        });
+      }
+    } else {
+      const [leftKey, rightKey] = item.sides;
+      const hasLeft = alteradasSet.has(leftKey);
+      const hasRight = alteradasSet.has(rightKey);
+
+      if (hasLeft && hasRight && DADOS_OSTEOMUSCULAR[leftKey]) {
+        processadas.add(leftKey);
+        processadas.add(rightKey);
+        gruposResultado.push({
+          label: LABELS_BILATERAIS[item.key] || `${DADOS_OSTEOMUSCULAR[leftKey].label} e direito`,
+          exame: DADOS_OSTEOMUSCULAR[leftKey].exame,
+          keys: [leftKey, rightKey]
+        });
+      } else if (hasLeft && DADOS_OSTEOMUSCULAR[leftKey]) {
+        processadas.add(leftKey);
+        gruposResultado.push({
+          label: DADOS_OSTEOMUSCULAR[leftKey].label,
+          exame: DADOS_OSTEOMUSCULAR[leftKey].exame,
+          keys: [leftKey]
+        });
+      } else if (hasRight && DADOS_OSTEOMUSCULAR[rightKey]) {
+        processadas.add(rightKey);
+        gruposResultado.push({
+          label: DADOS_OSTEOMUSCULAR[rightKey].label,
+          exame: DADOS_OSTEOMUSCULAR[rightKey].exame,
+          keys: [rightKey]
+        });
+      }
+    }
+  });
+
+  alteradas.forEach(k => {
+    if (!processadas.has(k) && DADOS_OSTEOMUSCULAR[k]) {
+      gruposResultado.push({
+        label: DADOS_OSTEOMUSCULAR[k].label,
+        exame: DADOS_OSTEOMUSCULAR[k].exame,
+        keys: [k]
+      });
+    }
+  });
+
+  return gruposResultado;
+}
+
+function aplicarRegioesOsteomusculares() {
+  const regMap = state.osteomuscularRegioes || {};
+  normalizarRegioesOsteo(regMap);
+  const alteradas = Object.keys(regMap).filter(k => regMap[k] === "Alterado" && DADOS_OSTEOMUSCULAR[k]);
+  
+  if (alteradas.length > 0) {
+    state.osteomuscularResultado = "Alterado";
+    state.exameFisicoTipo = "Aparelho Osteomuscular e Tecido Conjutivo";
+    if ($("exameFisicoTipo")) $("exameFisicoTipo").value = "Aparelho Osteomuscular e Tecido Conjutivo";
+    if ($("agilExameFisicoTipo")) $("agilExameFisicoTipo").value = "Aparelho Osteomuscular e Tecido Conjutivo";
+    
+    // Agrupar lateralidades bilaterais para não repetir textos idênticos (ex: Antebraço esquerdo e direito: ...)
+    const grupos = agruparRegioesAlteradas(alteradas);
+    const examesTexto = grupos.map(d => {
+      return `${d.label}: ${capitalizeFirstLetter(d.exame)}`;
+    }).join("\n\n");
+    
+    // Limitações conectadas com "e" sem ".;", primeira letra maiúscula e deduplicadas entre lados
+    const limitacoesUnidas = formatarLimitacoesOsteo(alteradas.map(k => DADOS_OSTEOMUSCULAR[k].limitacao));
+    const limitacoesTexto = capitalizeFirstLetter(limitacoesUnidas) + (limitacoesUnidas ? "." : "");
+    
+    // Justificativa com primeira letra maiúscula, conectando com "e" e sem ".;"
+    let justificativaTexto = "";
+    if (grupos.length === 1) {
+      const refKey = grupos[0].keys[0];
+      justificativaTexto = capitalizeFirstLetter(DADOS_OSTEOMUSCULAR[refKey].justificativa);
+    } else {
+      const limJustif = formatarLimitacoesOsteo(alteradas.map(k => DADOS_OSTEOMUSCULAR[k].limitacao));
+      justificativaTexto = `Capacidade parcial e temporariamente prejudicada, ${limJustif}.`;
+    }
+    justificativaTexto = justificativaTexto.replace(/\.;/g, ";").replace(/;\./g, ".").replace(/\.\./g, ".");
+      
+    state.exameFisicoDescricao = examesTexto;
+    state.alteracoesClinicasExames = examesTexto;
+    if (!state.aux) state.aux = {};
+    state.aux.exameFisicoDescricao = examesTexto;
+    if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = examesTexto;
+    if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = examesTexto;
+    if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = examesTexto;
+    
+    state.limitacaoFuncional = "Sim";
+    state.limitacaoRol = "Sim";
+    setRadio("limitacaoFuncional", "Sim");
+    setRadio("limitacaoRol", "Sim");
+    
+    state.descLimitacao = limitacoesTexto;
+    state.aux.descLimitacao = limitacoesTexto;
+    if ($("descLimitacao")) $("descLimitacao").value = limitacoesTexto;
+    
+    QuesitoService.set(0, "Sim");
+    QuesitoService.set(1, "Sim");
+    QuesitoService.set(2, "Sim");
+    renderQuesitos();
+    
+    state.capacidade = "Capacidade parcial e temporariamente prejudicada";
+    setRadio("capacidade", "Capacidade parcial e temporariamente prejudicada");
+    
+    state.parecer = "FAVORÁVEL";
+    setRadio("parecer", "FAVORÁVEL");
+    
+    state.aux.justificativa = justificativaTexto;
+    state.justificativa = justificativaTexto;
+    if ($("agilJustificativa")) $("agilJustificativa").value = justificativaTexto;
+    if ($("justificativa")) $("justificativa").value = justificativaTexto;
+    
+    autoSave();
+    const nomes = grupos.map(g => g.label).join(", ");
+    toast(`Região (${nomes}) marcada como ALTERADA: achados, limitações e parecer FAVORÁVEL preenchidos.`);
+  } else if (Object.keys(regMap).length > 0 && Object.values(regMap).every(v => v === "Normal")) {
+    aplicarOsteomuscularNormal();
+  }
+}
+
+function aplicarOsteomuscularNormal() {
+  if (!state.osteomuscularRegioes) state.osteomuscularRegioes = {};
+  const canonicas = [
+    "cervical", "lombar", "quadril",
+    "ombro_direito", "ombro_esquerdo",
+    "cotovelo_direito", "cotovelo_esquerdo",
+    "antebraco_direito", "antebraco_esquerdo",
+    "mao_direita", "mao_esquerda",
+    "joelho_direito", "joelho_esquerdo",
+    "tornozelo_direito", "tornozelo_esquerdo"
+  ];
+  canonicas.forEach(k => {
+    state.osteomuscularRegioes[k] = "Normal";
+  });
+  state.osteomuscularResultado = "Normal";
+  state.exameFisicoTipo = "Aparelho Osteomuscular e Tecido Conjutivo";
+  if ($("exameFisicoTipo")) $("exameFisicoTipo").value = "Aparelho Osteomuscular e Tecido Conjutivo";
+  if ($("agilExameFisicoTipo")) $("agilExameFisicoTipo").value = "Aparelho Osteomuscular e Tecido Conjutivo";
+  
+  state.exameFisicoDescricao = TEXTO_OSTEO_NORMAL_EXAME;
+  state.alteracoesClinicasExames = TEXTO_OSTEO_NORMAL_EXAME;
+  if (!state.aux) state.aux = {};
+  state.aux.exameFisicoDescricao = TEXTO_OSTEO_NORMAL_EXAME;
+  if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = TEXTO_OSTEO_NORMAL_EXAME;
+  if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = TEXTO_OSTEO_NORMAL_EXAME;
+  if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = TEXTO_OSTEO_NORMAL_EXAME;
+  
+  state.limitacaoFuncional = "Não";
+  state.limitacaoRol = "Não";
+  setRadio("limitacaoFuncional", "Não");
+  setRadio("limitacaoRol", "Não");
+  
+  state.descLimitacao = TEXTO_OSTEO_NORMAL_LIMITACAO;
+  state.aux.descLimitacao = TEXTO_OSTEO_NORMAL_LIMITACAO;
+  if ($("descLimitacao")) $("descLimitacao").value = TEXTO_OSTEO_NORMAL_LIMITACAO;
+  
+  QuesitoService.set(0, "Sim");
+  QuesitoService.set(1, "Sim");
+  QuesitoService.set(2, "Não");
+  renderQuesitos();
+  
+  state.capacidade = "Capacidade laborativa preservada";
+  setRadio("capacidade", "Capacidade laborativa preservada");
+  
+  state.parecer = "CONTRÁRIO";
+  setRadio("parecer", "CONTRÁRIO");
+  
+  state.aux.justificativa = TEXTO_OSTEO_NORMAL_JUSTIFICATIVA;
+  state.justificativa = TEXTO_OSTEO_NORMAL_JUSTIFICATIVA;
+  if ($("agilJustificativa")) $("agilJustificativa").value = TEXTO_OSTEO_NORMAL_JUSTIFICATIVA;
+  if ($("justificativa")) $("justificativa").value = TEXTO_OSTEO_NORMAL_JUSTIFICATIVA;
+  
+  updateOsteoUI();
+  autoSave();
+  toast("Exame osteomuscular NORMAL: capacidade preservada e parecer CONTRÁRIO preenchidos.");
+}
+
+function limparOsteomuscular() {
+  const silent = arguments[0] === true;
+  state.osteomuscularRegioes = {};
+  state.osteomuscularResultado = "";
+  
+  // Limpar texto de exame físico
+  state.exameFisicoDescricao = "";
+  state.alteracoesClinicasExames = "";
+  if (!state.aux) state.aux = {};
+  state.aux.exameFisicoDescricao = "";
+  if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = "";
+  if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = "";
+  if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = "";
+  
+  // Limpar limitações
+  state.limitacaoFuncional = "";
+  state.limitacaoRol = "";
+  setRadio("limitacaoFuncional", "");
+  setRadio("limitacaoRol", "");
+  
+  state.descLimitacao = "";
+  state.aux.descLimitacao = "";
+  if ($("descLimitacao")) $("descLimitacao").value = "";
+  
+  // Limpar justificativa
+  state.justificativa = "";
+  state.aux.justificativa = "";
+  if ($("agilJustificativa")) $("agilJustificativa").value = "";
+  if ($("justificativa")) $("justificativa").value = "";
+  
+  // Limpar capacidade e parecer
+  state.capacidade = "";
+  state.parecer = "";
+  setRadio("capacidade", "");
+  setRadio("parecer", "");
+  
+  // Limpar quesitos
+  QuesitoService.set(0, "");
+  QuesitoService.set(1, "");
+  QuesitoService.set(2, "");
+  renderQuesitos();
+  
+  updateOsteoUI();
+  autoSave();
+  if (!silent) {
+    toast("Seleções e dados do exame osteomuscular foram limpos com sucesso.");
+  }
+}
+
+function toggleOsteoDetalhes() {
+  const container = $("osteoRegionsContainer");
+  if (!container) return;
+  const isHidden = container.style.display === "none" || !container.style.display;
+  container.style.display = isHidden ? "block" : "none";
+  
+  const lbl = $("lblToggleOsteoDetalhes");
+  if (lbl) lbl.textContent = isHidden ? "Ocultar Detalhes" : "Detalhes";
+  
+  const link = $("linkToggleOsteoDetalhes");
+  if (link) link.textContent = isHidden ? "Ocultar Detalhes em Tabela ▲" : "Ver Detalhes em Tabela (9 regiões) ▼";
+  
+  if (isHidden) {
+    container.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+}
+
+function updateOsteoUI() {
+  if (!state.osteomuscularRegioes) state.osteomuscularRegioes = {};
+  normalizarRegioesOsteo(state.osteomuscularRegioes);
+  const regMap = state.osteomuscularRegioes;
+  let altCount = 0;
+  let normCount = 0;
+  
+  const canonicas = [
+    "cervical", "lombar", "quadril",
+    "ombro_direito", "ombro_esquerdo",
+    "cotovelo_direito", "cotovelo_esquerdo",
+    "antebraco_direito", "antebraco_esquerdo",
+    "mao_direita", "mao_esquerda",
+    "joelho_direito", "joelho_esquerdo",
+    "tornozelo_direito", "tornozelo_esquerdo"
+  ];
+  
+  canonicas.forEach(k => {
+    const status = regMap[k] || "";
+    if (status === "Alterado") altCount++;
+    if (status === "Normal") normCount++;
+    
+    // Atualizar botões individuais
+    const btnAlt = $(`btnOsteoAlt_${k}`);
+    const btnNorm = $(`btnOsteoNorm_${k}`);
+    if (btnAlt) btnAlt.classList.toggle("selected", status === "Alterado");
+    if (btnNorm) btnNorm.classList.toggle("selected", status === "Normal");
+    
+    // Atualizar hotspot individual no mapa corporal
+    const hotspots = document.querySelectorAll(`.osteo-hotspot[data-regiao="${k}"]`);
+    hotspots.forEach(hs => {
+      hs.classList.toggle("is-alterado", status === "Alterado");
+      hs.classList.toggle("is-normal", status === "Normal");
+      
+      const tip = hs.querySelector(".osteo-tooltip");
+      if (tip) {
+        const titleBase = hs.getAttribute("title") || DADOS_OSTEOMUSCULAR[k]?.label || k;
+        if (status === "Alterado") {
+          tip.innerHTML = `${titleBase}: <span style="color:#FCA5A5;font-weight:800">ALTERADO ✓</span>`;
+        } else if (status === "Normal") {
+          tip.innerHTML = `${titleBase}: <span style="color:#86EFAC;font-weight:800">NORMAL ✓</span>`;
+        } else {
+          tip.innerHTML = `${titleBase} <span style="font-weight:400;opacity:0.85">(Clique para marcar)</span>`;
+        }
+      }
+    });
+  });
+  
+  // Atualizar cards e botões de grupo na tabela
+  ["cervical", "lombar", "quadril"].forEach(k => {
+    const card = $(`cardOsteo_${k}`);
+    const status = regMap[k] || "";
+    if (card) {
+      card.classList.toggle("active-alterado", status === "Alterado");
+      card.classList.toggle("active-normal", status === "Normal");
+    }
+  });
+  
+  Object.entries(REGIOES_PAREADAS).forEach(([group, sides]) => {
+    const card = $(`cardOsteo_${group}`);
+    const hasAlt = sides.some(s => regMap[s] === "Alterado");
+    const allNorm = sides.every(s => regMap[s] === "Normal");
+    const hasNorm = sides.some(s => regMap[s] === "Normal");
+    const allAlt = sides.every(s => regMap[s] === "Alterado");
+    
+    if (card) {
+      card.classList.toggle("active-alterado", hasAlt);
+      card.classList.toggle("active-normal", !hasAlt && hasNorm);
+    }
+    
+    // Botões "Ambos" do grupo
+    const btnBothAlt = $(`btnOsteoAlt_${group}`);
+    const btnBothNorm = $(`btnOsteoNorm_${group}`);
+    if (btnBothAlt) btnBothAlt.classList.toggle("selected", allAlt);
+    if (btnBothNorm) btnBothNorm.classList.toggle("selected", allNorm);
+  });
+  
+  const badge = $("osteoBadgeCount");
+  if (badge) {
+    const totalSelected = altCount + normCount;
+    if (totalSelected > 0) {
+      badge.style.display = "inline-flex";
+      badge.textContent = altCount > 0 ? `${altCount} alt` : `${normCount} norm`;
+      badge.style.background = altCount > 0 ? "#DC2626" : "#16A34A";
+    } else {
+      badge.style.display = "none";
+    }
+  }
+}
+
+/* Sinais Vitais — Padrão Habitual (120x80 mmHg e Pulso 80 bpm) */
+function toggleVitalsPadrao(checked) {
+  const s = checked ? "120" : "";
+  const d = checked ? "80" : "";
+  const p = checked ? "80" : "";
+
+  if ($("agilPressaoSistolica")) $("agilPressaoSistolica").value = s;
+  if ($("agilPressaoDiastolica")) $("agilPressaoDiastolica").value = d;
+  if ($("agilPulso")) $("agilPulso").value = p;
+  if ($("pressaoSistolica")) $("pressaoSistolica").value = s;
+  if ($("pressaoDiastolica")) $("pressaoDiastolica").value = d;
+  if ($("pulso")) $("pulso").value = p;
+
+  if (!state.aux) state.aux = {};
+  state.aux.pressaoSistolica = s;
+  state.aux.pressaoDiastolica = d;
+  state.aux.pulso = p;
+  state.pressaoSistolica = s;
+  state.pressaoDiastolica = d;
+  state.pulso = p;
+
+  autoSave();
+  if (checked) {
+    toast("Sinais vitais padrão definidos: 120 por 80 mmHg e pulso 80 bpm.");
+  }
+}
+
+function checkVitalsPadraoState() {
+  const s = $("agilPressaoSistolica")?.value;
+  const d = $("agilPressaoDiastolica")?.value;
+  const p = $("agilPulso")?.value;
+  const isPadrao = (String(s) === "120" && String(d) === "80" && String(p) === "80");
+  if ($("agilVitalsPadraoCheck")) $("agilVitalsPadraoCheck").checked = isPadrao;
+}
+
+function setupOsteoHoverEffects() {
+  document.querySelectorAll(".osteo-hotspot").forEach(hs => {
+    const regiao = hs.getAttribute("data-regiao");
+    const groupKey = hs.getAttribute("data-group") || regiao;
+    if (!regiao) return;
+    
+    hs.addEventListener("mouseenter", () => {
+      // Destaque visual EXCLUSIVO no ponto onde o mouse está posicionado (evita iluminar ambos os lados)
+      hs.classList.add("is-hovered");
+      const card = $(`cardOsteo_${groupKey}`) || $(`cardOsteo_${regiao}`);
+      if (card) {
+        card.classList.add("is-hovered");
+        card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    });
+    
+    hs.addEventListener("mouseleave", () => {
+      hs.classList.remove("is-hovered");
+      const card = $(`cardOsteo_${groupKey}`) || $(`cardOsteo_${regiao}`);
+      if (card) card.classList.remove("is-hovered");
+    });
+  });
+  
+  document.querySelectorAll(".osteo-region-card").forEach(card => {
+    const regiao = card.getAttribute("data-card-regiao");
+    if (!regiao) return;
+    
+    card.addEventListener("mouseenter", () => {
+      // Ao passar o mouse no card da tabela, apenas contorna suavemente os pontos correspondentes sem abrir tooltips
+      const hotspots = document.querySelectorAll(`.osteo-hotspot[data-regiao="${regiao}"], .osteo-hotspot[data-group="${regiao}"]`);
+      hotspots.forEach(h => h.classList.add("is-card-hovered"));
+      card.classList.add("is-hovered");
+    });
+    
+    card.addEventListener("mouseleave", () => {
+      const hotspots = document.querySelectorAll(`.osteo-hotspot[data-regiao="${regiao}"], .osteo-hotspot[data-group="${regiao}"]`);
+      hotspots.forEach(h => h.classList.remove("is-card-hovered"));
+      card.classList.remove("is-hovered");
+    });
+  });
+}
+
+let currentAttendanceMode = "agil";
+
+function setAttendanceMode(mode) {
+  const normMode = (mode === "extenso" || mode === "estendido") ? "estendido" : "agil";
+  currentAttendanceMode = normMode;
+  const isAgil = normMode === "agil";
+  document.body.classList.toggle("mode-agil-active", isAgil);
+  
+  const btnAgil = $("btnModoAgil");
+  const btnEstendido = $("btnModoEstendido");
+  if (btnAgil) btnAgil.classList.toggle("active", isAgil);
+  if (btnEstendido) btnEstendido.classList.toggle("active", !isAgil);
+  
+  try { localStorage.setItem("ambiental_attendance_mode", normMode); } catch (e) {}
+  
+  if (isAgil) {
+    syncExtendedToAgil();
+  } else {
+    syncAgilToExtended();
+    go(Math.min(9, Math.max(1, Number(state.current) || 1)));
+  }
+}
+
+function syncExtendedToAgil() {
+  if (!state.aux) state.aux = {};
+  
+  const setVal = (id, val) => { const el = $(id); if (el && val !== undefined && val !== null) el.value = val; };
+  setVal("agilNomePaciente", state.aux.nomePaciente || state.nomePaciente || $("nomePaciente")?.value || "");
+  setVal("agilCpfPaciente", formatCPF(state.aux.cpfPaciente || state.cpfPaciente || $("cpfPaciente")?.value || ""));
+  setVal("agilCargo", state.aux.cargo || state.cargo || $("cargo")?.value || "");
+  setVal("agilTempoCargo", state.aux.tempoCargo || state.tempoCargo || $("tempoCargo")?.value || "");
+  setVal("agilTempoUnidade", state.aux.tempoUnidade || state.tempoUnidade || $("tempoUnidade")?.value || "");
+  setVal("agilIdade", state.aux.idade || state.idade || $("idade")?.value || "");
+  
+  const readap = state.readaptado || state.aux.readaptado || getRadio("readaptado") || "";
+  setRadio("agilReadaptado", readap);
+  $("readaptadoPanel")?.classList.toggle("hidden", readap !== "Sim");
+  $("agilReadaptadoPanel")?.classList.toggle("hidden", readap !== "Sim");
+  setVal("agilAtividadesReadaptado", state.aux.atividadesReadaptado || state.atividadesReadaptado || $("atividadesReadaptado")?.value || "");
+
+  // Bloco 02 — Queixa e Duração & Antecedentes
+  const doenca = state.aux.doencaMotivo || state.doencaMotivo || $("doencaMotivo")?.value || "";
+  setVal("agilDoencaMotivo", doenca);
+  setVal("agilInicioTratamento", state.aux.inicioTratamento || state.inicioTratamento || $("inicioTratamento")?.value || "");
+  setVal("agilFreqConsultas", state.aux.freqConsultas || state.freqConsultas || $("freqConsultas")?.value || "");
+  setVal("agilSintomasLimitacao", state.aux.sintomasLimitacao || state.sintomasLimitacao || $("sintomasLimitacao")?.value || "");
+
+  renderMedications();
+
+  const altMed = state.alteracaoMed || state.aux.alteracaoMed || getRadio("alteracaoMed") || "";
+  setRadio("agilAlteracaoMed", altMed);
+  $("alteracaoPanel")?.classList.toggle("hidden", altMed !== "Sim");
+  $("agilAlteracaoPanel")?.classList.toggle("hidden", altMed !== "Sim");
+  setVal("agilDataAlteracaoMed", state.aux.dataAlteracaoMed || state.dataAlteracaoMed || $("dataAlteracaoMed")?.value || "");
+  setVal("agilObsAlteracaoMed", state.aux.obsAlteracaoMed || state.obsAlteracaoMed || $("obsAlteracaoMed")?.value || "");
+
+  if ($("agilPsicoterapia")) $("agilPsicoterapia").checked = !!(state.psicoterapia || state.aux.psicoterapia || $("psicoterapia")?.checked);
+  if ($("agilFisioterapia")) $("agilFisioterapia").checked = !!(state.fisioterapia || state.aux.fisioterapia || $("fisioterapia")?.checked);
+  setVal("agilObsTerapias", state.aux.obsTerapias || state.obsTerapias || $("obsTerapias")?.value || "");
+
+  const outras = state.outrasDoencas || state.aux.outrasDoencas || getRadio("outrasDoencas") || "";
+  setRadio("agilOutrasDoencas", outras);
+  $("doencasPanel")?.classList.toggle("hidden", outras !== "Sim");
+  $("agilDoencasPanel")?.classList.toggle("hidden", outras !== "Sim");
+  renderConditions();
+
+  setVal("agilHistoricoPregresso", state.aux.historicoPregresso || state.historicoPregresso || $("historicoPregresso")?.value || "");
+
+  // Bloco 03 — Exame Físico / Mental
+  const cidVal = state.cid || state.aux.cid || $("cid")?.value || "";
+  setVal("agilCid", cidVal);
+  if (cidVal) {
+    const f = findCID(cidVal);
+    const badge = $("agilCidBadge");
+    if (badge) {
+      badge.style.display = "inline-flex";
+      badge.innerHTML = `<strong>${esc(f?.c || cidVal)}</strong>${f?.n ? " — " + esc(f.n) : ""}`;
+    }
+  }
+  
+  const exTipo = state.exameFisicoTipo || $("exameFisicoTipo")?.value || "";
+  if ($("agilExameFisicoTipo")) {
+    if (exTipo === "Aparelho Osteomuscular e Tecido Conjutivo" || exTipo === "Exame Mental") {
+      $("agilExameFisicoTipo").value = exTipo;
+    } else {
+      $("agilExameFisicoTipo").value = "";
+    }
+  }
+  
+  const mentalWrap = $("agilMentalSelector");
+  if (mentalWrap) {
+    mentalWrap.style.display = (exTipo === "Exame Mental") ? "block" : "none";
+  }
+  const osteoWrap = $("agilOsteomuscularSelector");
+  if (osteoWrap) {
+    osteoWrap.style.display = (exTipo === "Aparelho Osteomuscular e Tecido Conjutivo") ? "block" : "none";
+    if (exTipo === "Aparelho Osteomuscular e Tecido Conjutivo" && typeof updateOsteoUI === "function") {
+      updateOsteoUI();
+    }
+  }
+  
+  const mentalRes = state.exameMentalResultado;
+  const btnNormal = $("btnAgilMentalNormal");
+  const btnAlterado = $("btnAgilMentalAlterado");
+  if (btnNormal) btnNormal.classList.toggle("selected-normal", mentalRes === "Normal");
+  if (btnAlterado) btnAlterado.classList.toggle("selected-alterado", mentalRes === "Alterado");
+  
+  setVal("agilPressaoSistolica", state.aux.pressaoSistolica || state.pressaoSistolica || $("pressaoSistolica")?.value || "");
+  setVal("agilPressaoDiastolica", state.aux.pressaoDiastolica || state.pressaoDiastolica || $("pressaoDiastolica")?.value || "");
+  setVal("agilPulso", state.aux.pulso || state.pulso || $("pulso")?.value || "");
+  setVal("agilAltura", state.aux.altura || state.altura || "");
+  setVal("agilPeso", state.aux.peso || state.peso || "");
+  if (typeof checkVitalsPadraoState === "function") checkVitalsPadraoState();
+  setVal("agilExameFisicoDescricao", state.exameFisicoDescricao || state.alteracoesClinicasExames || $("exameFisicoDescricao")?.value || "");
+  
+  // Bloco 04 — Justificativa
+  setVal("agilJustificativa", state.aux.justificativa || state.justificativa || $("justificativa")?.value || "");
+}
+
+function syncAgilToExtended() {
+  if (!state.aux) state.aux = {};
+  
+  const getV = (id) => $(id)?.value ?? "";
+  
+  const nome = getV("agilNomePaciente");
+  state.aux.nomePaciente = nome; state.nomePaciente = nome;
+  if ($("nomePaciente")) $("nomePaciente").value = nome;
+  
+  const cpf = getV("agilCpfPaciente");
+  state.aux.cpfPaciente = cpf; state.cpfPaciente = cpf;
+  if ($("cpfPaciente")) $("cpfPaciente").value = cpf;
+  
+  const cargo = getV("agilCargo");
+  state.aux.cargo = cargo; state.cargo = cargo;
+  if ($("cargo")) $("cargo").value = cargo;
+  
+  const tCargo = getV("agilTempoCargo");
+  state.aux.tempoCargo = tCargo; state.tempoCargo = tCargo;
+  if ($("tempoCargo")) $("tempoCargo").value = tCargo;
+  
+  const tUnidade = getV("agilTempoUnidade");
+  state.aux.tempoUnidade = tUnidade; state.tempoUnidade = tUnidade;
+  if ($("tempoUnidade")) $("tempoUnidade").value = tUnidade;
+  
+  const idade = getV("agilIdade");
+  state.aux.idade = idade; state.idade = idade;
+  if ($("idade")) $("idade").value = idade;
+  
+  const readap = getRadio("agilReadaptado");
+  if (readap) {
+    state.readaptado = readap; state.aux.readaptado = readap;
+    setRadio("readaptado", readap);
+    $("readaptadoPanel")?.classList.toggle("hidden", readap !== "Sim");
+    $("agilReadaptadoPanel")?.classList.toggle("hidden", readap !== "Sim");
+  }
+  const ativReadap = getV("agilAtividadesReadaptado");
+  state.aux.atividadesReadaptado = ativReadap; state.atividadesReadaptado = ativReadap;
+  if ($("atividadesReadaptado")) $("atividadesReadaptado").value = ativReadap;
+  
+  // Bloco 02
+  const doenca = getV("agilDoencaMotivo");
+  state.aux.doencaMotivo = doenca; state.doencaMotivo = doenca;
+  if ($("doencaMotivo")) $("doencaMotivo").value = doenca;
+
+  const inicioTrat = getV("agilInicioTratamento");
+  state.aux.inicioTratamento = inicioTrat; state.inicioTratamento = inicioTrat;
+  if ($("inicioTratamento")) $("inicioTratamento").value = inicioTrat;
+
+  const freqCons = getV("agilFreqConsultas");
+  state.aux.freqConsultas = freqCons; state.freqConsultas = freqCons;
+  if ($("freqConsultas")) $("freqConsultas").value = freqCons;
+
+  const sintLimit = getV("agilSintomasLimitacao");
+  state.aux.sintomasLimitacao = sintLimit; state.sintomasLimitacao = sintLimit;
+  if ($("sintomasLimitacao")) $("sintomasLimitacao").value = sintLimit;
+
+  const altMed = getRadio("agilAlteracaoMed");
+  if (altMed) {
+    state.alteracaoMed = altMed; state.aux.alteracaoMed = altMed;
+    setRadio("alteracaoMed", altMed);
+    $("alteracaoPanel")?.classList.toggle("hidden", altMed !== "Sim");
+    $("agilAlteracaoPanel")?.classList.toggle("hidden", altMed !== "Sim");
+  }
+  const dtAlt = getV("agilDataAlteracaoMed");
+  state.aux.dataAlteracaoMed = dtAlt; state.dataAlteracaoMed = dtAlt;
+  if ($("dataAlteracaoMed")) $("dataAlteracaoMed").value = dtAlt;
+
+  const obsAlt = getV("agilObsAlteracaoMed");
+  state.aux.obsAlteracaoMed = obsAlt; state.obsAlteracaoMed = obsAlt;
+  if ($("obsAlteracaoMed")) $("obsAlteracaoMed").value = obsAlt;
+
+  if ($("agilPsicoterapia")) {
+    state.psicoterapia = $("agilPsicoterapia").checked;
+    state.aux.psicoterapia = state.psicoterapia;
+    if ($("psicoterapia")) $("psicoterapia").checked = state.psicoterapia;
+  }
+  if ($("agilFisioterapia")) {
+    state.fisioterapia = $("agilFisioterapia").checked;
+    state.aux.fisioterapia = state.fisioterapia;
+    if ($("fisioterapia")) $("fisioterapia").checked = state.fisioterapia;
+  }
+  const obsTer = getV("agilObsTerapias");
+  state.aux.obsTerapias = obsTer; state.obsTerapias = obsTer;
+  if ($("obsTerapias")) $("obsTerapias").value = obsTer;
+
+  const outras = getRadio("agilOutrasDoencas");
+  if (outras) {
+    state.outrasDoencas = outras; state.aux.outrasDoencas = outras;
+    setRadio("outrasDoencas", outras);
+    $("doencasPanel")?.classList.toggle("hidden", outras !== "Sim");
+    $("agilDoencasPanel")?.classList.toggle("hidden", outras !== "Sim");
+  }
+
+  const histPreg = getV("agilHistoricoPregresso");
+  state.aux.historicoPregresso = histPreg; state.historicoPregresso = histPreg;
+  if ($("historicoPregresso")) $("historicoPregresso").value = histPreg;
+
+  // Bloco 03
+  const agilCid = getV("agilCid");
+  if (agilCid) {
+    state.cid = agilCid; state.aux.cid = agilCid;
+    if ($("cid")) $("cid").value = agilCid;
+  }
+  
+  const exTipo = getV("agilExameFisicoTipo");
+  if (exTipo) {
+    state.exameFisicoTipo = exTipo;
+    if ($("exameFisicoTipo")) $("exameFisicoTipo").value = exTipo;
+  }
+  
+  const pSist = getV("agilPressaoSistolica");
+  state.aux.pressaoSistolica = pSist; state.pressaoSistolica = pSist;
+  if ($("pressaoSistolica")) $("pressaoSistolica").value = pSist;
+  
+  const pDiast = getV("agilPressaoDiastolica");
+  state.aux.pressaoDiastolica = pDiast; state.pressaoDiastolica = pDiast;
+  if ($("pressaoDiastolica")) $("pressaoDiastolica").value = pDiast;
+  
+  const pulso = getV("agilPulso");
+  state.aux.pulso = pulso; state.pulso = pulso;
+  if ($("pulso")) $("pulso").value = pulso;
+  
+  const altura = getV("agilAltura");
+  state.aux.altura = altura; state.altura = altura;
+  
+  const peso = getV("agilPeso");
+  state.aux.peso = peso; state.peso = peso;
+  
+  const exDesc = getV("agilExameFisicoDescricao");
+  if (exDesc) {
+    state.exameFisicoDescricao = exDesc;
+    state.alteracoesClinicasExames = exDesc;
+    if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = exDesc;
+    if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = exDesc;
+  }
+  
+  // Bloco 04
+  const just = getV("agilJustificativa");
+  if (just) {
+    state.aux.justificativa = just; state.justificativa = just;
+    if ($("justificativa")) $("justificativa").value = just;
+  }
+}
+
+function syncAgilField(field, value) {
+  if (!state.aux) state.aux = {};
+  state.aux[field] = value;
+  state[field] = value;
+  const el = $(field);
+  if (el) el.value = value;
+  if (field === "pressaoSistolica" || field === "pressaoDiastolica" || field === "pulso") {
+    if (typeof checkVitalsPadraoState === "function") checkVitalsPadraoState();
+  }
+  autoSave();
+}
+
+function syncAgilCpf(value) {
+  const formatted = formatCPF(value);
+  if ($("agilCpfPaciente")) $("agilCpfPaciente").value = formatted;
+  if ($("cpfPaciente")) $("cpfPaciente").value = formatted;
+  state.cpfPaciente = formatted;
+  if (!state.aux) state.aux = {};
+  state.aux.cpfPaciente = formatted;
+  autoSave();
+}
+
+function syncAgilRadio(field, value) {
+  if (!state.aux) state.aux = {};
+  state[field] = value;
+  state.aux[field] = value;
+  setRadio(field, value);
+  autoSave();
+}
+
+function syncAgilCheckbox(field, checked) {
+  state[field] = !!checked;
+  const el = $(field);
+  if (el) el.checked = !!checked;
+  autoSave();
+}
+
+function syncAgilReadaptado(val) {
+  state.readaptado = val;
+  if (!state.aux) state.aux = {};
+  state.aux.readaptado = val;
+  setRadio("readaptado", val);
+  setRadio("agilReadaptado", val);
+  $("readaptadoPanel")?.classList.toggle("hidden", val !== "Sim");
+  $("agilReadaptadoPanel")?.classList.toggle("hidden", val !== "Sim");
+  autoSave();
+}
+
+function syncAgilAlteracaoMed(val) {
+  state.alteracaoMed = val;
+  if (!state.aux) state.aux = {};
+  state.aux.alteracaoMed = val;
+  setRadio("alteracaoMed", val);
+  setRadio("agilAlteracaoMed", val);
+  $("alteracaoPanel")?.classList.toggle("hidden", val !== "Sim");
+  $("agilAlteracaoPanel")?.classList.toggle("hidden", val !== "Sim");
+  autoSave();
+}
+
+function syncAgilOutrasDoencas(val) {
+  state.outrasDoencas = val;
+  if (!state.aux) state.aux = {};
+  state.aux.outrasDoencas = val;
+  setRadio("outrasDoencas", val);
+  setRadio("agilOutrasDoencas", val);
+  $("doencasPanel")?.classList.toggle("hidden", val !== "Sim");
+  $("agilDoencasPanel")?.classList.toggle("hidden", val !== "Sim");
+  autoSave();
+}
+
+function onAgilDoencaMotivoInput(val) {
+  if (!state.aux) state.aux = {};
+  state.aux.doencaMotivo = val;
+  state.doencaMotivo = val;
+  if ($("doencaMotivo")) $("doencaMotivo").value = val;
+  
+  // O que for respondido em: "Qual a doença está tratando que motivou o afastamento?"
+  // seja o autopreenchimento do campo: "Histórico pregresso"
+  const currentHist = $("agilHistoricoPregresso")?.value || "";
+  const prevHist = state.aux.historicoPregresso || "";
+  if (!currentHist || currentHist === "Nega" || currentHist === prevHist) {
+    state.aux.historicoPregresso = val;
+    state.historicoPregresso = val;
+    if ($("historicoPregresso")) $("historicoPregresso").value = val;
+    if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = val;
+  }
+  
+  autoSave();
+}
+
+function onAgilExameTipoChange(val) {
+  state.exameFisicoTipo = val;
+  if ($("exameFisicoTipo")) $("exameFisicoTipo").value = val;
+  const mentalWrap = $("agilMentalSelector");
+  const osteoWrap = $("agilOsteomuscularSelector");
+  if (val === "Exame Mental") {
+    if (mentalWrap) mentalWrap.style.display = "block";
+    if (osteoWrap) osteoWrap.style.display = "none";
+  } else if (val === "Aparelho Osteomuscular e Tecido Conjutivo") {
+    if (mentalWrap) mentalWrap.style.display = "none";
+    if (osteoWrap) osteoWrap.style.display = "block";
+    if (typeof updateOsteoUI === "function") updateOsteoUI();
+  } else {
+    if (mentalWrap) mentalWrap.style.display = "none";
+    if (osteoWrap) osteoWrap.style.display = "none";
+    if (val === "Outros") {
+      state.exameMentalResultado = "";
+      state.osteomuscularResultado = "";
+      state.osteomuscularRegioes = {};
+      if (typeof updateOsteoUI === "function") updateOsteoUI();
+      const cur = state.exameFisicoDescricao || "";
+      if (cur === TEXTO_EXAME_MENTAL_NORMAL || cur === TEXTO_EXAME_MENTAL_ALTERADO || cur === TEXTO_OSTEO_NORMAL || cur.includes("Trapézios sem contraturas") || cur.includes("mobilidade ativa e passiva normais")) {
+        state.exameFisicoDescricao = "";
+        state.alteracoesClinicasExames = "";
+        if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = "";
+        if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = "";
+        if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = "";
+      }
+    }
+  }
+  autoSave();
+}
+
+function onAgilCidInput(val) {
+  const v = normalizeCID(val);
+  const box = $("agilCidSuggestions");
+  const badge = $("agilCidBadge");
+  
+  state.cid = val;
+  if (!state.aux) state.aux = {};
+  state.aux.cid = val;
+  if ($("cid")) $("cid").value = val;
+  
+  if (!v) {
+    if (box) { box.classList.remove("show"); box.innerHTML = ""; }
+    if (badge) { badge.style.display = "none"; badge.innerHTML = ""; }
+    autoSave();
+    return;
+  }
+  
+  const results = cidLibrary.filter(x => x.c.toUpperCase().startsWith(v) || x.n.toUpperCase().includes(v)).slice(0, 10);
+  if (box) {
+    if (!results.length) {
+      box.classList.remove("show");
+      box.innerHTML = "";
+    } else {
+      box.innerHTML = results.map(x => `
+        <div class="cid-option" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #F1F5F9;display:flex;align-items:center;gap:10px" onclick="selectAgilCID('${esc(x.c)}')">
+          <span class="cid-code" style="font-weight:800;color:#0F3254;background:#E2E8F0;padding:2px 8px;border-radius:6px;font-size:12px">${esc(x.c)}</span>
+          <span style="flex:1">
+            <div style="font-weight:600;font-size:13px;color:#1E293B">${esc(x.n)}</div>
+            <div style="font-size:11px;color:#64748B">${esc(x.g)}</div>
+          </span>
+        </div>
+      `).join("");
+      box.classList.add("show");
+    }
+  }
+  
+  const exact = findCID(v);
+  if (exact && badge) {
+    badge.style.display = "inline-flex";
+    badge.innerHTML = `<strong>${esc(exact.c)}</strong> — ${esc(exact.n)}`;
+    if (!state.aux.doencaMotivo || state.aux.doencaMotivo === "Conforme queixa relatada") {
+      const rotulo = `${exact.c} — ${exact.n}`;
+      state.aux.doencaMotivo = rotulo;
+      state.doencaMotivo = rotulo;
+      if ($("doencaMotivo")) $("doencaMotivo").value = rotulo;
+      if ($("agilDoencaMotivo")) $("agilDoencaMotivo").value = rotulo;
+      if (!state.aux.historicoPregresso || state.aux.historicoPregresso === "Nega") {
+        state.aux.historicoPregresso = rotulo;
+        state.historicoPregresso = rotulo;
+        if ($("historicoPregresso")) $("historicoPregresso").value = rotulo;
+        if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = rotulo;
+      }
+    }
+  } else if (badge) {
+    badge.style.display = "none";
+  }
+  
+  autoSave();
+}
+
+function selectAgilCID(code) {
+  const found = findCID(code);
+  const cleanCode = code || "";
+  if ($("agilCid")) $("agilCid").value = cleanCode;
+  if ($("cid")) $("cid").value = cleanCode;
+  if ($("agilCidSuggestions")) $("agilCidSuggestions").classList.remove("show");
+  
+  state.cid = cleanCode;
+  if (!state.aux) state.aux = {};
+  state.aux.cid = cleanCode;
+  
+  const badge = $("agilCidBadge");
+  if (found && badge) {
+    badge.style.display = "inline-flex";
+    badge.innerHTML = `<strong>${esc(found.c)}</strong> — ${esc(found.n)}`;
+  }
+  
+  if (found && found.n && !found.n.includes("Apoio")) {
+    const rotulo = `${found.c} — ${found.n}`;
+    if (!state.aux.doencaMotivo || state.aux.doencaMotivo === "Conforme queixa relatada") {
+      state.doencaMotivo = rotulo;
+      state.aux.doencaMotivo = rotulo;
+      if ($("doencaMotivo")) $("doencaMotivo").value = rotulo;
+      if ($("agilDoencaMotivo")) $("agilDoencaMotivo").value = rotulo;
+      if (!state.aux.historicoPregresso || state.aux.historicoPregresso === "Nega") {
+        state.aux.historicoPregresso = rotulo;
+        state.historicoPregresso = rotulo;
+        if ($("historicoPregresso")) $("historicoPregresso").value = rotulo;
+        if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = rotulo;
+      }
+    }
+  }
+  
+  autoSave();
+  toast(`CID ${cleanCode}${found?.n ? ' (' + found.n + ')' : ''} selecionado.`);
+}
+
+function escolherExameMental(resultado) {
+  state.exameMentalResultado = resultado;
+  const btnNormal = $("btnAgilMentalNormal");
+  const btnAlterado = $("btnAgilMentalAlterado");
+  if (resultado === "Normal") {
+    btnNormal?.classList.add("selected-normal");
+    btnAlterado?.classList.remove("selected-alterado");
+    aplicarExameMentalNormal();
+  } else if (resultado === "Alterado") {
+    btnAlterado?.classList.add("selected-alterado");
+    btnNormal?.classList.remove("selected-normal");
+    aplicarExameMentalAlterado();
+  }
+}
+
+function aplicarExameMentalNormal() {
+  state.exameMentalResultado = "Normal";
+  state.exameFisicoTipo = "Exame Mental";
+  if ($("exameFisicoTipo")) $("exameFisicoTipo").value = "Exame Mental";
+  if ($("agilExameFisicoTipo")) $("agilExameFisicoTipo").value = "Exame Mental";
+  
+  state.exameFisicoDescricao = TEXTO_EXAME_MENTAL_NORMAL;
+  state.alteracoesClinicasExames = TEXTO_EXAME_MENTAL_NORMAL;
+  if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = TEXTO_EXAME_MENTAL_NORMAL;
+  if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = TEXTO_EXAME_MENTAL_NORMAL;
+  if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = TEXTO_EXAME_MENTAL_NORMAL;
+  
+  state.limitacaoFuncional = "Não";
+  state.limitacaoRol = "Não";
+  setRadio("limitacaoFuncional", "Não");
+  setRadio("limitacaoRol", "Não");
+  state.descLimitacao = TEXTO_LIMITACAO_NORMAL;
+  if (!state.aux) state.aux = {};
+  state.aux.descLimitacao = TEXTO_LIMITACAO_NORMAL;
+  if ($("descLimitacao")) $("descLimitacao").value = TEXTO_LIMITACAO_NORMAL;
+  
+  QuesitoService.set(0, "Sim");
+  QuesitoService.set(1, "Sim");
+  QuesitoService.set(2, "Não");
+  renderQuesitos();
+  
+  state.capacidade = "Capacidade laborativa preservada";
+  setRadio("capacidade", "Capacidade laborativa preservada");
+  
+  state.parecer = "CONTRÁRIO";
+  setRadio("parecer", "CONTRÁRIO");
+  
+  state.aux.justificativa = TEXTO_JUSTIFICATIVA_NORMAL;
+  state.justificativa = TEXTO_JUSTIFICATIVA_NORMAL;
+  if ($("agilJustificativa")) $("agilJustificativa").value = TEXTO_JUSTIFICATIVA_NORMAL;
+  if ($("justificativa")) $("justificativa").value = TEXTO_JUSTIFICATIVA_NORMAL;
+  
+  autoSave();
+  toast("Exame mental NORMAL: achados, limitações, quesitos e parecer CONTRÁRIO preenchidos.");
+}
+
+function aplicarExameMentalAlterado() {
+  state.exameMentalResultado = "Alterado";
+  state.exameFisicoTipo = "Exame Mental";
+  if ($("exameFisicoTipo")) $("exameFisicoTipo").value = "Exame Mental";
+  if ($("agilExameFisicoTipo")) $("agilExameFisicoTipo").value = "Exame Mental";
+  
+  state.exameFisicoDescricao = TEXTO_EXAME_MENTAL_ALTERADO;
+  state.alteracoesClinicasExames = TEXTO_EXAME_MENTAL_ALTERADO;
+  if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = TEXTO_EXAME_MENTAL_ALTERADO;
+  if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = TEXTO_EXAME_MENTAL_ALTERADO;
+  if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = TEXTO_EXAME_MENTAL_ALTERADO;
+  
+  state.limitacaoFuncional = "Sim";
+  state.limitacaoRol = "Sim";
+  setRadio("limitacaoFuncional", "Sim");
+  setRadio("limitacaoRol", "Sim");
+  state.descLimitacao = TEXTO_LIMITACAO_ALTERADO;
+  if (!state.aux) state.aux = {};
+  state.aux.descLimitacao = TEXTO_LIMITACAO_ALTERADO;
+  if ($("descLimitacao")) $("descLimitacao").value = TEXTO_LIMITACAO_ALTERADO;
+  
+  QuesitoService.set(0, "Sim");
+  QuesitoService.set(1, "Sim");
+  QuesitoService.set(2, "Sim");
+  renderQuesitos();
+  
+  state.capacidade = "Capacidade parcial e temporariamente prejudicada";
+  setRadio("capacidade", "Capacidade parcial e temporariamente prejudicada");
+  
+  state.parecer = "FAVORÁVEL";
+  setRadio("parecer", "FAVORÁVEL");
+  
+  state.aux.justificativa = TEXTO_JUSTIFICATIVA_ALTERADO;
+  state.justificativa = TEXTO_JUSTIFICATIVA_ALTERADO;
+  if ($("agilJustificativa")) $("agilJustificativa").value = TEXTO_JUSTIFICATIVA_ALTERADO;
+  if ($("justificativa")) $("justificativa").value = TEXTO_JUSTIFICATIVA_ALTERADO;
+  
+  autoSave();
+  toast("Exame mental ALTERADO: achados, limitações, quesitos e parecer FAVORÁVEL preenchidos.");
+}
+
+function ensureAgileBackgroundDefaults() {
+  if (!state.aux) state.aux = {};
+  
+  // 02 — Doença motivadora / início / sintomas
+  const doenca = state.aux.doencaMotivo || state.doencaMotivo || (state.cid ? `${state.cid} — ${findCID(state.cid)?.n || state.cid}` : "Conforme queixa relatada");
+  state.aux.doencaMotivo = doenca;
+  state.doencaMotivo = doenca;
+  if ($("doencaMotivo")) $("doencaMotivo").value = doenca;
+  if ($("agilDoencaMotivo")) $("agilDoencaMotivo").value = doenca;
+
+  // 03 — Antecedentes mórbidos: preencher com a doença que motivou o afastamento (em vez de "Nega")
+  if (!state.aux.historicoPregresso || state.aux.historicoPregresso === "Nega") {
+    state.aux.historicoPregresso = doenca;
+  }
+  state.historicoPregresso = state.aux.historicoPregresso;
+  if ($("historicoPregresso")) $("historicoPregresso").value = state.aux.historicoPregresso;
+  if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = state.aux.historicoPregresso;
+  
+  if (!state.outrasDoencas) {
+    state.outrasDoencas = "Não";
+    state.aux.outrasDoencas = "Não";
+    setRadio("outrasDoencas", "Não");
+    setRadio("agilOutrasDoencas", "Não");
+  }
+  
+  // 04 — Atestado / Relatório / Exames: "Em anexo"
+  if (!state.aux.obsDocumentos) state.aux.obsDocumentos = "Em anexo";
+  if ($("obsDocumentos")) $("obsDocumentos").value = state.aux.obsDocumentos;
+  if (!state.aux.crmCro) {
+    state.aux.crmCro = "Em anexo";
+    if ($("crmCro")) $("crmCro").value = "Em anexo";
+  }
+  if (!state.aux.dataDocumento) {
+    state.aux.dataDocumento = state.aux.dataAtd || today();
+    if ($("dataDocumento")) $("dataDocumento").value = state.aux.dataDocumento;
+  }
+  if (!state.aux.diasSolicitados) {
+    state.aux.diasSolicitados = "Conforme atestado";
+    if ($("diasSolicitados")) $("diasSolicitados").value = "Conforme atestado";
+  }
+  
+  // CID sincronizado
+  const cidVal = state.cid || state.aux.cid || $("agilCid")?.value || $("cid")?.value || "";
+  if (cidVal) {
+    state.cid = cidVal;
+    state.aux.cid = cidVal;
+    if ($("cid")) $("cid").value = cidVal;
+    if ($("agilCid")) $("agilCid").value = cidVal;
+  }
+  
+  if (!state.aux.inicioTratamento) {
+    state.aux.inicioTratamento = state.aux.dataAtd || today();
+    if ($("inicioTratamento")) $("inicioTratamento").value = state.aux.inicioTratamento;
+    if ($("agilInicioTratamento")) $("agilInicioTratamento").value = state.aux.inicioTratamento;
+  }
+  
+  if (!state.aux.sintomasLimitacao) {
+    state.aux.sintomasLimitacao = state.aux.descLimitacao || (state.exameMentalResultado === "Alterado" ? TEXTO_LIMITACAO_ALTERADO : (state.exameMentalResultado === "Normal" ? TEXTO_LIMITACAO_NORMAL : "Conforme exame físico/mental"));
+    if ($("sintomasLimitacao")) $("sintomasLimitacao").value = state.aux.sintomasLimitacao;
+    if ($("agilSintomasLimitacao")) $("agilSintomasLimitacao").value = state.aux.sintomasLimitacao;
+  }
+
+  if (!state.aux.queixaDuracao) {
+    state.aux.queixaDuracao = state.queixaDuracao || state.aux.doencaMotivo || "Conforme queixa informada no atendimento";
+    state.queixaDuracao = state.aux.queixaDuracao;
+    if ($("queixaDuracao")) $("queixaDuracao").value = state.aux.queixaDuracao;
+  }
+
+  // 06, 07, 08 — Limitações, Quesitos, Capacidade, Parecer, Justificativa
+  if (state.exameFisicoTipo === "Exame Mental") {
+    if (state.exameMentalResultado === "Alterado") {
+      state.limitacaoFuncional = "Sim";
+      state.limitacaoRol = "Sim";
+      state.capacidade = "Capacidade parcial e temporariamente prejudicada";
+      state.parecer = "FAVORÁVEL";
+      state.aux.justificativa = state.aux.justificativa || $("agilJustificativa")?.value || TEXTO_JUSTIFICATIVA_ALTERADO;
+      state.justificativa = state.aux.justificativa;
+      QuesitoService.set(0, "Sim");
+      QuesitoService.set(1, "Sim");
+      QuesitoService.set(2, "Sim");
+    } else {
+      state.limitacaoFuncional = "Não";
+      state.limitacaoRol = "Não";
+      state.capacidade = "Capacidade laborativa preservada";
+      state.parecer = "CONTRÁRIO";
+      state.aux.justificativa = state.aux.justificativa || $("agilJustificativa")?.value || TEXTO_JUSTIFICATIVA_NORMAL;
+      state.justificativa = state.aux.justificativa;
+      QuesitoService.set(0, "Sim");
+      QuesitoService.set(1, "Sim");
+      QuesitoService.set(2, "Não");
+    }
+  } else if (state.exameFisicoTipo === "Aparelho Osteomuscular e Tecido Conjutivo") {
+    const hasAlterado = Object.values(state.osteomuscularRegioes || {}).some(v => v === "Alterado");
+    if (hasAlterado) {
+      state.limitacaoFuncional = "Sim";
+      state.limitacaoRol = "Sim";
+      state.capacidade = "Capacidade parcial e temporariamente prejudicada";
+      state.parecer = "FAVORÁVEL";
+      state.aux.justificativa = state.aux.justificativa || $("agilJustificativa")?.value || (state.descLimitacao ? `Capacidade parcial e temporariamente prejudicada, ${state.descLimitacao}` : TEXTO_JUSTIFICATIVA_ALTERADO);
+      state.justificativa = state.aux.justificativa;
+      QuesitoService.set(0, "Sim");
+      QuesitoService.set(1, "Sim");
+      QuesitoService.set(2, "Sim");
+    } else {
+      state.limitacaoFuncional = "Não";
+      state.limitacaoRol = "Não";
+      state.capacidade = "Capacidade laborativa preservada";
+      state.parecer = "CONTRÁRIO";
+      state.aux.justificativa = state.aux.justificativa || $("agilJustificativa")?.value || TEXTO_OSTEO_NORMAL_JUSTIFICATIVA;
+      state.justificativa = state.aux.justificativa;
+      QuesitoService.set(0, "Sim");
+      QuesitoService.set(1, "Sim");
+      QuesitoService.set(2, "Não");
+    }
+  } else {
+    state.limitacaoFuncional = state.limitacaoFuncional || "Não";
+    state.limitacaoRol = state.limitacaoRol || "Não";
+    state.capacidade = state.capacidade || "Capacidade laborativa preservada";
+    state.parecer = state.parecer || "CONTRÁRIO";
+    state.aux.justificativa = state.aux.justificativa || $("agilJustificativa")?.value || "Avaliação pericial clínica sem evidências de incapacidade laborativa no momento do exame pericial.";
+    state.justificativa = state.aux.justificativa;
+    if (QuesitoService.validate().answered < 3) {
+      QuesitoService.set(0, "Sim");
+      QuesitoService.set(1, "Sim");
+      QuesitoService.set(2, "Não");
+    }
+  }
+  setRadio("limitacaoFuncional", state.limitacaoFuncional);
+  setRadio("limitacaoRol", state.limitacaoRol);
+  setRadio("capacidade", state.capacidade);
+  setRadio("parecer", state.parecer);
+  if ($("justificativa")) $("justificativa").value = state.aux.justificativa || "";
+  renderQuesitos();
+}
+
+function finalizarAtendimentoAgil() {
+  if (isFinalizedReadOnly()) {
+    toast("Atendimento já finalizado. Reabra pela Gestão para editar.");
+    return;
+  }
+  syncAgilToExtended();
+  
+  const missing = [];
+  if (!state.aux.cargo) missing.push("Cargo");
+  if (!state.aux.idade) missing.push("Idade");
+  if (!state.readaptado) missing.push("É readaptado? (Sim/Não)");
+  if (!state.aux.doencaMotivo) missing.push("Qual a doença está tratando que motivou o afastamento?");
+  if (!state.aux.sintomasLimitacao) missing.push("Quais sintomas / limitações são referidos?");
+  if (!state.cid) missing.push("CID");
+  if (!state.exameFisicoTipo) missing.push("Tipo de exame físico / mental");
+  if (state.exameFisicoTipo === "Exame Mental" && !state.exameMentalResultado) {
+    missing.push("Resultado do Exame Mental (Normal ou Alterado)");
+  }
+  if (state.exameFisicoTipo === "Aparelho Osteomuscular e Tecido Conjutivo") {
+    const hasAny = Object.keys(state.osteomuscularRegioes || {}).length > 0 || state.osteomuscularResultado === "Normal";
+    if (!hasAny) {
+      missing.push("Avaliação Osteomuscular (Selecione ao menos uma região como Alterada ou Normal, ou clique em Sem Alterações / Normal)");
+    }
+  }
+  if (state.exameFisicoTipo === "Outros") {
+    const desc = state.exameFisicoDescricao || $("agilExameFisicoDescricao")?.value?.trim();
+    if (!desc) {
+      missing.push("Exame Físico Geral — achados observados");
+    }
+    const just = state.aux?.justificativa || $("agilJustificativa")?.value?.trim();
+    if (!just) {
+      missing.push("Justificativa Parecer Final");
+    }
+  }
+  
+  if (missing.length > 0) {
+    toast("Campos pendentes no Modo Ágil: " + missing.join(", "));
+    const fieldFocusMap = {
+      "Cargo": "agilCargo",
+      "Idade": "agilIdade",
+      "É readaptado? (Sim/Não)": "agilReadaptado_Nao",
+      "Qual a doença está tratando que motivou o afastamento?": "agilDoencaMotivo",
+      "Quais sintomas / limitações são referidos?": "agilSintomasLimitacao",
+      "CID": "agilCid",
+      "Tipo de exame físico / mental": "agilExameFisicoTipo",
+      "Resultado do Exame Mental (Normal ou Alterado)": "btnAgilMentalNormal",
+      "Avaliação Osteomuscular (Selecione ao menos uma região como Alterada ou Normal, ou clique em Sem Alterações / Normal)": "agilOsteomuscularSelector",
+      "Exame Físico Geral — achados observados": "agilExameFisicoDescricao",
+      "Justificativa Parecer Final": "agilJustificativa"
+    };
+    const targetId = fieldFocusMap[missing[0]];
+    if (targetId && $(targetId)) {
+      $(targetId).scrollIntoView({ behavior: "smooth", block: "center" });
+      try { $(targetId).focus(); } catch (_) {}
+    }
+    return;
+  }
+  
+  ensureAgileBackgroundDefaults();
+  openFinalizeDialog();
+}
 
 </script>
 </div> <!-- Fecha a div .app -->

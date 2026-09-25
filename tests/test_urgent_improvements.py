@@ -29,5 +29,5 @@ def test_audit_records_include_user_id():
 
 
 def test_role_profile_uses_single_crm_query():
-    assert 'SELECT id, nome, perfil, ativo, crm FROM usuarios WHERE id=%s' in APP
+    assert 'SELECT id, nome, perfil, ativo, crm, email, modo_atendimento FROM usuarios WHERE id=%s' in APP or 'SELECT id, nome, perfil, ativo, crm FROM usuarios WHERE id=%s' in APP
     assert 'SELECT crm FROM usuarios WHERE id=%s' not in APP

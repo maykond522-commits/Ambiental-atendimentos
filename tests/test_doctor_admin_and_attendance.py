@@ -7,6 +7,7 @@ ATTENDANCE = (ROOT / "ambiental_avaliacao_medica_lts_cid_assistente.html").read_
 GESTAO_MEDICOS_ADMIN = (ROOT / "gestao-medicos-admin.html").read_text(encoding="utf-8")
 GESTAO_MEDICOS = (ROOT / "gestao_medicos.html").read_text(encoding="utf-8")
 GESTAO_ATENDIMENTOS = (ROOT / "gestao_atendimentos.html").read_text(encoding="utf-8")
+LOGIN = (ROOT / "login.html").read_text(encoding="utf-8")
 
 
 def test_admin_doctor_update_endpoint():
@@ -16,7 +17,7 @@ def test_admin_doctor_update_endpoint():
     assert 'len(nome) < 3' in APP
     assert 'len(crm) < 3' in APP
     assert 'LOWER(COALESCE(crm,\'\')) = LOWER(%s) AND id <> %s' in APP
-    assert "UPDATE usuarios SET nome=%s, crm=%s WHERE id=%s" in APP
+    assert "UPDATE usuarios SET nome=%s, crm=%s, email=%s, modo_atendimento=%s WHERE id=%s" in APP
     assert "_supabase_admin_request(\"PUT\", f\"/auth/v1/admin/users/" in APP
 
 
@@ -242,5 +243,554 @@ def test_attendance_agenda_query_params_prefill():
     assert 'state.atendimento = protocoloParam;' in ATTENDANCE
     assert 'state.aux.horaAtd = horaParam;' in ATTENDANCE
     assert 'state.aux.ni = niParam;' in ATTENDANCE
+
+
+def test_modo_agil_mode_switcher_and_layout():
+    # Mode switcher buttons in header
+    assert 'id="btnModoAgil"' in ATTENDANCE
+    assert 'id="btnModoEstendido"' in ATTENDANCE
+    assert 'setAttendanceMode(\'agil\')' in ATTENDANCE or 'setAttendanceMode("agil")' in ATTENDANCE
+    assert 'setAttendanceMode(\'estendido\')' in ATTENDANCE or 'setAttendanceMode("estendido")' in ATTENDANCE
+
+    # Container Modo Ágil exists
+    assert 'id="containerModoAgil"' in ATTENDANCE
+
+    # CSS rules for switching modes
+    assert 'body.mode-agil-active .sidebar' in ATTENDANCE
+    assert 'body.mode-agil-active .section' in ATTENDANCE
+    assert 'body:not(.mode-agil-active) #containerModoAgil' in ATTENDANCE
+
+
+def test_modo_agil_bloco1_cadastral_and_medications():
+    # Bloco 01 fields
+    assert 'id="agilNomePaciente"' in ATTENDANCE
+    assert 'id="agilCpfPaciente"' in ATTENDANCE
+    assert 'id="agilCargo"' in ATTENDANCE
+    assert 'id="agilTempoCargo"' in ATTENDANCE
+    assert 'id="agilTempoUnidade"' in ATTENDANCE
+    assert 'id="agilIdade"' in ATTENDANCE
+    assert 'name="agilReadaptado"' in ATTENDANCE
+    assert 'id="agilAtividadesReadaptado"' in ATTENDANCE
+
+    # Bloco 02 fields (Queixa e Duração & Antecedentes)
+    assert 'id="agilDoencaMotivo"' in ATTENDANCE
+    assert 'id="agilInicioTratamento"' in ATTENDANCE
+    assert 'id="agilFreqConsultas"' in ATTENDANCE
+    assert 'id="agilSintomasLimitacao"' in ATTENDANCE
+    assert 'id="agilMedRows"' in ATTENDANCE
+    assert 'name="agilAlteracaoMed"' in ATTENDANCE
+    assert 'id="agilPsicoterapia"' in ATTENDANCE
+    assert 'id="agilFisioterapia"' in ATTENDANCE
+    assert 'id="agilObsTerapias"' in ATTENDANCE
+    assert 'name="agilOutrasDoencas"' in ATTENDANCE
+    assert 'id="agilCondRows"' in ATTENDANCE
+    assert 'id="agilHistoricoPregresso"' in ATTENDANCE
+
+    # Synchronization functions
+    assert 'function syncAgilField' in ATTENDANCE
+    assert 'function syncAgilCpf' in ATTENDANCE
+    assert 'function syncAgilRadio' in ATTENDANCE
+    assert 'function syncAgilCheckbox' in ATTENDANCE
+    assert 'function syncAgilReadaptado' in ATTENDANCE
+    assert 'function syncAgilAlteracaoMed' in ATTENDANCE
+    assert 'function syncAgilOutrasDoencas' in ATTENDANCE
+    assert 'function onAgilDoencaMotivoInput' in ATTENDANCE
+
+
+def test_modo_agil_bloco2_exam_restriction_and_vitals():
+    # CID is the first question in Bloco 02 with autocomplete
+    assert 'id="agilCid"' in ATTENDANCE
+    assert 'id="agilCidSuggestions"' in ATTENDANCE
+    assert 'id="agilCidBadge"' in ATTENDANCE
+    assert 'onAgilCidInput' in ATTENDANCE
+    assert 'selectAgilCID' in ATTENDANCE
+
+    # Exam type restricted to 2 options in Modo Ágil
+    assert 'id="agilExameFisicoTipo"' in ATTENDANCE
+    assert '<option value="Aparelho Osteomuscular e Tecido Conjutivo">Aparelho Osteomuscular e Tecido Conjutivo</option>' in ATTENDANCE
+    assert '<option value="Exame Mental">Exame Mental</option>' in ATTENDANCE
+    assert 'id="agilMentalSelector"' in ATTENDANCE
+    assert 'id="btnAgilMentalNormal"' in ATTENDANCE
+    assert 'id="btnAgilMentalAlterado"' in ATTENDANCE
+
+    # Vitals / biometrics
+    assert 'id="agilPressaoSistolica"' in ATTENDANCE
+    assert 'id="agilPressaoDiastolica"' in ATTENDANCE
+    assert 'id="agilPulso"' in ATTENDANCE
+    assert 'id="agilAltura"' in ATTENDANCE
+    assert 'id="agilPeso"' in ATTENDANCE
+
+    # Findings textarea
+    assert 'id="agilExameFisicoDescricao"' in ATTENDANCE
+
+
+def test_modo_agil_exame_mental_normal_autofill_contract():
+    assert 'function aplicarExameMentalNormal()' in ATTENDANCE
+    assert 'TEXTO_EXAME_MENTAL_NORMAL' in ATTENDANCE
+    assert 'Nível de consciência: Preservado' in ATTENDANCE
+    assert 'Orientação: Global preservada em tempo e espaço' in ATTENDANCE
+    assert 'Atenção e concentração:  Sem desvios, preservados.' in ATTENDANCE
+    assert 'Memória:  Não demostrou dificuldades em responder questões' in ATTENDANCE
+    assert 'Humor: Eutímico, polarizado ao positivo.' in ATTENDANCE
+    assert 'Juízo: Preservado.' in ATTENDANCE
+
+    # Normal limitation
+    assert 'TEXTO_LIMITACAO_NORMAL' in ATTENDANCE
+    assert 'Não se identificam limitações funcionais em níveis que possam ser considerados incapacitantes neste momento.' in ATTENDANCE
+
+    # Normal quesitos rule: Q1=Sim, Q2=Sim, Q3=Não
+    assert 'QuesitoService.set(0, "Sim")' in ATTENDANCE
+    assert 'QuesitoService.set(1, "Sim")' in ATTENDANCE
+    assert 'QuesitoService.set(2, "Não")' in ATTENDANCE
+
+    # Normal capacidade & parecer
+    assert 'Capacidade laborativa preservada' in ATTENDANCE
+    assert 'CONTRÁRIO' in ATTENDANCE
+
+    # Normal justification
+    assert 'TEXTO_JUSTIFICATIVA_NORMAL' in ATTENDANCE
+    assert 'Capacidade laborativa preservada, não se identificam limitações funcionais em níveis que possam ser considerados incapacitantes neste momento.' in ATTENDANCE
+
+
+def test_modo_agil_exame_mental_alterado_autofill_contract():
+    assert 'function aplicarExameMentalAlterado()' in ATTENDANCE
+    assert 'TEXTO_EXAME_MENTAL_ALTERADO' in ATTENDANCE
+    assert 'Apresentas-e consciente, boa orientação' in ATTENDANCE
+    assert 'Facie entristecida, hipotimica, manifestação de labilidade emocional' in ATTENDANCE
+    assert 'insight negativo sobre seu quadro clinico' in ATTENDANCE
+    assert 'pensamentos ruminantes com conteúdo de ressentimentos, desesperança, desestruturado' in ATTENDANCE
+    assert 'Hipopragamatica, com volição prejudicada' in ATTENDANCE
+
+    # Altered limitation
+    assert 'TEXTO_LIMITACAO_ALTERADO' in ATTENDANCE
+    assert 'Apresenta limitações psicossociais e psicoemocionais que repercutem nas habilidades necessárias para interatividade social, planejamentos, manter concentração e ter autodomínio.' in ATTENDANCE
+
+    # Altered quesitos rule: Q1=Sim, Q2=Sim, Q3=Sim
+    assert 'QuesitoService.set(2, "Sim")' in ATTENDANCE
+
+    # Altered capacidade & parecer
+    assert 'Capacidade parcial e temporariamente prejudicada' in ATTENDANCE
+    assert 'FAVORÁVEL' in ATTENDANCE
+
+    # Altered justification
+    assert 'TEXTO_JUSTIFICATIVA_ALTERADO' in ATTENDANCE
+    assert 'Capacidade laborativa parcial e temporariamente prejudicada, limitações psicossociais e psicoemocionais que repercutem nas habilidades necessárias para interatividade social, planejamentos, manter concentração e ter autodomínio, referente ao período pleiteado.' in ATTENDANCE
+
+
+def test_modo_agil_bloco3_finalization_and_hidden_parecer():
+    # In Modo Ágil, Parecer is hidden from quick view and bound automatically
+    assert 'id="agilJustificativa"' in ATTENDANCE
+    assert 'id="btnAgilFinalizar"' in ATTENDANCE
+    assert 'function finalizarAtendimentoAgil()' in ATTENDANCE
+    assert 'function ensureAgileBackgroundDefaults()' in ATTENDANCE
+
+    # Background defaults: 03 = doencaMotivo (em vez de Nega), 04 = Em anexo
+    assert 'state.aux.historicoPregresso = doenca' in ATTENDANCE
+    assert 'state.aux.obsDocumentos = "Em anexo"' in ATTENDANCE
+    assert 'state.aux.crmCro = "Em anexo"' in ATTENDANCE
+    assert 'state.aux.diasSolicitados = "Conforme atestado"' in ATTENDANCE
+    assert 'state.aux.queixaDuracao' in ATTENDANCE
+    assert 'QuesitoService.set(' in ATTENDANCE
+
+
+def test_auth_caching_and_jwt_resilience_contract():
+    # Cache thread-safe cross-request
+    assert '_AUTH_CACHE: dict[str, dict[str, Any]] = {}' in APP
+    assert '_AUTH_CACHE_LOCK = threading.Lock()' in APP
+    assert '_decode_jwt_payload_unverified(token: str)' in APP
+    
+    # 8-hour session cookie
+    assert 'max_age=28800' in APP
+    
+    # Supabase timeout fallback
+    assert 'Supabase indisponível/timeout; mantendo sessão ativa via claims JWT' in APP
+    assert '_AUTH_CACHE.pop(token_hash, None)' in APP
+
+
+def test_modo_agil_finalization_zero_blocking():
+    # Frontend syncState protects prevAux without premature background defaults
+    assert 'const prevAux = state.aux || {};' in ATTENDANCE
+    assert 'crmCro:getVal("crmCro", prevAux.crmCro)' in ATTENDANCE
+    assert 'dataDocumento:getVal("dataDocumento", prevAux.dataDocumento)' in ATTENDANCE
+    assert 'diasSolicitados:getVal("diasSolicitados", prevAux.diasSolicitados)' in ATTENDANCE
+
+    # Test backend finalization validation with an agile payload
+    from app import _finalization_blockers
+    agile_payload = {
+        "readaptado": "Não",
+        "exameFisicoTipo": "Exame Mental",
+        "limitacaoFuncional": "Sim",
+        "limitacaoRol": "Sim",
+        "capacidade": "Capacidade parcial e temporariamente prejudicada",
+        "parecer": "FAVORÁVEL",
+        "quesitos": [
+            {"resposta": "Sim"},
+            {"resposta": "Sim"},
+            {"resposta": "Sim"}
+        ],
+        "aux": {
+            "cargo": "Assistente Administrativo",
+            "idade": "34",
+            "readaptado": "Não",
+            "cid": "F32.2",
+            "doencaMotivo": "F32.2 — Episódio depressivo grave",
+            "inicioTratamento": "2026-09-24",
+            "sintomasLimitacao": "Apresenta limitações psicossociais",
+            "crmCro": "Em anexo",
+            "dataDocumento": "2026-09-24",
+            "diasSolicitados": "Conforme atestado",
+            "justificativa": "Capacidade laborativa parcial e temporariamente prejudicada..."
+        }
+    }
+    blockers = _finalization_blockers(agile_payload)
+    assert blockers == [], f"Expected 0 blockers for agile payload, got: {blockers}"
+
+
+def test_novo_atendimento_lifecycle_and_default_agil_mode():
+    # 1. newEmptyState generates ID immediately and cleans server identifiers
+    assert 'state.atendimento = generateId()' in ATTENDANCE or 'state.atendimento=generateId()' in ATTENDANCE
+    assert 'delete state.__serverId;' in ATTENDANCE
+    assert 'delete state.__serverVersion;' in ATTENDANCE
+    assert 'delete state.__serverSyncedAt;' in ATTENDANCE
+    assert 'applyFinalizedLock();' in ATTENDANCE
+    assert 'state.osteomuscularRegioes = {};' in ATTENDANCE or 'state.osteomuscularRegioes={};' in ATTENDANCE
+    assert 'state.osteomuscularResultado = "";' in ATTENDANCE or 'state.osteomuscularResultado="";' in ATTENDANCE
+
+    # 2. init() defaults to Modo Ágil for new attendances
+    assert 'setAttendanceMode("agil");' in ATTENDANCE
+    assert 'if(isNew || !recordId)' in ATTENDANCE
+
+    # 3. Parameter synchronization updates both extended and agile elements
+    assert '$("agilNomePaciente").value = pacienteParam;' in ATTENDANCE
+    assert '$("atd").value = protocoloParam;' in ATTENDANCE
+
+    # 4. saveNow() syncs agile state before persisting
+    assert 'if(typeof currentAttendanceMode !== "undefined" && currentAttendanceMode === "agil")' in ATTENDANCE
+    assert 'syncAgilToExtended();' in ATTENDANCE
+    assert 'toast("Rascunho salvo com sucesso.");' in ATTENDANCE
+
+
+def test_osteo_interactive_body_map_and_9_regions_structure():
+    # 1. Selector container and image
+    assert 'id="agilOsteomuscularSelector"' in ATTENDANCE
+    assert 'src="/corpo_humano.png"' in ATTENDANCE
+    assert 'class="osteo-body-img"' in ATTENDANCE
+    assert 'class="osteo-hotspot"' in ATTENDANCE
+
+    # 2. All 9 anatomical regions present in cards, with individual lateralities for peripheral joints
+    axial_regions = ["cervical", "lombar", "quadril"]
+    paired_groups = ["ombros", "cotovelos", "antebracos", "maos", "joelhos", "tornozelos"]
+    lateralities = [
+        "ombro_direito", "ombro_esquerdo",
+        "cotovelo_direito", "cotovelo_esquerdo",
+        "antebraco_direito", "antebraco_esquerdo",
+        "mao_direita", "mao_esquerda",
+        "joelho_direito", "joelho_esquerdo",
+        "tornozelo_direito", "tornozelo_esquerdo"
+    ]
+
+    for r in axial_regions:
+        assert f'data-regiao="{r}"' in ATTENDANCE, f"Missing hotspot for {r}"
+        assert f'id="cardOsteo_{r}"' in ATTENDANCE, f"Missing card for {r}"
+        assert f'id="btnOsteoAlt_{r}"' in ATTENDANCE, f"Missing Alterado button for {r}"
+        assert f'id="btnOsteoNorm_{r}"' in ATTENDANCE, f"Missing Normal button for {r}"
+
+    for g in paired_groups:
+        assert f'data-group="{g}"' in ATTENDANCE, f"Missing hotspot group for {g}"
+        assert f'id="cardOsteo_{g}"' in ATTENDANCE, f"Missing card for {g}"
+        assert f'id="btnOsteoAlt_{g}"' in ATTENDANCE, f"Missing Alterado button for {g}"
+        assert f'id="btnOsteoNorm_{g}"' in ATTENDANCE, f"Missing Normal button for {g}"
+
+    for lat in lateralities:
+        assert f'data-regiao="{lat}"' in ATTENDANCE, f"Missing hotspot for {lat}"
+        assert f'id="btnOsteoAlt_{lat}"' in ATTENDANCE, f"Missing Alterado button for {lat}"
+        assert f'id="btnOsteoNorm_{lat}"' in ATTENDANCE, f"Missing Normal button for {lat}"
+
+    # 3. Quick action buttons
+    assert 'onclick="aplicarOsteomuscularNormal()"' in ATTENDANCE
+    assert 'onclick="limparOsteomuscular()"' in ATTENDANCE
+    assert 'function setupOsteoHoverEffects()' in ATTENDANCE
+
+
+def test_osteo_medical_data_exact_texts_and_autocompletion():
+    # 1. Clinical text dictionary exists
+    assert 'const DADOS_OSTEOMUSCULAR = {' in ATTENDANCE
+
+    # 2. Exact texts specified in user prompt
+    assert 'Trapézios sem contraturas' in ATTENDANCE
+    assert 'limitações para mudança do campo visual de forma brusca' in ATTENDANCE
+    assert 'Lasegue + a 45º' in ATTENDANCE
+    assert 'limitações para realizar dosiflexão e extensão' in ATTENDANCE
+    assert 'Neer, Jobe, Patte, Gerber, Howkins e Queda negativos' in ATTENDANCE
+    assert 'Limitações para ação braçal, com execução de elevação' in ATTENDANCE
+    assert 'amplitudes de prono-supinação 90 º e flexão 145 º' in ATTENDANCE
+    assert 'comprometem execução de manuscritos de forma habitual e sistemática' in ATTENDANCE
+    assert 'Filkeinstein, Tinel do Mediano e Phalen negativos' in ATTENDANCE
+    assert 'Ausência de edemas, hematomas, cicatrizes, atrofias de regiões tenar e hipotenar' in ATTENDANCE
+    assert 'comprometem execução de manuscritos e digitação de forma habitual' in ATTENDANCE
+    assert 'Bursa trocanteriana indolor; palpação do trajeto do N. Ciático indolor' in ATTENDANCE
+    assert 'limitações para realizar rotação do tronco de forma abrupta' in ATTENDANCE
+    assert 'testes gaveta anterior e Lackman para o LCA' in ATTENDANCE
+    assert 'realizar agachamentos, subir e descer escadarias de modo habitual e sem apoio' in ATTENDANCE
+    assert 'ligamentos Deltóide (medial), e talo-fibular' in ATTENDANCE
+    assert 'pulso pedioso sem alterações; palpação do tarso, metatarsos e dedos' in ATTENDANCE
+    assert 'label: "Joelho direito"' in ATTENDANCE
+    assert 'label: "Joelho esquerdo"' in ATTENDANCE
+
+    # 3. Auto-completion and formatting helpers
+    assert 'function capitalizeFirstLetter(str)' in ATTENDANCE
+    assert 'function formatarLimitacoesOsteo(lista)' in ATTENDANCE
+    assert 'function setGrupoStatus(grupo, status)' in ATTENDANCE
+    assert 'function setRegiaoStatus(regiao, status)' in ATTENDANCE
+    assert 'function toggleRegiaoOsteomuscular(regiao)' in ATTENDANCE
+    assert 'function aplicarRegioesOsteomusculares()' in ATTENDANCE
+    assert 'function aplicarOsteomuscularNormal()' in ATTENDANCE
+    assert 'function limparOsteomuscular()' in ATTENDANCE
+    assert 'function updateOsteoUI()' in ATTENDANCE
+
+
+def test_osteo_finalization_zero_blocking_altered_and_normal():
+    from app import _finalization_blockers
+
+    # Case A: Osteomuscular Altered (Favorável, Parcial e Temporariamente Prejudicada, Q1/Q2/Q3=Sim)
+    payload_altered = {
+        "readaptado": "Não",
+        "exameFisicoTipo": "Aparelho Osteomuscular e Tecido Conjutivo",
+        "limitacaoFuncional": "Sim",
+        "limitacaoRol": "Sim",
+        "capacidade": "Capacidade parcial e temporariamente prejudicada",
+        "parecer": "FAVORÁVEL",
+        "quesitos": [
+            {"resposta": "Sim"},
+            {"resposta": "Sim"},
+            {"resposta": "Sim"}
+        ],
+        "aux": {
+            "cargo": "Operador de Máquinas",
+            "idade": "42",
+            "readaptado": "Não",
+            "cid": "M54.5",
+            "doencaMotivo": "M54.5 — Dor lombar baixa",
+            "inicioTratamento": "2026-09-24",
+            "sintomasLimitacao": "limitações para realizar dosiflexão e extensão",
+            "crmCro": "Em anexo",
+            "dataDocumento": "2026-09-24",
+            "diasSolicitados": "Conforme atestado",
+            "justificativa": "Capacidade parcial e temporariamente prejudicada, limitações para realizar dosiflexão e extensão..."
+        }
+    }
+    blockers_altered = _finalization_blockers(payload_altered)
+    assert blockers_altered == [], f"Expected 0 blockers for altered osteomuscular, got: {blockers_altered}"
+
+    # Case B: Osteomuscular Normal (Contrário, Preservada, Q1/Q2=Sim, Q3=Não)
+    payload_normal = {
+        "readaptado": "Não",
+        "exameFisicoTipo": "Aparelho Osteomuscular e Tecido Conjutivo",
+        "limitacaoFuncional": "Não",
+        "limitacaoRol": "Não",
+        "capacidade": "Capacidade laborativa preservada",
+        "parecer": "CONTRÁRIO",
+        "quesitos": [
+            {"resposta": "Sim"},
+            {"resposta": "Sim"},
+            {"resposta": "Não"}
+        ],
+        "aux": {
+            "cargo": "Operador de Máquinas",
+            "idade": "42",
+            "readaptado": "Não",
+            "cid": "M54.5",
+            "doencaMotivo": "M54.5 — Dor lombar baixa",
+            "inicioTratamento": "2026-09-24",
+            "sintomasLimitacao": "Não se identificam limitações funcionais",
+            "crmCro": "Em anexo",
+            "dataDocumento": "2026-09-24",
+            "diasSolicitados": "Conforme atestado",
+            "justificativa": "Capacidade laborativa preservada, avaliação pericial clínica sem evidências de incapacidade..."
+        }
+    }
+    blockers_normal = _finalization_blockers(payload_normal)
+    assert blockers_normal == [], f"Expected 0 blockers for normal osteomuscular, got: {blockers_normal}"
+
+
+def test_osteo_details_toggle_and_vitals_standard_preset():
+    # 1. Detalhes collapsible container and buttons
+    assert 'id="btnToggleOsteoDetalhes"' in ATTENDANCE
+    assert 'function toggleOsteoDetalhes()' in ATTENDANCE
+    assert 'id="osteoRegionsContainer"' in ATTENDANCE
+    assert 'id="osteoBadgeCount"' in ATTENDANCE
+
+    # 2. Region format with colon: "${d.label}: ${capitalizeFirstLetter(d.exame)}"
+    assert '${d.label}: ${capitalizeFirstLetter(d.exame)}' in ATTENDANCE
+
+    # 3. Standard Vitals preset (120x80 mmHg and pulse 80 bpm via checkbox)
+    assert 'id="agilVitalsPadraoCheck"' in ATTENDANCE
+    assert 'function toggleVitalsPadrao(checked)' in ATTENDANCE
+    assert '120 por 80 mmHg' in ATTENDANCE
+    assert 'pulso 80 bpm' in ATTENDANCE
+
+    # 4. Body map separation (Frente = limbs, Verso = cervical, lombar, quadril)
+    assert 'title="Coluna lombar"' in ATTENDANCE
+    assert 'title="Cervical"' in ATTENDANCE
+    assert 'title="Quadril"' in ATTENDANCE
+    assert 'title="Ombro Direito"' in ATTENDANCE
+    assert 'title="Joelho Direito"' in ATTENDANCE
+    assert 'title="Tornozelo / Pé Direito"' in ATTENDANCE
+    # Verify no duplicated limb hotspots on Verso
+    assert 'title="Joelho Esquerdo (Verso)"' not in ATTENDANCE
+    assert 'title="Tornozelo / Calcanhar Direito"' not in ATTENDANCE
+    assert 'title="Ombro Direito (Verso)"' not in ATTENDANCE
+
+
+def test_doctor_optional_email_and_attendance_mode():
+    # 1. Database migrations in _init_db() for email and modo_atendimento
+    assert "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS email TEXT;" in APP
+    assert "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS modo_atendimento TEXT DEFAULT 'agil';" in APP
+    assert "idx_usuarios_email" in APP
+
+    # 2. _role_from_profile returns modo_atendimento
+    assert '"modo_atendimento": modo_atendimento,' in APP
+
+    # 3. Doctor creation supports optional email and modo_atendimento
+    assert "clean_crm = re.sub(r'[^0-9a-zA-Z]', '', crm).lower() or 'medico'" in APP
+    assert 'f"crm_{clean_crm}@medico.ambiental.local"' in APP
+    assert 'modo_atendimento = str(body.get("modo_atendimento") or "agil").strip().lower()' in APP
+    assert "INSERT INTO usuarios (id,nome,perfil,ativo,criado_em,crm,email,modo_atendimento)" in APP
+
+    # 4. Doctor edit supports modo_atendimento
+    assert "UPDATE usuarios SET nome=%s, crm=%s, email=%s, modo_atendimento=%s WHERE id=%s" in APP
+
+    # 5. UI: gestao-medicos-admin.html
+    assert '(opcional)' in GESTAO_MEDICOS_ADMIN
+    assert 'name="modo_atendimento"' in GESTAO_MEDICOS_ADMIN
+    assert 'name="editModoAtendimento"' in GESTAO_MEDICOS_ADMIN
+    assert 'Modelo de atendimento facilitado para médicos com dificuldades.' in GESTAO_MEDICOS_ADMIN
+    assert 'Médico com experiencia e com facilidade em realizar os atendimentos.' in GESTAO_MEDICOS_ADMIN
+    assert '<th>Modo</th>' in GESTAO_MEDICOS_ADMIN
+
+
+def test_login_crm_resolution_and_attendance_integration():
+    # 1. Endpoint POST /api/auth/resolve-identifier in app.py
+    assert '@app.post("/api/auth/resolve-identifier")' in APP
+    assert 'def api_auth_resolve_identifier():' in APP
+    assert '"type": "email"' in APP
+    assert '"type": "crm"' in APP
+    assert 'DOCTOR_NOT_FOUND' in APP
+    assert 'Administradores devem entrar utilizando seu e-mail corporativo.' in APP
+
+    # 2. Login UI: login.html
+    assert 'E-mail corporativo ou CRM' in LOGIN
+    assert '/api/auth/resolve-identifier' in LOGIN
+    assert 'ev.includes("@")' in LOGIN or '!ev.includes("@")' in LOGIN
+
+    # 3. Attendance UI: ambiental_avaliacao_medica_lts_cid_assistente.html
+    assert 'const doctorDefaultMode = (currentProfile?.modo_atendimento === "extenso" || currentProfile?.modo_atendimento === "estendido") ? "estendido" : "agil";' in ATTENDANCE
+    assert 'normMode = (mode === "extenso" || mode === "estendido") ? "estendido" : "agil";' in ATTENDANCE
+
+
+def test_resolve_identifier_endpoint_execution():
+    from unittest.mock import patch, MagicMock
+    from app import app as flask_app
+
+    client = flask_app.test_client()
+
+    # 1. Validation error on empty
+    resp_empty = client.post("/api/auth/resolve-identifier", json={"identifier": ""})
+    assert resp_empty.status_code == 400
+    assert resp_empty.get_json()["error"]["code"] == "VALIDATION_ERROR"
+
+    # 2. Email direct pass-through
+    resp_email = client.post("/api/auth/resolve-identifier", json={"identifier": "admin@empresa.com"})
+    assert resp_email.status_code == 200
+    assert resp_email.get_json()["data"] == {"type": "email", "email": "admin@empresa.com"}
+
+    # 3. CRM resolution for existing active doctor
+    with patch("app.get_db") as mock_db:
+        mock_cur = MagicMock()
+        mock_cur.fetchone.return_value = {
+            "id": "doc-uuid-1", "nome": "Dra. Maria Silva", "crm": "CRM 98765/SP",
+            "email": "maria@empresa.com", "perfil": "Médico", "ativo": 1, "modo_atendimento": "agil"
+        }
+        mock_db.return_value.cursor.return_value = mock_cur
+        resp_crm = client.post("/api/auth/resolve-identifier", json={"identifier": "CRM 98765/SP"})
+        assert resp_crm.status_code == 200
+        data = resp_crm.get_json()["data"]
+        assert data["type"] == "crm"
+        assert data["email"] == "maria@empresa.com"
+        assert data["modo_atendimento"] == "agil"
+
+    # 4. CRM resolution when doctor has no email (generates synthetic email)
+    with patch("app.get_db") as mock_db:
+        mock_cur = MagicMock()
+        mock_cur.fetchone.return_value = {
+            "id": "doc-uuid-2", "nome": "Dr. Joao", "crm": "12345/MG",
+            "email": None, "perfil": "Médico", "ativo": 1, "modo_atendimento": "extenso"
+        }
+        mock_db.return_value.cursor.return_value = mock_cur
+        resp_crm2 = client.post("/api/auth/resolve-identifier", json={"identifier": "12345/MG"})
+        assert resp_crm2.status_code == 200
+        data2 = resp_crm2.get_json()["data"]
+        assert data2["type"] == "crm"
+        assert data2["email"] == "crm_12345mg@medico.ambiental.local"
+        assert data2["modo_atendimento"] == "extenso"
+
+    # 5. Non-existent CRM returns DOCTOR_NOT_FOUND with clear administrator hint
+    with patch("app.get_db") as mock_db:
+        mock_cur = MagicMock()
+        mock_cur.fetchone.return_value = None
+        mock_db.return_value.cursor.return_value = mock_cur
+        resp_notfound = client.post("/api/auth/resolve-identifier", json={"identifier": "999999"})
+        assert resp_notfound.status_code == 404
+        assert resp_notfound.get_json()["error"]["code"] == "DOCTOR_NOT_FOUND"
+        assert "Administradores devem entrar utilizando seu e-mail corporativo." in resp_notfound.get_json()["error"]["message"]
+
+
+def test_osteo_individual_laterality_selection_and_no_bilateral_hover_overlap():
+    """
+    Ensures:
+    1. Hovering highlights only the hovered hotspot without activating both sides.
+    2. Tooltip is displayed only for the hovered hotspot (.osteo-hotspot:hover .osteo-tooltip).
+    3. Left and right sides have independent data-regiao and individual buttons.
+    4. Knee right and left produce specific individual reports:
+       'Joelho direito: Ausência de deformidades...' or 'Joelho esquerdo: Ausência de deformidades...'
+    5. Deduplication of limitations when bilateral regions are selected.
+    """
+    # 1. Hotspot laterality differentiation
+    assert 'data-regiao="joelho_direito"' in ATTENDANCE
+    assert 'data-regiao="joelho_esquerdo"' in ATTENDANCE
+    assert 'data-regiao="ombro_direito"' in ATTENDANCE
+    assert 'data-regiao="ombro_esquerdo"' in ATTENDANCE
+    assert 'data-regiao="cotovelo_direito"' in ATTENDANCE
+    assert 'data-regiao="cotovelo_esquerdo"' in ATTENDANCE
+    assert 'data-regiao="antebraco_direito"' in ATTENDANCE
+    assert 'data-regiao="antebraco_esquerdo"' in ATTENDANCE
+    assert 'data-regiao="mao_direita"' in ATTENDANCE
+    assert 'data-regiao="mao_esquerda"' in ATTENDANCE
+    assert 'data-regiao="tornozelo_direito"' in ATTENDANCE
+    assert 'data-regiao="tornozelo_esquerdo"' in ATTENDANCE
+
+    # 2. Hover logic applies is-hovered exclusively to hs
+    assert 'hs.classList.add("is-hovered");' in ATTENDANCE
+    assert '.osteo-hotspot:hover .osteo-tooltip' in ATTENDANCE
+
+    # 3. Clinical texts match user specification
+    assert 'label: "Joelho direito"' in ATTENDANCE
+    assert 'label: "Joelho esquerdo"' in ATTENDANCE
+    assert 'testes gaveta anterior e Lackman para o LCA' in ATTENDANCE
+    assert 'teste McMurray para os meniscos' in ATTENDANCE
+
+    # 4. Deduplication of limitations
+    assert 'Array.from(new Set(' in ATTENDANCE
+
+    # 5. Bilateral unification without repeating texts
+    assert 'Antebraço esquerdo e direito' in ATTENDANCE
+    assert 'Joelho esquerdo e direito' in ATTENDANCE
+    assert 'function agruparRegioesAlteradas(alteradas)' in ATTENDANCE
+
+
+
+
+
+
 
 

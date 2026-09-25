@@ -113,9 +113,28 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
         <form id="createForm" novalidate>
           <div class="form-grid">
             <div class="field"><label for="nome">Nome completo</label><input id="nome" name="nome" required minlength="3" autocomplete="name" placeholder="Ex.: Dra. Maria Silva"></div>
-            <div class="field"><label for="email">E-mail corporativo</label><input id="email" name="email" type="email" required autocomplete="email" placeholder="medico@empresa.com.br"></div>
+            <div class="field"><label for="email">E-mail corporativo <small style="color:var(--muted);font-weight:400">(opcional)</small></label><input id="email" name="email" type="email" autocomplete="email" placeholder="medico@empresa.com.br (opcional)"></div>
             <div class="field"><label for="crm">CRM/CRO</label><input id="crm" name="crm" required placeholder="Ex.: CRM 123456 / UF"></div>
             <div class="field"><label for="senha">Senha inicial</label><input id="senha" name="senha" type="password" required minlength="8" autocomplete="new-password" placeholder="Mínimo de 8 caracteres"><div class="hint">A senha é usada somente para criação da conta no Authentication.</div></div>
+            <div class="field" style="grid-column: 1 / -1;">
+              <label style="margin-bottom:6px">Modo de Atendimento Padrão</label>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px">
+                <label style="border:1px solid #cbe2f8;background:#f0f7ff;border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;align-items:flex-start;gap:8px">
+                  <input type="radio" name="modo_atendimento" value="agil" id="createModoAgil" checked style="margin-top:2px;accent-color:var(--blue)">
+                  <div>
+                    <strong style="display:block;font-size:12px;color:var(--ink)">⚡ Modo Ágil</strong>
+                    <small style="color:var(--muted);font-size:11px;line-height:1.35;display:block">Modelo de atendimento facilitado para médicos com dificuldades.</small>
+                  </div>
+                </label>
+                <label style="border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;align-items:flex-start;gap:8px">
+                  <input type="radio" name="modo_atendimento" value="extenso" id="createModoExtenso" style="margin-top:2px;accent-color:var(--blue)">
+                  <div>
+                    <strong style="display:block;font-size:12px;color:var(--ink)">📋 Modo Extenso</strong>
+                    <small style="color:var(--muted);font-size:11px;line-height:1.35;display:block">Médico com experiencia e com facilidade em realizar os atendimentos.</small>
+                  </div>
+                </label>
+              </div>
+            </div>
           </div>
           <div class="requirements"><div class="req"><i></i><span>O perfil será criado automaticamente como <b>Médico</b>.</span></div><div class="req"><i></i><span>O CRM fica vinculado ao mesmo UUID do usuário autenticado.</span></div><div class="req"><i></i><span>Atendimentos existentes não são excluídos ao remover o acesso.</span></div></div>
           <div class="actions"><button class="primary" id="createBtn" type="submit">Criar conta médica</button><button class="secondary" type="button" id="clearBtn">Limpar</button></div>
@@ -126,7 +145,7 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
     <div class="panel">
       <div class="panelhead"><strong>Médicos cadastrados</strong><div class="list-tools"><input id="search" class="search" placeholder="Buscar por nome ou CRM"><span id="sync">Carregando…</span></div></div>
       <div class="table-wrap">
-        <table class="table"><thead><tr><th>Médico</th><th>CRM/CRO</th><th>Atendimentos</th><th>Status</th><th>Cadastro</th><th>Ações</th></tr></thead><tbody id="tbody"></tbody></table>
+        <table class="table"><thead><tr><th>Médico</th><th>CRM/CRO</th><th>Modo</th><th>Atendimentos</th><th>Status</th><th>Cadastro</th><th>Ações</th></tr></thead><tbody id="tbody"></tbody></table>
       </div>
       <div class="empty" id="empty" hidden>Nenhum médico encontrado.</div>
     </div>
@@ -159,6 +178,25 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
             <div class="field">
               <label for="editCrm">CRM/CRO</label>
               <input id="editCrm" required minlength="3" placeholder="Ex.: CRM 123456 / SP">
+            </div>
+            <div class="field" style="grid-column: 1 / -1;">
+              <label style="margin-bottom:6px">Modo de Atendimento</label>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px">
+                <label style="border:1px solid #cbe2f8;background:#f0f7ff;border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;align-items:flex-start;gap:8px">
+                  <input type="radio" name="editModoAtendimento" value="agil" id="editModoAgil" checked style="margin-top:2px;accent-color:var(--blue)">
+                  <div>
+                    <strong style="display:block;font-size:12px;color:var(--ink)">⚡ Modo Ágil</strong>
+                    <small style="color:var(--muted);font-size:11px;line-height:1.35;display:block">Modelo de atendimento facilitado para médicos com dificuldades.</small>
+                  </div>
+                </label>
+                <label style="border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;align-items:flex-start;gap:8px">
+                  <input type="radio" name="editModoAtendimento" value="extenso" id="editModoExtenso" style="margin-top:2px;accent-color:var(--blue)">
+                  <div>
+                    <strong style="display:block;font-size:12px;color:var(--ink)">📋 Modo Extenso</strong>
+                    <small style="color:var(--muted);font-size:11px;line-height:1.35;display:block">Médico com experiencia e com facilidade em realizar os atendimentos.</small>
+                  </div>
+                </label>
+              </div>
             </div>
           </div>
           <div class="hint" style="margin-top:10px">As alterações serão sincronizadas com o Authentication e com a tabela de usuários.</div>
@@ -297,18 +335,24 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
     $('empty').hidden=filtered.length>0;
     $('tbody').innerHTML=filtered.map(r=>{
       const isActive = Number(r.ativo) === 1;
+      const isExtenso = (r.modo_atendimento || 'agil').toLowerCase() === 'extenso';
       return `<tr>
         <td>
           <div class="med">${esc(r.nome)}</div>
-          <div class="sub">ID: ${esc(r.id)}</div>
+          <div class="sub">ID: ${esc(r.id)} ${r.email ? `· ${esc(r.email)}` : ''}</div>
         </td>
         <td>${esc(r.crm||'—')}</td>
+        <td>
+          <span class="badge" style="${isExtenso ? 'background:#fef3c7;color:#92400e;border:1px solid #fde68a;' : 'background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;'}font-weight:700">
+            ${isExtenso ? '📋 Extenso' : '⚡ Ágil'}
+          </span>
+        </td>
         <td><b>${moneyless(r.total_atendimentos)}</b> <span class="sub">(${moneyless(r.finalizados)} finalizados)</span></td>
         <td><span class="badge ${isActive?'':'off'}">● ${isActive?'Ativo':'Inativo/Suspenso'}</span></td>
         <td>${fmt(r.criado_em)}</td>
         <td>
           <div class="btn-group">
-            <button class="btn-sm" data-edit="${esc(r.id)}" title="Editar nome e CRM">Editar</button>
+            <button class="btn-sm" data-edit="${esc(r.id)}" title="Editar nome, CRM e modo">Editar</button>
             <button class="btn-sm primary" data-agenda="${esc(r.id)}" title="Incluir e gerenciar agendas">📅 Agenda</button>
             <button class="btn-sm ${isActive?'warning':'success'}" data-toggle="${esc(r.id)}" title="${isActive?'Suspender acesso':'Reativar acesso'}">
               ${isActive ? 'Suspender' : 'Reativar'}
@@ -379,6 +423,9 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
     $('editId').value = r.id;
     $('editNome').value = r.nome || '';
     $('editCrm').value = r.crm || '';
+    const mode = (r.modo_atendimento || 'agil').toLowerCase();
+    if (mode === 'extenso') $('editModoExtenso').checked = true;
+    else $('editModoAgil').checked = true;
     $('agendaDocName').textContent = r.nome || 'Médico';
     $('agendaDocCrm').textContent = r.crm ? `(${r.crm})` : '';
     switchEditModalTab('dados');
@@ -726,11 +773,20 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
     const btn=$('createBtn');
     btn.disabled=true;btn.textContent='Criando conta…';busy(true);
     try{
-      const payload={nome:$('nome').value.trim(),email:$('email').value.trim().toLowerCase(),crm:$('crm').value.trim(),senha:$('senha').value};
+      const modo_atendimento = document.querySelector('input[name="modo_atendimento"]:checked')?.value || 'agil';
+      const emailVal = $('email').value.trim();
+      const payload = {
+        nome: $('nome').value.trim(),
+        email: emailVal ? emailVal.toLowerCase() : '',
+        crm: $('crm').value.trim(),
+        senha: $('senha').value,
+        modo_atendimento
+      };
       const res=await AmbientalAuth.authFetch('/api/admin/medicos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       const data=await res.json();
       if(!res.ok)throw new Error(data?.error?.message||'Não foi possível criar a conta.');
       form.reset();
+      if ($('createModoAgil')) $('createModoAgil').checked = true;
       toast('Médico criado e sincronizado com o Authentication.');
       await load();
       $('nome').focus();
@@ -746,12 +802,13 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
     const id = $('editId').value;
     const nome = $('editNome').value.trim();
     const crm = $('editCrm').value.trim();
+    const modo_atendimento = document.querySelector('input[name="editModoAtendimento"]:checked')?.value || 'agil';
     if (nome.length < 3) { toast('Informe o nome completo.'); return; }
     if (crm.length < 3) { toast('Informe o CRM/CRO.'); return; }
     const btn = $('saveEditBtn');
     btn.disabled = true; btn.textContent = 'Salvando…'; busy(true);
     try {
-      const res = await AmbientalAPI.admin.updateMedico(id, { nome, crm });
+      const res = await AmbientalAPI.admin.updateMedico(id, { nome, crm, modo_atendimento });
       toast('Dados do médico atualizados com sucesso.');
       closeEditModal();
       await load();

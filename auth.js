@@ -259,13 +259,32 @@
     const headers = new Headers(initOptions.headers || {});
     if (token) headers.set("Authorization", `Bearer ${token}`);
     headers.set("Accept", headers.get("Accept") || "application/json");
-    const response = await fetch(input, {
+    let response = await fetch(input, {
       ...initOptions,
       credentials: initOptions.credentials || "same-origin",
       headers,
       cache: initOptions.cache || "no-store",
     });
     if (response.status === 401) {
+      try {
+        const client = await getClient();
+        const { data: refData, error: refErr } = await client.auth.refreshSession().catch(e => ({ error: e }));
+        if (!refErr && refData?.session?.access_token) {
+          await syncServerSession(refData.session.access_token);
+          const retryHeaders = new Headers(initOptions.headers || {});
+          retryHeaders.set("Authorization", `Bearer ${refData.session.access_token}`);
+          retryHeaders.set("Accept", retryHeaders.get("Accept") || "application/json");
+          response = await fetch(input, {
+            ...initOptions,
+            credentials: initOptions.credentials || "same-origin",
+            headers: retryHeaders,
+            cache: initOptions.cache || "no-store",
+          });
+          if (response.status !== 401) {
+            return response;
+          }
+        }
+      } catch (_) {}
       await logout({ redirect: `/login.html?reason=expired&next=${encodeURIComponent(location.pathname + location.search)}` });
     }
     return response;

@@ -102,8 +102,8 @@ h1{margin:12px 0 16px;font-size:clamp(34px,4vw,56px);line-height:1.05;letter-spa
 
       <form id="loginForm" novalidate>
         <div class="field">
-          <label for="email">E-mail corporativo</label>
-          <div class="input-wrap"><input id="email" name="email" class="input" type="email" autocomplete="username" inputmode="email" placeholder="seu.email@empresa.com" aria-describedby="emailError"></div>
+          <label for="email">E-mail corporativo ou CRM</label>
+          <div class="input-wrap"><input id="email" name="email" class="input" type="text" autocomplete="username" placeholder="seu.email@empresa.com ou CRM 12345/UF" aria-describedby="emailError"></div>
           <div id="emailError" class="field-error" role="alert"></div>
         </div>
 
@@ -188,12 +188,37 @@ h1{margin:12px 0 16px;font-size:clamp(34px,4vw,56px);line-height:1.05;letter-spa
     fieldErr(email,"emailError","");fieldErr(password,"passwordError","");
     const ev=email.value.trim(), pv=password.value;
     let valid=true;
-    if(!ev){fieldErr(email,"emailError","Informe seu e-mail corporativo.");valid=false}
-    else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ev)){fieldErr(email,"emailError","Informe um e-mail válido.");valid=false}
+    if(!ev){fieldErr(email,"emailError","Informe seu e-mail corporativo ou CRM.");valid=false}
     if(!pv){fieldErr(password,"passwordError","Informe sua senha.");valid=false}
     if(!valid){(email.classList.contains("invalid")?email:password).focus();return}
+
     setLoading(true);
-    const result=await AmbientalAuth.login(ev,pv,remember.checked).catch(err=>({ok:false,error:err}));
+    let loginEmail = ev;
+
+    // Se o usuário digitou CRM (sem '@'), resolve para o e-mail cadastrado
+    if(!ev.includes("@")){
+      try {
+        const res = await fetch("/api/auth/resolve-identifier", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: ev })
+        });
+        const resData = await res.json();
+        if(!res.ok || !resData?.data?.email){
+          setLoading(false);
+          const errMsg = resData?.error?.message || "Médico com este CRM/CRO não encontrado ou inativo. Administradores devem entrar utilizando seu e-mail corporativo.";
+          status(statusBox, "error", `<strong>Não foi possível entrar</strong><br>${errMsg}`, "!");
+          return;
+        }
+        loginEmail = resData.data.email;
+      } catch (networkErr) {
+        setLoading(false);
+        status(statusBox, "error", "<strong>Erro de conexão</strong><br>Não foi possível validar o CRM no servidor. Verifique sua conexão.", "!");
+        return;
+      }
+    }
+
+    const result=await AmbientalAuth.login(loginEmail,pv,remember.checked).catch(err=>({ok:false,error:err}));
     if(!result?.ok){
       setLoading(false);
       const [type,title,msg,ic]=humanLoginError(result?.error,result?.code);

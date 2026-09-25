@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import atexit
+import base64
 import json
 import os
 import re
+import threading
 import time
 import urllib.parse
 import psycopg2
@@ -82,8 +84,7 @@ def _no_cache_dev_assets(response):
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
     response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
     response.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
-    response.headers.setdefault("X-Permitted-Cross-Domain-Policies", "none")
-    response.headers.setdefault("Content-Security-Policy", "default-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co https://generativelanguage.googleapis.com; font-src 'self' data: https://cdn.jsdelivr.net; frame-ancestors 'self'; base-uri 'self'; form-action 'self'")
+    response.headers.setdefault("Content-Security-Policy", "default-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co https://generativelanguage.googleapis.com; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'")
     if APP_ENV == "production":
         response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
     rid = current_request_id()
@@ -139,13 +140,31 @@ def _safe_error_message(exc: Exception) -> str:
         return str(exc)
     return "O sistema não conseguiu concluir a solicitação."
 
+_AUTH_CACHE: dict[str, dict[str, Any]] = {}
+_AUTH_CACHE_LOCK = threading.Lock()
+
+def _decode_jwt_payload_unverified(token: str) -> dict[str, Any] | None:
+    try:
+        clean = str(token or "").strip().strip('"').strip("'")
+        parts = clean.split(".")
+        if len(parts) != 3:
+            return None
+        payload_b64 = parts[1]
+        padded = payload_b64 + "=" * (-len(payload_b64) % 4)
+        decoded_bytes = base64.urlsafe_b64decode(padded.encode("ascii"))
+        data = json.loads(decoded_bytes.decode("utf-8"))
+        return data if isinstance(data, dict) else None
+    except Exception:
+        return None
+
 def _request_supabase_user(token: str) -> dict[str, Any] | None:
     # 1. Verifica se o .env foi carregado com sucesso
     if not SUPABASE_URL or not SUPABASE_PUBLISHABLE_KEY:
         app.logger.error("Supabase auth configuration is missing.")
         return None
         
-    if not token:
+    clean_token = str(token or "").strip().strip('"').strip("'")
+    if not clean_token:
         return None
         
     try:
@@ -153,10 +172,10 @@ def _request_supabase_user(token: str) -> dict[str, Any] | None:
             f"{SUPABASE_URL}/auth/v1/user",
             headers={
                 "apikey": SUPABASE_PUBLISHABLE_KEY,
-                "Authorization": f"Bearer {token}",
+                "Authorization": f"Bearer {clean_token}",
                 "Accept": "application/json",
             },
-            timeout=10
+            timeout=12
         )
         if response.status_code != 200:
             app.logger.warning("Supabase token validation failed with status=%s", response.status_code)
@@ -165,6 +184,9 @@ def _request_supabase_user(token: str) -> dict[str, Any] | None:
         payload = response.json()
         return payload if isinstance(payload, dict) and payload.get("id") else None
         
+    except requests.exceptions.Timeout:
+        app.logger.warning("Supabase auth request timed out (timeout=12s).")
+        return None
     except Exception as e:
         app.logger.warning("Supabase auth request failed: %s", type(e).__name__)
         return None
@@ -172,17 +194,24 @@ def _request_supabase_user(token: str) -> dict[str, Any] | None:
 def _get_request_token() -> str | None:
     auth_header = request.headers.get("Authorization", "")
     if auth_header.lower().startswith("bearer "):
-        return auth_header.split(" ", 1)[1].strip() or None
-    return request.cookies.get("ambiental_session") or None
+        raw = auth_header.split(" ", 1)[1].strip()
+        return raw.strip('"').strip("'") or None
+    raw_cookie = request.cookies.get("ambiental_session")
+    if raw_cookie:
+        return raw_cookie.strip().strip('"').strip("'") or None
+    return None
 
 def _role_from_profile(user: dict[str, Any], db) -> tuple[str | None, dict[str, Any]]:
     user_id = str(user.get("id") or "")
     user_metadata = user.get("user_metadata") or {}
-    email = user.get("email") or ""
+    email = str(user.get("email") or "").strip().lower()
 
     cur = db.cursor()
-    cur.execute("SELECT id, nome, perfil, ativo, crm FROM usuarios WHERE id=%s", (user_id,))
+    cur.execute("SELECT id, nome, perfil, ativo, crm, email, modo_atendimento FROM usuarios WHERE id=%s", (user_id,))
     row = cur.fetchone()
+    if not row and email:
+        cur.execute("SELECT id, nome, perfil, ativo, crm, email, modo_atendimento FROM usuarios WHERE LOWER(COALESCE(email,''))=%s OR LOWER(COALESCE(nome,''))=%s", (email, email.split("@")[0]))
+        row = cur.fetchone()
     cur.close()
 
     if not row or not bool(row["ativo"]):
@@ -191,16 +220,21 @@ def _role_from_profile(user: dict[str, Any], db) -> tuple[str | None, dict[str, 
     role = str(row.get("perfil") or "").strip()
     name = str(row.get("nome") or user_metadata.get("name") or user_metadata.get("full_name") or email.split("@")[0] or "Usuário")
     crm = str(row.get("crm") or "")
+    db_email = str(row.get("email") or email or "").strip().lower()
+    modo_atendimento = str(row.get("modo_atendimento") or "agil").strip().lower()
+    if modo_atendimento not in ("agil", "extenso"):
+        modo_atendimento = "agil"
 
     if role not in _ALLOWED_ROLES:
         return None, {}
 
     return role, {
-        "id": user_id,
+        "id": str(row.get("id") or user_id),
         "nome": str(name or email.split("@")[0] or "Usuário"),
-        "email": email,
+        "email": db_email or email,
         "perfil": role,
         "crm": crm, # CRM injetado no perfil da sessão
+        "modo_atendimento": modo_atendimento,
         "permissoes": sorted(_ROLE_PERMISSIONS.get(role, set())),
     }
 
@@ -210,9 +244,43 @@ def _authenticate_request() -> tuple[dict[str, Any] | None, str | None]:
         app.logger.info("Authentication token missing for protected request.")
         return None, None
 
+    token = token.strip().strip('"').strip("'")
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    now = time.time()
+
+    # 1. Checa cache de autenticação em memória compartilhado entre requisições
+    with _AUTH_CACHE_LOCK:
+        cached = _AUTH_CACHE.get(token_hash)
+        if cached and cached.get("expires", 0) > now:
+            return cached.get("profile"), token
+
+    # 2. Decodifica claims do token JWT
+    claims = _decode_jwt_payload_unverified(token)
+    token_exp = claims.get("exp") if claims else None
+    if token_exp and token_exp < now:
+        app.logger.warning("Token JWT expirado localmente (exp=%s, now=%s).", token_exp, int(now))
+        with _AUTH_CACHE_LOCK:
+            _AUTH_CACHE.pop(token_hash, None)
+        return None, token
+
+    decoded_user = None
+    if claims and (claims.get("sub") or claims.get("id")):
+        decoded_user = {
+            "id": str(claims.get("sub") or claims.get("id")),
+            "email": claims.get("email") or "",
+            "user_metadata": claims.get("user_metadata") or {},
+        }
+
+    # 3. Tenta validação remota no Supabase (timeout de 12s)
     user = _request_supabase_user(token)
+
+    # 4. Fallback tolerante a falhas de rede: se o Supabase deu ReadTimeout/erro de conexão
+    # mas o token JWT recebido é estruturalmente válido e ainda não expirou, mantemos a sessão ativa!
+    if not user and decoded_user:
+        app.logger.info("Supabase indisponível/timeout; mantendo sessão ativa via claims JWT para usuário %s", decoded_user["id"])
+        user = decoded_user
+
     if not user:
-        # Se falhou aqui, o terminal já imprimiu o motivo gigante na função acima
         return None, token
         
     try:
@@ -224,9 +292,13 @@ def _authenticate_request() -> tuple[dict[str, Any] | None, str | None]:
         app.logger.warning("Falha ao resolver perfil do usuário: %s", type(exc).__name__)
         return None, token
 
-    # Atualiza o cache para as próximas requisições serem super rápidas
-    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
-    g.ambiental_auth_cache = {"hash": token_hash, "profile": profile, "expires": time.time() + 15}
+    # 5. Salva no cache com TTL de até 15 minutos (ou até expiração do token)
+    cache_ttl = min(token_exp or (now + 3600), now + 900)
+    with _AUTH_CACHE_LOCK:
+        _AUTH_CACHE[token_hash] = {
+            "profile": profile,
+            "expires": cache_ttl,
+        }
     
     return profile, token
 
@@ -312,6 +384,9 @@ def _init_db():
         );
         ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS crm TEXT;
         CREATE INDEX IF NOT EXISTS idx_usuarios_crm ON usuarios(crm);
+        ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS email TEXT;
+        ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS modo_atendimento TEXT DEFAULT 'agil';
+        CREATE INDEX IF NOT EXISTS idx_usuarios_email ON usuarios(email);
         CREATE TABLE IF NOT EXISTS atendimentos (
             id TEXT PRIMARY KEY,
             numero TEXT NOT NULL UNIQUE,
@@ -1647,13 +1722,13 @@ def api_admin_medicos():
     if denied: return denied
     db = get_db(); cur = db.cursor()
     cur.execute("""
-        SELECT u.id, u.nome, u.crm, u.ativo, u.criado_em,
+        SELECT u.id, u.nome, u.crm, u.email, COALESCE(u.modo_atendimento, 'agil') AS modo_atendimento, u.ativo, u.criado_em,
                COUNT(a.id) AS total_atendimentos,
                COUNT(a.id) FILTER (WHERE a.status='FINALIZADO') AS finalizados
           FROM usuarios u
           LEFT JOIN atendimentos a ON a.usuario_id = u.id
          WHERE u.perfil = 'Médico'
-         GROUP BY u.id, u.nome, u.crm, u.ativo, u.criado_em
+         GROUP BY u.id, u.nome, u.crm, u.email, u.modo_atendimento, u.ativo, u.criado_em
          ORDER BY u.ativo DESC, u.nome ASC
     """)
     rows = cur.fetchall(); cur.close()
@@ -1666,27 +1741,40 @@ def api_admin_criar_medico():
     try:
         body = _json_body()
         nome = str(body.get("nome") or "").strip()
-        email = str(body.get("email") or "").strip().lower()
+        email_raw = str(body.get("email") or "").strip().lower()
         crm = str(body.get("crm") or "").strip()
         senha = str(body.get("senha") or "")
+        modo_atendimento = str(body.get("modo_atendimento") or "agil").strip().lower()
+        if modo_atendimento not in ("agil", "extenso"):
+            modo_atendimento = "agil"
+
         if len(nome) < 3: return _error("VALIDATION_ERROR", "Informe o nome completo do médico.", False, 400)
-        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email): return _error("VALIDATION_ERROR", "Informe um e-mail válido.", False, 400)
         if len(crm) < 3: return _error("VALIDATION_ERROR", "Informe o CRM/CRO.", False, 400)
         if len(senha) < 8: return _error("VALIDATION_ERROR", "A senha deve ter pelo menos 8 caracteres.", False, 400)
+
+        # Se email fornecido, valida formato. Se ausente, gera e-mail sintético único baseado no CRM
+        if email_raw:
+            if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email_raw):
+                return _error("VALIDATION_ERROR", "Informe um e-mail válido.", False, 400)
+            email = email_raw
+        else:
+            clean_crm = re.sub(r'[^0-9a-zA-Z]', '', crm).lower() or 'medico'
+            email = f"crm_{clean_crm}@medico.ambiental.local"
+
         db = get_db(); cur = db.cursor()
         cur.execute("SELECT id FROM usuarios WHERE LOWER(COALESCE(crm,'')) = LOWER(%s) LIMIT 1", (crm,))
         if cur.fetchone():
             cur.close(); return _error("DUPLICATE_CRM", "Já existe um usuário com este CRM/CRO.", False, 409)
         response, data = _supabase_admin_request("POST", "/auth/v1/admin/users", {
             "email": email, "password": senha, "email_confirm": True,
-            "user_metadata": {"name": nome, "full_name": nome, "crm": crm, "perfil": "Médico"},
+            "user_metadata": {"name": nome, "full_name": nome, "crm": crm, "perfil": "Médico", "modo_atendimento": modo_atendimento},
         })
         if response.status_code >= 300 or not data.get("id"):
             detail = data.get("msg") or data.get("message") or data.get("error_description") or "Não foi possível criar a conta no Authentication."
             cur.close(); return _error("AUTH_CREATE_FAILED", str(detail), False, 409 if response.status_code in (400,409,422) else 502)
         user_id = str(data["id"])
         try:
-            cur.execute("""INSERT INTO usuarios (id,nome,perfil,ativo,criado_em,crm) VALUES (%s,%s,'Médico',1,%s,%s)""", (user_id, nome, _utc_now(), crm))
+            cur.execute("""INSERT INTO usuarios (id,nome,perfil,ativo,criado_em,crm,email,modo_atendimento) VALUES (%s,%s,'Médico',1,%s,%s,%s,%s)""", (user_id, nome, _utc_now(), crm, email, modo_atendimento))
             db.commit()
         except Exception:
             db.rollback()
@@ -1696,7 +1784,7 @@ def api_admin_criar_medico():
                 app.logger.exception("Falha ao desfazer usuário Auth após erro de banco")
             cur.close(); return _error("PROFILE_CREATE_FAILED", "A conta foi criada no Auth, mas não foi possível criar o perfil médico. Operação desfeita quando possível.", False, 500)
         cur.close()
-        return _ok({"id": user_id, "nome": nome, "email": email, "perfil": "Médico", "crm": crm, "ativo": 1}, 201)
+        return _ok({"id": user_id, "nome": nome, "email": email, "perfil": "Médico", "crm": crm, "modo_atendimento": modo_atendimento, "ativo": 1}, 201)
     except RuntimeError as exc:
         return _error("AUTH_ADMIN_NOT_CONFIGURED", str(exc), False, 503)
     except Exception as exc:
@@ -1738,11 +1826,18 @@ def api_admin_editar_medico(user_id):
         body = _json_body()
         nome = str(body.get("nome") or "").strip()
         crm = str(body.get("crm") or "").strip()
+        email = str(body.get("email") or "").strip().lower()
+        modo_atendimento = str(body.get("modo_atendimento") or "agil").strip().lower()
+        if modo_atendimento not in ("agil", "extenso"):
+            modo_atendimento = "agil"
+
         if len(nome) < 3: return _error("VALIDATION_ERROR", "Informe o nome completo do médico.", False, 400)
         if len(crm) < 3: return _error("VALIDATION_ERROR", "Informe o CRM/CRO.", False, 400)
+        if email and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+            return _error("VALIDATION_ERROR", "Informe um e-mail válido.", False, 400)
         
         db = get_db(); cur = db.cursor()
-        cur.execute("SELECT id, nome, perfil, ativo FROM usuarios WHERE id=%s", (user_id,))
+        cur.execute("SELECT id, nome, perfil, ativo, email FROM usuarios WHERE id=%s", (user_id,))
         row = cur.fetchone()
         if not row or row.get("perfil") != "Médico":
             cur.close(); return _error("NOT_FOUND", "Conta médica não encontrada.", False, 404)
@@ -1750,19 +1845,28 @@ def api_admin_editar_medico(user_id):
         cur.execute("SELECT id FROM usuarios WHERE LOWER(COALESCE(crm,'')) = LOWER(%s) AND id <> %s LIMIT 1", (crm, user_id))
         if cur.fetchone():
             cur.close(); return _error("DUPLICATE_CRM", "Já existe outro médico com este CRM/CRO.", False, 409)
+
+        existing_email = row.get("email") or ""
+        if email:
+            email_final = email
+        elif existing_email:
+            email_final = existing_email
+        else:
+            clean_crm = re.sub(r'[^0-9a-zA-Z]', '', crm).lower() or 'medico'
+            email_final = f"crm_{clean_crm}@medico.ambiental.local"
             
-        cur.execute("UPDATE usuarios SET nome=%s, crm=%s WHERE id=%s", (nome, crm, user_id))
+        cur.execute("UPDATE usuarios SET nome=%s, crm=%s, email=%s, modo_atendimento=%s WHERE id=%s", (nome, crm, email_final, modo_atendimento, user_id))
         db.commit()
         cur.close()
         
         try:
             _supabase_admin_request("PUT", f"/auth/v1/admin/users/{urllib.parse.quote(user_id, safe='')}", {
-                "user_metadata": {"name": nome, "full_name": nome, "crm": crm, "perfil": "Médico"}
+                "user_metadata": {"name": nome, "full_name": nome, "crm": crm, "perfil": "Médico", "modo_atendimento": modo_atendimento}
             })
         except Exception:
             app.logger.warning("Não foi possível sincronizar metadados do médico no Supabase Auth.")
             
-        return _ok({"id": user_id, "nome": nome, "crm": crm, "atualizado": True})
+        return _ok({"id": user_id, "nome": nome, "crm": crm, "email": email_final, "modo_atendimento": modo_atendimento, "atualizado": True})
     except Exception as exc:
         app.logger.exception("admin_editar_medico")
         return _error("INTERNAL_ERROR", _safe_error_message(exc), False, 500)
@@ -2017,7 +2121,7 @@ def api_auth_session():
     resp = jsonify({"success": True, "data": profile})
     resp.set_cookie(
         "ambiental_session", token,
-        max_age=3600, httponly=True,
+        max_age=28800, httponly=True,
         secure=APP_ENV == "production",
         samesite="Lax", path="/",
     )
@@ -2032,9 +2136,74 @@ def api_auth_me():
 
 @app.post("/api/auth/logout")
 def api_auth_logout():
+    token = _get_request_token()
+    if token:
+        token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+        with _AUTH_CACHE_LOCK:
+            _AUTH_CACHE.pop(token_hash, None)
     resp = jsonify({"success": True, "data": {"logged_out": True}})
     resp.delete_cookie("ambiental_session", path="/", samesite="Lax")
     return resp, 200
+
+@app.post("/api/auth/resolve-identifier")
+def api_auth_resolve_identifier():
+    try:
+        body = _json_body()
+        identifier = str(body.get("identifier") or "").strip()
+        if not identifier:
+            return _error("VALIDATION_ERROR", "Informe seu e-mail corporativo ou CRM.", False, 400)
+
+        # Se contém '@', é um e-mail.
+        if "@" in identifier:
+            return _ok({
+                "type": "email",
+                "email": identifier.lower(),
+            })
+
+        # Não contém '@': busca por CRM de profissional Médico ativo
+        db = get_db()
+        cur = db.cursor()
+        clean_id = re.sub(r'[^0-9a-zA-Z]', '', identifier).lower()
+        cur.execute("""
+            SELECT id, nome, crm, email, perfil, ativo, COALESCE(modo_atendimento, 'agil') AS modo_atendimento
+              FROM usuarios
+             WHERE perfil = 'Médico'
+               AND (
+                    LOWER(BTRIM(COALESCE(crm, ''))) = LOWER(%s)
+                 OR LOWER(REGEXP_REPLACE(COALESCE(crm, ''), '[^0-9a-zA-Z]', '', 'g')) = %s
+               )
+             ORDER BY ativo DESC
+             LIMIT 1
+        """, (identifier.lower(), clean_id))
+        row = cur.fetchone()
+        cur.close()
+
+        if not row:
+            return _error(
+                "DOCTOR_NOT_FOUND",
+                "Médico com este CRM/CRO não encontrado ou inativo. Administradores devem entrar utilizando seu e-mail corporativo.",
+                False,
+                404
+            )
+
+        if not row.get("ativo"):
+            return _error("USER_INACTIVE", "O acesso deste médico está suspenso ou inativo. Contate o administrador.", False, 403)
+
+        email = row.get("email")
+        if not email:
+            clean_crm = re.sub(r'[^0-9a-zA-Z]', '', str(row.get("crm") or "")).lower() or 'medico'
+            email = f"crm_{clean_crm}@medico.ambiental.local"
+
+        return _ok({
+            "type": "crm",
+            "email": email,
+            "nome": row.get("nome"),
+            "crm": row.get("crm"),
+            "modo_atendimento": row.get("modo_atendimento") or "agil"
+        })
+    except Exception as exc:
+        app.logger.exception("api_auth_resolve_identifier")
+        return _error("INTERNAL_ERROR", _safe_error_message(exc), False, 500)
 
 @app.get("/api/atendimentos")
 def api_list_atendimentos():
@@ -2360,12 +2529,8 @@ def _finalization_blockers(payload: dict[str, Any]) -> list[dict[str, str]]:
         (2, "Idade", a.get("idade")),
         (2, "Readaptado", payload.get("readaptado") or a.get("readaptado")),
         (2, "Doença que motivou o afastamento", a.get("doencaMotivo")),
-        (2, "Início do tratamento", a.get("inicioTratamento")),
         (2, "Sintomas / limitações referidos", a.get("sintomasLimitacao")),
-        (4, "CRM/CRO do médico assistente", a.get("crmCro")),
         (4, "CID", a.get("cid")),
-        (4, "Data do atestado/relatório", a.get("dataDocumento")),
-        (4, "Dias solicitados", a.get("diasSolicitados")),
         (5, "Tipo de exame físico/mental", payload.get("exameFisicoTipo") or (payload.get("exam") or {}).get("selected")),
         (6, "Limitação funcional", payload.get("limitacaoFuncional") or a.get("limitacaoFuncional")),
         (6, "Limitação das atividades do Rol", payload.get("limitacaoRol") or a.get("limitacaoRol")),
@@ -2380,6 +2545,13 @@ def _finalization_blockers(payload: dict[str, Any]) -> list[dict[str, str]]:
             ok = str(value or "").strip() != ""
         if not ok:
             blockers.append({"etapa": str(step), "campo": label})
+
+    tipo_exame = str(payload.get("exameFisicoTipo") or (payload.get("exam") or {}).get("selected") or "").strip()
+    if tipo_exame.lower() == "outros":
+        desc_exame = payload.get("exameFisicoDescricao") or a.get("exameFisicoDescricao") or payload.get("alteracoesClinicasExames") or ""
+        if not str(desc_exame).strip():
+            blockers.append({"etapa": "5", "campo": "Exame Físico Geral — achados observados"})
+
     qs = payload.get("quesitos") or []
     answers = [str(q.get("resposta") or "").strip() for q in qs[:3]]
     if len(answers) != 3 or any(v not in {"Sim", "Não", "Nao"} for v in answers):

@@ -1586,6 +1586,7 @@ body:not(.mode-agil-active) #containerModoAgil {
     <div class="header-actions">
       <button class="btn btn-outline optional" onclick="openManagement()">Gestão</button>
       <button class="btn btn-outline optional" id="btnCopiarEsisla" onclick="copiarFichaEsislaRapida()" style="display:none;" title="Copiar ficha estruturada para e-Sisla (Apenas Administradores)">Copiar e-Sisla</button>
+      <button class="btn btn-outline optional" id="btnRoboEsisla" onclick="abrirRoboEsislaModal()" style="display:none;color:#0D542B;font-weight:700" title="Ativar Robô de integração com o e-Sisla (UI.Vision)">🤖 Robô e-Sisla</button>
       <button class="btn btn-outline optional" onclick="openFinalReport()" title="Visualizar e imprimir laudo pericial">Imprimir</button>
       <button class="btn btn-danger optional" onclick="deleteAtendimento()">Excluir</button>
       <button class="btn btn-outline optional" onclick="saveNow()">Salvar rascunho</button>
@@ -2669,6 +2670,120 @@ body:not(.mode-agil-active) #containerModoAgil {
 <div class="notice" style="margin-top:14px">O teste de geração usa exclusivamente dados fictícios: cargo “Teste”, idade 40, CID Z00, nenhuma limitação objetiva e capacidade laborativa preservada.</div>
 <div class="footer-actions" style="margin-bottom:0;padding-bottom:0"><button class="btn btn-outline" id="diagRun" onclick="runDiagnostics()">Executar diagnóstico</button><div class="actions-right"><button class="btn btn-primary" id="diagAiTest" onclick="testDiagnosticAI()">Testar geração da IA</button></div></div>
 </div></div></div>
+
+<!-- Modal do Robô de Integração e-Sisla -->
+<div class="modal-backdrop" id="roboEsislaModal" style="z-index:90">
+  <div class="modal" style="width:min(860px,96vw)">
+    <div class="modal-head" style="background:linear-gradient(135deg, #0F3254 0%, #1A4D7A 100%);color:#fff;border-radius:18px 18px 0 0;padding:16px 22px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:26px">🤖</span>
+        <div>
+          <h3 style="margin:0;font-size:17px;color:#fff;font-weight:700">Robô de Integração e-Sisla (UI.Vision)</h3>
+          <div style="font-size:12px;color:#CBD5E1;margin-top:2px">Automação de preenchimento do laudo pericial diretamente no e-Sisla</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('roboEsislaModal')" style="background:rgba(255,255,255,0.15);color:#fff;border-radius:8px">✕</button>
+    </div>
+    <div class="modal-body" style="padding:22px">
+      
+      <!-- Linha de Protocolo e Periciado -->
+      <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:14px;margin-bottom:18px;display:flex;flex-wrap:wrap;gap:16px;align-items:center">
+        <div style="flex:1;min-width:240px">
+          <label style="display:block;font-size:12px;font-weight:700;color:#0F3254;margin-bottom:4px">Protocolo do e-Sisla:</label>
+          <input class="input" id="roboProtocolo" placeholder="Digite o protocolo (ex: 2026/12345)" style="background:#fff;font-weight:700;font-size:14px;color:#0F3254">
+          <small class="help" style="margin-top:4px">O robô utiliza este número para pesquisar e abrir o laudo no e-Sisla.</small>
+        </div>
+        <div style="flex:1;min-width:240px">
+          <label style="display:block;font-size:12px;font-weight:700;color:#0F3254;margin-bottom:4px">Periciado / Parecer:</label>
+          <div id="roboInfoPericiado" style="font-size:13px;color:#334155;background:#fff;border:1px solid #CBD5E1;border-radius:6px;padding:8px 12px;min-height:38px;display:flex;align-items:center;gap:8px">
+            —
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid de Ações do Robô -->
+      <div style="margin-bottom:20px">
+        <h4 style="margin:0 0 10px 0;font-size:13px;font-weight:700;color:#0F3254;text-transform:uppercase;letter-spacing:0.5px">Escolha como ativar a integração:</h4>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:12px">
+          
+          <!-- Opção 1: Ativar via UI.Vision -->
+          <div style="border:2px solid #22C55E;border-radius:10px;padding:14px;background:#F0FDF4;display:flex;flex-direction:column;justify-content:space-between">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:#166534;font-size:14px;margin-bottom:4px">
+                <span>🚀</span> 1. Ativar no UI.Vision
+              </div>
+              <p style="font-size:12px;color:#15803D;margin:0 0 12px 0;line-height:1.4">
+                Baixa o <code>dados_banco.csv</code> atualizado e aciona a macro <strong>Preencher_eSisla_DB</strong> via extensão.
+              </p>
+            </div>
+            <button class="btn btn-green" type="button" onclick="executarRoboUiVision()" style="width:100%;justify-content:center;font-weight:700;padding:10px">
+              ▶️ Ativar Robô UI.Vision
+            </button>
+          </div>
+
+          <!-- Opção 2: Baixar CSV -->
+          <div style="border:1px solid #CBD5E1;border-radius:10px;padding:14px;background:#F8FAFC;display:flex;flex-direction:column;justify-content:space-between">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:#0F3254;font-size:14px;margin-bottom:4px">
+                <span>📥</span> 2. Baixar dados_banco.csv
+              </div>
+              <p style="font-size:12px;color:#64748B;margin:0 0 12px 0;line-height:1.4">
+                Salva o CSV com Protocolo e Laudo na sua máquina para a pasta <code>datasources/</code> do robô.
+              </p>
+            </div>
+            <button class="btn btn-outline" type="button" onclick="baixarCsvRoboEsisla()" style="width:100%;justify-content:center;font-weight:700;padding:10px">
+              📥 Baixar dados_banco.csv
+            </button>
+          </div>
+
+          <!-- Opção 3: Injeção Direta 1-Clique -->
+          <div style="border:1px solid #93C5FD;border-radius:10px;padding:14px;background:#EFF6FF;display:flex;flex-direction:column;justify-content:space-between">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:#1E40AF;font-size:14px;margin-bottom:4px">
+                <span>⚡</span> 3. Injeção Direta (1-Clique)
+              </div>
+              <p style="font-size:12px;color:#1D4ED8;margin:0 0 12px 0;line-height:1.4">
+                Copia script inteligente para colar no Console do e-Sisla (F12) e preencher instantaneamente.
+              </p>
+            </div>
+            <button class="btn btn-primary" type="button" onclick="copiarScriptInjecaoDireta()" style="width:100%;justify-content:center;font-weight:700;padding:10px">
+              ⚡ Copiar Script / Injetar
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Ficha Gerada -->
+      <div style="margin-top:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <label style="font-size:12px;font-weight:700;color:#0F3254">Conteúdo da Ficha e-Sisla que será enviado:</label>
+          <button type="button" class="btn btn-outline" onclick="copiarTextoFichaEsislaModal()" style="font-size:11px;padding:4px 8px">📋 Copiar texto</button>
+        </div>
+        <textarea class="textarea" id="roboFichaTexto" style="min-height:160px;font-family:monospace;font-size:12px;line-height:1.4;background:#FFF" placeholder="Aguardando geração da ficha..."></textarea>
+      </div>
+
+      <!-- Instruções de Configuração da Macro -->
+      <div class="subpanel" style="margin-top:16px;background:#F1F5F9;border-color:#CBD5E1">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <strong style="font-size:12px;color:#0F3254">📁 Pasta da Macro UI.Vision:</strong>
+          <span style="font-size:11px;color:#64748B"><code>Macro ui vision/RoboE-sisla.json</code></span>
+        </div>
+        <div style="font-size:11px;color:#475569;line-height:1.5">
+          <strong>Como funciona a integração com o robô:</strong><br>
+          • <strong>Opção 1 (Recomendada):</strong> Clique em <em>"Ativar no UI.Vision"</em> para baixar o <code>dados_banco.csv</code> e acionar a extensão.<br>
+          • <strong>Opção 2 (Manual):</strong> Baixe o arquivo <code>dados_banco.csv</code> e mova-o para a pasta de dados do UI.Vision (ou importe pela aba CSV do UI.Vision).<br>
+          • <strong>Opção 3 (Sem extensão):</strong> Se o e-Sisla já estiver aberto no navegador, clique em <em>"Copiar Script / Injetar"</em>, vá na aba do e-Sisla, abra o Console (F12) e cole (Ctrl+V) para preencher na hora!
+        </div>
+      </div>
+
+      <div class="footer-actions" style="margin-top:18px;margin-bottom:0;padding-bottom:0">
+        <button class="btn btn-outline" onclick="closeModal('roboEsislaModal')">Fechar</button>
+      </div>
+
+    </div>
+  </div>
+</div>
 <script>
 let accessToken = null;
 let currentProfile = null;
@@ -2704,6 +2819,10 @@ const authReady = AmbientalAuth.requireAuth({area:'atendimento'}).then(async pro
   const btnEsisla = document.getElementById("btnCopiarEsisla");
   if(btnEsisla && isAdmin){
     btnEsisla.style.display = "inline-flex";
+  }
+  const btnRobo = document.getElementById("btnRoboEsisla");
+  if(btnRobo && isAdmin){
+    btnRobo.style.display = "inline-flex";
   }
   document.getElementById('authLoading')?.remove();
 }).catch(e=>{if(e?.message!=='AUTH_REQUIRED'&&e?.message!=='PERMISSION_DENIED') console.error('Falha ao validar sessão.');throw e;});
@@ -3165,10 +3284,269 @@ async function copiarFichaEsislaRapida(){
       ta.remove();
     }
     toast("Ficha e-Sisla copiada para a área de transferência!");
+    abrirRoboEsislaModal(data.ficha_esisla);
   } catch(err) {
     toast(err.message || "Erro ao gerar ou copiar ficha e-Sisla.");
   } finally {
     if(btn){ btn.disabled = false; btn.textContent = oldText; }
+  }
+}
+
+/* =========================================================
+   ROBÔ DE INTEGRAÇÃO AO E-SISLA (UI.VISION & INJEÇÃO DIRETA)
+   ========================================================= */
+let ultimoTextoFichaEsisla = "";
+
+async function abrirRoboEsislaModal(fichaTexto) {
+  if (fichaTexto) {
+    ultimoTextoFichaEsisla = fichaTexto;
+  }
+  const modal = $("roboEsislaModal");
+  if (!modal) return;
+
+  const proto = state.atendimento || state.aux?.protocolo || state.protocolo || "";
+  const protoInput = $("roboProtocolo");
+  if (protoInput) protoInput.value = proto;
+
+  const nome = state.aux?.nomePaciente || state.nomePaciente || "Servidor/Periciado";
+  const cid = state.cid || state.aux?.cid || "Não informado";
+  const parecer = state.parecer || "Não informado";
+  const infoEl = $("roboInfoPericiado");
+  if (infoEl) {
+    infoEl.innerHTML = `<span><strong>${esc(nome)}</strong> | CID: <strong>${esc(cid)}</strong> | Parecer: <strong>${esc(parecer)}</strong></span>`;
+  }
+
+  const txtArea = $("roboFichaTexto");
+  if (txtArea) {
+    if (fichaTexto) {
+      txtArea.value = fichaTexto;
+    } else if (ultimoTextoFichaEsisla) {
+      txtArea.value = ultimoTextoFichaEsisla;
+    } else {
+      txtArea.value = "Gerando ficha para o robô...";
+      try {
+        if (currentAttendanceMode === "agil") {
+          syncAgilToExtended();
+          ensureAgileBackgroundDefaults();
+        } else {
+          syncState();
+        }
+        const payload = JSON.parse(JSON.stringify(state));
+        payload.quesitos = QuesitoService.get();
+        payload.data_hora_atual = new Date().toISOString();
+        const histVal = state.aux?.historicoPregresso || state.historicoPregresso || $("agilHistoricoPregresso")?.value || $("historicoPregresso")?.value || "";
+        payload.antecedentes = histVal;
+        payload.historico_pregresso = histVal;
+        payload.historicoPregresso = histVal;
+        payload.cids_secundarios = state.cidsSecundarios || state.aux?.cidsSecundarios || [];
+        payload.cidsSecundarios = payload.cids_secundarios;
+        if (!payload.aux) payload.aux = {};
+        payload.aux.historicoPregresso = histVal;
+        payload.aux.antecedentes = histVal;
+        payload.aux.cidsSecundarios = payload.cids_secundarios;
+
+        const res = await AmbientalAuth.authFetch(`${getApiBase()}/api/ai/esisla`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(payload),
+          cache: 'no-store'
+        });
+        const data = await res.json().catch(() => null);
+        if (res.ok && data?.ficha_esisla) {
+          ultimoTextoFichaEsisla = data.ficha_esisla;
+          txtArea.value = data.ficha_esisla;
+        } else {
+          txtArea.value = "Não foi possível gerar automaticamente a ficha. Verifique os dados do atendimento.";
+        }
+      } catch(e) {
+        txtArea.value = "Erro ao carregar a ficha: " + (e.message || e);
+      }
+    }
+  }
+
+  modal.classList.add("show");
+}
+
+function gerarCsvRoboContent() {
+  const proto = $("roboProtocolo")?.value?.trim() || state.atendimento || "SEM_PROTOCOLO";
+  const texto = $("roboFichaTexto")?.value || ultimoTextoFichaEsisla || "";
+  const justif = state.aux?.justificativa || state.justificativa || "";
+  
+  const payloadObj = {
+    ficha_esisla: texto,
+    justificativa: justif
+  };
+  const jsonStr = JSON.stringify(payloadObj);
+
+  const escapeCsv = (val) => '"' + String(val).replace(/"/g, '""') + '"';
+  return "\uFEFF" + escapeCsv(proto) + "," + escapeCsv(jsonStr) + "\r\n";
+}
+
+function baixarCsvRoboEsisla() {
+  try {
+    const csvData = gerarCsvRoboContent();
+    const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "dados_banco.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast("Arquivo dados_banco.csv baixado com sucesso!");
+  } catch(e) {
+    toast("Erro ao baixar dados_banco.csv: " + (e.message || e));
+  }
+}
+
+function executarRoboUiVision() {
+  baixarCsvRoboEsisla();
+  
+  const macroName = "Preencher_eSisla_DB";
+  const uiVisionChromeUrl = `chrome-extension://kglbdihdcnciobeiimejmpcddcmpnkgj/editor.html?macro=${macroName}&direct=1&closeRPA=0`;
+  
+  try {
+    const w = window.open(uiVisionChromeUrl, "_blank");
+    if (!w) {
+      toast("Abra o UI.Vision e execute a macro Preencher_eSisla_DB.");
+    } else {
+      toast("Robô acionado! Execute a macro no UI.Vision com o e-Sisla aberto.");
+    }
+  } catch(e) {
+    toast("Abra a extensão UI.Vision para iniciar a automação.");
+  }
+}
+
+async function copiarTextoFichaEsislaModal() {
+  const txtArea = $("roboFichaTexto");
+  if (!txtArea || !txtArea.value.trim()) {
+    return toast("Nenhum texto disponível para copiar.");
+  }
+  try {
+    await navigator.clipboard.writeText(txtArea.value);
+    toast("Texto da Ficha e-Sisla copiado!");
+  } catch(e) {
+    txtArea.select();
+    document.execCommand("copy");
+    toast("Texto da Ficha e-Sisla copiado!");
+  }
+}
+
+async function copiarScriptInjecaoDireta() {
+  const texto = $("roboFichaTexto")?.value || ultimoTextoFichaEsisla || "";
+  const justif = state.aux?.justificativa || state.justificativa || "";
+  if (!texto) {
+    return toast("Gere a ficha e-Sisla antes de copiar o script de injeção.");
+  }
+
+  const payloadObj = {
+    ficha_esisla: texto,
+    justificativa: justif
+  };
+
+  const scriptCode = `(function() {
+  try {
+    var data = ${JSON.stringify(payloadObj)};
+    var texto = data.ficha_esisla || '';
+    var justif = data.justificativa || '';
+    function ext(t, i, f) {
+      if(!t) return '';
+      var si = i.replace(/[-\\/\\\\^$*+?.()|[\\]{}]/g, '\\\\$&');
+      var sf = f ? f.replace(/[-\\/\\\\^$*+?.()|[\\]{}]/g, '\\\\$&') : '';
+      var rx = new RegExp(si + '\\\\s*([\\\\s\\\\S]*?)\\\\s*(?=' + sf + '|$)', 'i');
+      var m = t.match(rx);
+      return m ? m[1].trim() : '';
+    }
+    function trig(el) {
+      if (!el) return;
+      try {
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      } catch(_) {}
+    }
+    if (texto) {
+      var campos = {
+        'sRlCat': ext(texto, '(*) Queixa e Duração:', 'Antecedentes Mórbidos:'),
+        'sRlAp': ext(texto, 'Antecedentes Mórbidos:', 'Atestado/Relatório/Exames'),
+        'sRlHda': ext(texto, 'Atestado/Relatório/Exames Complementares (Tipo-Data-Resultado):', 'Pressão Arterial'),
+        'sRlExApres': ext(texto, 'Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:', '(*)Descrição da(s) Limitação'),
+        'sRlReqExComp': ext(texto, '(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):', '(*)Parecer Médico'),
+        'sRlEnag': ext(texto, '(*)Justificativa Parecer Médico', '(*) Parecer Final'),
+        'txtJustifica': ext(texto, '(*) Justificativa Parecer Final', 'FIM_INEXISTENTE')
+      };
+      for (var c in campos) {
+        var el = document.querySelector('textarea[name$="' + c + '"]');
+        if (el && campos[c] && !campos[c].includes('Não informado')) {
+          el.value = campos[c];
+          trig(el);
+        }
+      }
+      var sis = ext(texto, 'Sistólica (mmHg):', 'Diastólica');
+      var dia = ext(texto, 'Diastólica (mmHg):', 'Pulso');
+      var pul = ext(texto, 'Pulso (bpm):', '(*)Exame');
+      if(parseInt(sis)) { var iSis = document.querySelector('input[name$="sRlPressMax"]'); if(iSis) { iSis.value = parseInt(sis); trig(iSis); } }
+      if(parseInt(dia)) { var iDia = document.querySelector('input[name$="sRlPressMin"]'); if(iDia) { iDia.value = parseInt(dia); trig(iDia); } }
+      if(parseInt(pul)) { var iPul = document.querySelector('input[name$="sRlPulso"]'); if(iPul) { iPul.value = parseInt(pul); trig(iPul); } }
+      var setQ = function(n, tBusca) {
+        var v = ext(texto, tBusca, '\\n').toLowerCase();
+        var val = v.includes('sim') ? 'S' : ((v.includes('nã') || v.includes('nao')) ? 'N' : null);
+        if(val) {
+          var r = document.querySelector('input[type="radio"][name="' + n + '"][value="' + val + '"]');
+          if(r) { r.click(); r.checked = true; trig(r); }
+        }
+      };
+      setQ('fl_d_prev', '1) Há doença(s)');
+      setQ('fl_limit', '2) A(s) doença(s)');
+      setQ('fl_imped', '3) A(s) limitação(ões)');
+      var cid = ext(texto, 'CID 10:', 'Descrição:').split(',')[0].trim();
+      var dias = parseInt(ext(texto, 'Nº Dias:', 'Data Início:'));
+      var pText = ext(texto, '(*)Parecer Médico', 'Nº Dias:');
+      var pVal = pText.toUpperCase().includes('CONTRÁRIO') ? 'C' : 'F';
+      var eCid1 = document.querySelector('input[name$="cdCidPm"]');
+      if(eCid1 && cid) {
+        eCid1.value = cid;
+        trig(eCid1);
+        if(typeof carregaAjaxCid === 'function') carregaAjaxCid(eCid1.name, 'descrCidx');
+      }
+      var eCid2 = document.querySelector('input[name$="cdCidPfinal"]');
+      if(eCid2 && cid) {
+        eCid2.value = cid;
+        trig(eCid2);
+        if(typeof carregaAjaxCid === 'function') carregaAjaxCid(eCid2.name, 'descrCidConcessao');
+      }
+      var eDias1 = document.querySelector('input[name$="qtDiasPm"]');
+      if(eDias1 && dias) { eDias1.value = dias; trig(eDias1); }
+      var eDias2 = document.querySelector('input[name$="qtDiasPfinal"]');
+      if(eDias2 && dias) { eDias2.value = dias; trig(eDias2); }
+      var r1 = document.querySelector('input[type="radio"][name$="flPFinal"][value="' + pVal + '"]');
+      if(r1) { r1.click(); r1.checked = true; trig(r1); }
+      var r2 = document.querySelector('input[type="radio"][name$="flConcessao"][value="' + pVal + '"]');
+      if(r2) { r2.click(); r2.checked = true; trig(r2); }
+    }
+    if(justif) {
+      var elJust = document.querySelector('textarea[name$="sRlEnag"]');
+      if(elJust) { elJust.value = justif; trig(elJust); }
+    }
+    alert('✅ e-Sisla: Campos preenchidos com sucesso pelo Robô!');
+  } catch(e) {
+    alert('❌ Erro ao preencher e-Sisla: ' + e.message);
+  }
+})();`;
+
+  try {
+    await navigator.clipboard.writeText(scriptCode);
+    toast("Script copiado! Abra o e-Sisla, tecle F12, vá na aba Console e aperte Ctrl+V.");
+  } catch(e) {
+    const ta = document.createElement("textarea");
+    ta.value = scriptCode;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
+    toast("Script copiado! Abra o e-Sisla, tecle F12, vá na aba Console e aperte Ctrl+V.");
   }
 }
   

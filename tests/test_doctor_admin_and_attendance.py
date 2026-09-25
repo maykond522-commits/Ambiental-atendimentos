@@ -1100,6 +1100,45 @@ def test_secondary_cid_feature_and_ai_prompt_integration():
     assert "- CID: F32.1\n" in prompt_single
 
 
+def test_robo_esisla_integration():
+    import json
+    from pathlib import Path
+
+    # 1. Button and modal elements in HTML
+    assert 'id="btnRoboEsisla"' in ATTENDANCE
+    assert 'id="roboEsislaModal"' in ATTENDANCE
+    assert 'id="roboProtocolo"' in ATTENDANCE
+    assert 'id="roboFichaTexto"' in ATTENDANCE
+
+    # 2. JavaScript helper functions for Robot integration
+    assert 'function abrirRoboEsislaModal(' in ATTENDANCE
+    assert 'function baixarCsvRoboEsisla()' in ATTENDANCE
+    assert 'function executarRoboUiVision()' in ATTENDANCE
+    assert 'function copiarScriptInjecaoDireta()' in ATTENDANCE
+    assert 'abrirRoboEsislaModal(data.ficha_esisla)' in ATTENDANCE
+
+    # 3. Macro files in "Macro ui vision" folder
+    macro_dir = Path("Macro ui vision")
+    assert macro_dir.is_dir()
+
+    robo_file = macro_dir / "RoboE-sisla.json"
+    assert robo_file.is_file()
+    with open(robo_file, "r", encoding="utf-8") as f:
+        robo_json = json.load(f)
+    assert robo_json["Name"] == "Preencher_eSisla_DB"
+    assert any(cmd["Command"] == "csvRead" and cmd["Target"] == "dados_banco.csv" for cmd in robo_json["Commands"])
+
+    preencher_file = macro_dir / "Preencher_eSisla_DB.json"
+    assert preencher_file.is_file()
+    with open(preencher_file, "r", encoding="utf-8") as f:
+        preencher_json = json.load(f)
+    assert preencher_json["Name"] == "Preencher_eSisla_DB"
+
+    readme_file = macro_dir / "README.md"
+    assert readme_file.is_file()
+
+
+
 
 
 

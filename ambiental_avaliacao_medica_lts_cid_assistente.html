@@ -3345,7 +3345,41 @@ async function apiAI(path, payload, action, label, target = "aiOutput") {
     });
   }
 }
-function getJustificativaContext(){const v=values();const limitacoes=[v.descLimitacao,v.atividadesComprometidas,v.sintomasLimitacao,v.alteracoesClinicasExames].filter(x=>String(x||"").trim()).join(" | ");return {atendimento:v.atendimento,cargo:v.cargo,idade:v.idade,cid:v.cid,doenca_motivo:v.doencaMotivo,queixa_duracao:v.queixaDuracao,tempo_funcao:v.tempoCargo,unidade_tempo:v.unidadeTempo,sintomas_limitacoes:v.sintomasLimitacao,medicamentos:v.medicamentos,condicoes:v.condicoes,antecedentes:v.historicoPregresso,documentos_complementares:v.documentosComplementares,exame_fisico_tipo:v.exameFisicoTipo,alteracoes_clinicas_exames:v.alteracoesClinicasExames,exame:v.exame,limitacoes,desc_limitacao:v.descLimitacao,atividades_comprometidas:v.atividadesComprometidas,capacidade:v.capacidade,parecer:v.parecer,quesitos:v.quesitos};}
+function getJustificativaContext(){
+  const v=values();
+  const limitacoes=[v.descLimitacao,v.atividadesComprometidas,v.sintomasLimitacao,v.alteracoesClinicasExames].filter(x=>String(x||"").trim()).join(" | ");
+  const subtipo = state.outrosSubtipo || state.aux?.outrosSubtipo || state.aux?.areaExameClinico || "";
+  const resultado = state.outrosResultado || state.aux?.outrosResultado || state.aux?.resultadoAvaliacao || "";
+  return {
+    atendimento:v.atendimento,
+    cargo:v.cargo,
+    idade:v.idade,
+    cid:v.cid,
+    doenca_motivo:v.doencaMotivo,
+    queixa_duracao:v.queixaDuracao,
+    tempo_funcao:v.tempoCargo,
+    unidade_tempo:v.unidadeTempo,
+    sintomas_limitacoes:v.sintomasLimitacao,
+    medicamentos:v.medicamentos,
+    condicoes:v.condicoes,
+    antecedentes:v.historicoPregresso,
+    historico_pregresso:v.historicoPregresso,
+    documentos_complementares:v.documentosComplementares,
+    exame_fisico_tipo:v.exameFisicoTipo,
+    outros_subtipo:subtipo,
+    outros_resultado:resultado,
+    area_exame_clinico:subtipo,
+    resultado_avaliacao:resultado,
+    alteracoes_clinicas_exames:v.alteracoesClinicasExames,
+    exame:v.exame,
+    limitacoes,
+    desc_limitacao:v.descLimitacao,
+    atividades_comprometidas:v.atividadesComprometidas,
+    capacidade:v.capacidade,
+    parecer:v.parecer,
+    quesitos:v.quesitos
+  };
+}
 function invalidateAICache(){aiClientCache.clear();}
 async function applyAIText(mode) {
   if(isFinalizedReadOnly()){toast("Atendimento finalizado: a sugestão pode ser analisada, mas não aplicada.");return;}
@@ -3387,6 +3421,10 @@ function undoJustificativa() {
 async function gerarJustificativaIA(){return apiAI("/api/ai/justificativa",getJustificativaContext(),"justificativa","Gerando justificativa...");}
 async function verSugestaoJustificativaIA(){go(8);return gerarJustificativaIA();}
 async function gerarJustificativaAgilIA(){
+  if (aiInFlight) {
+    toast("Já existe uma geração de IA em andamento para este cadastro. Aguarde a conclusão.");
+    return;
+  }
   syncAgilToExtended();
   const btn = $("btnAgilJustificativaIA");
   const oldText = btn ? btn.innerHTML : "✨ Gerar Justificativa com IA";
@@ -5384,6 +5422,8 @@ function syncExtendedToAgil() {
   if (outrosWrap) {
     outrosWrap.style.display = isOutros ? "block" : "none";
     if (isOutros && typeof renderOutrosUI === "function") {
+      state.outrosSubtipo = state.aux?.outrosSubtipo || state.aux?.areaExameClinico || state.outrosSubtipo || "";
+      state.outrosResultado = state.aux?.outrosResultado || state.aux?.resultadoAvaliacao || state.outrosResultado || "";
       renderOutrosUI();
     }
   }
@@ -5545,6 +5585,14 @@ function syncAgilToExtended() {
     state.alteracoesClinicasExames = exDesc;
     if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = exDesc;
     if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = exDesc;
+  }
+  if (state.outrosSubtipo) {
+    state.aux.outrosSubtipo = state.outrosSubtipo;
+    state.aux.areaExameClinico = state.outrosSubtipo;
+  }
+  if (state.outrosResultado) {
+    state.aux.outrosResultado = state.outrosResultado;
+    state.aux.resultadoAvaliacao = state.outrosResultado;
   }
   
   // Bloco 04
@@ -5730,6 +5778,9 @@ function renderOutrosUI() {
 
 function escolherOutrosSubtipo(nome) {
   state.outrosSubtipo = nome;
+  if (!state.aux) state.aux = {};
+  state.aux.outrosSubtipo = nome;
+  state.aux.areaExameClinico = nome;
   if ($("exameFisicoTipo")) $("exameFisicoTipo").value = nome;
   renderOutrosUI();
   autoSave();
@@ -5738,6 +5789,9 @@ function escolherOutrosSubtipo(nome) {
 
 function escolherOutrosResultado(resultado) {
   state.outrosResultado = resultado;
+  if (!state.aux) state.aux = {};
+  state.aux.outrosResultado = resultado;
+  state.aux.resultadoAvaliacao = resultado;
   renderOutrosUI();
 
   // "mas não preencha os campos, pois ainda não temos uma base para eles."

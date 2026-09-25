@@ -899,6 +899,119 @@ def test_agil_justificativa_ia_button_only_on_outros():
     assert 'btnIaJust.style.display = "none";' in ATTENDANCE
 
 
+def test_justificativa_ia_outros_area_and_cid_correlation():
+    """
+    Ensures:
+    1. TASK_PROMPTS["justificativa"] has the explicit rule correlating the selected area in 'Outros',
+       its status (Alterado vs Normal), and the described CID in 1st person.
+    2. _task_instruction formats area_exame_clinico, resultado_avaliacao, cid and cargo correctly.
+    3. _minimal_ai_context maps outros_subtipo, outros_resultado, area_exame_clinico, resultado_avaliacao.
+    4. HTML getJustificativaContext sends outros_subtipo and outros_resultado.
+    """
+    from app import TASK_PROMPTS, _task_instruction, _minimal_ai_context
+    prompt = TASK_PROMPTS["justificativa"]
+
+    # 1. Prompt rules for Outros + Área clínica + CID
+    assert "DIRETRIZ OBRIGATÓRIA PARA A OPÇÃO 'OUTROS'" in prompt
+    assert "{area_exame_clinico}" in prompt
+    assert "{resultado_avaliacao}" in prompt
+    assert "relacionadas ao CID {cid}" in prompt
+    assert "esfera de {area_exame_clinico}" in prompt
+    assert 'JAMAIS utilize o termo "Paciente" ou "paciente"' in prompt
+
+    # 2. Test prompt generation for Alterado
+    payload_alterado = {
+        "cargo": "Professor PEB II",
+        "cid": "I10 - Hipertensão arterial",
+        "exame_fisico_tipo": "Outros",
+        "outros_subtipo": "Aparelho Circulatório",
+        "outros_resultado": "Alterado",
+        "desc_limitacao": "Picos pressóricos em esforço",
+    }
+    instruction_alt = _task_instruction("justificativa", payload_alterado)
+    assert "Professor PEB II" in instruction_alt
+    assert "I10 - Hipertensão arterial" in instruction_alt
+    assert "Aparelho Circulatório" in instruction_alt
+    assert "Alterado" in instruction_alt
+
+    # 3. Test prompt generation for Normal
+    payload_normal = {
+        "cargo": "Analista Administrativo",
+        "cid": "K29 - Gastrite",
+        "exame_fisico_tipo": "Outros",
+        "outros_subtipo": "Aparelho Digestivo",
+        "outros_resultado": "Normal",
+    }
+    instruction_norm = _task_instruction("justificativa", payload_normal)
+    assert "Analista Administrativo" in instruction_norm
+    assert "K29 - Gastrite" in instruction_norm
+    assert "Aparelho Digestivo" in instruction_norm
+    assert "Normal" in instruction_norm
+
+    # 4. _minimal_ai_context mapping
+    ctx = _minimal_ai_context({
+        "outros_subtipo": "Aparelho Respiratório",
+        "outros_resultado": "Alterado",
+    })
+    assert ctx["outros_subtipo"] == "Aparelho Respiratório"
+    assert ctx["outros_resultado"] == "Alterado"
+    assert ctx["area_exame_clinico"] == "Aparelho Respiratório"
+    assert ctx["resultado_avaliacao"] == "Alterado"
+
+    # 5. HTML context gathering
+    assert "outros_subtipo:subtipo" in ATTENDANCE or "outros_subtipo: subtipo" in ATTENDANCE
+    assert "outros_resultado:resultado" in ATTENDANCE or "outros_resultado: resultado" in ATTENDANCE
+
+
+def test_ai_concurrency_limit_one_generation_per_cadastro():
+    """
+    Ensures:
+    1. A lock is enforced per cadastro/registration so that only ONE AI generation can run at a time per cadastro.
+    2. Attempting a concurrent generation for the SAME cadastro raises AICadastroBusyError.
+    3. Concurrency for a DIFFERENT cadastro is allowed simultaneously.
+    4. When a generation completes, the lock is released and subsequent generations are permitted.
+    5. _provider_error converts AICadastroBusyError to HTTP 429 with AI_CADASTRO_BUSY.
+    6. HTML includes client-side guard checking aiInFlight.
+    """
+    import pytest
+    from app import _cadastro_ai_lock, AICadastroBusyError, _provider_error
+
+    cadastro_a = "ATD-TEST-CADASTRO-001"
+    cadastro_b = "ATD-TEST-CADASTRO-002"
+
+    # 1. Lock on cadastro_a blocks concurrent generation on cadastro_a
+    with _cadastro_ai_lock(cadastro_a, "/api/ai/justificativa"):
+        # Same cadastro concurrently -> must raise AICadastroBusyError
+        with pytest.raises(AICadastroBusyError) as exc_info:
+            with _cadastro_ai_lock(cadastro_a, "/api/ai/justificativa"):
+                pass
+        assert exc_info.value.cadastro_id == cadastro_a
+        assert "Já existe uma geração de IA em andamento para este cadastro" in str(exc_info.value)
+
+        # Different cadastro concurrently -> must succeed
+        with _cadastro_ai_lock(cadastro_b, "/api/ai/justificativa"):
+            pass
+
+    # 2. After exiting, subsequent generation on cadastro_a must succeed
+    with _cadastro_ai_lock(cadastro_a, "/api/ai/justificativa"):
+        pass
+
+    # 3. _provider_error translates AICadastroBusyError to 429
+    from app import app
+    with app.test_request_context():
+        busy_err = AICadastroBusyError(cadastro_a)
+        resp, status_code = _provider_error(busy_err)
+        assert status_code == 429
+        data = resp.get_json()
+        assert data["error"]["code"] == "AI_CADASTRO_BUSY"
+        assert "Já existe uma geração de IA em andamento para este cadastro" in data["error"]["message"]
+        assert data["error"]["details"]["cadastro"] == cadastro_a
+
+    # 4. Client-side guard in HTML
+    assert "if (aiInFlight)" in ATTENDANCE
+    assert "Já existe uma geração de IA em andamento para este cadastro" in ATTENDANCE
+
+
 
 
 

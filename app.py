@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import atexit
 import base64
+from contextlib import contextmanager
 import json
 import os
 import re
@@ -511,6 +512,12 @@ def _init_db():
             atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
         CREATE INDEX IF NOT EXISTS idx_ia_rate_updated ON ia_rate_limits(atualizado_em);
+        CREATE TABLE IF NOT EXISTS ia_cadastro_locks (
+            cadastro_id TEXT PRIMARY KEY,
+            iniciado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            endpoint TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_ia_cadastro_locks_iniciado ON ia_cadastro_locks(iniciado_em);
         CREATE TABLE IF NOT EXISTS agendas (
             id SERIAL PRIMARY KEY,
             medico_id TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -858,11 +865,24 @@ PADRÕES TÉCNICOS OFICIAIS (Programa de Melhoria Contínua):
 - Se Parecer CONTRÁRIO: Estruture em 1ª pessoa alinhado à diretriz oficial: "Constato a capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações de ordem [osteomuscular/psíquica] incapacitantes para as atribuições rotineiras do cargo atual."
 - Pareceres contrários administrativos: Se retroação de guia > 3 dias sem internação: "Guia com mais de 3 dias de retroação, não havendo comprovação de internamento hospitalar ou impedimento absoluto do servidor para emissão da guia." Se sobreposição de períodos: "Período solicitado já contemplado em licença anteriormente concedida, caracterizando sobreposição de períodos."
 
+DIRETRIZ OBRIGATÓRIA PARA A OPÇÃO 'OUTROS' (ÁREA CLÍNICA ESPECÍFICA + NORMAL/ALTERADO + CID):
+Quando o tipo de exame físico/mental for "Outros" ou quando for indicada uma área do exame clínico:
+1. Verifique qual área foi selecionada em "Selecione a área do exame clínico:" ({area_exame_clinico}) e o resultado da avaliação ({resultado_avaliacao}: Normal ou Alterado).
+2. Integre e correlacione expressamente a área do exame clínico avaliada e o seu status (Alterado ou Normal) junto ao CID descrito ({cid}) e às atribuições do cargo ({cargo}) na redação da justificativa:
+   - Se a área for classificada como ALTERADA (ou Parecer Favorável):
+     Estruture obrigatoriamente em 1ª pessoa conectando a área clínica avaliada e o CID ao comprometimento laboral:
+     "Considero a capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol do cargo de {cargo}, em razão de alterações clínicas e limitações na esfera de {area_exame_clinico} relacionadas ao CID {cid}, que comprometem as atividades laborais do servidor." (complemente com os achados específicos descritos, quando houver).
+   - Se a área for classificada como NORMAL (ou Parecer Contrário):
+     Estruture obrigatoriamente em 1ª pessoa demonstrando a capacidade preservada diante da ausência de alterações incapacitantes na área clínica avaliada para o CID:
+     "Constato a capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações clínicas incapacitantes no exame de {area_exame_clinico} relacionadas ao CID {cid} para as atribuições rotineiras do cargo atual de {cargo}."
+3. Respeite sempre a regra terminológica: NUNCA utilize o termo "Paciente" ou "paciente", utilize SEMPRE "Servidor", "Periciado" ou redija em 1ª pessoa ("constato", "considero", "observo").
+
 NÃO FAÇA:
 - não invente sintomas, achados, datas, medicamentos, resultados de exames, limitações ou relações causais;
 - não conclua incapacidade, nexo ou necessidade de afastamento apenas com base no CID;
 - não altere a capacidade laborativa nem o parecer informado pelo médico;
-- não crie exigências do cargo que não estejam registradas.
+- não crie exigências do cargo que não estejam registradas;
+- JAMAIS utilize o termo "Paciente" ou "paciente".
 
 ESTILO:
 Escreva 1 parágrafo, aproximadamente 80–180 palavras quando houver dados suficientes. Use linguagem técnico-pericial, objetiva e natural, como fundamentação de um especialista em Medicina do Trabalho. Destaque a relação entre dados clínicos, achados objetivos, funcionalidade e trabalho somente na medida sustentada pelos dados.
@@ -878,6 +898,9 @@ DADOS-CHAVE DO ATENDIMENTO:
 - Tratamentos/medicações: {tratamentos}
 - Antecedentes: {antecedentes}
 - Documentos/exames: {documentos}
+- Tipo de exame físico/mental: {tipo_exame}
+- Área do exame clínico (Selecione a área do exame clínico): {area_exame_clinico}
+- Resultado da avaliação clínica (Normal / Alterado): {resultado_avaliacao}
 - Exame físico/mental e achados: {exame}
 - Limitações funcionais: {limitacoes}
 - Atividades comprometidas: {atividades_comprometidas}
@@ -1053,6 +1076,18 @@ def _task_instruction(task: str, payload: dict[str, Any]) -> str:
         documentos = payload.get("documentos_complementares") or []
         meds = payload.get("medicamentos") or []
         conds = payload.get("condicoes") or []
+        area_exame = (
+            payload.get("outros_subtipo")
+            or payload.get("area_exame_clinico")
+            or "não informada"
+        )
+        res_exame = (
+            payload.get("outros_resultado")
+            or payload.get("resultado_avaliacao")
+            or "não informado"
+        )
+        tipo_exame = payload.get("exame_fisico_tipo") or "não informado"
+
         prompt = TASK_PROMPTS[task].format(
             cargo=payload.get("cargo") or "não informado",
             idade=payload.get("idade") or "não informada",
@@ -1065,7 +1100,16 @@ def _task_instruction(task: str, payload: dict[str, Any]) -> str:
             tratamentos=json.dumps({"medicamentos": meds, "condicoes": conds, "psicoterapia": payload.get("psicoterapia"), "fisioterapia": payload.get("fisioterapia"), "alteracao_dosagem": payload.get("alteracao_dosagem")}, ensure_ascii=False),
             antecedentes=payload.get("antecedentes") or "não informados",
             documentos=json.dumps(documentos, ensure_ascii=False),
-            exame=json.dumps({"tipo": payload.get("exame_fisico_tipo"), "achados": payload.get("alteracoes_clinicas_exames"), "exame": payload.get("exame") or {}}, ensure_ascii=False),
+            tipo_exame=tipo_exame,
+            area_exame_clinico=area_exame,
+            resultado_avaliacao=res_exame,
+            exame=json.dumps({
+                "tipo": tipo_exame,
+                "area_exame_clinico": area_exame,
+                "resultado_avaliacao": res_exame,
+                "achados": payload.get("alteracoes_clinicas_exames") or payload.get("exame_fisico_descricao"),
+                "exame": payload.get("exame") or {}
+            }, ensure_ascii=False),
             limitacoes=payload.get("desc_limitacao") or payload.get("limitacoes") or "não informadas",
             atividades_comprometidas=payload.get("atividades_comprometidas") or "não informadas",
             capacidade=payload.get("capacidade") or "não informada",
@@ -1107,6 +1151,87 @@ class AIRateLimitError(RuntimeError):
 
 class AIRecordAccessError(RuntimeError):
     """Acesso negado ao atendimento usado como contexto de IA."""
+
+class AICadastroBusyError(RuntimeError):
+    def __init__(self, cadastro_id: str):
+        super().__init__("Já existe uma geração de IA em andamento para este cadastro. Aguarde a conclusão antes de solicitar novamente.")
+        self.cadastro_id = str(cadastro_id or "")
+
+
+_active_cadastro_locks: set[str] = set()
+_active_cadastro_mutex = threading.Lock()
+
+
+def _get_cadastro_id(data: dict[str, Any]) -> str:
+    """Extrai um identificador consistente para o cadastro/atendimento."""
+    atendimento = (
+        data.get("atendimento")
+        or (data.get("aux") or {}).get("atendimento")
+        or (data.get("aux") or {}).get("numero")
+        or data.get("numero")
+        or data.get("id")
+    )
+    atd_str = str(atendimento or "").strip()
+    if atd_str and atd_str.lower() not in {"null", "undefined", "none"}:
+        return atd_str
+    user_id = str(getattr(request, "user_id", "") or "").strip()
+    if user_id:
+        return f"user_{user_id}"
+    forwarded = request.headers.get("X-Forwarded-For", "")
+    ip = (forwarded.split(",", 1)[0].strip() if forwarded else (request.remote_addr or "unknown"))[:128]
+    return f"ip_{ip}"
+
+
+@contextmanager
+def _cadastro_ai_lock(cadastro_id: str, endpoint: str):
+    cid = str(cadastro_id or "").strip() or "global_draft"
+
+    # 1. Trava em memória (proteção contra concorrência dentro do processo local)
+    with _active_cadastro_mutex:
+        if cid in _active_cadastro_locks:
+            raise AICadastroBusyError(cid)
+        _active_cadastro_locks.add(cid)
+
+    db_locked = False
+    try:
+        # 2. Trava em banco PostgreSQL (compartilhada entre múltiplos workers/processos)
+        try:
+            db = get_db()
+            cur = db.cursor()
+            cur.execute("DELETE FROM ia_cadastro_locks WHERE iniciado_em < NOW() - INTERVAL '60 seconds'")
+            cur.execute(
+                """
+                INSERT INTO ia_cadastro_locks (cadastro_id, iniciado_em, endpoint)
+                VALUES (%s, NOW(), %s)
+                ON CONFLICT (cadastro_id) DO NOTHING
+                RETURNING cadastro_id
+                """,
+                (cid, endpoint),
+            )
+            row = cur.fetchone()
+            db.commit()
+            cur.close()
+            if not row:
+                raise AICadastroBusyError(cid)
+            db_locked = True
+        except AICadastroBusyError:
+            raise
+        except Exception as exc:
+            app.logger.warning("Falha ao registrar trava de cadastro no banco: %s", type(exc).__name__)
+
+        yield cid
+    finally:
+        with _active_cadastro_mutex:
+            _active_cadastro_locks.discard(cid)
+        if db_locked:
+            try:
+                db = get_db()
+                cur = db.cursor()
+                cur.execute("DELETE FROM ia_cadastro_locks WHERE cadastro_id = %s", (cid,))
+                db.commit()
+                cur.close()
+            except Exception as exc:
+                app.logger.warning("Falha ao remover trava de cadastro no banco: %s", type(exc).__name__)
 
 def _rate_limit(endpoint: str):
     """Rate limit global por IP + endpoint, compartilhado entre processos via PostgreSQL."""
@@ -1333,6 +1458,46 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
         "observacoes_documentos": payload.get("observacoes_documentos") or a.get("obsDocumentos"),
         "documentos_complementares": payload.get("documentos_complementares") or payload.get("documentosComplementares") or [],
         "exame_fisico_tipo": payload.get("exame_fisico_tipo") or payload.get("exameFisicoTipo"),
+        "outros_subtipo": (
+            payload.get("outros_subtipo")
+            or payload.get("outrosSubtipo")
+            or payload.get("area_exame_clinico")
+            or payload.get("areaExameClinico")
+            or a.get("outros_subtipo")
+            or a.get("outrosSubtipo")
+            or a.get("area_exame_clinico")
+            or a.get("areaExameClinico")
+        ),
+        "outros_resultado": (
+            payload.get("outros_resultado")
+            or payload.get("outrosResultado")
+            or payload.get("resultado_avaliacao")
+            or payload.get("resultadoAvaliacao")
+            or a.get("outros_resultado")
+            or a.get("outrosResultado")
+            or a.get("resultado_avaliacao")
+            or a.get("resultadoAvaliacao")
+        ),
+        "area_exame_clinico": (
+            payload.get("area_exame_clinico")
+            or payload.get("areaExameClinico")
+            or payload.get("outros_subtipo")
+            or payload.get("outrosSubtipo")
+            or a.get("area_exame_clinico")
+            or a.get("areaExameClinico")
+            or a.get("outros_subtipo")
+            or a.get("outrosSubtipo")
+        ),
+        "resultado_avaliacao": (
+            payload.get("resultado_avaliacao")
+            or payload.get("resultadoAvaliacao")
+            or payload.get("outros_resultado")
+            or payload.get("outrosResultado")
+            or a.get("resultado_avaliacao")
+            or a.get("resultadoAvaliacao")
+            or a.get("outros_resultado")
+            or a.get("outrosResultado")
+        ),
         "exame_fisico_descricao": payload.get("exame_fisico_descricao") or payload.get("exameFisicoDescricao") or a.get("exameFisicoDescricao"),
         "pressao_sistolica": payload.get("pressao_sistolica") or payload.get("pressaoSistolica") or a.get("pressaoSistolica"),
         "pressao_diastolica": payload.get("pressao_diastolica") or payload.get("pressaoDiastolica") or a.get("pressaoDiastolica"),
@@ -1381,6 +1546,13 @@ def _load_authoritative_ai_payload(raw: dict[str, Any]) -> dict[str, Any]:
         return payload
     merged = dict(stored)
     merged["atendimento"] = row.get("numero") or stored.get("atendimento") or atendimento
+    # Preserva seleções ativas / não salvas enviadas no payload da requisição
+    for k, v in payload.items():
+        if v not in (None, "", [], {}):
+            if isinstance(v, dict) and isinstance(merged.get(k), dict):
+                merged[k] = {**merged[k], **v}
+            else:
+                merged[k] = v
     return merged
 
 def _generate(instruction: str) -> AIResult:
@@ -1392,6 +1564,11 @@ def _context_text(payload: dict[str, Any]) -> str:
     )
 
 def _provider_error(exc: Exception):
+    if isinstance(exc, AICadastroBusyError):
+        resp = _error("AI_CADASTRO_BUSY", "Já existe uma geração de IA em andamento para este cadastro. Aguarde a conclusão antes de solicitar novamente.", True, 429, {"cadastro": exc.cadastro_id, "retry_after_seconds": 5})
+        response, status = resp
+        response.headers["Retry-After"] = "5"
+        return response, status
     if isinstance(exc, AIRecordAccessError):
         return _error("PERMISSION_DENIED", str(exc), False, 403)
     if isinstance(exc, AIRateLimitError):
@@ -1535,13 +1712,21 @@ def status_ia():
 @app.post("/api/ai/justificativa")
 def api_ai_justificativa():
     try:
-        raw = _load_authoritative_ai_payload(_json_body()); payload = _minimal_ai_context(raw)
-        instruction = _task_instruction("justificativa", payload)
-        result, cached, _ = _generate_cached("justificativa", payload, instruction, JustificationResult)
-        texto = str(result.justificativa or "").strip()
-        if not texto:
-            raise ValueError("A IA retornou uma justificativa vazia.")
-        return _ai_result_response(result, "justificativa", cached)
+        raw = _load_authoritative_ai_payload(_json_body())
+        payload = _minimal_ai_context(raw)
+        cadastro_id = _get_cadastro_id(payload)
+        with _cadastro_ai_lock(cadastro_id, "/api/ai/justificativa"):
+            instruction = _task_instruction("justificativa", payload)
+            result, cached, _ = _generate_cached("justificativa", payload, instruction, JustificationResult)
+            texto = str(result.justificativa or "").strip()
+            if not texto:
+                raise ValueError("A IA retornou uma justificativa vazia.")
+            texto = re.sub(r"\bPaciente\b", "Servidor", texto)
+            texto = re.sub(r"\bpaciente\b", "servidor", texto)
+            texto = re.sub(r"\bPacientes\b", "Servidores", texto)
+            texto = re.sub(r"\bpacientes\b", "servidores", texto)
+            result.justificativa = texto
+            return _ai_result_response(result, "justificativa", cached)
     except Exception as exc:
         if isinstance(exc, ValueError): return _error("VALIDATION_ERROR", str(exc), False, 400)
         return _provider_error(exc)
@@ -1549,10 +1734,13 @@ def api_ai_justificativa():
 @app.post("/api/ai/coerencia")
 def api_ai_coerencia():
     try:
-        raw = _json_body(); payload = _minimal_ai_context(raw)
-        instruction = _task_instruction("coerencia", payload)
-        result, cached, _ = _generate_cached("coerencia", payload, instruction, AIResult)
-        return _ai_result_response(result, "coerencia", cached)
+        raw = _json_body()
+        payload = _minimal_ai_context(raw)
+        cadastro_id = _get_cadastro_id(payload)
+        with _cadastro_ai_lock(cadastro_id, "/api/ai/coerencia"):
+            instruction = _task_instruction("coerencia", payload)
+            result, cached, _ = _generate_cached("coerencia", payload, instruction, AIResult)
+            return _ai_result_response(result, "coerencia", cached)
     except Exception as exc:
         if isinstance(exc, ValueError): return _error("VALIDATION_ERROR", str(exc), False, 400)
         return _provider_error(exc)
@@ -1560,10 +1748,13 @@ def api_ai_coerencia():
 @app.post("/api/ai/revisao")
 def api_ai_revisao():
     try:
-        raw = _json_body(); payload = _minimal_ai_context(raw)
-        instruction = _task_instruction("revisao", payload)
-        result, cached, _ = _generate_cached("revisao", payload, instruction, AIResult)
-        return _ai_result_response(result, "revisao", cached)
+        raw = _json_body()
+        payload = _minimal_ai_context(raw)
+        cadastro_id = _get_cadastro_id(payload)
+        with _cadastro_ai_lock(cadastro_id, "/api/ai/revisao"):
+            instruction = _task_instruction("revisao", payload)
+            result, cached, _ = _generate_cached("revisao", payload, instruction, AIResult)
+            return _ai_result_response(result, "revisao", cached)
     except Exception as exc:
         if isinstance(exc, ValueError): return _error("VALIDATION_ERROR", str(exc), False, 400)
         return _provider_error(exc)
@@ -1571,10 +1762,13 @@ def api_ai_revisao():
 @app.post("/api/ai/documento")
 def api_ai_documento():
     try:
-        raw = _json_body(); payload = _minimal_ai_context(raw)
-        instruction = _task_instruction("documento", payload)
-        result, cached, _ = _generate_cached("documento", payload, instruction, FinalReportResult)
-        return _ai_result_response(result, "documento", cached)
+        raw = _json_body()
+        payload = _minimal_ai_context(raw)
+        cadastro_id = _get_cadastro_id(payload)
+        with _cadastro_ai_lock(cadastro_id, "/api/ai/documento"):
+            instruction = _task_instruction("documento", payload)
+            result, cached, _ = _generate_cached("documento", payload, instruction, FinalReportResult)
+            return _ai_result_response(result, "documento", cached)
     except Exception as exc:
         if isinstance(exc, ValueError): return _error("VALIDATION_ERROR", str(exc), False, 400)
         return _provider_error(exc)
@@ -1613,14 +1807,16 @@ def api_ai_esisla():
         force = bool(raw.pop("force_refresh", False))
         raw = _load_authoritative_ai_payload(raw)
         payload = _minimal_ai_context(raw)
-        instruction = _task_instruction("esisla", payload)
-        
-        result, cached, _ = _generate_cached("esisla", payload, instruction, EsislaResult, force_refresh=force)
-        result = EsislaResult(ficha_esisla=_clean_esisla_text(result.ficha_esisla))
-        return jsonify({
-            "ficha_esisla": result.ficha_esisla,
-            "meta": {"cached": bool(cached), "endpoint": "esisla"}
-        }), 200
+        cadastro_id = _get_cadastro_id(payload)
+        with _cadastro_ai_lock(cadastro_id, "/api/ai/esisla"):
+            instruction = _task_instruction("esisla", payload)
+            
+            result, cached, _ = _generate_cached("esisla", payload, instruction, EsislaResult, force_refresh=force)
+            result = EsislaResult(ficha_esisla=_clean_esisla_text(result.ficha_esisla))
+            return jsonify({
+                "ficha_esisla": result.ficha_esisla,
+                "meta": {"cached": bool(cached), "endpoint": "esisla"}
+            }), 200
     except Exception as exc:
         if isinstance(exc, ValueError):
             return _error("VALIDATION_ERROR", str(exc), False, 400)
@@ -1632,8 +1828,10 @@ def gerar_justificativa():
     try:
         payload = _json_body()
         payload = _minimal_ai_context(payload)
-        instruction = _task_instruction("justificativa", payload)
-        return _json_response(_generate(instruction))
+        cadastro_id = _get_cadastro_id(payload)
+        with _cadastro_ai_lock(cadastro_id, "/api/gerar-justificativa"):
+            instruction = _task_instruction("justificativa", payload)
+            return _json_response(_generate(instruction))
     except ValueError as exc:
         return jsonify({"error": "invalid_payload", "detail": str(exc)}), 400
     except ValidationError as exc:
@@ -1647,8 +1845,10 @@ def analisar_coerencia():
     try:
         payload = _json_body()
         payload = _minimal_ai_context(payload)
-        instruction = _task_instruction("revisao", payload)
-        return _json_response(_generate(instruction))
+        cadastro_id = _get_cadastro_id(payload)
+        with _cadastro_ai_lock(cadastro_id, "/api/analisar-coerencia"):
+            instruction = _task_instruction("revisao", payload)
+            return _json_response(_generate(instruction))
     except Exception as exc:
         if isinstance(exc, ValueError):
             return jsonify({"error": "invalid_request", "detail": str(exc)}), 400
@@ -1660,8 +1860,10 @@ def resumir_caso():
     try:
         payload = _json_body()
         payload = _minimal_ai_context(payload)
-        instruction = _task_instruction("resumo", payload)
-        return _json_response(_generate(instruction))
+        cadastro_id = _get_cadastro_id(payload)
+        with _cadastro_ai_lock(cadastro_id, "/api/resumir-caso"):
+            instruction = _task_instruction("resumo", payload)
+            return _json_response(_generate(instruction))
     except Exception as exc:
         if isinstance(exc, ValueError):
             return jsonify({"error": "invalid_request", "detail": str(exc)}), 400
@@ -1677,11 +1879,13 @@ def revisar_texto():
         if not texto:
             return jsonify({"error": "invalid_payload", "detail": "Informe o texto a ser revisado."}), 400
         payload = _minimal_ai_context(payload)
-        instruction = (
-            _task_instruction("revisao_texto", payload)
-            + f"\n\nOBJETIVO DA REVISÃO: {objetivo}\n\nTEXTO A REVISAR:\n{texto[:12000]}"
-        )
-        return _json_response(_generate(instruction))
+        cadastro_id = _get_cadastro_id(payload)
+        with _cadastro_ai_lock(cadastro_id, "/api/revisar-texto"):
+            instruction = (
+                _task_instruction("revisao_texto", payload)
+                + f"\n\nOBJETIVO DA REVISÃO: {objetivo}\n\nTEXTO A REVISAR:\n{texto[:12000]}"
+            )
+            return _json_response(_generate(instruction))
     except Exception as exc:
         if isinstance(exc, ValueError):
             return jsonify({"error": "invalid_request", "detail": str(exc)}), 400
@@ -1689,16 +1893,18 @@ def revisar_texto():
 
 def _run_ai_preenchimento(raw_payload):
     payload = _minimal_ai_context(raw_payload)
-    instruction = _task_instruction("preenchimento", payload) + "\n\n" + (
-        "A saída deve preencher a chave sugestoes_preenchimento com: "
-        "queixa_e_duracao, antecedentes_morbidos, exame_fisico_mental, "
-        "alteracoes_clinicas_exames, limitacoes_fisicas_mentais, "
-        "justificativa_parecer_final e atestado_relatorio_exames. "
-        "Quando não houver base suficiente, use string vazia ou lista vazia."
-    )
-    result, cached, _ = _generate_cached("preenchimento", payload, instruction, FillSuggestionResult)
-    body=result.model_dump(); body["meta"]={"cached":bool(cached),"endpoint":"preenchimento"}
-    return jsonify(body), 200
+    cadastro_id = _get_cadastro_id(payload)
+    with _cadastro_ai_lock(cadastro_id, "/api/ai/preenchimento"):
+        instruction = _task_instruction("preenchimento", payload) + "\n\n" + (
+            "A saída deve preencher a chave sugestoes_preenchimento com: "
+            "queixa_e_duracao, antecedentes_morbidos, exame_fisico_mental, "
+            "alteracoes_clinicas_exames, limitacoes_fisicas_mentais, "
+            "justificativa_parecer_final e atestado_relatorio_exames. "
+            "Quando não houver base suficiente, use string vazia ou lista vazia."
+        )
+        result, cached, _ = _generate_cached("preenchimento", payload, instruction, FillSuggestionResult)
+        body=result.model_dump(); body["meta"]={"cached":bool(cached),"endpoint":"preenchimento"}
+        return jsonify(body), 200
 
 @app.post("/api/ai/preenchimento")
 @app.post("/api/revisar-preenchimento")

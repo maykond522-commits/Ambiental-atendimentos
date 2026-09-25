@@ -1529,8 +1529,18 @@ body.modal-lock { overscroll-behavior: none; }
   background: #FFFFFF;
   white-space: pre-wrap;
   outline: none;
+  transition: background 0.2s, box-shadow 0.2s;
 }
 .esisla-text:focus { background: #FAFCFF; }
+.esisla-text.locked, .esisla-text[readonly] {
+  background: #F8FAFC !important;
+  color: #334155 !important;
+  cursor: default !important;
+}
+.esisla-text:not([readonly]) {
+  background: #FFFFFF !important;
+  box-shadow: inset 0 0 0 2px #93C5FD;
+}
 .esisla-modal-foot {
   display: flex !important;
   justify-content: space-between !important;
@@ -1813,21 +1823,35 @@ body.modal-lock { overscroll-behavior: none; }
       <div class="esisla-editor-container">
         <div class="esisla-editor-header">
           <div class="esisla-editor-left">
-            <span>📄 Formato de Exportação (TXT)</span>
+            <span>📄 Formato de Exportação (TXT / JSON)</span>
             <span class="esisla-stats-chip" id="esislaStatsChip">0 caracteres · 0 linhas</span>
+            <span class="esisla-lock-chip" id="esislaLockChip" style="font-size:10px;font-weight:700;padding:3px 7px;border-radius:6px;background:#F1F5F9;color:#475569;border:1px solid #CBD5E1;display:inline-flex;align-items:center;gap:4px">
+              🔒 Protegido contra edição
+            </span>
           </div>
-          <button class="btn-copy-mini" id="esislaCopyHeaderBtn" onclick="copyEsisla()">📋 Copiar texto</button>
+          <div style="display:flex;align-items:center;gap:6px">
+            <button class="btn-copy-mini" id="esislaToggleEditBtn" type="button" onclick="toggleEditEsisla()" title="Clique para liberar ou bloquear a edição manual do texto">
+              ✏️ Editar
+            </button>
+            <button class="btn-copy-mini" type="button" onclick="copyEsislaJson()" style="color:#1E40AF;font-weight:700" title="Copiar ficha em formato JSON">{ } Copiar JSON</button>
+            <button class="btn-copy-mini" type="button" onclick="copyEsislaScript()" style="color:#0D542B;font-weight:700" title="Copiar script com o JSON para preencher no Console do e-Sisla (F12)">⚡ Script F12</button>
+            <button class="btn-copy-mini" id="esislaCopyHeaderBtn" type="button" onclick="copyEsisla()">📋 Copiar texto</button>
+          </div>
         </div>
-        <textarea id="esislaText" class="esisla-text" spellcheck="false" aria-label="Ficha eSisla gerada" placeholder="Aguardando geração da ficha..."></textarea>
+        <textarea id="esislaText" class="esisla-text locked" readonly spellcheck="false" aria-label="Ficha eSisla gerada" placeholder="Aguardando geração da ficha..."></textarea>
       </div>
     </div>
 
     <div class="dialog-foot esisla-modal-foot">
       <div class="esisla-foot-left">
-        <button class="btn btn-download-file" id="downloadEsislaBtn" onclick="downloadEsisla()">📥 Baixar Arquivo (.txt)</button>
+        <button class="btn btn-download-file" id="downloadEsislaBtn" onclick="downloadEsisla()">📥 Baixar (.txt)</button>
+        <button class="btn btn-download-file" id="downloadEsislaJsonBtn" onclick="downloadEsislaJson()" style="border-color:#93C5FD;color:#1E40AF">📥 Baixar (.json)</button>
         <button class="btn btn-outline" id="regenerateEsislaBtn" onclick="generateEsisla(window.currentEsislaEnc, true)">🔄 Apagar Cache e Refazer</button>
       </div>
-      <button class="btn btn-esisla btn-copy-hero" id="copyEsislaBtn" onclick="copyEsisla()">Copiar Ficha Completa</button>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn btn-outline" onclick="copyEsislaJson()" style="color:#1E40AF;border-color:#93C5FD;font-weight:700">{ } Copiar JSON</button>
+        <button class="btn btn-esisla btn-copy-hero" id="copyEsislaBtn" onclick="copyEsisla()">Copiar Ficha Completa</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2006,6 +2030,7 @@ async function generateEsisla(enc, forceRefresh = false){
         let data={}; try{data=await response.json()}catch{}
         if(!response.ok||!data?.ficha_esisla) throw new Error(data?.detail||data?.error?.detail||data?.error?.message||'Não foi possível gerar a ficha eSisla.');
         target.value=data.ficha_esisla;
+        setEsislaEditable(false);
         sub.textContent='Atendimento '+id+' · '+(data?.meta?.cached?'resultado em cache':'gerado agora');
         updateEsislaStats(data.ficha_esisla);
         setStage(4,'Ficha pronta','Resultado carregado. Revise antes de transferir para o e-Sisla.',100);
@@ -2014,6 +2039,52 @@ async function generateEsisla(enc, forceRefresh = false){
         setModal('esislaModal',true);
     }catch(e){if(overlay){overlay.classList.remove('show');overlay.setAttribute('aria-busy','false');}alert(e.message||'Falha ao gerar a ficha eSisla.');}
     finally{if(btn){btn.disabled=false;btn.textContent=old||'Gerar ficha eSisla';}if(regen)regen.disabled=false;}
+}
+
+function setEsislaEditable(editable) {
+    const el = document.getElementById('esislaText');
+    const btn = document.getElementById('esislaToggleEditBtn');
+    const chip = document.getElementById('esislaLockChip');
+    if (!el) return;
+    if (editable) {
+        el.removeAttribute('readonly');
+        el.classList.remove('locked');
+        el.focus();
+        if (btn) {
+            btn.innerHTML = '🔒 Bloquear edição';
+            btn.style.background = '#FEF3C7';
+            btn.style.borderColor = '#F59E0B';
+            btn.style.color = '#92400E';
+        }
+        if (chip) {
+            chip.innerHTML = '✏️ Edição liberada';
+            chip.style.background = '#FEF3C7';
+            chip.style.color = '#92400E';
+            chip.style.borderColor = '#F59E0B';
+        }
+    } else {
+        el.setAttribute('readonly', 'true');
+        el.classList.add('locked');
+        if (btn) {
+            btn.innerHTML = '✏️ Editar';
+            btn.style.background = '#FFFFFF';
+            btn.style.borderColor = '#CFDBE7';
+            btn.style.color = 'var(--blue)';
+        }
+        if (chip) {
+            chip.innerHTML = '🔒 Protegido contra edição';
+            chip.style.background = '#F1F5F9';
+            chip.style.color = '#475569';
+            chip.style.borderColor = '#CBD5E1';
+        }
+    }
+}
+
+function toggleEditEsisla() {
+    const el = document.getElementById('esislaText');
+    if (!el) return;
+    const isReadOnly = el.hasAttribute('readonly');
+    setEsislaEditable(isReadOnly);
 }
 
 function updateEsislaStats(text){
@@ -2075,6 +2146,405 @@ function downloadEsisla(){
     URL.revokeObjectURL(url);
     if(window.AmbientalUtils?.toast){
         AmbientalUtils.toast('Download da ficha e-Sisla (.txt) iniciado com sucesso!');
+    }
+}
+
+function gerarJsonEsisla(textoFicha, enc) {
+    const texto = String(textoFicha || document.getElementById('esislaText')?.value || '');
+    const st = enc?.payload || enc || {};
+    const aux = st.aux || enc?.aux || {};
+
+    function ext(t, i, f) {
+        if (!t) return '';
+        const si = i.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        const sf = f ? f.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') : '';
+        const rx = new RegExp(si + '\\s*([\\s\\S]*?)\\s*(?=' + sf + '|$)', 'i');
+        const m = t.match(rx);
+        return m ? m[1].trim() : '';
+    }
+
+    const cat = ext(texto, '(*) Queixa e Duração:', 'Antecedentes Mórbidos:') || aux.queixaDuracao || st.queixaDuracao || aux.queixa || st.queixa || '';
+    const ap = ext(texto, 'Antecedentes Mórbidos:', 'Atestado/Relatório/Exames') || aux.historicoPregresso || st.historicoPregresso || aux.antecedentes || st.antecedentes || '';
+    const hda = ext(texto, 'Atestado/Relatório/Exames Complementares (Tipo-Data-Resultado):', 'Pressão Arterial') || aux.examesComplementares || st.examesComplementares || aux.documentosApresentados || st.documentosApresentados || '';
+    const exApres = ext(texto, 'Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:', '(*)Descrição da(s) Limitação') || aux.alteracoesClinicas || st.alteracoesClinicas || aux.exameFisico || st.exameFisico || '';
+    const reqExComp = ext(texto, '(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):', '(*)Parecer Médico') || aux.limitacoes || st.limitacoes || aux.limitacaoFuncional || st.limitacaoFuncional || '';
+    
+    let justif = ext(texto, '(*)Justificativa Parecer Médico', '(*) Parecer Final');
+    if (!justif) justif = ext(texto, '(*) Justificativa Parecer Final', 'FIM_INEXISTENTE');
+    if (!justif) justif = aux.justificativa || st.justificativa || '';
+
+    let crm = aux.crm || st.crm || aux.crmAssistente || st.crmAssistente || '';
+    if (!crm) {
+        const mCrm = hda.match(/CRM[:\s]*([0-9A-Z\-\/]+)/i) || texto.match(/CRM\s*(?:do\s*médico\s*assistente)?[:\s]*([0-9A-Z\-\/]+)/i);
+        if (mCrm) crm = mCrm[1].trim();
+    }
+    let nomeMed = aux.nomeMedico || st.nomeMedico || aux.medicoAssistente || st.medicoAssistente || '';
+
+    let paSis = ext(texto, 'Sistólica (mmHg):', 'Diastólica') || aux.pressaoSistolica || st.pressaoSistolica || aux.paSistolica || '';
+    let paDia = ext(texto, 'Diastólica (mmHg):', 'Pulso') || aux.pressaoDiastolica || st.pressaoDiastolica || aux.paDiastolica || '';
+    let pulso = ext(texto, 'Pulso (bpm):', '(*)Exame') || aux.pulso || st.pulso || '';
+
+    if (paSis) paSis = paSis.replace(/[^0-9]/g, '');
+    if (paDia) paDia = paDia.replace(/[^0-9]/g, '');
+    if (pulso) pulso = pulso.replace(/[^0-9]/g, '');
+
+    let altura = aux.altura || st.altura || aux.biotipoAltura || '';
+    let peso = aux.peso || st.peso || aux.biotipoPeso || '';
+
+    let cid1 = ext(texto, 'CID 10:', 'Descrição:').split(',')[0].trim() || st.cid || aux.cid || '';
+    let descrCid1 = ext(texto, 'Descrição:', 'Médico Perito:').split('\n')[0].trim() || aux.doencaMotivo || st.doencaMotivo || '';
+    
+    const cidsSec = st.cidsSecundarios || aux.cidsSecundarios || [];
+    let cid2 = '';
+    let descrCid2 = '';
+    if (Array.isArray(cidsSec) && cidsSec.length > 0) {
+        cid2 = cidsSec[0].codigo || cidsSec[0].cid || '';
+        descrCid2 = cidsSec[0].descricao || cidsSec[0].nome || '';
+    }
+
+    let dias = ext(texto, 'Nº Dias:', 'Data Início:') || aux.diasConcedidos || st.diasConcedidos || aux.diasAfastamento || st.diasAfastamento || '';
+    dias = dias ? String(dias).replace(/[^0-9]/g, '') : '';
+    let dtIni = ext(texto, 'Data Início:', 'CID 10:') || aux.dataInicio || st.dataInicio || aux.dataDocumento || st.dataDocumento || '';
+    dtIni = dtIni.split('\n')[0].trim();
+
+    const pText = ext(texto, '(*)Parecer Médico', 'Nº Dias:') || st.parecer || aux.parecer || '';
+    const flPfinal = pText.toUpperCase().includes('CONTRÁRIO') ? 'C' : 'F';
+
+    function getQuesitoVal(num, busca) {
+        const qStr = ext(texto, busca, '\n').toLowerCase();
+        if (qStr.includes('sim')) return 'S';
+        if (qStr.includes('não') || qStr.includes('nao')) return 'N';
+        if (st.quesitos && st.quesitos[num]) return st.quesitos[num] === 'S' ? 'S' : 'N';
+        return 'N';
+    }
+    const fl_d_prev = getQuesitoVal(1, '1) Há doença(s)');
+    const fl_limit = getQuesitoVal(2, '2) A(s) doença(s)');
+    const fl_imped = getQuesitoVal(3, '3) A(s) limitação(ões)');
+
+    const cidCode = (cid1 || '').toUpperCase();
+    const fullContext = (texto + ' ' + (aux.doencaMotivo || '') + ' ' + (aux.diagnostico || '') + ' ' + (aux.exameFisico || '')).toLowerCase();
+    
+    const cb = {
+        'voMedico.parEdtcspf': cidCode.startsWith('L') || fullContext.includes('dermat') || fullContext.includes('pele'),
+        'voMedico.parEdAc': cidCode.startsWith('I') || fullContext.includes('hipertens') || fullContext.includes('cardio') || fullContext.includes('circulat'),
+        'voMedico.parEdAr': cidCode.startsWith('J') || fullContext.includes('respirat') || fullContext.includes('pulmon') || fullContext.includes('asma'),
+        'voMedico.parEdAHp': cidCode.startsWith('D') || fullContext.includes('anemia') || fullContext.includes('hemo') || fullContext.includes('linfo'),
+        'voMedico.parEdAd': cidCode.startsWith('K') || fullContext.includes('digest') || fullContext.includes('gastr') || fullContext.includes('hepat'),
+        'voMedico.parEdAgu': cidCode.startsWith('N') || fullContext.includes('renal') || fullContext.includes('urin') || fullContext.includes('genit'),
+        'voMedico.parEdAoal': cidCode.startsWith('M') || fullContext.includes('osteomuscular') || fullContext.includes('ortop') || fullContext.includes('lomb') || fullContext.includes('coluna') || fullContext.includes('articular'),
+        'voMedico.parEdAe': cidCode.startsWith('E') || fullContext.includes('endocrin') || fullContext.includes('diabet') || fullContext.includes('tireoid'),
+        'voMedico.parEdSn': cidCode.startsWith('G') || fullContext.includes('nervoso') || fullContext.includes('neurol') || fullContext.includes('epilep'),
+        'voMedico.parEdOs': cidCode.startsWith('H') || fullContext.includes('sentidos') || fullContext.includes('olho') || fullContext.includes('visão') || fullContext.includes('ouvid'),
+        'voMedico.parEdEm': cidCode.startsWith('F') || fullContext.includes('mental') || fullContext.includes('psiquiat') || fullContext.includes('depress') || fullContext.includes('ansied') || fullContext.includes('humor'),
+        'voMedico.parEdOutro': false
+    };
+    if (!Object.values(cb).some(Boolean) && exApres.trim()) {
+        cb['voMedico.parEdOutro'] = true;
+    }
+
+    const camposEsisla = {
+        'voMedico.parRlCat': cat,
+        'voMedico.parRlAp': ap,
+        'voMedico.parRlHda': hda,
+        'voResult.numCrm': crm,
+        'voResult.strNomeMedico': nomeMed,
+        'lgPressArterialMax': paSis,
+        'lgPressArterialMin': paDia,
+        'lgPulsacao': pulso,
+        'lgAltura': altura,
+        'lgPeso': peso,
+        'voMedico.parEdtcspf': cb['voMedico.parEdtcspf'],
+        'voMedico.parEdAc': cb['voMedico.parEdAc'],
+        'voMedico.parEdAr': cb['voMedico.parEdAr'],
+        'voMedico.parEdAHp': cb['voMedico.parEdAHp'],
+        'voMedico.parEdAd': cb['voMedico.parEdAd'],
+        'voMedico.parEdAgu': cb['voMedico.parEdAgu'],
+        'voMedico.parEdAoal': cb['voMedico.parEdAoal'],
+        'voMedico.parEdAe': cb['voMedico.parEdAe'],
+        'voMedico.parEdSn': cb['voMedico.parEdSn'],
+        'voMedico.parEdOs': cb['voMedico.parEdOs'],
+        'voMedico.parEdEm': cb['voMedico.parEdEm'],
+        'voMedico.parEdOutro': cb['voMedico.parEdOutro'],
+        'voMedico.parRlExApres': exApres,
+        'voMedico.parRlReqExComp': reqExComp,
+        'fl_d_prev': fl_d_prev,
+        'fl_limit': fl_limit,
+        'fl_imped': fl_imped,
+        'voResult.voParecerFinal.flPfinal': flPfinal,
+        'voResult.voParecerFinal.qtDiasPm': dias,
+        'voResult.voParecerFinal.dtIniPm': dtIni,
+        'voResult.voParecerFinal.cdCidPm': cid1,
+        'voResult.voParecerFinal.nmCidPm': descrCid1,
+        'voResult.voParecerFinal.cdCid2Pm': cid2,
+        'voResult.voParecerFinal.nmCid2Pm': descrCid2,
+        'voMedico.parRlComp': justif
+    };
+
+    const sub = document.getElementById('esislaSub')?.textContent || '';
+    const id = (sub.match(/Atendimento\s+([^·]+)/i) || [])[1]?.trim() || enc?.id || st.atendimento || 'SEM_PROTOCOLO';
+
+    return {
+        protocolo: id,
+        ...camposEsisla,
+        campos_esisla: camposEsisla,
+        ficha_esisla_texto: texto,
+        justificativa: justif,
+        timestamp: new Date().toISOString()
+    };
+}
+
+function gerarScriptAutoPreenchimentoEsisla(payloadObj) {
+    const jsonStr = JSON.stringify(payloadObj, null, 2);
+    return `(function() {
+  try {
+    var data = ${jsonStr};
+    var campos = data.campos_esisla || data || {};
+    
+    function findDoc() {
+      if (document.querySelector('textarea[name="voMedico.parRlCat"]') || document.getElementById('blocoGeral')) return document;
+      for (var i = 0; i < window.frames.length; i++) {
+        try {
+          var d = window.frames[i].document;
+          if (d && (d.querySelector('textarea[name="voMedico.parRlCat"]') || d.getElementById('blocoGeral'))) return d;
+        } catch(_) {}
+      }
+      var iframes = document.querySelectorAll('iframe, frame');
+      for (var j = 0; j < iframes.length; j++) {
+        try {
+          var idoc = iframes[j].contentDocument || iframes[j].contentWindow.document;
+          if (idoc && (idoc.querySelector('textarea[name="voMedico.parRlCat"]') || idoc.getElementById('blocoGeral'))) return idoc;
+        } catch(_) {}
+      }
+      return document;
+    }
+    
+    var doc = findDoc();
+    var win = doc.defaultView || window;
+    
+    function trigger(el) {
+      if (!el) return;
+      try {
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        el.dispatchEvent(new Event('blur', { bubbles: true }));
+      } catch(_) {}
+    }
+    
+    function setInput(sel, val) {
+      if (val === undefined || val === null || val === '') return;
+      var el = doc.querySelector(sel);
+      if (el) {
+        if (el.hasAttribute('disabled')) el.removeAttribute('disabled');
+        el.disabled = false;
+        el.value = val;
+        trigger(el);
+      }
+    }
+    
+    function setRadio(name, val) {
+      if (!val) return;
+      var el = doc.querySelector('input[type="radio"][name="' + name + '"][value="' + val + '"]');
+      if (el) {
+        el.checked = true;
+        try { el.click(); } catch(_) {}
+        el.checked = true;
+        trigger(el);
+      }
+    }
+    
+    function setCheckbox(nameOrId, checked) {
+      var el = doc.querySelector('input[type="checkbox"][name="' + nameOrId + '"]') || doc.getElementById(nameOrId);
+      if (el) {
+        el.checked = !!checked;
+        try { el.click(); } catch(_) {}
+        el.checked = !!checked;
+        trigger(el);
+      }
+    }
+
+    // 1. Textareas do Laudo Pericial
+    setInput('textarea[name="voMedico.parRlCat"]', campos['voMedico.parRlCat']);
+    setInput('textarea[name="voMedico.parRlAp"]', campos['voMedico.parRlAp']);
+    setInput('textarea[name="voMedico.parRlHda"]', campos['voMedico.parRlHda']);
+    
+    var exApres = doc.querySelector('textarea[name="voMedico.parRlExApres"]') || doc.getElementById('idExameApres');
+    if (exApres) {
+      exApres.removeAttribute('disabled');
+      exApres.disabled = false;
+    }
+    setInput('textarea[name="voMedico.parRlExApres"]', campos['voMedico.parRlExApres']);
+    setInput('textarea[name="voMedico.parRlReqExComp"]', campos['voMedico.parRlReqExComp']);
+    setInput('textarea[name="voMedico.parRlComp"]', campos['voMedico.parRlComp']);
+    
+    // 2. Médico Assistente
+    setInput('input[name="voResult.numCrm"]', campos['voResult.numCrm']);
+    setInput('#crmMedicoAssistente', campos['voResult.numCrm']);
+    setInput('input[name="voResult.strNomeMedico"]', campos['voResult.strNomeMedico']);
+    
+    // 3. Pressão Arterial e Pulso
+    setInput('input[name="lgPressArterialMax"]', campos['lgPressArterialMax']);
+    setInput('#sistolicaPressao', campos['lgPressArterialMax']);
+    setInput('input[name="lgPressArterialMin"]', campos['lgPressArterialMin']);
+    setInput('#diastolicaPressao', campos['lgPressArterialMin']);
+    setInput('input[name="lgPulsacao"]', campos['lgPulsacao']);
+    setInput('#pulsoPressao', campos['lgPulsacao']);
+    
+    // 4. Biotipo
+    setInput('input[name="lgAltura"]', campos['lgAltura']);
+    setInput('#alturaBiotipo', campos['lgAltura']);
+    setInput('input[name="lgPeso"]', campos['lgPeso']);
+    setInput('#pesoBiotipo', campos['lgPeso']);
+    if (typeof win.calcularIMC === 'function') {
+      try { win.calcularIMC(); } catch(_) {}
+    }
+    
+    // 5. Exame Físico / Mental Checkboxes
+    var cbs = [
+      'voMedico.parEdtcspf', 'voMedico.parEdAc', 'voMedico.parEdAr',
+      'voMedico.parEdAHp', 'voMedico.parEdAd', 'voMedico.parEdAgu',
+      'voMedico.parEdAoal', 'voMedico.parEdAe', 'voMedico.parEdSn',
+      'voMedico.parEdOs', 'voMedico.parEdEm', 'voMedico.parEdOutro'
+    ];
+    var temAlgumMarcado = false;
+    cbs.forEach(function(cbName) {
+      if (campos[cbName]) {
+        setCheckbox(cbName, true);
+        temAlgumMarcado = true;
+      }
+    });
+    if (temAlgumMarcado && typeof win.exameApresentado === 'function') {
+      try { win.exameApresentado(); } catch(_) {}
+    }
+    if (exApres && campos['voMedico.parRlExApres']) {
+      exApres.removeAttribute('disabled');
+      exApres.disabled = false;
+      exApres.value = campos['voMedico.parRlExApres'];
+      trigger(exApres);
+    }
+    
+    // 6. Quesitos
+    setRadio('fl_d_prev', campos['fl_d_prev'] || 'N');
+    setRadio('fl_limit', campos['fl_limit'] || 'N');
+    setRadio('fl_imped', campos['fl_imped'] || 'N');
+    
+    // 7. Parecer Médico-Pericial
+    var parecerVal = campos['voResult.voParecerFinal.flPfinal'] || 'F';
+    setRadio('voResult.voParecerFinal.flPfinal', parecerVal);
+    if (typeof win.escondeCampos === 'function') {
+      try { win.escondeCampos(parecerVal); } catch(_) {}
+    }
+    
+    // 8. Concessão (Dias, Início, CIDs)
+    setInput('input[name="voResult.voParecerFinal.qtDiasPm"]', campos['voResult.voParecerFinal.qtDiasPm']);
+    setInput('input[name="voResult.voParecerFinal.dtIniPm"]', campos['voResult.voParecerFinal.dtIniPm']);
+    
+    var cid1 = campos['voResult.voParecerFinal.cdCidPm'];
+    if (cid1) {
+      var inpCid1 = doc.querySelector('input[name="voResult.voParecerFinal.cdCidPm"]');
+      if (inpCid1) {
+        inpCid1.value = cid1;
+        trigger(inpCid1);
+        if (typeof win.carregaAjaxCid === 'function') {
+          try { win.carregaAjaxCid(inpCid1.name, 'descrCidx'); } catch(_) {}
+        }
+      }
+    }
+    setInput('input[name="voResult.voParecerFinal.nmCidPm"]', campos['voResult.voParecerFinal.nmCidPm']);
+    setInput('#descrCidx', campos['voResult.voParecerFinal.nmCidPm']);
+    
+    var cid2 = campos['voResult.voParecerFinal.cdCid2Pm'];
+    if (cid2) {
+      var inpCid2 = doc.querySelector('input[name="voResult.voParecerFinal.cdCid2Pm"]');
+      if (inpCid2) {
+        inpCid2.value = cid2;
+        trigger(inpCid2);
+        if (typeof win.carregaAjaxCid === 'function') {
+          try { win.carregaAjaxCid(inpCid2.name, 'descrCid2x'); } catch(_) {}
+        }
+      }
+    }
+    setInput('input[name="voResult.voParecerFinal.nmCid2Pm"]', campos['voResult.voParecerFinal.nmCid2Pm']);
+    setInput('#descrCid2x', campos['voResult.voParecerFinal.nmCid2Pm']);
+    
+    // 9. Rolar até o bloco geral para conferência do perito
+    var bg = doc.getElementById('blocoGeral') || doc.querySelector('fieldset');
+    if (bg) {
+      bg.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    
+    // 10. Alerta amigável reforçando que NÃO foi finalizado automaticamente
+    alert("✅ e-Sisla: Todos os campos do laudo foram preenchidos com sucesso!\\n\\n📋 A perícia NÃO foi finalizada automaticamente para que você possa analisar e conferir todos os campos antes de concluir.");
+  } catch(err) {
+    alert("❌ Erro ao preencher campos do e-Sisla: " + err.message);
+  }
+})();`;
+}
+
+async function copyEsislaJson(){
+    const text = document.getElementById('esislaText')?.value || '';
+    if (!text) return;
+    const jsonObj = gerarJsonEsisla(text, window.currentEsislaEnc);
+    const prettyJson = JSON.stringify(jsonObj, null, 2);
+    try {
+        await navigator.clipboard.writeText(prettyJson);
+    } catch {
+        const ta = document.createElement('textarea');
+        ta.value = prettyJson;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+    }
+    if (window.AmbientalUtils?.toast) {
+        AmbientalUtils.toast('Ficha em formato JSON copiada para a área de transferência!');
+    } else {
+        alert('Ficha em formato JSON copiada para a área de transferência!');
+    }
+}
+
+async function copyEsislaScript(){
+    const text = document.getElementById('esislaText')?.value || '';
+    if (!text) return;
+    const jsonObj = gerarJsonEsisla(text, window.currentEsislaEnc);
+    const scriptCode = gerarScriptAutoPreenchimentoEsisla(jsonObj);
+    try {
+        await navigator.clipboard.writeText(scriptCode);
+    } catch {
+        const ta = document.createElement('textarea');
+        ta.value = scriptCode;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+    }
+    if (window.AmbientalUtils?.toast) {
+        AmbientalUtils.toast('Script copiado! Abra o e-Sisla, tecle F12, vá na aba Console e aperte Ctrl+V.');
+    } else {
+        alert('Script copiado! Abra o e-Sisla, tecle F12, vá na aba Console e aperte Ctrl+V.');
+    }
+}
+
+function downloadEsislaJson(){
+    const text = document.getElementById('esislaText')?.value || '';
+    if (!text) return;
+    const jsonObj = gerarJsonEsisla(text, window.currentEsislaEnc);
+    const prettyJson = JSON.stringify(jsonObj, null, 2);
+    const blob = new Blob([prettyJson], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const proto = (jsonObj.protocolo || 'atendimento').replace(/[^a-zA-Z0-9_\-]/g, '_');
+    a.download = `Ficha-eSisla-${proto}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    if (window.AmbientalUtils?.toast) {
+        AmbientalUtils.toast('Download da ficha e-Sisla (.json) iniciado com sucesso!');
     }
 }
 

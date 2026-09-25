@@ -995,7 +995,7 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
 OUTROS CAMPOS — TRANSCRIÇÃO FIEL:
 - “Atestado/Relatório/Exames Complementares (Tipo-Data-Resultado)” padroniza a solicitação assistente no formato oficial:
   "CRM [crm_cro], solicita [dias_solicitados] dias de afastamento a partir de [data_documento], pelo CID [cid] – Relatório médico em anexo."
-  (Caso não haja relatório médico anexado, indicar conforme dados; se houver outros documentos registrados em documentos_complementares ou observacoes_documentos, relacioná-los de forma sucinta com Tipo-Data-Resultado).
+  (Caso não haja relatório médico anexado, indicar conforme dados; se houver outros documentos registrados em documentos_complementares, observacoes_documentos ou atestados adicionais em cids_secundarios, relacione-os também de forma sucinta com Tipo-Data-Resultado/Outros CIDs apresentados).
 - Pressão Arterial/Sistólica/Diastólica/Pulso usam somente valores explicitamente registrados.
 - “(*)Parecer Médico” e “(*) Parecer Final” reproduzem somente os valores já escolhidos:
   - Nº Dias: dias concedidos/solicitados
@@ -1088,10 +1088,25 @@ def _task_instruction(task: str, payload: dict[str, Any]) -> str:
         )
         tipo_exame = payload.get("exame_fisico_tipo") or "não informado"
 
+        cid_principal = payload.get("cid") or "não informado"
+        cids_sec = payload.get("cids_secundarios") or payload.get("cidsSecundarios") or []
+        cids_sec_list = []
+        for item in cids_sec:
+            if isinstance(item, dict):
+                c = (item.get("cid") or "").strip()
+                d = (item.get("descricao") or "").strip()
+                if c:
+                    cids_sec_list.append(f"{c} - {d}".strip(" -"))
+            elif isinstance(item, str) and item.strip():
+                cids_sec_list.append(item.strip())
+        cid_formatado = cid_principal
+        if cids_sec_list:
+            cid_formatado = f"{cid_principal} (Atestados adicionais/outros CIDs apresentados: {', '.join(cids_sec_list)})"
+
         prompt = TASK_PROMPTS[task].format(
             cargo=payload.get("cargo") or "não informado",
             idade=payload.get("idade") or "não informada",
-            cid=payload.get("cid") or "não informado",
+            cid=cid_formatado,
             doenca_motivo=payload.get("doenca_motivo") or "não informado",
             queixa_duracao=payload.get("queixa_duracao") or "não informada",
             tempo_funcao=payload.get("tempo_funcao") or "não informado",
@@ -1513,6 +1528,13 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
         "parecer": payload.get("parecer"),
         "justificativa": payload.get("justificativa") or a.get("justificativa"),
         "quesitos": (payload.get("quesitos") or [])[:3],
+        "cids_secundarios": (
+            payload.get("cids_secundarios")
+            or payload.get("cidsSecundarios")
+            or a.get("cids_secundarios")
+            or a.get("cidsSecundarios")
+            or []
+        ),
     }
 
 def _ai_result_response(result, endpoint, cached):

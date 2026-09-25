@@ -1695,7 +1695,7 @@ body:not(.mode-agil-active) #containerModoAgil {
             </div>
             <div class="field col-6">
               <label>Quando começou o tratamento?</label>
-              <input class="input" type="date" id="agilInicioTratamento" oninput="syncAgilField('inicioTratamento', this.value)">
+              <input class="input" type="text" id="agilInicioTratamento" placeholder="Ex: 2020 ou 15/03/2020" oninput="syncAgilField('inicioTratamento', this.value)">
             </div>
             <div class="field col-6">
               <label>Com que frequência realiza consultas?</label>
@@ -1788,6 +1788,14 @@ body:not(.mode-agil-active) #containerModoAgil {
               <input class="input" id="agilCid" placeholder="Digite o código ou nome da patologia (ex: F32, depressão, M54...)" autocomplete="off" oninput="onAgilCidInput(this.value)">
               <div id="agilCidBadge" class="cid-badge-pill" style="display:none;margin-top:6px"></div>
               <div id="agilCidSuggestions" class="cid-autocomplete-box"></div>
+              
+              <!-- Container de CIDs Adicionais / Outros Atestados (Modo Ágil) -->
+              <div id="agilSecondaryCidContainer" style="margin-top:10px;display:flex;flex-direction:column;gap:8px"></div>
+              <div style="margin-top:8px">
+                <button type="button" class="btn-secondary-action" onclick="addSecondaryCID()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;font-size:12px;font-weight:700;color:#0F3254;background:#F1F5F9;border:1px solid #CBD5E1;border-radius:6px;cursor:pointer;transition:all 0.2s" title="Adicionar outros atestados ou CIDs apresentados pelo servidor">
+                  <span style="font-size:14px;font-weight:800;color:#1B5E20">➕</span> Adicionar outro CID (Atestados adicionais)
+                </button>
+              </div>
             </div>
 
             <div class="field col-12">
@@ -2319,7 +2327,7 @@ body:not(.mode-agil-active) #containerModoAgil {
           <div class="field col-12 hidden" id="readaptadoPanel"><label>Quais atividades realiza atualmente?</label><textarea class="textarea" id="atividadesReadaptado" placeholder="Descreva as atividades atuais."></textarea></div>
 
           <div class="field col-12"><label class="required">Qual a doença está tratando que motivou o afastamento?</label><textarea class="textarea" id="doencaMotivo"></textarea></div>
-          <div class="field col-6"><label>Quando começou o tratamento?</label><input class="input" type="date" id="inicioTratamento"></div>
+          <div class="field col-6"><label>Quando começou o tratamento?</label><input class="input" type="text" id="inicioTratamento" placeholder="Ex: 2020 ou 15/03/2020" oninput="syncAgilField('inicioTratamento', this.value)"></div>
           <div class="field col-6"><label>Com que frequência realiza consultas?</label><input class="input" id="freqConsultas" placeholder="Ex.: semanal, mensal, conforme necessidade"></div>
           <div class="field col-12"><label class="required">Quais sintomas / limitações são referidos?</label><textarea class="textarea" id="sintomasLimitacao"></textarea></div>
         </div>
@@ -2424,6 +2432,13 @@ body:not(.mode-agil-active) #containerModoAgil {
         <button class="cid-chip" type="button" onclick="insertCIDText('justificativa')" title="Insere fundamentação técnica pericial na Etapa 8">⚖ Adicionar lembrete à Justificativa (Etapa 8)</button>
       </div>
     </div>
+  </div>
+  <!-- Container de CIDs Adicionais / Outros Atestados (Versão Estendida) -->
+  <div id="extSecondaryCidContainer" style="margin-top:10px;display:flex;flex-direction:column;gap:8px"></div>
+  <div style="margin-top:8px">
+    <button type="button" class="btn-secondary-action" onclick="addSecondaryCID()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;font-size:12px;font-weight:700;color:#0F3254;background:#F1F5F9;border:1px solid #CBD5E1;border-radius:6px;cursor:pointer;transition:all 0.2s" title="Adicionar outros atestados ou CIDs apresentados pelo servidor">
+      <span style="font-size:14px;font-weight:800;color:#1B5E20">➕</span> Adicionar outro CID (Atestados adicionais)
+    </button>
   </div>
 </div>
           <div class="field col-6"><label>Data do atestado ou relatório médico</label><input class="input" type="date" id="dataDocumento"></div>
@@ -2729,7 +2744,7 @@ const examItems = [
 
 const state = {
   current:1, atendimento:"", medico:"", capacidade:"", parecer:"", outrasDoencas:"Sim",
-  medications:[], conditions:[], quesitos:[], exam:{}, documentosComplementares:[], exameFisicoTipo:"", alteracoesClinicasExames:"", queixaDuracao:""
+  medications:[], conditions:[], quesitos:[], exam:{}, documentosComplementares:[], cidsSecundarios:[], exameFisicoTipo:"", alteracoesClinicasExames:"", queixaDuracao:""
 };
 
 function $(id){return document.getElementById(id)}
@@ -2754,9 +2769,17 @@ function generateId(){
   return `ATD-${y}-${n}`;
 }
 function formatDate(v){
-  if(!v)return "—";
-  const [y,m,d]=v.split("-");
-  return `${d}/${m}/${y}`;
+  if(!v) return "—";
+  const s = String(v).trim();
+  if(!s) return "—";
+  if(/^\d{4}$/.test(s)) return s; // Ano puro (ex: 2020)
+  if(s.includes("/")) return s; // Já formatado (dd/mm/aaaa)
+  const parts = s.split("-");
+  if(parts.length === 3) {
+    const [y,m,d] = parts;
+    return `${d}/${m}/${y}`;
+  }
+  return s;
 }
 $("logoHeader").src = LOGO_DATA;
 
@@ -3111,9 +3134,12 @@ async function copiarFichaEsislaRapida(){
     payload.antecedentes = histVal;
     payload.historico_pregresso = histVal;
     payload.historicoPregresso = histVal;
+    payload.cids_secundarios = state.cidsSecundarios || state.aux?.cidsSecundarios || [];
+    payload.cidsSecundarios = payload.cids_secundarios;
     if (!payload.aux) payload.aux = {};
     payload.aux.historicoPregresso = histVal;
     payload.aux.antecedentes = histVal;
+    payload.aux.cidsSecundarios = payload.cids_secundarios;
 
     const res = await AmbientalAuth.authFetch(`${getApiBase()}/api/ai/esisla`, {
       method: 'POST',
@@ -3355,6 +3381,8 @@ function getJustificativaContext(){
     cargo:v.cargo,
     idade:v.idade,
     cid:v.cid,
+    cids_secundarios:v.cidsSecundarios || state.cidsSecundarios || [],
+    cidsSecundarios:v.cidsSecundarios || state.cidsSecundarios || [],
     doenca_motivo:v.doencaMotivo,
     queixa_duracao:v.queixaDuracao,
     tempo_funcao:v.tempoCargo,
@@ -3673,6 +3701,7 @@ function syncState(){
 function normalizeLegacyYesNo(value){ const v=String(value??"").trim().toLowerCase(); if(v==="sim")return "Sim"; if(v==="não"||v==="nao")return "Não"; return ""; }
 function applyState(){
   state.medications=Array.isArray(state.medications)?state.medications:[]; state.conditions=Array.isArray(state.conditions)?state.conditions:[]; state.quesitos=Array.isArray(state.quesitos)?state.quesitos:[]; state.exam=state.exam&&typeof state.exam==="object"?state.exam:{}; state.documentosComplementares=Array.isArray(state.documentosComplementares)?state.documentosComplementares:[]; state.aux=state.aux&&typeof state.aux==="object"?state.aux:{};
+  state.cidsSecundarios=Array.isArray(state.cidsSecundarios)?state.cidsSecundarios:(Array.isArray(state.aux?.cidsSecundarios)?state.aux.cidsSecundarios:[]);
   state.limitacaoFuncional=normalizeLegacyYesNo(state.limitacaoFuncional||state.aux.limitacaoFuncional);
   state.limitacaoRol=normalizeLegacyYesNo(state.limitacaoRol||state.aux.limitacaoRol);
   state.readaptado=normalizeLegacyYesNo(state.readaptado||state.aux.readaptado);
@@ -3687,7 +3716,7 @@ function applyState(){
   $("exameFisicoDescricao") && ($("exameFisicoDescricao").value=state.exameFisicoDescricao||"");
   $("alteracoesClinicasExames") && ($("alteracoesClinicasExames").value=state.alteracoesClinicasExames||"");
   setRadio("readaptado",state.readaptado);setRadio("outrasDoencas",state.outrasDoencas);setRadio("alteracaoMed",state.alteracaoMed);setRadio("limitacaoFuncional",state.limitacaoFuncional);setRadio("limitacaoRol",state.limitacaoRol);setRadio("parecer",state.parecer);setRadio("capacidade",state.capacidade); $("psicoterapia").checked=!!state.psicoterapia;$("fisioterapia").checked=!!state.fisioterapia;
-  togglePanelsOnly(); updateLimitacaoStatus(); renderMedications();renderConditions();renderDocumentRecords();renderQuesitos();renderExam();renderParecerHint();applyFinalizedLock(); if($("cid").value)renderCIDAssist(findCID($("cid").value)||null); syncExtendedToAgil(); go(Math.min(9,Math.max(1,Number(state.current)||1)));
+  togglePanelsOnly(); updateLimitacaoStatus(); renderMedications();renderConditions();renderDocumentRecords();renderQuesitos();renderExam();renderSecondaryCIDs();renderParecerHint();applyFinalizedLock(); if($("cid").value)renderCIDAssist(findCID($("cid").value)||null); syncExtendedToAgil(); go(Math.min(9,Math.max(1,Number(state.current)||1)));
 }
 function togglePanelsOnly(){
   const readapVal = getRadio("readaptado") || getRadio("agilReadaptado");
@@ -4172,7 +4201,7 @@ function renderParecerHint(){
   $("parecerHint").textContent=p==="CONTRÁRIO"?"Parecer CONTRÁRIO selecionado. Garanta que a justificativa esteja preenchida e coerente com os achados.":p==="FAVORÁVEL"?"Parecer FAVORÁVEL selecionado. Garanta que a justificativa esteja preenchida e coerente com os achados.":"Selecione o parecer definido pelo médico.";
 }
 
-function values(){syncState();return {atendimento:state.atendimento,dataAtendimento:state.aux.dataAtd,horaInicio:state.aux.horaAtd,medicoResponsavel:state.medico,crmResponsavel:state.aux.crmResponsavel,nomePaciente:state.aux.nomePaciente,cpfPaciente:state.aux.cpfPaciente,cargo:state.aux.cargo,tempoCargo:state.aux.tempoCargo,unidadeTempo:state.aux.tempoUnidade,idade:state.aux.idade,readaptado:state.readaptado,atividadesReadaptado:state.aux.atividadesReadaptado,queixaDuracao:state.aux.queixaDuracao,doencaMotivo:state.aux.doencaMotivo,inicioTratamento:state.aux.inicioTratamento,frequenciaConsultas:state.aux.freqConsultas,sintomasLimitacao:state.aux.sintomasLimitacao,medicamentos:state.medications,alteracaoDosagem:state.alteracaoMed,dataAlteracaoMed:state.aux.dataAlteracaoMed,obsAlteracaoMed:state.aux.obsAlteracaoMed,psicoterapia:state.psicoterapia,fisioterapia:state.fisioterapia,obsTerapias:state.aux.obsTerapias,outrasDoencas:state.outrasDoencas,condicoes:state.conditions,historicoPregresso:state.aux.historicoPregresso,crmCro:state.aux.crmCro,cid:state.aux.cid,dataDocumento:state.aux.dataDocumento,diasSolicitados:state.aux.diasSolicitados,obsDocumentos:state.aux.obsDocumentos,documentosComplementares:state.documentosComplementares,exame:state.exam,exameFisicoTipo:state.exameFisicoTipo,exameFisicoDescricao:state.exameFisicoDescricao||state.aux.exameFisicoDescricao||"",pressaoSistolica:state.aux.pressaoSistolica||"",pressaoDiastolica:state.aux.pressaoDiastolica||"",pulso:state.aux.pulso||"",alteracoesClinicasExames:state.alteracoesClinicasExames,limitacaoFuncional:state.limitacaoFuncional,descLimitacao:state.aux.descLimitacao,limitacaoRol:state.limitacaoRol,atividadesComprometidas:state.aux.atividadesComprometidas,obsLimitacoes:state.aux.obsLimitacoes,quesitos:state.quesitos,capacidade:state.capacidade,justificativa:state.aux.justificativa,parecer:state.parecer,finalizado:!!state.finalizado,finalizadoEm:state.finalizadoEm||""};}
+function values(){syncState();return {atendimento:state.atendimento,dataAtendimento:state.aux.dataAtd,horaInicio:state.aux.horaAtd,medicoResponsavel:state.medico,crmResponsavel:state.aux.crmResponsavel,nomePaciente:state.aux.nomePaciente,cpfPaciente:state.aux.cpfPaciente,cargo:state.aux.cargo,tempoCargo:state.aux.tempoCargo,unidadeTempo:state.aux.tempoUnidade,idade:state.aux.idade,readaptado:state.readaptado,atividadesReadaptado:state.aux.atividadesReadaptado,queixaDuracao:state.aux.queixaDuracao,doencaMotivo:state.aux.doencaMotivo,inicioTratamento:state.aux.inicioTratamento,frequenciaConsultas:state.aux.freqConsultas,sintomasLimitacao:state.aux.sintomasLimitacao,medicamentos:state.medications,alteracaoDosagem:state.alteracaoMed,dataAlteracaoMed:state.aux.dataAlteracaoMed,obsAlteracaoMed:state.aux.obsAlteracaoMed,psicoterapia:state.psicoterapia,fisioterapia:state.fisioterapia,obsTerapias:state.aux.obsTerapias,outrasDoencas:state.outrasDoencas,condicoes:state.conditions,historicoPregresso:state.aux.historicoPregresso,crmCro:state.aux.crmCro,cid:state.aux.cid,cidsSecundarios:state.cidsSecundarios||[],dataDocumento:state.aux.dataDocumento,diasSolicitados:state.aux.diasSolicitados,obsDocumentos:state.aux.obsDocumentos,documentosComplementares:state.documentosComplementares,exame:state.exam,exameFisicoTipo:state.exameFisicoTipo,exameFisicoDescricao:state.exameFisicoDescricao||state.aux.exameFisicoDescricao||"",pressaoSistolica:state.aux.pressaoSistolica||"",pressaoDiastolica:state.aux.pressaoDiastolica||"",pulso:state.aux.pulso||"",alteracoesClinicasExames:state.alteracoesClinicasExames,limitacaoFuncional:state.limitacaoFuncional,descLimitacao:state.aux.descLimitacao,limitacaoRol:state.limitacaoRol,atividadesComprometidas:state.aux.atividadesComprometidas,obsLimitacoes:state.aux.obsLimitacoes,quesitos:state.quesitos,capacidade:state.capacidade,justificativa:state.aux.justificativa,parecer:state.parecer,finalizado:!!state.finalizado,finalizadoEm:state.finalizadoEm||""};}
 
 function missingFields(){return ValidationEngine.get().blocking;}
 function renderReview(){
@@ -4203,7 +4232,7 @@ function renderReview(){
     ]],
     ["Antecedentes / documentação",[
       ["Outras doenças",v.outrasDoencas],["Condições",v.condicoes.map(c=>`${c.nome} — ${c.tratamento}`).join("; ")], ["Antecedentes mórbidos",v.historicoPregresso],
-      ["CRM/CRO assistente",v.crmCro],["CID",v.cid],["Data documento",formatDate(v.dataDocumento)],["Dias",v.diasSolicitados]
+      ["CRM/CRO assistente",v.crmCro],["CID",v.cid + (v.cidsSecundarios && v.cidsSecundarios.length ? " (Outros CIDs: " + v.cidsSecundarios.map(s => typeof s === "object" ? `${s.cid}${s.descricao ? " - " + s.descricao : ""}` : s).join(", ") + ")" : "")],["Data documento",formatDate(v.dataDocumento)],["Dias",v.diasSolicitados]
     ]],
     ["Limitações",[
       ["Limitação funcional",v.limitacaoFuncional],["Descrição da limitação",v.descLimitacao],["Alterações clínicas / exames",v.alteracoesClinicasExames],["Limitação no Rol",v.limitacaoRol],["Atividades comprometidas",v.atividadesComprometidas],["Observações",v.obsLimitacoes]
@@ -4276,7 +4305,7 @@ function buildPrint(){
   const synthesis=[
     printField("Idade",v.idade),
     printField("Cargo",v.cargo),
-    printField("CID",v.cid),
+    printField("CID",v.cid + (v.cidsSecundarios && v.cidsSecundarios.length ? " (Outros CIDs: " + v.cidsSecundarios.map(s => typeof s === "object" ? `${s.cid}${s.descricao ? " - " + s.descricao : ""}` : s).join(", ") + ")" : "")),
     printField("Dias solicitados",v.diasSolicitados),
     printField("Capacidade laborativa",v.capacidade,{emphasis:true}),
     printField("Parecer",v.parecer,{emphasis:true})
@@ -5448,6 +5477,10 @@ function syncExtendedToAgil() {
   
   // Bloco 04 — Justificativa
   setVal("agilJustificativa", state.aux.justificativa || state.justificativa || $("justificativa")?.value || "");
+  if (Array.isArray(state.aux.cidsSecundarios) && (!state.cidsSecundarios || state.cidsSecundarios.length === 0)) {
+    state.cidsSecundarios = state.aux.cidsSecundarios;
+  }
+  renderSecondaryCIDs();
 }
 
 function syncAgilToExtended() {
@@ -5601,6 +5634,9 @@ function syncAgilToExtended() {
     state.aux.justificativa = just; state.justificativa = just;
     if ($("justificativa")) $("justificativa").value = just;
   }
+  if (Array.isArray(state.cidsSecundarios)) {
+    state.aux.cidsSecundarios = state.cidsSecundarios;
+  }
 }
 
 function syncAgilField(field, value) {
@@ -5608,7 +5644,10 @@ function syncAgilField(field, value) {
   state.aux[field] = value;
   state[field] = value;
   const el = $(field);
-  if (el) el.value = value;
+  if (el && el !== document.activeElement) el.value = value;
+  const agilKey = "agil" + field.charAt(0).toUpperCase() + field.slice(1);
+  const agilEl = $(agilKey);
+  if (agilEl && agilEl !== document.activeElement) agilEl.value = value;
   if (field === "pressaoSistolica" || field === "pressaoDiastolica" || field === "pulso") {
     if (typeof checkVitalsPadraoState === "function") checkVitalsPadraoState();
   }
@@ -5923,6 +5962,141 @@ function selectAgilCID(code) {
   
   autoSave();
   toast(`CID ${cleanCode}${found?.n ? ' (' + found.n + ')' : ''} selecionado.`);
+}
+
+/* =========================================================
+   CIDs SECUNDÁRIOS / ATESTADOS ADICIONAIS
+   ========================================================= */
+function renderSecondaryCIDs() {
+  if (!Array.isArray(state.cidsSecundarios)) state.cidsSecundarios = [];
+  const renderContainer = (containerId, prefix) => {
+    const container = $(containerId);
+    if (!container) return;
+    if (state.cidsSecundarios.length === 0) {
+      container.innerHTML = "";
+      return;
+    }
+    container.innerHTML = state.cidsSecundarios.map((item, idx) => {
+      const cidVal = typeof item === "object" ? (item.cid || "") : String(item || "");
+      const descVal = typeof item === "object" ? (item.descricao || "") : "";
+      const exact = findCID(cidVal);
+      const displayDesc = descVal || (exact ? exact.n : "");
+      return `
+        <div class="secondary-cid-item" style="border:1px solid #CBD5E1;background:#F8FAFC;border-radius:8px;padding:8px 12px;position:relative;margin-bottom:6px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:12px;font-weight:700;color:#0F3254;display:flex;align-items:center;gap:6px">
+              <span>📄</span> Outro CID / Atestado adicional #${idx + 1}
+            </span>
+            <button type="button" onclick="removeSecondaryCID(${idx})" style="background:none;border:none;color:#DC2626;cursor:pointer;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:4px;padding:3px 6px;border-radius:4px" title="Remover este CID">
+              ✕ Remover
+            </button>
+          </div>
+          <div style="position:relative">
+            <input class="input" style="font-size:13px;padding:7px 10px;background:#FFFFFF" placeholder="Digite o código ou nome da patologia (ex: M54.5, I10...)" value="${esc(cidVal)}" oninput="onSecondaryCIDInput(${idx}, this.value, '${prefix}')" onfocus="onSecondaryCIDInput(${idx}, this.value, '${prefix}')" autocomplete="off" id="${prefix}_cid_input_${idx}">
+            <div id="${prefix}_suggestions_${idx}" class="cid-autocomplete-box" style="position:absolute;top:100%;left:0;right:0;z-index:99;background:#fff;border:1px solid #CBD5E1;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.12);max-height:180px;overflow-y:auto;display:none"></div>
+          </div>
+          ${(cidVal && (exact || displayDesc)) ? `
+            <div class="cid-badge-pill" style="display:inline-flex;margin-top:6px;font-size:12px;padding:3px 8px;background:#EBF5FF;color:#1E40AF;border:1px solid #BFDBFE;border-radius:6px;font-weight:600">
+              <strong>${esc(cidVal.toUpperCase())}</strong>${displayDesc ? ` — ${esc(displayDesc)}` : ""}
+            </div>
+          ` : ""}
+        </div>
+      `;
+    }).join("");
+  };
+
+  renderContainer("agilSecondaryCidContainer", "agilSec");
+  renderContainer("extSecondaryCidContainer", "extSec");
+}
+
+function onSecondaryCIDInput(idx, val, prefix) {
+  if (!Array.isArray(state.cidsSecundarios)) state.cidsSecundarios = [];
+  if (!state.cidsSecundarios[idx]) state.cidsSecundarios[idx] = { cid: "", descricao: "" };
+  state.cidsSecundarios[idx].cid = val;
+  if (!state.aux) state.aux = {};
+  state.aux.cidsSecundarios = state.cidsSecundarios;
+
+  const v = normalizeCID(val);
+  const exact = findCID(v);
+  if (exact) {
+    state.cidsSecundarios[idx].cid = exact.c;
+    state.cidsSecundarios[idx].descricao = exact.n;
+  }
+
+  // Mirror text to the other container if rendered
+  const otherPrefix = prefix === "agilSec" ? "extSec" : "agilSec";
+  const otherInput = $(`${otherPrefix}_cid_input_${idx}`);
+  if (otherInput && otherInput !== document.activeElement) {
+    otherInput.value = val;
+  }
+
+  const box = $(`${prefix}_suggestions_${idx}`);
+  if (!box) {
+    autoSave();
+    return;
+  }
+
+  if (!v || v.length < 1) {
+    box.style.display = "none";
+    box.innerHTML = "";
+    autoSave();
+    return;
+  }
+
+  const results = cidLibrary.filter(x => x.c.toUpperCase().startsWith(v) || x.n.toUpperCase().includes(v)).slice(0, 8);
+  if (!results.length) {
+    box.style.display = "none";
+    box.innerHTML = "";
+  } else {
+    box.innerHTML = results.map(x => `
+      <div class="cid-option" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #F1F5F9;display:flex;align-items:center;gap:8px" onmousedown="selectSecondaryCID(${idx}, '${esc(x.c)}', '${esc(x.n)}')">
+        <span class="cid-code" style="font-weight:800;color:#0F3254;background:#E2E8F0;padding:2px 6px;border-radius:4px;font-size:11px">${esc(x.c)}</span>
+        <span style="flex:1">
+          <div style="font-weight:600;font-size:12px;color:#1E293B">${esc(x.n)}</div>
+          <div style="font-size:10px;color:#64748B">${esc(x.g)}</div>
+        </span>
+      </div>
+    `).join("");
+    box.style.display = "block";
+  }
+  autoSave();
+}
+
+function selectSecondaryCID(idx, code, name) {
+  if (!Array.isArray(state.cidsSecundarios)) state.cidsSecundarios = [];
+  if (!state.cidsSecundarios[idx]) state.cidsSecundarios[idx] = { cid: "", descricao: "" };
+  state.cidsSecundarios[idx].cid = code;
+  state.cidsSecundarios[idx].descricao = name;
+  if (!state.aux) state.aux = {};
+  state.aux.cidsSecundarios = state.cidsSecundarios;
+  renderSecondaryCIDs();
+  autoSave();
+  toast(`CID adicional ${code} adicionado.`);
+}
+
+function removeSecondaryCID(idx) {
+  if (Array.isArray(state.cidsSecundarios)) {
+    state.cidsSecundarios.splice(idx, 1);
+    if (!state.aux) state.aux = {};
+    state.aux.cidsSecundarios = state.cidsSecundarios;
+    renderSecondaryCIDs();
+    autoSave();
+    toast("CID adicional removido.");
+  }
+}
+
+function addSecondaryCID(code = "", desc = "") {
+  if (!Array.isArray(state.cidsSecundarios)) state.cidsSecundarios = [];
+  state.cidsSecundarios.push({ cid: code, descricao: desc });
+  if (!state.aux) state.aux = {};
+  state.aux.cidsSecundarios = state.cidsSecundarios;
+  renderSecondaryCIDs();
+  setTimeout(() => {
+    const newIdx = state.cidsSecundarios.length - 1;
+    const el = $(`agilSec_cid_input_${newIdx}`) || $(`extSec_cid_input_${newIdx}`);
+    if (el) el.focus();
+  }, 50);
+  autoSave();
 }
 
 function escolherExameMental(resultado) {

@@ -1012,6 +1012,95 @@ def test_ai_concurrency_limit_one_generation_per_cadastro():
     assert "Já existe uma geração de IA em andamento para este cadastro" in ATTENDANCE
 
 
+def test_inicio_tratamento_year_support():
+    # 1. HTML inputs allow entering year directly (type="text" instead of restrictive type="date")
+    assert '<input class="input" type="text" id="agilInicioTratamento" placeholder="Ex: 2020 ou 15/03/2020"' in ATTENDANCE
+    assert '<input class="input" type="text" id="inicioTratamento" placeholder="Ex: 2020 ou 15/03/2020"' in ATTENDANCE
+
+    # 2. formatDate handles 4-digit years like "2020" without undefined/undefined/2020
+    assert r'/^\d{4}$/.test(s)' in ATTENDANCE
+
+    # 3. Backend _minimal_ai_context preserves year
+    from app import _minimal_ai_context
+    ctx = _minimal_ai_context({
+        "atendimento": "ATD-2026-0001",
+        "inicio_tratamento": "2020"
+    })
+    assert ctx["inicio_tratamento"] == "2020"
+
+    ctx_aux = _minimal_ai_context({
+        "atendimento": "ATD-2026-0002",
+        "aux": {"inicioTratamento": "2019"}
+    })
+    assert ctx_aux["inicio_tratamento"] == "2019"
+
+
+def test_secondary_cid_feature_and_ai_prompt_integration():
+    # 1. HTML elements for Modo Ágil and Versão Estendida
+    assert 'id="agilSecondaryCidContainer"' in ATTENDANCE
+    assert 'id="extSecondaryCidContainer"' in ATTENDANCE
+    assert 'onclick="addSecondaryCID()"' in ATTENDANCE
+    assert 'Adicionar outro CID (Atestados adicionais)' in ATTENDANCE
+
+    # 2. JS functions present in HTML
+    assert 'function renderSecondaryCIDs()' in ATTENDANCE
+    assert 'function onSecondaryCIDInput(' in ATTENDANCE
+    assert 'function selectSecondaryCID(' in ATTENDANCE
+    assert 'function removeSecondaryCID(' in ATTENDANCE
+    assert 'function addSecondaryCID(' in ATTENDANCE
+
+    # 3. Backend _minimal_ai_context extracts cids_secundarios
+    from app import _minimal_ai_context, _task_instruction
+    ctx1 = _minimal_ai_context({
+        "cid": "F32.1",
+        "cids_secundarios": [
+            {"cid": "M54.5", "descricao": "Lumbago com ciática"},
+            {"cid": "I10", "descricao": "Hipertensão essencial"}
+        ]
+    })
+    assert len(ctx1["cids_secundarios"]) == 2
+    assert ctx1["cids_secundarios"][0]["cid"] == "M54.5"
+
+    ctx2 = _minimal_ai_context({
+        "cid": "F32.1",
+        "aux": {
+            "cidsSecundarios": ["M54.5 - Lumbago", "G44"]
+        }
+    })
+    assert ctx2["cids_secundarios"] == ["M54.5 - Lumbago", "G44"]
+
+    # 4. _task_instruction formats CID with secondary CIDs for AI justification
+    prompt_with_sec = _task_instruction("justificativa", {
+        "cargo": "Professor",
+        "idade": "45",
+        "cid": "F32.1",
+        "cids_secundarios": [
+            {"cid": "M54.5", "descricao": "Lumbago com ciática"},
+            {"cid": "I10", "descricao": "Hipertensão essencial"}
+        ],
+        "doenca_motivo": "Transtorno depressivo",
+        "queixa_duracao": "6 meses",
+        "exame_fisico_tipo": "Exame Mental",
+        "parecer": "FAVORÁVEL",
+        "capacidade": "Temporariamente prejudicada"
+    })
+    assert "- CID: F32.1 (Atestados adicionais/outros CIDs apresentados: M54.5 - Lumbago com ciática, I10 - Hipertensão essencial)" in prompt_with_sec
+
+    # 5. _task_instruction without secondary CIDs remains standard
+    prompt_single = _task_instruction("justificativa", {
+        "cargo": "Professor",
+        "idade": "45",
+        "cid": "F32.1",
+        "doenca_motivo": "Transtorno depressivo",
+        "queixa_duracao": "6 meses",
+        "exame_fisico_tipo": "Exame Mental",
+        "parecer": "FAVORÁVEL",
+        "capacidade": "Temporariamente prejudicada"
+    })
+    assert "- CID: F32.1\n" in prompt_single
+
+
+
 
 
 

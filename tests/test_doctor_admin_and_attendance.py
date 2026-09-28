@@ -1498,4 +1498,81 @@ def test_gestao_syntax_and_login_session_ux():
     assert 'if(body)body.innerHTML=detail(full);' in GESTAO_ATENDIMENTOS
 
 
+def test_esisla_prompt_dates_and_distinct_exam_fields():
+    """
+    Valida a separação estrita dos campos:
+    - (*)Exame Físico Geral
+    - Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares
+    E a padronização das datas para o formato oficial e-SISLA (DD/MM/AAAA, sem ISO ou 2026-00-00).
+    """
+    from app import _clean_esisla_text, _format_date_br, _minimal_ai_context, TASK_PROMPTS
+
+    # 1. Prompt e-SISLA possui Item 3 e Item 4 separados e regras de data DD/MM/AAAA
+    esisla_prompt = TASK_PROMPTS["esisla"]
+    assert '3. “(*)Exame Físico Geral”' in esisla_prompt
+    assert '4. “Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:”' in esisla_prompt
+    assert 'NUNCA DEVEM VIR COM TEXTOS IDÊNTICOS' in esisla_prompt
+    assert 'DD/MM/AAAA' in esisla_prompt
+
+    # 2. _format_date_br trata datas ISO e com zeros
+    assert _format_date_br("2026-00-00") == "01/01/2026"
+    assert _format_date_br("2026-09-25") == "25/09/2026"
+    assert _format_date_br("2026-09-25 14:30:00") == "25/09/2026 14:30"
+
+    # 3. _clean_esisla_text normaliza datas ISO ou 2026-00-00
+    sample_text = (
+        "Registro da perícia Médica para Licença\n\n"
+        "(*) Queixa e Duração:\n"
+        "Início dos sintomas em 2026-00-00 e consulta em 2026-09-25.\n\n"
+        "Antecedentes Mórbidos:\n"
+        "Nega comorbidades.\n\n"
+        "Atestado/Relatório/Exames Complementares (Tipo-Data-Resultado):\n"
+        "Atestado em 2026-09-20.\n\n"
+        "Pressão Arterial\nSistólica (mmHg): 120\nDiastólica (mmHg): 80\nPulso (bpm): 72\n\n"
+        "Altura: 1.70\nPeso: 70\n\n"
+        "(*)Exame Físico Geral\n"
+        "Bom estado geral, eupneico, afebril, acianótico, anictérico.\n\n"
+        "Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:\n"
+        "Bom estado geral, eupneico, afebril, acianótico, anictérico.\n\n"
+        "(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):\n"
+        "Sem limitações funcionais.\n\n"
+        "(*)Parecer Médico\n\n"
+        "Nº Dias: 5\n"
+        "Data Início: 25/09/2026\n"
+        "CID 10: M54.5\n"
+        "Descrição: Dorsalgia\n"
+        "Médico Perito: Dr. Teste\n"
+        "CRM: 123456\n"
+        "Dt/Hr Perícia: 25/09/2026 10:00\n\n"
+        "(*)Resposta aos quesitos\n"
+        "1) Não\n2) Não\n3) Não"
+    )
+    cleaned = _clean_esisla_text(sample_text)
+    # As datas ISO devem ter sido convertidas
+    assert "2026-00-00" not in cleaned
+    assert "01/01/2026" in cleaned
+    assert "2026-09-25" not in cleaned
+    assert "25/09/2026" in cleaned
+    # Os campos idênticos devem ter sido desacoplados
+    assert "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial." in cleaned
+
+    # 4. _minimal_ai_context desvincula alteracoes_clinicas_exames de exame_fisico_descricao
+    payload_dup = {
+        "exame_fisico_descricao": "Achados clínicos periciais normais",
+        "alteracoes_clinicas_exames": "Achados clínicos periciais normais",
+        "documentos_complementares": [],
+    }
+    ctx = _minimal_ai_context(payload_dup)
+    assert ctx["exame_fisico_descricao"] == "Achados clínicos periciais normais"
+    assert ctx["alteracoes_clinicas_exames"] == ""
+
+    # 5. Frontend: desacoplamento nos manipuladores de exame físico e mental
+    assert 'state.alteracoesClinicasExames = descFinalOsteo' not in ATTENDANCE
+    assert 'state.alteracoesClinicasExames = descOsteoNormal' not in ATTENDANCE
+    assert 'state.alteracoesClinicasExames = descMentalNormal' not in ATTENDANCE
+    assert 'state.alteracoesClinicasExames = descMentalAlterado' not in ATTENDANCE
+    assert 'state.alteracoesClinicasExames = novoTexto' not in ATTENDANCE
+    assert '"Exame Físico Geral — achados observados":"exameFisicoDescricao"' in ATTENDANCE
+
+
 

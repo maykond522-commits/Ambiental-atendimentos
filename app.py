@@ -59,7 +59,7 @@ else:
     # Em produção, a aplicação deve receber CORS_ORIGINS explicitamente.
     ALLOWED_ORIGINS = []
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
-ESISLA_PROMPT_VERSION = "esisla-v6-altura-peso"
+ESISLA_PROMPT_VERSION = "esisla-v7-datas-exames-distintos"
 GEMINI_FALLBACK_MODELS = [
     m.strip() for m in os.getenv("GEMINI_FALLBACK_MODELS", "gemini-3.5-flash-lite,gemini-3.5-flash").split(",")
     if m.strip() and m.strip() != GEMINI_MODEL
@@ -945,7 +945,7 @@ DADOS-CHAVE DO ATENDIMENTO:
     "esisla": """
 TAREFA: GERAR UMA FICHA E-SISLA A PARTIR DOS DADOS REGISTRADOS NO QUESTIONÁRIO DO ATENDIMENTO.
 
-OBJETIVO: organizar e REESCREVER, de forma clínica, objetiva e natural, somente os fatos já registrados, preenchendo os cinco campos narrativos abaixo com redação profissional e estrita aderência ao padrão pericial oficial DPME / Programa de Melhoria Contínua. Use EXCLUSIVAMENTE informações presentes no questionário e no contexto do atendimento fornecido.
+OBJETIVO: organizar e REESCREVER, de forma clínica, objetiva e natural, somente os fatos já registrados, preenchendo os campos narrativos abaixo com redação profissional e estrita aderência ao padrão pericial oficial DPME / Programa de Melhoria Contínua. Use EXCLUSIVAMENTE informações presentes no questionário e no contexto do atendimento fornecido.
 
 REGRA CENTRAL — ZERO INFORMAÇÃO NOVA:
 - NÃO invente, complete, suponha, interprete ou deduza informações ausentes.
@@ -959,7 +959,12 @@ REGRA CENTRAL — ZERO INFORMAÇÃO NOVA:
 - NUNCA use colchetes como marcadores de preenchimento no texto final da ficha gerada.
 - REGRA TERMINOLÓGICA OBRIGATÓRIA: NUNCA utilize o termo "Paciente" ou "paciente". Utilize SEMPRE "Servidor" ou "Periciado" (ou "servidor" / "periciado", ex.: "Servidor de X anos...", "ao servidor", "o periciado"). O termo "Paciente" é terminantemente proibido em qualquer parte da ficha.
 
-REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
+REGRA MANDATÓRIA DE DATAS NO PADRÃO OFICIAL E-SISLA (DD/MM/AAAA):
+- TODAS as datas mencionadas em QUALQUER parte da ficha e-SISLA (inclusive em Data Início, Dt/Hr Perícia, Data P.F., datas de atestados, relatórios e exames complementares) DEVEM OBRIGATORIAMENTE SER FORMATADAS NO PADRÃO BRASILEIRO OFICIAL: DD/MM/AAAA (ex.: 25/09/2026).
+- Para datas com horário (Dt/Hr Perícia), use o formato: DD/MM/AAAA HH:MM (ex.: 25/09/2026 14:16).
+- É TERMINANTEMENTE PROIBIDO gerar datas no formato ISO (AAAA-MM-DD, ex.: 2026-09-25) ou formatos contendo zeros como 2026-00-00. Converta sempre e rigorosamente para DD/MM/AAAA.
+
+REDAÇÃO INTELIGENTE DOS CAMPOS NARRATIVOS:
 
 1. “(*) Queixa e Duração”
    Reescreva e sintetize em parágrafo único, fluido e coeso, integrando os dados clínicos e ocupacionais na ordem padronizada dos 11 itens do Programa de Melhoria Contínua:
@@ -989,15 +994,25 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
    "Hipertenso e diabético há 5 anos, em tratamento medicamentoso. Apendicectomia há 10 anos. Nega tabagismo, etilismo ou uso de substâncias ilícitas. Nega histórico de neoplasias."
    Consolide somente outras_doencas, condicoes, antecedentes e historico_pregresso. Pode eliminar repetição e organizar o conteúdo quando isso melhora a leitura, mas não introduza condições, diagnósticos ou tratamentos não registrados.
 
-3. “(*)Exame Físico Geral” e “Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares”
-   Redija usando exclusivamente exame_fisico_tipo, exame_fisico_descricao e os valores de pressão/pulso/altura/peso expressamente registrados. Reorganize a apresentação dos achados direcionando para a patologia em questão:
-   - Para patologia Mental / Psiquiátrica (CID F): estruture os achados psíquicos descritos: postura e acompanhamento (descrever se veio acompanhado ou desacompanhado, postura na sala de espera e durante o atendimento), orientação (tempo e espaço), aparência física e higiene, fluxo de pensamento (lentificado, acelerado, coerente, prolixo), diálogo (espontâneo, colaborativo, lentificado), psicomotricidade, humor e afeto, volição, pragmatismo (capacidade de realizar atividades rotineiras) e presença ou ausência de ideação e delírios relatados.
-   - Para patologia Ortopédica / Físico-funcional: estruture os achados físicos descritos: entrada e inspeção dinâmica (marcha, uso de órteses), fácies de dor, cicatrizes cirúrgicas, trofismo muscular, mobilidade articular (amplitude de movimento ativo e passivo), força muscular (grau 5/5), presença de contraturas musculares, sensibilidade e reflexos tendinosos profundos relatados.
-   - Em “Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares”, organize somente alteracoes_clinicas_exames, documentos_complementares e observacoes_documentos. Pode unir itens relacionados do próprio questionário para melhorar a leitura, sem interpretar resultados.
-   - Não crie normalidade, negatividade, estado geral ou achados não escritos.
-   - Registre nos campos próprios de Pressão Arterial (Sistólica, Diastólica), Pulso, Altura e Peso exclusivamente os valores expressamente registrados em pressao_sistolica, pressao_diastolica, pulso, altura e peso. Se não registrados, DEIXE O VALOR EM BRANCO.
+3. “(*)Exame Físico Geral”
+   ESTE CAMPO É EXCLUSIVO PARA O EXAME FÍSICO / MENTAL DIRETO REALIZADO PELO MÉDICO PERITO NO ATO PERICIAL:
+   - Redija a avaliação pericial direta utilizando estritamente exame_fisico_tipo, exame_fisico_descricao, area_exame_clinico e resultado_avaliacao:
+     * Para patologia Mental / Psiquiátrica (CID F): estruture os achados psíquicos objetivos observados pelo perito: postura e acompanhamento (descrever se veio acompanhado ou desacompanhado, postura na sala de espera e durante o atendimento), orientação temporoespacial, aparência física e cuidados de higiene, fluxo e curso do pensamento, linguagem e diálogo (espontâneo, colaborativo), psicomotricidade, humor e afeto, volição, pragmatismo e presença ou ausência de ideação/delírios relatados.
+     * Para patologia Ortopédica / Físico-funcional: estruture os achados físicos objetivos periciais: inspeção dinâmica e marcha, fácies de dor, cicatrizes, trofismo muscular, amplitude de movimento articular ativo e passivo, força muscular (grau 0 a 5), presença de contraturas musculares, sensibilidade e reflexos tendinosos profundos relatados.
+     * Para Outros tipos de exame: integre a área avaliada (area_exame_clinico) e o resultado (resultado_avaliacao: Normal ou Alterado) com os achados clínicos descritos.
+   - NUNCA descreva exames de imagem ou laboratoriais trazidos pelo servidor neste campo.
+   - NUNCA copie para este campo o texto de exames complementares.
 
-4. “(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)”
+4. “Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:”
+   ESTE CAMPO É EXCLUSIVAMENTE DESTINADO AO RELATO DOS EXAMES COMPLEMENTARES E LAUDOS APRESENTADOS PELO SERVIDOR:
+   - Organize os exames complementares (ressonância magnética, tomografia, radiografia, ultrassonografia, eletroneuromiografia, exames laboratoriais, relatórios médicos de especialistas com laudo de exame) presentes em documentos_complementares, alteracoes_clinicas_exames e observacoes_documentos.
+   - Para cada exame apresentado, indique sempre: Tipo de Exame, Data de Realização (OBRIGATORIAMENTE no padrão DD/MM/AAAA) e Conclusão / Achados do Laudo (ex.: "Ressonância Magnética de coluna lombar (15/08/2026): protrusão discal L4-L5 com compressão de raiz nervosa e discopatia degenerativa em L5-S1").
+   - SE O SERVIDOR NÃO APRESENTOU EXAMES COMPLEMENTARES DE IMAGEM OU LABORATORIAIS:
+     Registre formalmente: "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial."
+   - ATENÇÃO CRÍTICA — DIFERENCIAÇÃO OBRIGATÓRIA:
+     Os campos “(*)Exame Físico Geral” e “Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:” NUNCA DEVEM VIR COM TEXTOS IDÊNTICOS! O Exame Físico Geral é a avaliação clínica direta do perito; este campo é o relato documental dos exames de imagem/laboratório trazidos pelo servidor. É terminantemente proibido duplicar o conteúdo entre esses dois campos.
+
+5. “(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)”
    Relacione expressamente as limitações físicas ou mentais com as atividades do ROL do servidor (cargo), reunindo desc_limitacao, limitacao_funcional, limitacao_rol, atividades_comprometidas, sintomas_limitacoes e obs_limitacoes:
    - Se Parecer FAVORÁVEL (ou capacidade laborativa temporariamente prejudicada): adote a fórmula padrão oficial:
      "Apresenta limitações [físicas/mentais] funcionais temporárias para [atividades/limitações registradas], atividades estas constantes no Rol de Atividades do cargo de [cargo]."
@@ -1007,7 +1022,7 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
      (Exemplo de referência oficial: "Do ponto de vista médico não se observa limitações físicas funcionais incapacitantes para as atribuições do cargo de professor, constantes no rol de atividades.")
    - É permitido reduzir repetição e formar uma redação única, mas “Sim” sozinho não autoriza criar uma limitação específica.
 
-5. “(*)Justificativa Parecer Médico”
+6. “(*)Justificativa Parecer Médico”
    Apresente a conclusão pericial fundamentada conforme o padrão do Programa de Melhoria Contínua:
    - Se Parecer FAVORÁVEL:
      "Capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol, em razão de limitações na esfera [psicoemocional/osteomuscular] que compromete para [atividades comprometidas informadas]."
@@ -1022,17 +1037,17 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
 
 OUTROS CAMPOS — TRANSCRIÇÃO FIEL:
 - “Atestado/Relatório/Exames Complementares (Tipo-Data-Resultado)” padroniza a solicitação assistente no formato oficial:
-  "CRM [crm_cro], solicita [dias_solicitados] dias de afastamento a partir de [data_documento], pelo CID [cid] – Relatório médico em anexo."
-  (Caso não haja relatório médico anexado, indicar conforme dados; se houver outros documentos registrados em documentos_complementares, observacoes_documentos ou atestados adicionais em cids_secundarios, relacione-os também de forma sucinta com Tipo-Data-Resultado/Outros CIDs apresentados).
+  "CRM [crm_cro], solicita [dias_solicitados] dias de afastamento a partir de [data_documento no formato DD/MM/AAAA], pelo CID [cid] – Relatório médico em anexo."
+  (Caso não haja relatório médico anexado, indicar conforme dados; se houver outros documentos registrados em documentos_complementares, observacoes_documentos ou atestados adicionais em cids_secundarios, relacione-os também de forma sucinta com Tipo-Data(DD/MM/AAAA)-Resultado/Outros CIDs apresentados).
 - Pressão Arterial/Sistólica/Diastólica/Pulso/Altura/Peso usam somente valores explicitamente registrados.
 - “(*)Parecer Médico” e “(*) Parecer Final” reproduzem somente os valores já escolhidos:
   - Nº Dias: dias concedidos/solicitados
-  - Data Início: data de início da licença/perícia
+  - Data Início: data no padrão oficial DD/MM/AAAA
   - CID 10: código CID informado
   - Descrição: motivo/diagnóstico informado
   - Médico Perito: médico responsável pelo atendimento
   - CRM: CRM do médico perito responsável
-  - Dt/Hr Perícia: data e hora do atendimento pericial
+  - Dt/Hr Perícia: data e hora no padrão oficial DD/MM/AAAA HH:MM
 - “(*)Resposta aos quesitos” reproduz somente as respostas efetivamente registradas (Sim / Não / Deixar em branco se não respondido):
   1) Há doença(s) ou sequela(s) de doença(s) prévia(s)?
   2) A(s) doença(s) ou sequela(s) de doença(s) prévia(s) gera(m) limitação(ões) para periciando(a)?
@@ -1449,11 +1464,51 @@ def _generate_cached(endpoint: str, payload: dict[str, Any], instruction: str, s
     cur2.close()
     return result, False, context_hash
 
+def _format_date_br(val: Any) -> str:
+    if not val:
+        return ""
+    s = str(val).strip()
+    m = re.match(r"^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}:\d{2}(?::\d{2})?))?", s)
+    if m:
+        ano, mes, dia = m.group(1), m.group(2), m.group(3)
+        if mes == "00": mes = "01"
+        if dia == "00": dia = "01"
+        hora = m.group(4)
+        if hora:
+            return f"{dia}/{mes}/{ano} {hora[:5]}"
+        return f"{dia}/{mes}/{ano}"
+    return s
+
 def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
     a = payload.get("aux") or {}
+
+    raw_docs = payload.get("documentos_complementares") or payload.get("documentosComplementares") or []
+    sanitized_docs = []
+    for item in raw_docs:
+        if isinstance(item, dict):
+            item_copy = dict(item)
+            if "data" in item_copy:
+                item_copy["data"] = _format_date_br(item_copy["data"])
+            sanitized_docs.append(item_copy)
+        elif item:
+            sanitized_docs.append(item)
+
+    ex_fisico = str(payload.get("exame_fisico_descricao") or payload.get("exameFisicoDescricao") or a.get("exameFisicoDescricao") or "").strip()
+    alt_exames = str(payload.get("alteracoes_clinicas_exames") or payload.get("alteracoesClinicasExames") or "").strip()
+    obs_docs = str(payload.get("observacoes_documentos") or a.get("obsDocumentos") or "").strip()
+
+    # Se alteracoes_clinicas_exames estiver idêntico a exame_fisico_descricao (por espelhamento antigo do frontend),
+    # desvincula os dois para que a IA relate exames complementares autênticos a partir dos documentos:
+    if alt_exames and ex_fisico and alt_exames == ex_fisico:
+        if sanitized_docs or obs_docs:
+            docs_summary = "; ".join(f"{d.get('tipo', 'Exame')} ({d.get('data', '')}): {d.get('resultado', '')}" for d in sanitized_docs if isinstance(d, dict))
+            alt_exames = (obs_docs + " " + docs_summary).strip()
+        else:
+            alt_exames = ""
+
     return {
         "atendimento": payload.get("atendimento"),
-        "data_atendimento": payload.get("data_atendimento") or a.get("dataAtd"),
+        "data_atendimento": _format_date_br(payload.get("data_atendimento") or a.get("dataAtd")),
         "hora_atendimento": payload.get("hora_atendimento") or a.get("horaAtd"),
         "medico": payload.get("medico") or payload.get("medicoResponsavel"),
         "crm_responsavel": payload.get("crm_responsavel") or a.get("crmResponsavel"),
@@ -1472,7 +1527,7 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
         "sintomas_limitacoes": payload.get("sintomas_limitacoes") or a.get("sintomasLimitacao"),
         "medicamentos": payload.get("medicamentos") or payload.get("medications") or [],
         "alteracao_dosagem": payload.get("alteracao_dosagem") or payload.get("alteracaoDosagem") or payload.get("alteracaoMed"),
-        "data_alteracao_med": payload.get("data_alteracao_med") or a.get("dataAlteracaoMed"),
+        "data_alteracao_med": _format_date_br(payload.get("data_alteracao_med") or a.get("dataAlteracaoMed")),
         "obs_alteracao_med": payload.get("obs_alteracao_med") or a.get("obsAlteracaoMed"),
         "psicoterapia": bool(payload.get("psicoterapia", False)),
         "fisioterapia": bool(payload.get("fisioterapia", False)),
@@ -1500,9 +1555,9 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
             or a.get("agilHistoricoPregresso")
         ),
         "crm_cro": payload.get("crm_cro") or payload.get("crmCro") or a.get("crmCro"),
-        "data_documento": payload.get("data_documento") or payload.get("dataDocumento") or a.get("dataDocumento"),
-        "observacoes_documentos": payload.get("observacoes_documentos") or a.get("obsDocumentos"),
-        "documentos_complementares": payload.get("documentos_complementares") or payload.get("documentosComplementares") or [],
+        "data_documento": _format_date_br(payload.get("data_documento") or payload.get("dataDocumento") or a.get("dataDocumento")),
+        "observacoes_documentos": obs_docs,
+        "documentos_complementares": sanitized_docs,
         "exame_fisico_tipo": payload.get("exame_fisico_tipo") or payload.get("exameFisicoTipo"),
         "outros_subtipo": (
             payload.get("outros_subtipo")
@@ -1544,13 +1599,13 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
             or a.get("outros_resultado")
             or a.get("outrosResultado")
         ),
-        "exame_fisico_descricao": payload.get("exame_fisico_descricao") or payload.get("exameFisicoDescricao") or a.get("exameFisicoDescricao"),
+        "exame_fisico_descricao": ex_fisico,
         "pressao_sistolica": payload.get("pressao_sistolica") or payload.get("pressaoSistolica") or a.get("pressaoSistolica"),
         "pressao_diastolica": payload.get("pressao_diastolica") or payload.get("pressaoDiastolica") or a.get("pressaoDiastolica"),
         "pulso": payload.get("pulso") or a.get("pulso"),
         "altura": payload.get("altura") or payload.get("biotipoAltura") or a.get("altura") or a.get("biotipoAltura") or "",
         "peso": payload.get("peso") or payload.get("biotipoPeso") or a.get("peso") or a.get("biotipoPeso") or "",
-        "alteracoes_clinicas_exames": payload.get("alteracoes_clinicas_exames") or payload.get("alteracoesClinicasExames"),
+        "alteracoes_clinicas_exames": alt_exames,
         "exame": payload.get("exame") or {},
         "limitacao_funcional": payload.get("limitacao_funcional") or payload.get("limitacaoFuncional"),
         "limitacao_rol": payload.get("limitacao_rol") or payload.get("limitacaoRol"),
@@ -1569,6 +1624,8 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
             or []
         ),
     }
+
+
 
 def _ai_result_response(result, endpoint, cached):
     body = result.model_dump()
@@ -1852,7 +1909,34 @@ def _clean_esisla_text(text: str) -> str:
     text = re.sub(r"\bPacientes\b", "Servidores", text)
     text = re.sub(r"\bpacientes\b", "servidores", text)
 
+    # Ajuste e conversão de todas as datas ISO ou com zeros (ex.: 2026-00-00, 2026-09-25) para padrão oficial e-SISLA (DD/MM/AAAA)
+    def _iso_to_br(m):
+        ano, mes, dia = m.group(1), m.group(2), m.group(3)
+        if mes == "00": mes = "01"
+        if dia == "00": dia = "01"
+        return f"{dia}/{mes}/{ano}"
+
+    text = re.sub(r"\b(\d{4})-(\d{2})-(\d{2})\b", _iso_to_br, text)
+    text = re.sub(r"\b00/00/(\d{4})\b", r"01/01/\1", text)
+    text = re.sub(r"\b00/(\d{2})/(\d{4})\b", r"01/\1/\2", text)
+    text = re.sub(r"\b(\d{2})/00/(\d{4})\b", r"\1/01/\2", text)
+
+    # Desacoplamento de segurança: se "Exame Físico Geral" e "Descrição das Alterações Clínicas... e Relato dos Exames Complementares" vierem idênticos
+    pattern = re.compile(
+        r"(\(\*\)\s*Exame Físico Geral:?\s*\n)(.*?)(\n\s*Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:?\s*\n)(.*?)(\n\s*\(\*\)\s*Descrição da\(s\) Limitação)",
+        re.DOTALL | re.IGNORECASE
+    )
+    m_dup = pattern.search(text)
+    if m_dup:
+        h1, b1, h2, b2, h3 = m_dup.groups()
+        b1_strip = b1.strip()
+        b2_strip = b2.strip()
+        if b1_strip and b2_strip and (b1_strip == b2_strip or (len(b1_strip) >= 15 and b2_strip.startswith(b1_strip))):
+            fallback_exames = "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial."
+            text = text[:m_dup.start()] + h1 + b1 + h2 + fallback_exames + "\n\n" + h3 + text[m_dup.end():]
+
     return text
+
 
 
 @app.post("/api/ai/esisla")

@@ -4671,7 +4671,7 @@ const ValidationEngine={
       if(!ok)by[step].push(label);
     });
     if (String(state.exameFisicoTipo || "").trim().toLowerCase() === "outros") {
-      const descExame = state.exameFisicoDescricao || state.alteracoesClinicasExames || "";
+      const descExame = state.exameFisicoDescricao || $("exameFisicoDescricao")?.value || "";
       if (!String(descExame).trim()) {
         by[5].push("Exame Físico Geral — achados observados");
       }
@@ -4708,7 +4708,8 @@ const ValidationEngine={
       { nome: "Queixa e Duração", texto: state.aux?.doencaMotivo || state.doencaMotivo },
       { nome: "Antecedentes Mórbidos", texto: state.aux?.historicoPregresso || state.historicoPregresso },
       { nome: "Atestado / Relatórios", texto: state.aux?.obsDocumentos || $("obsDocumentos")?.value },
-      { nome: "Exame Físico / Achados", texto: state.exameFisicoDescricao || state.alteracoesClinicasExames },
+      { nome: "Exame Físico Geral", texto: state.exameFisicoDescricao || $("exameFisicoDescricao")?.value },
+      { nome: "Alterações Clínicas / Exames Complementares", texto: state.alteracoesClinicasExames || $("alteracoesClinicasExames")?.value },
       { nome: "Limitações / Atividades", texto: state.aux?.sintomasLimitacao || state.aux?.atividadesComprometidas || state.aux?.descLimitacao },
       { nome: "Justificativa Parecer Final", texto: state.aux?.justificativa || state.justificativa }
     ];
@@ -4752,7 +4753,8 @@ function focusValidationItem(step,label){
     "Início do tratamento":"inicioTratamento",
     "Sintomas / limitações referidos":"sintomasLimitacao",
     "Tipo de exame físico/mental":"exameFisicoTipo",
-    "Exame Físico Geral — achados observados":"alteracoesClinicasExames",
+    "Exame Físico Geral — achados observados":"exameFisicoDescricao",
+    "Alterações clínicas / exames complementares":"alteracoesClinicasExames",
     "Limitação funcional":"limitacaoFuncional",
     "Limitação das atividades do Rol":"limitacaoRol",
     "Capacidade laborativa":"capacidade",
@@ -4811,7 +4813,7 @@ function renderReview(){
     ]],
     ["Exame físico/mental",[
       ["Categoria selecionada",v.exameFisicoTipo||"—"],
-      ["Descrição",v.alteracoesClinicasExames||"—"]
+      ["Descrição",v.exameFisicoDescricao||v.alteracoesClinicasExames||"—"]
     ]],
     ["Resposta aos quesitos",(v.quesitos||[]).slice(0,3).map((q,i)=>[`Q${i+1}`,q.resposta||"Pendente"])],
     ["Documentação",(v.documentosComplementares||[]).map((d,i)=>[`Documento ${i+1}`,[d.tipo,d.data, d.resultado].filter(Boolean).join(" — ")]).slice(0,5)]
@@ -4867,7 +4869,7 @@ function buildPrint(){
   });
   const cond=(v.condicoes||[]).filter(c=>compact(c.nome)).map(c=>`${esc(c.nome)}${compact(c.tratamento)?` — ${esc(c.tratamento)}`:""}`);
   const examType=v.exameFisicoTipo||v.exame?.selected||"";
-  const examHtml=examType?`<div class="print-exam-single"><b>${esc(examType)}</b>${v.alteracoesClinicasExames?`<div style="margin-top:3px">${printText(v.alteracoesClinicasExames)}</div>`:""}</div>`:'<p class="print-muted">Nenhum tipo de exame selecionado.</p>';
+  const examHtml=examType?`<div class="print-exam-single"><b>${esc(examType)}</b>${(v.exameFisicoDescricao||v.alteracoesClinicasExames)?`<div style="margin-top:3px">${printText(v.exameFisicoDescricao||v.alteracoesClinicasExames)}</div>`:""}</div>`:'<p class="print-muted">Nenhum tipo de exame selecionado.</p>';
   const ques=(v.quesitos||[]).filter(q=>compact(q.pergunta)||compact(q.resposta));
   const quesHtml=ques.length?`<div class="print-quesitos">${ques.map((q,i)=>`<div class="print-quesito"><strong>${i+1}.</strong><div><b>Quesito</b><div>${printText(q.pergunta||"—")}</div>${compact(q.resposta)?`<b class="answer-label">Resposta</b><div>${printText(q.resposta)}</div>`:""}</div></div>`).join("")}</div>`:'<p class="print-muted">Nenhum quesito registrado.</p>';
 
@@ -5239,7 +5241,6 @@ function extrairOuPreservarExameGeral(novoConteudo) {
 function inserirExameFisicoGeralPadrao() {
   const agilEl = $("agilExameFisicoDescricao");
   const extEl = $("exameFisicoDescricao");
-  const altEl = $("alteracoesClinicasExames");
 
   let current = "";
   if (agilEl && agilEl.value) {
@@ -5263,13 +5264,11 @@ function inserirExameFisicoGeralPadrao() {
   }
 
   state.exameFisicoDescricao = novoTexto;
-  state.alteracoesClinicasExames = novoTexto;
   if (!state.aux) state.aux = {};
   state.aux.exameFisicoDescricao = novoTexto;
 
   if (agilEl) agilEl.value = novoTexto;
   if (extEl) extEl.value = novoTexto;
-  if (altEl) altEl.value = novoTexto;
 
   autoSave();
   toast("Exame Físico Geral inserido no início do campo!");
@@ -5639,12 +5638,10 @@ function aplicarRegioesOsteomusculares() {
       
     const descFinalOsteo = extrairOuPreservarExameGeral(examesTexto);
     state.exameFisicoDescricao = descFinalOsteo;
-    state.alteracoesClinicasExames = descFinalOsteo;
     if (!state.aux) state.aux = {};
     state.aux.exameFisicoDescricao = descFinalOsteo;
     if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = descFinalOsteo;
     if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = descFinalOsteo;
-    if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = descFinalOsteo;
     
     state.limitacaoFuncional = "Sim";
     state.limitacaoRol = "Sim";
@@ -5700,12 +5697,10 @@ function aplicarOsteomuscularNormal() {
   
   const descOsteoNormal = extrairOuPreservarExameGeral(TEXTO_OSTEO_NORMAL_EXAME);
   state.exameFisicoDescricao = descOsteoNormal;
-  state.alteracoesClinicasExames = descOsteoNormal;
   if (!state.aux) state.aux = {};
   state.aux.exameFisicoDescricao = descOsteoNormal;
   if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = descOsteoNormal;
   if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = descOsteoNormal;
-  if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = descOsteoNormal;
   
   state.limitacaoFuncional = "Não";
   state.limitacaoRol = "Não";
@@ -5747,12 +5742,10 @@ function limparOsteomuscular() {
   const temGeralEx = curEx.includes("EXAME FÍSICO DO AP.RESPIRATÓRIO:") || curEx.includes("Bom do estado geral");
   const clearedDesc = temGeralEx ? TEXTO_EXAME_FISICO_GERAL_PADRAO : "";
   state.exameFisicoDescricao = clearedDesc;
-  state.alteracoesClinicasExames = clearedDesc;
   if (!state.aux) state.aux = {};
   state.aux.exameFisicoDescricao = clearedDesc;
   if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = clearedDesc;
   if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = clearedDesc;
-  if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = clearedDesc;
   
   // Limpar limitações
   state.limitacaoFuncional = "";
@@ -6112,7 +6105,7 @@ function syncExtendedToAgil() {
   setVal("agilAltura", state.aux.altura || state.altura || "");
   setVal("agilPeso", state.aux.peso || state.peso || "");
   if (typeof checkVitalsPadraoState === "function") checkVitalsPadraoState();
-  setVal("agilExameFisicoDescricao", state.exameFisicoDescricao || state.alteracoesClinicasExames || $("exameFisicoDescricao")?.value || "");
+  setVal("agilExameFisicoDescricao", state.exameFisicoDescricao || $("exameFisicoDescricao")?.value || "");
   
   // Bloco 04 — Justificativa
   setVal("agilJustificativa", state.aux.justificativa || state.justificativa || $("justificativa")?.value || "");
@@ -6280,9 +6273,7 @@ function syncAgilToExtended() {
   const exDesc = getV("agilExameFisicoDescricao");
   if (exDesc) {
     state.exameFisicoDescricao = exDesc;
-    state.alteracoesClinicasExames = exDesc;
     if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = exDesc;
-    if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = exDesc;
   }
   if (state.outrosSubtipo) {
     state.aux.outrosSubtipo = state.outrosSubtipo;
@@ -6322,12 +6313,6 @@ function syncAgilField(field, value) {
   if (field === "dataDocumento" || field === "diasSolicitados") {
     if (typeof calcularDatasAtestado === "function") calcularDatasAtestado();
     if (typeof verificarRegraJuntaMedica === "function") verificarRegraJuntaMedica();
-  }
-  if (field === "exameFisicoDescricao") {
-    state.alteracoesClinicasExames = value;
-    if ($("alteracoesClinicasExames") && $("alteracoesClinicasExames") !== document.activeElement) {
-      $("alteracoesClinicasExames").value = value;
-    }
   }
   if (field === "justificativa") {
     if (typeof verificarCoerenciaPericial === "function") verificarCoerenciaPericial();
@@ -6461,12 +6446,10 @@ function onAgilExameTipoChange(val) {
     if (cur === TEXTO_EXAME_MENTAL_NORMAL || cur === TEXTO_EXAME_MENTAL_ALTERADO || cur === TEXTO_OSTEO_NORMAL || cur.includes("Trapézios sem contraturas") || cur.includes("mobilidade ativa e passiva normais") || (temGeralCur && (cur.includes("Nível de consciência:") || cur.includes("Apresentas-e consciente") || cur.includes("mobilidade ativa")))) {
       const resetVal = temGeralCur ? TEXTO_EXAME_FISICO_GERAL_PADRAO : "";
       state.exameFisicoDescricao = resetVal;
-      state.alteracoesClinicasExames = resetVal;
       if (!state.aux) state.aux = {};
       state.aux.exameFisicoDescricao = resetVal;
       if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = resetVal;
       if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = resetVal;
-      if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = resetVal;
     }
     renderOutrosUI();
   } else {
@@ -6821,12 +6804,10 @@ function aplicarExameMentalNormal() {
   
   const descMentalNormal = extrairOuPreservarExameGeral(TEXTO_EXAME_MENTAL_NORMAL);
   state.exameFisicoDescricao = descMentalNormal;
-  state.alteracoesClinicasExames = descMentalNormal;
   if (!state.aux) state.aux = {};
   state.aux.exameFisicoDescricao = descMentalNormal;
   if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = descMentalNormal;
   if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = descMentalNormal;
-  if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = descMentalNormal;
   
   state.limitacaoFuncional = "Não";
   state.limitacaoRol = "Não";
@@ -6865,12 +6846,10 @@ function aplicarExameMentalAlterado() {
   
   const descMentalAlterado = extrairOuPreservarExameGeral(TEXTO_EXAME_MENTAL_ALTERADO);
   state.exameFisicoDescricao = descMentalAlterado;
-  state.alteracoesClinicasExames = descMentalAlterado;
   if (!state.aux) state.aux = {};
   state.aux.exameFisicoDescricao = descMentalAlterado;
   if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = descMentalAlterado;
   if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = descMentalAlterado;
-  if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = descMentalAlterado;
   
   state.limitacaoFuncional = "Sim";
   state.limitacaoRol = "Sim";
@@ -7376,15 +7355,19 @@ function syncVoiceField(targetId, val, isFinal = false) {
     if ($("agilSintomasLimitacao") && $("agilSintomasLimitacao") !== document.activeElement) $("agilSintomasLimitacao").value = val;
     if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
     if (isFinal && typeof autoSave === "function") autoSave();
-  } else if (targetId === "agilExameFisicoDescricao" || targetId === "exameFisicoDescricao" || targetId === "alteracoesClinicasExames") {
+  } else if (targetId === "agilExameFisicoDescricao" || targetId === "exameFisicoDescricao") {
     if (!state.aux) state.aux = {};
     state.aux.exameFisicoDescricao = val;
-    state.aux.alteracoesClinicasExames = val;
     state.exameFisicoDescricao = val;
-    state.alteracoesClinicasExames = val;
     if ($("exameFisicoDescricao") && $("exameFisicoDescricao") !== document.activeElement) $("exameFisicoDescricao").value = val;
-    if ($("alteracoesClinicasExames") && $("alteracoesClinicasExames") !== document.activeElement) $("alteracoesClinicasExames").value = val;
     if ($("agilExameFisicoDescricao") && $("agilExameFisicoDescricao") !== document.activeElement) $("agilExameFisicoDescricao").value = val;
+    if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
+    if (isFinal && typeof autoSave === "function") autoSave();
+  } else if (targetId === "alteracoesClinicasExames") {
+    if (!state.aux) state.aux = {};
+    state.aux.alteracoesClinicasExames = val;
+    state.alteracoesClinicasExames = val;
+    if ($("alteracoesClinicasExames") && $("alteracoesClinicasExames") !== document.activeElement) $("alteracoesClinicasExames").value = val;
     if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
     if (isFinal && typeof autoSave === "function") autoSave();
   } else if (targetId === "agilJustificativa" || targetId === "justificativa") {

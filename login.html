@@ -146,11 +146,12 @@ h1{margin:12px 0 16px;font-size:clamp(34px,4vw,56px);line-height:1.05;letter-spa
 <script>
 (async()=>{
   const $=id=>document.getElementById(id);
+  const esc = window.AmbientalUtils?.escapeHtml || (s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])));
   const form=$("loginForm"), email=$("email"), password=$("password"), remember=$("remember");
   const btn=$("submitBtn"), spinner=$("submitSpinner"), submitText=$("submitText"), statusBox=$("statusBox");
   const recoveryOverlay=$("recoveryOverlay"), recoveryEmail=$("recoveryEmail"), recoveryStatus=$("recoveryStatus");
   const params=new URLSearchParams(location.search), next=params.get("next");
-  const allowedNext = /^\/(app|gestao|gestao_atendimentos\.html|ambiental_avaliacao_medica_lts_cid_assistente\.html)(\?|$)/;
+  const allowedNext = /^\/(|app|gestao|gestao-medicos|gestao-medicos\.html|gestao_medicos\.html|gestao_atendimentos\.html|ambiental_avaliacao_medica_lts_cid_assistente\.html)(\?|$)/;
   const safeNext = next && allowedNext.test(next) ? next : null;
 
   function status(el,type,msg,icon=""){el.className=`status show ${type}`;el.innerHTML=`<span class="status-icon">${icon}</span><span>${msg}</span>`}
@@ -167,12 +168,34 @@ h1{margin:12px 0 16px;font-size:clamp(34px,4vw,56px);line-height:1.05;letter-spa
     return ["error","Não foi possível entrar",msgDetails||"Verifique suas credenciais e tente novamente.","!"];
   }
 
+  let userIsTyping = false;
+  email.addEventListener("input", () => { userIsTyping = true; });
+  password.addEventListener("input", () => { userIsTyping = true; });
+
+  const hasStoredSession = !!(localStorage.getItem("ambiental.auth.session") || sessionStorage.getItem("ambiental.auth.session"));
+  if (hasStoredSession && !params.get("reason")) {
+    status(statusBox, "info", "Verificando sessão segura...", "i");
+  }
+
   await AmbientalAuth.init().catch(()=>{status(statusBox,"error","Sistema temporariamente indisponível. Tente novamente em alguns instantes.","!");});
 
   try{
     const existing=await AmbientalAuth.me();
-    if(existing){location.replace(safeNext||AmbientalAuth.roleHome(existing));return;}
-  }catch{}
+    if(existing){
+      const targetUrl = safeNext || AmbientalAuth.roleHome(existing);
+      // Se o usuário já está ativamente digitando suas credenciais, não redireciona no meio da digitação
+      if (userIsTyping && (email.value.trim().length > 0 || password.value.length > 0)) {
+        status(statusBox, "info", `Sessão ativa identificada para <strong>${esc(existing.nome || existing.email)}</strong>. <a href="${targetUrl}" id="btnContinueExisting" style="font-weight:bold;color:var(--blue);text-decoration:underline;">Continuar como ${esc(existing.nome || 'usuário')}</a> ou complete a digitação para trocar.`, "i");
+      } else {
+        location.replace(targetUrl);
+        return;
+      }
+    } else {
+      if (hasStoredSession && !params.get("reason")) clearStatus();
+    }
+  }catch{
+    if (hasStoredSession && !params.get("reason")) clearStatus();
+  }
 
   if(params.get("reason")==="expired") status(statusBox,"info","Sua sessão expirou. Entre novamente para continuar.","i");
   if(params.get("reason")==="required") status(statusBox,"info","Faça login para acessar esta área.","i");

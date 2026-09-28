@@ -1348,3 +1348,154 @@ def test_doctor_productivity_mini_hud_and_keyboard_shortcuts():
     assert 'e.key === "Enter"' in ATTENDANCE
     assert 'e.key.toLowerCase() === "g"' in ATTENDANCE
     assert 'e.key.toLowerCase() === "j"' in ATTENDANCE
+
+
+def test_esisla_regras_de_ouro_conformidade_juridica():
+    # 1. Validador de Coerência Pericial (Quesitos x Parecer x Limitação)
+    assert 'function verificarCoerenciaPericial()' in ATTENDANCE
+    assert 'function aplicarAlinhamentoQuesitos(tipo)' in ATTENDANCE
+    assert 'function aplicarAlinhamentoParecer(novoParecer)' in ATTENDANCE
+    assert 'id="coerenciaParecerAlerta"' in ATTENDANCE
+    assert 'id="coerenciaParecerAlertaSec7"' in ATTENDANCE
+    assert 'id="coerenciaParecerAlertaSec8"' in ATTENDANCE
+    assert 'Aviso de Coerência Pericial DPME (Regras de Ouro e-SISLA):' in ATTENDANCE
+    assert 'Conformidade e-SISLA Garantida:' in ATTENDANCE
+
+    # 2. Monitor de Limite de Caracteres do e-SISLA (2.000 carac.)
+    assert 'const ESISLA_TEXT_FIELDS =' in ATTENDANCE
+    assert 'function atualizarContadorEsisla(id)' in ATTENDANCE
+    assert 'function ajustarLimiteEsisla(id, max' in ATTENDANCE
+    assert 'function initEsislaCharCounters()' in ATTENDANCE
+    assert 'esisla-char-counter' in ATTENDANCE
+    assert '2.000' in ATTENDANCE or '2000' in ATTENDANCE
+
+    # 3. Alerta de Encaminhamento para Junta Médica (Regra dos 90 / 180 dias)
+    assert 'function verificarRegraJuntaMedica()' in ATTENDANCE
+    assert 'function aplicarEncaminhamentoJuntaMedica(totalDias)' in ATTENDANCE
+    assert 'id="juntaMedicaAlertaAgil"' in ATTENDANCE
+    assert 'id="juntaMedicaAlertaSec8"' in ATTENDANCE
+    assert '_diasHistoricoAcumulado' in ATTENDANCE
+    assert 'Lei Estadual nº 10.261/68' in ATTENDANCE
+
+    # 4. Integração no ValidationEngine (Revisão da Seção 9)
+    assert 'Regras de Ouro e-SISLA / DPME' in ATTENDANCE
+    assert 'Limite e-SISLA Excedido:' in ATTENDANCE
+    assert 'Afastamento acumulado de' in ATTENDANCE
+
+    # 5. Gestão de Atendimentos — Modal e Script F12 e-SISLA
+    assert 'id="esislaRegrasDeOuroBanner"' in GESTAO_ATENDIMENTOS
+    assert 'campos_excedidos' in GESTAO_ATENDIMENTOS
+    assert 'inconsistencias_juridicas' in GESTAO_ATENDIMENTOS
+    assert 'alerta_junta' in GESTAO_ATENDIMENTOS
+    assert 'function truncarCamposModalEsisla()' in GESTAO_ATENDIMENTOS
+    assert 'function sanitizeText(v, max)' in GESTAO_ATENDIMENTOS
+    assert '[e-SISLA Alerta DPME]' in GESTAO_ATENDIMENTOS
+
+
+def test_comprovante_comparecimento_pericial():
+    """
+    Item 3: Documentação e Atendimento ao Servidor
+    Valida a Declaração / Comprovante de Comparecimento à Perícia Médica Oficial:
+    1. Presença no Atendimento (Modo Ágil, Cabeçalho e Seção 09).
+    2. Modal oficial com dados do servidor, horários, data e observações.
+    3. Proteção ao Sigilo Médico (Resoluções CFM 1.658/2002 e 1.851/2008):
+       - Desmarcado por padrão (sem diagnóstico/CID).
+       - Opção de inclusão do CID somente a pedido expresso do servidor.
+    4. Funções de pré-visualização, impressão e cópia em texto formatado.
+    5. Integração na Central de Gestão de Atendimentos (botão no detailModal e modal oficial).
+    """
+    # 1. Atendimento HTML — Elementos e Botões
+    assert 'abrirModalComprovanteComparecimento()' in ATTENDANCE
+    assert 'id="modalComprovanteComparecimento"' in ATTENDANCE
+    assert 'id="comprovanteHoraEntrada"' in ATTENDANCE
+    assert 'id="comprovanteHoraSaida"' in ATTENDANCE
+    assert 'id="comprovanteDataPericia"' in ATTENDANCE
+    assert 'id="comprovanteIncluirCid"' in ATTENDANCE
+    assert 'id="comprovanteLivePreview"' in ATTENDANCE
+    assert 'comprovante-preview-box' in ATTENDANCE
+
+    # 2. Atendimento HTML — Funções JS e Conformidade Legal
+    assert 'function formatarDataPorExtenso(' in ATTENDANCE
+    assert 'function obterDadosComprovanteAtual()' in ATTENDANCE
+    assert 'function gerarHTMLComprovanteComparecimento(' in ATTENDANCE
+    assert 'function atualizarPreviewComprovante()' in ATTENDANCE
+    assert 'function imprimirComprovante()' in ATTENDANCE
+    assert 'function copiarTextoComprovante()' in ATTENDANCE
+    assert 'DECLARAÇÃO DE COMPARECIMENTO À PERÍCIA MÉDICA' in ATTENDANCE
+    assert 'Resolução CFM nº 1.658/2002' in ATTENDANCE or 'Resoluções CFM nº 1.658/2002' in ATTENDANCE
+    assert 'Lei Estadual nº 10.261/1968' in ATTENDANCE
+
+    # 3. Gestão de Atendimentos — Elementos e Botões
+    assert 'id="comprovanteDetailBtn"' in GESTAO_ATENDIMENTOS
+    assert 'abrirComprovanteDoDetail()' in GESTAO_ATENDIMENTOS
+    assert 'id="comprovanteModal"' in GESTAO_ATENDIMENTOS
+    assert 'id="comprovanteHoraEntradaGestao"' in GESTAO_ATENDIMENTOS
+    assert 'id="comprovanteHoraSaidaGestao"' in GESTAO_ATENDIMENTOS
+    assert 'id="comprovanteDataPericiaGestao"' in GESTAO_ATENDIMENTOS
+    assert 'id="comprovanteIncluirCidGestao"' in GESTAO_ATENDIMENTOS
+    assert 'id="comprovanteLivePreviewGestao"' in GESTAO_ATENDIMENTOS
+
+    # 4. Gestão de Atendimentos — Funções JS
+    assert 'function abrirModalComprovanteGestao(' in GESTAO_ATENDIMENTOS
+    assert 'function obterDadosComprovanteGestao()' in GESTAO_ATENDIMENTOS
+    assert 'function gerarHTMLComprovanteComparecimentoGestao(' in GESTAO_ATENDIMENTOS
+    assert 'function atualizarPreviewComprovanteGestao()' in GESTAO_ATENDIMENTOS
+    assert 'function imprimirComprovanteGestao()' in GESTAO_ATENDIMENTOS
+    assert 'function copiarTextoComprovanteGestao()' in GESTAO_ATENDIMENTOS
+    assert 'formatarDataPorExtensoGestao(' in GESTAO_ATENDIMENTOS
+
+
+def test_esisla_bookmarklet_adeus_f12():
+    """
+    Item 3: Documentação e Atendimento ao Servidor
+    Valida o Bookmarklet (Favorito Inteligente) do e-SISLA:
+    1. Elimina a necessidade de abrir o Console de Desenvolvedor (F12) e colar código manual.
+    2. Link arrastável para a barra de favoritos (draggable="true", href="javascript:...").
+    3. Motor resiliente: tenta ler o clipboard e, se bloqueado por política de segurança do navegador,
+       abre modal elegante direto no e-SISLA com prompt de colagem (Ctrl+V) e botão de preenchimento.
+    4. Aplica sanitizeText(v, 2000) e sanitiza todos os campos periciais.
+    5. Botão de copiar dados e-SISLA no atendimento com 1 clique.
+    6. Modal explicativo passo a passo tanto no atendimento quanto na gestão.
+    """
+    # 1. Atendimento HTML — Bookmarklet e Cópia de Laudo
+    assert 'copiarLaudoEsislaAtendimento()' in ATTENDANCE
+    assert 'abrirModalBookmarkletAtendimento()' in ATTENDANCE
+    assert 'id="modalBookmarkletAtendimento"' in ATTENDANCE
+    assert 'id="linkBookmarkletAtendimento"' in ATTENDANCE
+    assert 'btn-bookmarklet' in ATTENDANCE
+    assert 'function gerarCodigoBookmarkletUniversal()' in ATTENDANCE
+    assert 'function copiarCodigoBookmarklet()' in ATTENDANCE
+    assert 'javascript:' in ATTENDANCE
+    assert 'sanitizeText(campos[\'voMedico.parRlCat\'],2000)' in ATTENDANCE or 'sanitizeText(' in ATTENDANCE
+
+    # 2. Gestão de Atendimentos — Bookmarklet na barra lateral e esislaModal
+    assert 'abrirModalBookmarkletEsisla()' in GESTAO_ATENDIMENTOS
+    assert 'id="bookmarkletModal"' in GESTAO_ATENDIMENTOS
+    assert 'id="linkBookmarkletGestao"' in GESTAO_ATENDIMENTOS
+    assert 'function gerarCodigoBookmarkletEsislaUniversal()' in GESTAO_ATENDIMENTOS
+    assert 'function copiarCodigoBookmarkletEsisla()' in GESTAO_ATENDIMENTOS
+    assert 'Preencher e-SISLA' in GESTAO_ATENDIMENTOS
+    assert 'Botão dos Favoritos (sem F12)' in GESTAO_ATENDIMENTOS
+
+
+def test_gestao_syntax_and_login_session_ux():
+    """
+    Valida a correção de sintaxe na Gestão e a proteção contra redirecionamento no meio da digitação no Login.
+    """
+    # 1. Gestão: reasonConfirm handler devidamente fechado com bloco catch
+    assert "closeModal('reasonModal');\n        await fetchServer();\n        refresh();\n    }catch(e){\n        alert(e.message||'Falha ao atualizar estado.');\n    }\n};" in GESTAO_ATENDIMENTOS
+
+    # 2. Login: Detecção de digitação para não desviar a tela do usuário no meio da digitação
+    assert 'let userIsTyping = false;' in LOGIN
+    assert 'email.addEventListener("input"' in LOGIN
+    assert 'password.addEventListener("input"' in LOGIN
+    assert 'userIsTyping && (email.value.trim().length > 0 || password.value.length > 0)' in LOGIN
+    assert 'hasStoredSession' in LOGIN
+    # 3. allowedNext deve aceitar root "/"
+    assert r'^\/(|app|gestao|gestao-medicos' in LOGIN
+
+    # 4. Gestão: view(enc) deve renderizar o conteúdo com detail(full) substituindo o skeleton
+    assert 'if(body)body.innerHTML=detail(full);' in GESTAO_ATENDIMENTOS
+
+
+

@@ -1694,6 +1694,66 @@ body:not(.mode-agil-active) #containerModoAgil {
 .chip-sm:active {
   transform: translateY(0);
 }
+
+/* =========================================================
+   CONFORMIDADE E-SISLA / DPME — SEGURANÇA JURÍDICA
+   ========================================================= */
+.esisla-char-counter {
+  margin-top: 4px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+.esisla-coerencia-card {
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  transition: all 0.2s ease;
+}
+.esisla-junta-card {
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  transition: all 0.2s ease;
+}
+
+/* --- ESTILOS DO BOOKMARKLET E-SISLA E COMPROVANTE --- */
+.btn-bookmarklet {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #10B981, #059669);
+  color: #FFFFFF !important;
+  font-weight: 800;
+  font-size: 13.5px;
+  padding: 12px 22px;
+  border-radius: 12px;
+  text-decoration: none !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+  cursor: grab;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.btn-bookmarklet:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+  transform: translateY(-2px);
+}
+.btn-bookmarklet:active {
+  cursor: grabbing;
+}
+.comprovante-preview-box {
+  background: #FFFFFF;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 10px;
+  padding: 22px 26px;
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: #1E293B;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+  line-height: 1.6;
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/auth.js"></script><script src="/api.js"></script></head>
 <body><div id="authLoading" style="position:fixed;inset:0;background:#F2F6FA;z-index:999999;display:grid;place-items:center;font-family:Inter,system-ui,sans-serif;color:#073F87"><div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #DDE6EF;border-radius:14px;padding:13px 16px;box-shadow:0 12px 35px rgba(10,30,55,.1);font-size:12px;font-weight:800"><img src="/logo.png" alt="" style="width:28px;height:28px;object-fit:contain"><span>Verificando sessão...</span></div></div>
@@ -1737,6 +1797,8 @@ body:not(.mode-agil-active) #containerModoAgil {
     <div class="header-actions">
       <button class="btn btn-outline optional" onclick="openManagement()">Gestão</button>
       <button class="btn btn-outline optional" onclick="openFinalReport()" title="Visualizar e imprimir laudo pericial">Imprimir</button>
+      <button class="btn btn-outline optional" onclick="abrirModalComprovanteComparecimento()" title="Emitir Declaração/Comprovante de Comparecimento à Perícia para o servidor">📄 Comparecimento</button>
+      <button class="btn btn-outline optional" onclick="abrirModalBookmarkletAtendimento()" title="Como instalar o Botão dos Favoritos e-SISLA (sem F12)">⭐ Favorito e-SISLA</button>
       <button class="btn btn-danger optional" onclick="deleteAtendimento()">Excluir</button>
       <button class="btn btn-outline optional" onclick="saveNow()">Salvar rascunho</button>
       <button class="btn btn-green" onclick="finalizeFromHeader()">Finalizar</button>
@@ -2533,6 +2595,9 @@ body:not(.mode-agil-active) #containerModoAgil {
           </div>
         </div>
         <div class="agil-card-body">
+          <!-- Alerta de Junta Médica / Readaptação (Regra 90/180 dias) -->
+          <div id="juntaMedicaAlertaAgil" class="esisla-junta-card" style="display:none;margin-bottom:14px"></div>
+
           <div class="field col-12">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;flex-wrap:wrap">
               <label class="required" style="margin-bottom:0">Justificativa Parecer Final</label>
@@ -2548,9 +2613,9 @@ body:not(.mode-agil-active) #containerModoAgil {
             <textarea class="textarea" id="agilJustificativa" style="min-height:90px" placeholder="Justificativa da conclusão pericial..." oninput="syncAgilField('justificativa', this.value)"></textarea>
             
             <!-- Alerta de Coerência Pericial (Quesitos x Parecer) -->
-            <div id="coerenciaParecerAlerta" style="display:none;margin-top:10px;padding:10px 14px;background:#FFFBEB;border:1.5px solid #FCD34D;border-radius:10px;font-size:12.5px;color:#92400E">
+            <div id="coerenciaParecerAlerta" class="esisla-coerencia-card" style="display:none;margin-top:10px;padding:10px 14px;background:#FFFBEB;border:1.5px solid #FCD34D;border-radius:10px;font-size:12.5px;color:#92400E">
               <div style="display:flex;align-items:flex-start;gap:8px">
-                <span style="font-size:16px">⚠️</span>
+                <span style="font-size:16px">🛡️</span>
                 <div id="coerenciaParecerTexto">Aviso de coerência pericial</div>
               </div>
             </div>
@@ -2569,7 +2634,9 @@ body:not(.mode-agil-active) #containerModoAgil {
             <span id="agilProgressoTexto">Carregando status...</span>
           </div>
         </div>
-        <div style="display:flex;gap:10px;align-items:center">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <button type="button" class="btn btn-outline" onclick="copiarLaudoEsislaAtendimento()" title="Copiar todos os dados clínicos formatados para preenchimento com o Favorito e-SISLA">⚡ Copiar p/ e-SISLA</button>
+          <button type="button" class="btn btn-outline" onclick="abrirModalComprovanteComparecimento()" title="Emitir Declaração/Comprovante de Comparecimento à Perícia para o servidor">📄 Comprovante</button>
           <button type="button" class="btn btn-outline" onclick="saveNow()" title="Atalho: Ctrl + S">💾 Salvar rascunho</button>
           <button type="button" class="btn btn-green" id="btnAgilFinalizar" onclick="finalizarAtendimentoAgil()" style="padding:10px 24px;font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px" title="Atalho: Ctrl + Enter">
             <span>Finalizar atendimento</span>
@@ -2616,10 +2683,26 @@ body:not(.mode-agil-active) #containerModoAgil {
           </div>
           <div class="field col-12 hidden" id="readaptadoPanel"><label>Quais atividades realiza atualmente?</label><textarea class="textarea" id="atividadesReadaptado" placeholder="Descreva as atividades atuais."></textarea></div>
 
-          <div class="field col-12"><label class="required">Qual a doença está tratando que motivou o afastamento?</label><textarea class="textarea" id="doencaMotivo"></textarea></div>
+          <div class="field col-12">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px">
+              <label class="required" style="margin-bottom:0">Qual a doença está tratando que motivou o afastamento?</label>
+              <button type="button" class="btn btn-outline voice-btn" id="voiceBtn_doencaMotivo" onclick="toggleVoiceDictation('doencaMotivo')" title="Clique para ditar por voz">
+                <span>🎙️</span> Ditado por voz
+              </button>
+            </div>
+            <textarea class="textarea" id="doencaMotivo"></textarea>
+          </div>
           <div class="field col-6"><label>Quando começou o tratamento?</label><input class="input" type="text" id="inicioTratamento" placeholder="Ex: 2020 ou 15/03/2020" oninput="syncAgilField('inicioTratamento', this.value)"></div>
           <div class="field col-6"><label>Com que frequência realiza consultas?</label><input class="input" id="freqConsultas" placeholder="Ex.: semanal, mensal, conforme necessidade"></div>
-          <div class="field col-12"><label class="required">Quais sintomas / limitações são referidos?</label><textarea class="textarea" id="sintomasLimitacao"></textarea></div>
+          <div class="field col-12">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px">
+              <label class="required" style="margin-bottom:0">Quais sintomas / limitações são referidos?</label>
+              <button type="button" class="btn btn-outline voice-btn" id="voiceBtn_sintomasLimitacao" onclick="toggleVoiceDictation('sintomasLimitacao')" title="Clique para ditar por voz">
+                <span>🎙️</span> Ditado por voz
+              </button>
+            </div>
+            <textarea class="textarea" id="sintomasLimitacao"></textarea>
+          </div>
         </div>
 
         <div class="subpanel">
@@ -2778,9 +2861,14 @@ body:not(.mode-agil-active) #containerModoAgil {
             <div class="field">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;flex-wrap:wrap">
                 <label style="margin:0;font-weight:700">(*)Exame Físico Geral — achados observados</label>
-                <button type="button" class="btn btn-outline" id="btnExtExameFisicoGeral" style="font-size:12px;padding:4px 10px;display:inline-flex;align-items:center;gap:6px" onclick="inserirExameFisicoGeralPadrao()" title="Inserir texto padrão do Exame Físico Geral no início deste campo">
-                  <span>🩺</span> Exame Físico Geral
-                </button>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <button type="button" class="btn btn-outline voice-btn" id="voiceBtn_exameFisicoDescricao" onclick="toggleVoiceDictation('exameFisicoDescricao')" title="Clique para ditar por voz">
+                    <span>🎙️</span> Voz
+                  </button>
+                  <button type="button" class="btn btn-outline" id="btnExtExameFisicoGeral" style="font-size:12px;padding:4px 10px;display:inline-flex;align-items:center;gap:6px" onclick="inserirExameFisicoGeralPadrao()" title="Inserir texto padrão do Exame Físico Geral no início deste campo">
+                    <span>🩺</span> Exame Físico Geral
+                  </button>
+                </div>
               </div>
               <textarea class="textarea" id="exameFisicoDescricao" placeholder="Ex.: achados efetivamente observados no exame físico/mental. Registre somente o que foi constatado."></textarea>
               <div class="help">Este campo alimenta diretamente o item “(*)Exame Físico Geral” da ficha eSisla.</div>
@@ -2834,6 +2922,8 @@ body:not(.mode-agil-active) #containerModoAgil {
         <div class="notice warning"><strong>(*) Resposta aos quesitos</strong><br>As respostas devem refletir os dados do atendimento. O sistema não seleciona automaticamente respostas clínicas.</div>
         <div id="quesitos"></div>
         <div id="quesitosWarning"></div>
+        <!-- Alerta de Coerência Pericial DPME (Seção 7) -->
+        <div id="coerenciaParecerAlertaSec7" class="esisla-coerencia-card" style="display:none;margin-top:12px"></div>
         <div class="footer-actions"><button class="btn btn-outline" onclick="go(6)">← Anterior</button><div class="actions-right"><button class="btn btn-primary" onclick="go(8)">Próximo →</button></div></div>
       </div>
     </section>
@@ -2842,6 +2932,8 @@ body:not(.mode-agil-active) #containerModoAgil {
     <section class="section" id="section-8">
       <div class="section-head"><h2>08 — Justificativa</h2><p>Classifique a capacidade laborativa e registre a justificativa.</p></div>
       <div class="section-body">
+        <!-- Alerta de Junta Médica / Readaptação (Regra 90/180 dias) -->
+        <div id="juntaMedicaAlertaSec8" class="esisla-junta-card" style="display:none;margin-bottom:16px"></div>
         <div class="field">
           <label class="required">Capacidade laborativa</label>
           <div class="capacity-grid">
@@ -2856,9 +2948,14 @@ body:not(.mode-agil-active) #containerModoAgil {
         <div class="field" style="margin-top:15px">
           <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:7px; gap:8px; flex-wrap:wrap">
             <label class="required" style="margin-bottom:0">Justificativa Parecer Final</label>
-            <button class="btn-ai" type="button" id="btnAiJustificativa" onclick="gerarJustificativaIA()" title="Gera a fundamentação técnica completa com Inteligência Artificial baseada nos fatos do atendimento">
-              ✨ Gerar Justificativa com IA
-            </button>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button type="button" class="btn btn-outline voice-btn" id="voiceBtn_justificativa" onclick="toggleVoiceDictation('justificativa')" title="Clique para ditar justificativa por voz">
+                <span>🎙️</span> Voz
+              </button>
+              <button class="btn-ai" type="button" id="btnAiJustificativa" onclick="gerarJustificativaIA()" title="Gera a fundamentação técnica completa com Inteligência Artificial baseada nos fatos do atendimento">
+                ✨ Gerar Justificativa com IA
+              </button>
+            </div>
           </div>
           <textarea class="textarea" id="justificativa" style="min-height:190px" placeholder="Registre a justificativa do parecer final com base nos fatos e achados efetivamente documentados."></textarea>
           <div class="help" style="margin-top:7px">Parecer emitido pelo Coordenador de Ingresso, Licenças, Readaptação e Aposentadoria, à vista do que prevê o artigo 32, do Decreto nº 69.234, de 23/12/2024 c/c o artigo 95, da Resolução SGGD 25, de 16/05/2025.</div>
@@ -2886,6 +2983,8 @@ body:not(.mode-agil-active) #containerModoAgil {
             <label class="choice"><input type="radio" name="parecer" value="CONTRÁRIO" onchange="state.parecer=this.value;autoSave();renderParecerHint()"><span>CONTRÁRIO</span></label>
           </div>
           <div class="help" id="parecerHint">Selecione o parecer definido pelo médico.</div>
+          <!-- Alerta de Coerência Pericial DPME (Seção 8) -->
+          <div id="coerenciaParecerAlertaSec8" class="esisla-coerencia-card" style="display:none;margin-top:12px"></div>
         </div>
 
         <div class="footer-actions"><button class="btn btn-outline" onclick="go(7)">← Anterior</button><div class="actions-right"><button class="btn btn-primary" onclick="go(9)">Revisar →</button></div></div>
@@ -2904,9 +3003,9 @@ body:not(.mode-agil-active) #containerModoAgil {
           <button class="btn btn-outline" onclick="go(8)">← Voltar</button>
           <div class="actions-right workflow-groups">
             <div class="action-group"><span>Navegação</span><button class="btn btn-outline" onclick="go(8)">Voltar</button></div>
-            <div class="action-group"><span>Documento</span><button class="btn btn-outline" onclick="previewFinalReport()">Visualizar relatório</button><button class="btn btn-outline" onclick="downloadFinalPDF()">Gerar PDF</button></div>
+            <div class="action-group"><span>Documento</span><button class="btn btn-outline" onclick="previewFinalReport()">Visualizar relatório</button><button class="btn btn-outline" onclick="downloadFinalPDF()">Gerar PDF</button><button class="btn btn-outline" onclick="abrirModalComprovanteComparecimento()">📄 Declaração de Comparecimento</button></div>
             <div class="action-group"><span>Workflow</span><button class="btn btn-primary btn-finalize" onclick="openFinalizeDialog()">Finalizar atendimento</button></div>
-            <div class="action-group more-actions"><span>Mais ações</span><button class="btn btn-outline" onclick="exportJSON()">Exportar dados</button></div>
+            <div class="action-group more-actions"><span>Mais ações</span><button class="btn btn-outline" onclick="copiarLaudoEsislaAtendimento()">⚡ Copiar p/ e-SISLA</button><button class="btn btn-outline" onclick="abrirModalBookmarkletAtendimento()">⭐ Favorito e-SISLA</button><button class="btn btn-outline" onclick="exportJSON()">Exportar dados</button></div>
           </div>
         </div>
       </div>
@@ -2967,6 +3066,190 @@ body:not(.mode-agil-active) #containerModoAgil {
 <div class="notice" style="margin-top:14px">O teste de geração usa exclusivamente dados fictícios: cargo “Teste”, idade 40, CID Z00, nenhuma limitação objetiva e capacidade laborativa preservada.</div>
 <div class="footer-actions" style="margin-bottom:0;padding-bottom:0"><button class="btn btn-outline" id="diagRun" onclick="runDiagnostics()">Executar diagnóstico</button><div class="actions-right"><button class="btn btn-primary" id="diagAiTest" onclick="testDiagnosticAI()">Testar geração da IA</button></div></div>
 </div></div></div>
+
+<div class="modal-backdrop" id="modalAjudaMicrofone">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-head" style="background:#F8FAFC">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:24px">🎙️</span>
+        <div>
+          <h3 style="margin:0;color:#0F3254;font-size:16px">Como Ativar o Microfone para o Ditado</h3>
+          <div style="font-size:11px;color:#64748B;margin-top:2px">Guia rápido para liberação no Google Chrome e Windows</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalAjudaMicrofone')" title="Fechar">✕</button>
+    </div>
+    <div class="modal-body" style="padding:22px;display:flex;flex-direction:column;gap:18px">
+      
+      <!-- Destaque para quem está em 127.0.0.1 -->
+      <div id="micHelpLocalhostCard" style="background:#EFF6FF;border:1.5px solid #3B82F6;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:flex-start;gap:10px">
+          <span style="font-size:22px;line-height:1">🚀</span>
+          <div>
+            <strong style="color:#1D4ED8;font-size:13px;display:block">Solução Instantânea (1 Clique): Acessar via localhost</strong>
+            <p style="margin:4px 0 0 0;font-size:12px;color:#1E3A8A;line-height:1.45">
+              Por segurança, o Google Chrome bloqueia o pedido automático de microfone em endereços com IP numérico direto (<code>127.0.0.1</code>) e <strong>nem chega a perguntar</strong>.
+              Ao abrir por <code>localhost</code>, o Chrome reconhece a conexão como segura e exibe imediatamente a janela de autorização!
+            </p>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;align-items:center;margin-top:4px">
+          <span style="font-size:11px;color:#64748B">Seu atendimento atual será mantido</span>
+          <button type="button" class="btn btn-primary" onclick="migrarParaLocalhost()" style="background:#2563EB;display:inline-flex;align-items:center;gap:6px;padding:8px 16px;font-size:13px;font-weight:700">
+            <span>Abrir via http://localhost:8000</span> →
+          </button>
+        </div>
+      </div>
+
+      <!-- Opção 2: Desbloquear manualmente no Chrome -->
+      <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;padding:16px">
+        <strong style="color:#0F3254;font-size:13px;display:flex;align-items:center;gap:6px">
+          <span>⚙️</span> Opção 2: Desbloquear manualmente no Chrome (neste endereço)
+        </strong>
+        <ol style="margin:10px 0 0 0;padding-left:20px;font-size:12px;color:#334155;line-height:1.6">
+          <li>Olhe para a <strong>barra de endereços do topo do Chrome</strong> (ao lado esquerdo de <code>127.0.0.1:8000</code>).</li>
+          <li>Clique no ícone <strong>ℹ️ (informações)</strong> ou <strong>ícone de ajustes/cadeado</strong> logo à esquerda do endereço.</li>
+          <li>Localize o item <strong>Microfone</strong> e altere de <em>"Bloquear"</em> para <strong style="color:#16A34A">"Permitir"</strong> (ou clique em <em>Configurações do site</em>).</li>
+          <li>Pressione <strong>F5</strong> no teclado para atualizar a página.</li>
+        </ol>
+      </div>
+
+      <!-- Opção 3: Configuração do Windows -->
+      <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:12px;padding:14px;font-size:12px;color:#92400E;line-height:1.5">
+        <strong style="display:block;margin-bottom:4px;color:#B45309">🛡️ Se o Chrome ainda não perguntar (Trava de Privacidade do Windows):</strong>
+        Abra o menu <strong>Iniciar</strong> do Windows → <strong>Configurações</strong> → <strong>Privacidade e Segurança</strong> → <strong>Microfone</strong>.
+        Certifique-se de que a opção <em>"Permitir que os aplicativos da área de trabalho acessem seu microfone"</em> está <strong>Ativada</strong>.
+      </div>
+
+      <!-- Ações do rodapé do modal -->
+      <div class="footer-actions" style="margin-top:4px;padding:0;display:flex;justify-content:space-between">
+        <button type="button" class="btn btn-outline" onclick="closeModal('modalAjudaMicrofone')">Fechar</button>
+        <button type="button" class="btn btn-primary" onclick="testarMicrofoneAposDesbloqueio()" style="background:#0F3254">
+          🎙️ Testar Microfone Novamente
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: DECLARAÇÃO DE COMPARECIMENTO À PERÍCIA MÉDICA -->
+<div class="modal-backdrop" id="modalComprovanteComparecimento">
+  <div class="modal" style="width:min(940px,100%);max-height:92vh">
+    <div class="modal-head" style="background:#F8FAFC">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:24px">📄</span>
+        <div>
+          <h3 style="margin:0;color:#0F3254;font-size:16px">Declaração de Comparecimento à Perícia Médica</h3>
+          <div style="font-size:11px;color:#64748B;margin-top:2px">Comprovante pericial oficial para apresentação na unidade funcional / de exercício do servidor</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalComprovanteComparecimento')" title="Fechar">✕</button>
+    </div>
+    <div class="modal-body" style="padding:20px;display:flex;flex-direction:column;gap:16px">
+      <!-- Painel de Parâmetros -->
+      <div style="background:#F1F5F9;border:1px solid #CBD5E1;border-radius:12px;padding:14px">
+        <div style="font-size:11.5px;font-weight:800;color:#334155;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.04em">Parâmetros do Atendimento Pericial</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;color:#475569;margin-bottom:4px">Horário de Entrada (Início)</label>
+            <input type="time" class="input" id="comprovanteHoraEntrada" onchange="atualizarPreviewComprovante()" style="background:#fff">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;color:#475569;margin-bottom:4px">Horário de Saída (Término)</label>
+            <input type="time" class="input" id="comprovanteHoraSaida" onchange="atualizarPreviewComprovante()" style="background:#fff">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;color:#475569;margin-bottom:4px">Data da Perícia</label>
+            <input type="date" class="input" id="comprovanteDataPericia" onchange="atualizarPreviewComprovante()" style="background:#fff">
+          </div>
+        </div>
+
+        <div style="margin-top:12px;padding-top:10px;border-top:1px dashed #CBD5E1;display:flex;flex-direction:column;gap:8px">
+          <label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:#1E293B;cursor:pointer">
+            <input type="checkbox" id="comprovanteIncluirCid" onchange="atualizarPreviewComprovante()" style="margin-top:2px;accent-color:#073F87">
+            <span><strong>Incluir Código CID a pedido expresso do(a) servidor(a)</strong> (Resolução CFM nº 1.658/2002 e 1.851/2008. Mantido desmarcado por padrão em cumprimento ao sigilo médico).</span>
+          </label>
+          <div id="comprovanteCidBox" style="display:none;margin-left:24px;font-size:11.5px;color:#1D4ED8;background:#EFF6FF;padding:6px 12px;border-radius:6px;border:1px solid #BFDBFE">
+            CID a ser impresso na declaração: <strong id="comprovanteCidTexto">--</strong>
+          </div>
+        </div>
+
+        <div style="margin-top:10px">
+          <label style="display:block;font-size:11px;font-weight:700;color:#475569;margin-bottom:4px">Observações Adicionais (opcional)</label>
+          <input type="text" class="input" id="comprovanteObs" placeholder="Ex: Servidor compareceu para avaliação presencial com apresentação de exames complementares" oninput="atualizarPreviewComprovante()" style="background:#fff">
+        </div>
+      </div>
+
+      <!-- Preview do Documento -->
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11.5px;font-weight:800;color:#334155;text-transform:uppercase;letter-spacing:0.04em">Prévia da Declaração Formatada (Padrão Oficial)</span>
+        <span style="font-size:11px;color:#64748B">Atualização em tempo real</span>
+      </div>
+      <div id="comprovanteLivePreview" class="comprovante-preview-box">
+        <!-- Renderizado dinamicamente por atualizarPreviewComprovante() -->
+      </div>
+
+      <!-- Rodapé / Ações -->
+      <div class="footer-actions" style="margin-top:8px;padding:0;display:flex;justify-content:space-between;align-items:center">
+        <button type="button" class="btn btn-outline" onclick="closeModal('modalComprovanteComparecimento')">Fechar</button>
+        <div style="display:flex;gap:10px">
+          <button type="button" class="btn btn-outline" onclick="copiarTextoComprovante()" style="font-weight:700">📋 Copiar Texto</button>
+          <button type="button" class="btn btn-primary" onclick="imprimirComprovante()" style="background:#073F87;font-weight:800;display:inline-flex;align-items:center;gap:6px">
+            <span>🖨️ Imprimir Declaração</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: INSTALAÇÃO DO BOOKMARKLET E-SISLA (ADEUS F12) -->
+<div class="modal-backdrop" id="modalBookmarkletAtendimento">
+  <div class="modal" style="width:min(680px,100%)">
+    <div class="modal-head" style="background:#F0FDF4">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:26px">⚡</span>
+        <div>
+          <h3 style="margin:0;color:#065F46;font-size:16px">Botão dos Favoritos e-SISLA (Adeus F12)</h3>
+          <div style="font-size:11px;color:#047857;margin-top:2px">Preencha o e-SISLA oficial em 1 clique direto da sua Barra de Favoritos</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalBookmarkletAtendimento')" title="Fechar">✕</button>
+    </div>
+    <div class="modal-body" style="padding:22px;display:flex;flex-direction:column;gap:18px">
+      <!-- Card do Botão Arrastável -->
+      <div style="background:linear-gradient(135deg, #ECFDF5, #D1FAE5);border:2px dashed #10B981;border-radius:14px;padding:20px;text-align:center">
+        <p style="margin:0 0 12px;font-size:13px;font-weight:700;color:#065F46">⭐ Arraste o botão verde abaixo para a sua Barra de Favoritos:</p>
+        <div style="display:flex;justify-content:center;margin-bottom:12px">
+          <a id="linkBookmarkletAtendimento" href="#" draggable="true" class="btn-bookmarklet" title="Arraste para sua barra de favoritos do navegador">
+            ⚡ Preencher e-SISLA
+          </a>
+        </div>
+        <span style="font-size:11px;color:#047857">💡 Se a Barra de Favoritos estiver oculta no Chrome/Edge, pressione <strong>Ctrl + Shift + B</strong> para exibi-la.</span>
+      </div>
+
+      <!-- Passo a Passo -->
+      <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;padding:16px">
+        <strong style="color:#0F3254;font-size:13px;display:block;margin-bottom:10px">Como funciona no dia a dia:</strong>
+        <ol style="margin:0;padding-left:20px;font-size:12.5px;color:#334155;line-height:1.7">
+          <li><strong>Instale 1 única vez:</strong> Arraste o botão verde para a barra de favoritos do Chrome/Edge.</li>
+          <li><strong>No atendimento do Ambiental:</strong> Clique em <code>⚡ Copiar p/ e-SISLA</code> na barra de ações.</li>
+          <li><strong>Na aba do e-SISLA:</strong> Abra o prontuário do servidor e clique no favorito <code>⚡ Preencher e-SISLA</code>!</li>
+          <li><strong>Pronto instantâneo:</strong> Todos os campos (anamnese, exame físico, quesitos 1 a 3, parecer, biotipo e CRM) são preenchidos e sanitizados (limite de 2.000 carac.) com segurança jurídica!</li>
+        </ol>
+      </div>
+
+      <!-- Ações do rodapé do modal -->
+      <div class="footer-actions" style="margin-top:4px;padding:0;display:flex;justify-content:space-between;align-items:center">
+        <button type="button" class="btn btn-outline" onclick="closeModal('modalBookmarkletAtendimento')">Fechar</button>
+        <button type="button" class="btn btn-outline" onclick="copiarCodigoBookmarklet()" style="font-weight:700;color:#065F46;border-color:#A7F3D0">
+          📋 Copiar Código do Favorito
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
 let accessToken = null;
@@ -4397,6 +4680,54 @@ const ValidationEngine={
     const warnings=[...q.warnings];
     const recommendations=[];
     if(q.answered===3&&q.allSame) recommendations.push("Revisar as três respostas dos quesitos com base nos achados registrados.");
+
+    // 🛡️ Regras de Ouro e-SISLA / DPME — Coerência Pericial
+    const pFinal = String(state.parecer || getRadio("parecer") || "").toUpperCase();
+    const q1Ans = QuesitoService.getAnswer(0);
+    const q2Ans = QuesitoService.getAnswer(1);
+    const q3Ans = QuesitoService.getAnswer(2);
+    
+    if (pFinal === "FAVORÁVEL") {
+      if (q3Ans === "Não") {
+        warnings.push("🛡️ Incoerência Grave e-SISLA: Parecer FAVORÁVEL com Quesito 3 respondido como 'Não' (limitação não impede atividades). Isso gera nulidade técnica do laudo.");
+      }
+      if (q1Ans === "Não") {
+        warnings.push("🛡️ Incoerência e-SISLA: Parecer FAVORÁVEL com Quesito 1 respondido como 'Não' (sem comprovação de doença/sequela prévia).");
+      }
+      if (q2Ans === "Não") {
+        warnings.push("🛡️ Incoerência e-SISLA: Parecer FAVORÁVEL com Quesito 2 respondido como 'Não' (a doença não gera limitações).");
+      }
+    } else if (pFinal === "CONTRÁRIO") {
+      if (q3Ans === "Sim") {
+        warnings.push("🛡️ Incoerência Grave e-SISLA: Parecer CONTRÁRIO com Quesito 3 respondido como 'Sim' (afirma impedimento para o cargo). Contradição manifesta passível de recurso pericial.");
+      }
+    }
+
+    // 📏 Limite de Caracteres e-SISLA (2.000 caracteres no Oracle do Estado)
+    const checagensTexto = [
+      { nome: "Queixa e Duração", texto: state.aux?.doencaMotivo || state.doencaMotivo },
+      { nome: "Antecedentes Mórbidos", texto: state.aux?.historicoPregresso || state.historicoPregresso },
+      { nome: "Atestado / Relatórios", texto: state.aux?.obsDocumentos || $("obsDocumentos")?.value },
+      { nome: "Exame Físico / Achados", texto: state.exameFisicoDescricao || state.alteracoesClinicasExames },
+      { nome: "Limitações / Atividades", texto: state.aux?.sintomasLimitacao || state.aux?.atividadesComprometidas || state.aux?.descLimitacao },
+      { nome: "Justificativa Parecer Final", texto: state.aux?.justificativa || state.justificativa }
+    ];
+    checagensTexto.forEach(ct => {
+      const len = String(ct.texto || "").length;
+      if (len > 2000) {
+        warnings.push(`📏 Limite e-SISLA Excedido: O campo '${ct.nome}' possui ${len.toLocaleString('pt-BR')} caracteres (máximo permitido: 2.000). O texto será cortado no e-SISLA.`);
+      }
+    });
+
+    // 🏛️ Regra dos 90 / 180 dias de afastamento (Junta Médica / Readaptação)
+    const diasAtuaisVal = parseInt(state.aux?.diasConcedidos || state.aux?.diasSolicitados || $("agilDiasSolicitados")?.value || $("diasSolicitados")?.value || 0, 10) || 0;
+    const diasHistVal = window._diasHistoricoAcumulado || 0;
+    const totalAfastamento = diasAtuaisVal + diasHistVal;
+    if (totalAfastamento >= 180) {
+      warnings.push(`🚨 Alerta DPME / Lei 10.261/68: Afastamento acumulado de ${totalAfastamento} dias (≥ 180 dias). Avaliação obrigatória por Junta Médica para Readaptação Funcional.`);
+    } else if (totalAfastamento >= 90) {
+      recommendations.push(`🏛️ Diretriz DPME (Afastamento ≥ 90 dias): Servidor acumula ${totalAfastamento} dias de afastamento. Recomenda-se registrar sugestão de Junta Médica para Readaptação.`);
+    }
     const stepData=Object.fromEntries(Object.entries(by).map(([step,items])=>[step,{status:items.length?"PENDENTE":"CONCLUIDA",pending:items,count:items.length}]));
     return {valid:blocking.length===0,blocking,warnings,recommendations,steps:stepData,quesitos:q,score:Math.max(0,Math.round((13-blocking.length)/13*100))};
   },
@@ -4839,10 +5170,13 @@ async function init(){
      }, 1500);
    }
  });
- document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeModal("historyModal");closeModal("diagnosticModal");}});
+ document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeModal("historyModal");closeModal("diagnosticModal");closeModal("modalAjudaMicrofone");}});
  window.addEventListener("beforeunload",()=>{void syncToRegistry();});
 
  if(typeof setupOsteoHoverEffects === "function") setupOsteoHoverEffects();
+ if(typeof initEsislaCharCounters === "function") initEsislaCharCounters();
+ if(typeof verificarCoerenciaPericial === "function") verificarCoerenciaPericial();
+ if(typeof verificarRegraJuntaMedica === "function") verificarRegraJuntaMedica();
 }
 init().catch(e=>{console.error("Falha na inicialização:",e);toast("Erro ao iniciar o sistema.");});
 
@@ -5987,6 +6321,7 @@ function syncAgilField(field, value) {
   }
   if (field === "dataDocumento" || field === "diasSolicitados") {
     if (typeof calcularDatasAtestado === "function") calcularDatasAtestado();
+    if (typeof verificarRegraJuntaMedica === "function") verificarRegraJuntaMedica();
   }
   if (field === "exameFisicoDescricao") {
     state.alteracoesClinicasExames = value;
@@ -5996,6 +6331,10 @@ function syncAgilField(field, value) {
   }
   if (field === "justificativa") {
     if (typeof verificarCoerenciaPericial === "function") verificarCoerenciaPericial();
+  }
+  if (typeof atualizarContadorEsisla === "function") {
+    atualizarContadorEsisla(field);
+    atualizarContadorEsisla(agilKey);
   }
   if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
   autoSave();
@@ -6998,93 +7337,439 @@ function adicionarMedRapida(med, dose, freq, obs) {
    ========================================================= */
 let activeSpeechRecognition = null;
 let activeVoiceTargetId = null;
+window._voiceIsRecording = false;
 
-function toggleVoiceDictation(targetId) {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    toast("O reconhecimento de voz nativo não é suportado neste navegador. Utilize o Google Chrome ou Microsoft Edge.");
-    return;
+function tratarPontuacaoVoz(texto) {
+  if (!texto) return "";
+  return texto
+    .replace(/\s+vírgula/gi, ",")
+    .replace(/\s+ponto e vírgula/gi, ";")
+    .replace(/\s+dois pontos/gi, ":")
+    .replace(/\s+ponto final/gi, ".")
+    .replace(/\s+(nova linha|novo parágrafo|parágrafo)/gi, "\n\n")
+    .replace(/\s+ponto(?!\w)/gi, ".")
+    .replace(/\s{2,}/g, " ");
+}
+
+function syncVoiceField(targetId, val, isFinal = false) {
+  if (targetId === "agilDoencaMotivo" || targetId === "doencaMotivo") {
+    if (!state.aux) state.aux = {};
+    state.aux.doencaMotivo = val;
+    state.doencaMotivo = val;
+    if ($("doencaMotivo") && $("doencaMotivo") !== document.activeElement) $("doencaMotivo").value = val;
+    if ($("agilDoencaMotivo") && $("agilDoencaMotivo") !== document.activeElement) $("agilDoencaMotivo").value = val;
+    const currentHist = $("agilHistoricoPregresso")?.value || "";
+    const prevHist = state.aux.historicoPregresso || "";
+    if (!currentHist || currentHist === "Nega" || currentHist === prevHist) {
+      state.aux.historicoPregresso = val;
+      state.historicoPregresso = val;
+      if ($("historicoPregresso")) $("historicoPregresso").value = val;
+      if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = val;
+    }
+    if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
+    if (isFinal && typeof autoSave === "function") autoSave();
+  } else if (targetId === "agilSintomasLimitacao" || targetId === "sintomasLimitacao") {
+    if (!state.aux) state.aux = {};
+    state.aux.sintomasLimitacao = val;
+    state.sintomasLimitacao = val;
+    if ($("sintomasLimitacao") && $("sintomasLimitacao") !== document.activeElement) $("sintomasLimitacao").value = val;
+    if ($("agilSintomasLimitacao") && $("agilSintomasLimitacao") !== document.activeElement) $("agilSintomasLimitacao").value = val;
+    if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
+    if (isFinal && typeof autoSave === "function") autoSave();
+  } else if (targetId === "agilExameFisicoDescricao" || targetId === "exameFisicoDescricao" || targetId === "alteracoesClinicasExames") {
+    if (!state.aux) state.aux = {};
+    state.aux.exameFisicoDescricao = val;
+    state.aux.alteracoesClinicasExames = val;
+    state.exameFisicoDescricao = val;
+    state.alteracoesClinicasExames = val;
+    if ($("exameFisicoDescricao") && $("exameFisicoDescricao") !== document.activeElement) $("exameFisicoDescricao").value = val;
+    if ($("alteracoesClinicasExames") && $("alteracoesClinicasExames") !== document.activeElement) $("alteracoesClinicasExames").value = val;
+    if ($("agilExameFisicoDescricao") && $("agilExameFisicoDescricao") !== document.activeElement) $("agilExameFisicoDescricao").value = val;
+    if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
+    if (isFinal && typeof autoSave === "function") autoSave();
+  } else if (targetId === "agilJustificativa" || targetId === "justificativa") {
+    if (!state.aux) state.aux = {};
+    state.aux.justificativa = val;
+    state.justificativa = val;
+    if ($("justificativa") && $("justificativa") !== document.activeElement) $("justificativa").value = val;
+    if ($("agilJustificativa") && $("agilJustificativa") !== document.activeElement) $("agilJustificativa").value = val;
+    if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
+    if (isFinal && typeof autoSave === "function") autoSave();
+  } else {
+    if (!state.aux) state.aux = {};
+    state.aux[targetId] = val;
+    state[targetId] = val;
+    const el = $(targetId);
+    if (el && el !== document.activeElement) el.value = val;
+    if (isFinal && typeof autoSave === "function") autoSave();
   }
+  if (typeof atualizarContadorEsisla === "function") atualizarContadorEsisla(targetId);
+  if (typeof verificarCoerenciaPericial === "function") verificarCoerenciaPericial();
+}
 
-  const btnId = `voiceBtn_${targetId}`;
-  const btn = $(btnId);
-
-  // Se já estiver gravando para este campo, interrompe
-  if (activeSpeechRecognition && activeVoiceTargetId === targetId) {
-    try { activeSpeechRecognition.stop(); } catch (_) {}
-    activeSpeechRecognition = null;
-    activeVoiceTargetId = null;
-    if (btn) btn.classList.remove("recording");
+async function toggleVoiceDictation(targetId) {
+  // Se já estiver gravando neste campo, interrompe
+  if (window._voiceIsRecording && activeVoiceTargetId === targetId) {
+    finalizarDitadoVoz(targetId);
     toast("Gravação de voz finalizada.");
     return;
   }
 
-  // Se estiver gravando para outro campo, interrompe o anterior
-  if (activeSpeechRecognition) {
-    try { activeSpeechRecognition.stop(); } catch (_) {}
-    const prevBtn = $(`voiceBtn_${activeVoiceTargetId}`);
-    if (prevBtn) prevBtn.classList.remove("recording");
+  // Se estiver gravando em outro campo, interrompe o anterior primeiro
+  if (window._voiceIsRecording && activeVoiceTargetId) {
+    finalizarDitadoVoz(activeVoiceTargetId);
   }
 
+  // Verificação de protocolo file:///
+  if (location.protocol === "file:") {
+    toast("O navegador bloqueia o microfone em arquivos abertos diretamente (file:///). Inicie o sistema via servidor local (http://localhost:8000).");
+    abrirModalAjudaMicrofone("file");
+    return;
+  }
+
+  // Alerta de contexto seguro no Google Chrome (127.0.0.1 vs localhost)
+  if (location.hostname === "127.0.0.1") {
+    toast("💡 No Chrome, o envio de voz pode falhar em 127.0.0.1. Se não transcrever, acesse por: http://localhost:8000", 6000);
+  }
+
+  // Verificação de suporte do navegador
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    toast("O reconhecimento de voz nativo não é suportado neste navegador. Utilize o Google Chrome ou Microsoft Edge.");
+    abrirModalAjudaMicrofone("unsupported");
+    return;
+  }
+
+  // Iniciar diretamente o reconhecimento de voz nativo (Web Speech API)
+  iniciarDitadoVoz(targetId);
+}
+
+function iniciarDitadoVoz(targetId) {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const targetEl = $(targetId);
+  if (!targetEl) return;
+
+  const btnId = `voiceBtn_${targetId}`;
+  const btn = $(btnId);
+
   try {
+    if (activeSpeechRecognition) {
+      try { activeSpeechRecognition.abort(); } catch (_) {}
+      activeSpeechRecognition = null;
+    }
+
     const recognition = new SpeechRecognition();
     recognition.lang = "pt-BR";
     recognition.continuous = true;
-    recognition.interimResults = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
 
-    recognition.onstart = () => {
-      activeSpeechRecognition = recognition;
-      activeVoiceTargetId = targetId;
-      if (btn) btn.classList.add("recording");
-      toast("Escutando... Fale seus achados clínicos com clareza.");
-    };
+    window._voiceIsRecording = true;
+    activeVoiceTargetId = targetId;
+    activeSpeechRecognition = recognition;
+    window._voiceWordsTranscribed = "";
+    window._voiceAudioChunks = [];
+    window._voiceBaseText = targetEl.value.trim();
+
+    let voiceBaseText = window._voiceBaseText;
+    let accumulatedFinal = "";
+
+    if (btn) {
+      btn.classList.add("recording");
+      if (!btn.dataset.origText) btn.dataset.origText = btn.innerHTML;
+      btn.innerHTML = '<span>🔴</span> <strong>Gravando... (Clique p/ parar)</strong>';
+    }
+
+    toast("Microfone ativo! Fale seus achados clínicos com clareza.");
+
+    // Monitoramento do nível de áudio do microfone e gravação de backup via MediaRecorder
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        window._voiceAudioStream = stream;
+
+        // Iniciar gravação de áudio em paralelo para fallback com IA (Gemini) caso necessário
+        try {
+          const supportedMime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+            ? "audio/webm;codecs=opus"
+            : (MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "");
+          const mr = supportedMime ? new MediaRecorder(stream, { mimeType: supportedMime }) : new MediaRecorder(stream);
+          window._voiceMediaRecorder = mr;
+          window._voiceAudioChunks = [];
+          mr.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) window._voiceAudioChunks.push(e.data);
+          };
+          mr.start(200);
+        } catch (mrErr) {
+          console.warn("MediaRecorder init:", mrErr);
+        }
+
+        // VU meter visual de volume
+        try {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) return;
+          const audioCtx = new AudioContextClass();
+          window._voiceAudioCtx = audioCtx;
+          const source = audioCtx.createMediaStreamSource(stream);
+          const analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 128;
+          source.connect(analyser);
+          const dataArray = new Uint8Array(analyser.frequencyBinCount);
+          let silenceFrames = 0;
+
+          const monitorAudio = () => {
+            if (!window._voiceIsRecording) return;
+            analyser.getByteFrequencyData(dataArray);
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+            const avg = sum / dataArray.length;
+
+            if (btn && window._voiceIsRecording) {
+              if (avg > 4) {
+                silenceFrames = 0;
+                btn.innerHTML = '<span>🔴</span> <strong>Gravando 🎙️ ▂▃▅ (Ouvindo...)</strong>';
+              } else {
+                silenceFrames++;
+                if (silenceFrames > 40) { // mais de 4 segundos de silêncio absoluto
+                  btn.innerHTML = '<span>🔴</span> <strong>Gravando... (Fale no microfone)</strong>';
+                }
+              }
+            }
+            if (window._voiceIsRecording) requestAnimationFrame(monitorAudio);
+          };
+          requestAnimationFrame(monitorAudio);
+        } catch (e) {
+          console.warn("Audio level monitor:", e);
+        }
+      }).catch(e => {
+        console.warn("Microphone stream monitor:", e);
+      });
+    }
 
     recognition.onresult = (event) => {
-      const results = event.results;
-      const transcript = results[results.length - 1][0].transcript.trim();
-      if (!transcript) return;
-      
-      const targetEl = $(targetId);
-      if (targetEl) {
-        const curVal = targetEl.value.trim();
-        const newVal = curVal ? `${curVal} ${transcript}` : transcript;
-        targetEl.value = newVal;
-        
-        if (targetId === "agilExameFisicoDescricao") {
-          syncAgilField("exameFisicoDescricao", newVal);
-        } else if (targetId === "agilJustificativa") {
-          syncAgilField("justificativa", newVal);
-        } else if (targetId === "agilDoencaMotivo") {
-          onAgilDoencaMotivoInput(newVal);
-        } else if (targetId === "agilSintomasLimitacao") {
-          syncAgilField("sintomasLimitacao", newVal);
+      let finalSegment = "";
+      let interimSegment = "";
+
+      for (let i = 0; i < event.results.length; ++i) {
+        const item = event.results[i];
+        if (item.isFinal) {
+          finalSegment += item[0].transcript + " ";
+        } else {
+          interimSegment += item[0].transcript;
         }
       }
+
+      accumulatedFinal = tratarPontuacaoVoz(finalSegment.trim());
+      const interimClean = tratarPontuacaoVoz(interimSegment.trim());
+
+      let liveWords = "";
+      if (accumulatedFinal && interimClean) {
+        liveWords = `${accumulatedFinal} ${interimClean}`;
+      } else {
+        liveWords = accumulatedFinal || interimClean;
+      }
+
+      if (liveWords) {
+        window._voiceWordsTranscribed = liveWords;
+      }
+
+      let composed = voiceBaseText;
+      if (liveWords) {
+        composed = composed ? `${composed} ${liveWords}` : liveWords;
+      }
+
+      targetEl.value = composed;
+      syncVoiceField(targetId, composed, false);
+      targetEl.scrollTop = targetEl.scrollHeight;
     };
 
     recognition.onerror = (event) => {
       console.warn("Speech recognition error:", event.error);
-      if (btn) btn.classList.remove("recording");
-      activeSpeechRecognition = null;
-      activeVoiceTargetId = null;
-      if (event.error !== "no-speech") {
-        toast("Reconhecimento de voz: " + event.error);
+      if (event.error === "no-speech") {
+        // Pausa normal do médico; reconexão automática no onend manterá a sessão aberta
+        return;
+      }
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        finalizarDitadoVoz(targetId);
+        abrirModalAjudaMicrofone("not_allowed");
+        return;
+      }
+      if (event.error === "network") {
+        console.warn("Falha de rede no Google Speech. A transcrição por IA (Gemini) assumirá ao finalizar.");
+        return;
+      }
+      if (event.error === "audio-capture") {
+        finalizarDitadoVoz(targetId);
+        toast("Nenhum microfone detectado. Conecte um microfone para utilizar o ditado.");
+        return;
       }
     };
 
     recognition.onend = () => {
-      if (btn) btn.classList.remove("recording");
-      if (activeVoiceTargetId === targetId) {
-        activeSpeechRecognition = null;
-        activeVoiceTargetId = null;
+      if (window._voiceIsRecording && activeVoiceTargetId === targetId) {
+        try {
+          recognition.start();
+          return;
+        } catch (_) {
+          setTimeout(() => {
+            if (window._voiceIsRecording && activeVoiceTargetId === targetId) {
+              try { recognition.start(); return; } catch (_) {}
+            }
+          }, 300);
+          return;
+        }
       }
     };
 
-    recognition.start();
+    try {
+      recognition.start();
+    } catch (startErr) {
+      console.warn("Falha imediata ao executar recognition.start():", startErr);
+      if (startErr.name === "NotAllowedError" || (startErr.message && startErr.message.includes("not-allowed"))) {
+        finalizarDitadoVoz(targetId);
+        abrirModalAjudaMicrofone("not_allowed");
+      }
+    }
   } catch (err) {
-    console.error("Falha ao iniciar SpeechRecognition:", err);
-    toast("Não foi possível acessar o microfone.");
+    console.error("Falha ao configurar SpeechRecognition:", err);
+    window._voiceIsRecording = false;
+    finalizarDitadoVoz(targetId);
+    abrirModalAjudaMicrofone("not_allowed");
   }
+}
+
+function finalizarDitadoVoz(targetId) {
+  window._voiceIsRecording = false;
+  if (activeSpeechRecognition) {
+    try { activeSpeechRecognition.stop(); } catch (_) {}
+    activeSpeechRecognition = null;
+  }
+
+  const btn = $(`voiceBtn_${targetId}`);
+  const targetEl = $(targetId);
+  const hadRealtimeWords = !!(window._voiceWordsTranscribed && window._voiceWordsTranscribed.trim().length > 0);
+  const voiceBaseText = window._voiceBaseText || "";
+
+  // Parar mediaRecorder e coletar áudio gravado
+  let audioBlob = null;
+  if (window._voiceMediaRecorder && window._voiceMediaRecorder.state !== "inactive") {
+    try {
+      window._voiceMediaRecorder.stop();
+      if (window._voiceAudioChunks && window._voiceAudioChunks.length > 0) {
+        audioBlob = new Blob(window._voiceAudioChunks, { type: window._voiceMediaRecorder.mimeType || "audio/webm" });
+      }
+    } catch (_) {}
+  }
+  window._voiceMediaRecorder = null;
+
+  if (window._voiceAudioStream) {
+    try { window._voiceAudioStream.getTracks().forEach(t => t.stop()); } catch (_) {}
+    window._voiceAudioStream = null;
+  }
+  if (window._voiceAudioCtx) {
+    try { window._voiceAudioCtx.close(); } catch (_) {}
+    window._voiceAudioCtx = null;
+  }
+
+  // Se o reconhecimento nativo em tempo real JÁ transcreveu palavras
+  if (hadRealtimeWords && targetEl) {
+    const cleaned = targetEl.value.replace(/\s{2,}/g, " ").trim();
+    targetEl.value = cleaned;
+    syncVoiceField(targetId, cleaned, true);
+    if (btn) {
+      btn.classList.remove("recording");
+      btn.innerHTML = btn.dataset.origText || '<span>🎙️</span> Ditado por voz';
+    }
+    toast("Gravação finalizada. Achados registrados!");
+    activeVoiceTargetId = null;
+    return;
+  }
+
+  // Se o reconhecimento nativo em tempo real NÃO transcreveu nada (ex: trava de rede do Chrome),
+  // enviamos o áudio capturado para a Inteligência Artificial (Gemini) transcrever!
+  if (audioBlob && audioBlob.size > 2000 && targetEl) {
+    if (btn) {
+      btn.innerHTML = '<span>⏳</span> <strong>Transcrevendo áudio com IA...</strong>';
+    }
+    toast("Transcrevendo gravação com Inteligência Artificial...");
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      try {
+        const b64 = reader.result;
+        const res = await (window.AmbientalAuth ? window.AmbientalAuth.authFetch : fetch)("/api/ai/transcribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ audio: b64, mime_type: audioBlob.type || "audio/webm" })
+        });
+        const data = await res.json();
+        const texto = (data?.data?.texto || data?.texto || "").trim();
+        if (texto) {
+          const finalTxt = voiceBaseText ? `${voiceBaseText} ${texto}` : texto;
+          targetEl.value = finalTxt;
+          syncVoiceField(targetId, finalTxt, true);
+          toast("✅ Ditado transcrito com sucesso pela IA!");
+        } else {
+          toast("Nenhuma fala compreensível identificada no áudio.");
+        }
+      } catch (err) {
+        console.error("Erro na transcrição Gemini:", err);
+        toast("Falha na transcrição: " + (err.message || err));
+      } finally {
+        if (btn) {
+          btn.classList.remove("recording");
+          btn.innerHTML = btn.dataset.origText || '<span>🎙️</span> Ditado por voz';
+        }
+        activeVoiceTargetId = null;
+      }
+    };
+    reader.readAsDataURL(audioBlob);
+    return;
+  }
+
+  // Fallback padrão se não houver áudio suficiente
+  if (btn) {
+    btn.classList.remove("recording");
+    btn.innerHTML = btn.dataset.origText || '<span>🎙️</span> Ditado por voz';
+  }
+  if (targetEl) {
+    const cleaned = targetEl.value.replace(/\s{2,}/g, " ").trim();
+    targetEl.value = cleaned;
+    syncVoiceField(targetId, cleaned, true);
+  }
+  activeVoiceTargetId = null;
+}
+
+function abrirModalAjudaMicrofone(motivo) {
+  const modal = $("modalAjudaMicrofone");
+  if (!modal) {
+    toast("Permissão do microfone negada. Acesse via http://localhost:8000 ou autorize o microfone no navegador.");
+    return;
+  }
+  const hostCard = $("micHelpLocalhostCard");
+  if (hostCard) {
+    if (location.hostname === "localhost") {
+      hostCard.style.display = "none";
+    } else {
+      hostCard.style.display = "flex";
+    }
+  }
+  modal.classList.add("show");
+}
+
+function migrarParaLocalhost() {
+  try {
+    if (typeof autoSave === "function") autoSave();
+  } catch (_) {}
+  const u = new URL(window.location.href);
+  u.hostname = "localhost";
+  window.location.href = u.toString();
+}
+
+function testarMicrofoneAposDesbloqueio() {
+  closeModal('modalAjudaMicrofone');
+  toast("Testando microfone...");
+  const targetId = activeVoiceTargetId || "agilExameFisicoDescricao" || "exameFisicoDescricao";
+  iniciarDitadoVoz(targetId);
 }
 
 /* =========================================================
@@ -7140,6 +7825,20 @@ async function verificarHistoricoPericiado(cpf) {
       const ultimo = anteriores[0];
       window._ultimoAtendimentoHistorico = ultimo;
 
+      let diasAcumulados = 0;
+      const umAnoAtras = new Date();
+      umAnoAtras.setFullYear(umAnoAtras.getFullYear() - 1);
+      anteriores.forEach(atd => {
+        const payload = atd.payload || atd;
+        const dtStr = atd.data_atendimento || atd.created_at || payload.dataAtendimento || payload.data_atendimento;
+        const dt = dtStr ? new Date(dtStr) : null;
+        if (!dt || dt >= umAnoAtras) {
+          const d = parseInt(payload.diasConcedidos || payload.aux?.diasConcedidos || payload.diasSolicitados || payload.aux?.diasSolicitados || atd.dias || 0, 10);
+          if (!isNaN(d) && d > 0) diasAcumulados += d;
+        }
+      });
+      window._diasHistoricoAcumulado = diasAcumulados;
+
       const card = $("historicoPacienteCard");
       const dtUltimo = ultimo.data_atendimento || ultimo.created_at || "Data anterior";
       const cidUltimo = ultimo.cid || ultimo.payload?.cid || "Não informado";
@@ -7149,12 +7848,14 @@ async function verificarHistoricoPericiado(cpf) {
         $("histCardTitulo").textContent = `Histórico pericial localizado: Atendimento anterior com CID ${cidUltimo}`;
       }
       if ($("histCardDetalhes")) {
-        $("histCardDetalhes").textContent = `Data: ${dtUltimo.slice(0, 10)} ${cargoUltimo ? `• Cargo: ${cargoUltimo}` : ""} • Clique para reaproveitar comorbidades/antecedentes crônicos.`;
+        $("histCardDetalhes").textContent = `Data: ${dtUltimo.slice(0, 10)} ${cargoUltimo ? `• Cargo: ${cargoUltimo}` : ""}${diasAcumulados > 0 ? ` • ${diasAcumulados} dias concedidos no último ano` : ""} • Clique para reaproveitar comorbidades/antecedentes crônicos.`;
       }
       if (card) card.style.display = "block";
     } else {
+      window._diasHistoricoAcumulado = 0;
       if ($("historicoPacienteCard")) $("historicoPacienteCard").style.display = "none";
     }
+    if (typeof verificarRegraJuntaMedica === "function") verificarRegraJuntaMedica();
   } catch (err) {
     console.warn("Falha ao buscar histórico de atendimentos:", err);
   }
@@ -7208,38 +7909,337 @@ function importarAntecedentesHistorico() {
    PRODUTIVIDADE MÉDICA: DETECTOR DE COERÊNCIA PERICIAL (Quesitos x Parecer)
    ========================================================= */
 function verificarCoerenciaPericial() {
-  const alertaBox = $("coerenciaParecerAlerta");
-  const textoBox = $("coerenciaParecerTexto");
-  if (!alertaBox || !textoBox) return;
+  const agilBox = $("coerenciaParecerAlerta");
+  const sec7Box = $("coerenciaParecerAlertaSec7");
+  const sec8Box = $("coerenciaParecerAlertaSec8");
 
   const parecer = state.parecer || getRadio("parecer");
-  const q3 = QuesitoService.getAnswer(2); // Quesito 3: limitação impede atividades do rol?
-  const limitacao = state.limitacaoFuncional || getRadio("limitacaoFuncional");
+  const q1 = QuesitoService.getAnswer(0);
+  const q2 = QuesitoService.getAnswer(1);
+  const q3 = QuesitoService.getAnswer(2);
+  const limitacao = state.limitacaoFuncional || getRadio("limitacaoFuncional") || getRadio("agilLimitacaoFuncional");
 
   const inconsistencias = [];
 
   if (parecer === "CONTRÁRIO") {
     if (q3 === "Sim") {
-      inconsistencias.push("O <strong>Quesito 3</strong> afirma que a limitação impede atividade do rol (<strong>Sim</strong>), mas o parecer pericial está marcado como <strong>CONTRÁRIO</strong>.");
-    }
-    if (limitacao === "Sim") {
-      inconsistencias.push("Foi indicada <strong>Limitação Funcional: Sim</strong>, divergindo do parecer <strong>CONTRÁRIO</strong>.");
+      inconsistencias.push("🚫 <strong>Contradição Grave:</strong> O <strong>Quesito 3</strong> afirma que a limitação IMPEDE as atividades do rol (<strong>Sim</strong>), mas o parecer pericial está como <strong>CONTRÁRIO</strong>. Atestar impedimento funcional e negar a licença gera vício de nulidade.");
     }
   } else if (parecer === "FAVORÁVEL") {
     if (q3 === "Não") {
-      inconsistencias.push("O <strong>Quesito 3</strong> afirma que a limitação NÃO impede atividades (<strong>Não</strong>), mas o parecer pericial está marcado como <strong>FAVORÁVEL</strong>.");
+      inconsistencias.push("🚫 <strong>Nulidade Técnica:</strong> O <strong>Quesito 3</strong> afirma que a limitação NÃO impede atividades (<strong>Não</strong>), mas o parecer é <strong>FAVORÁVEL</strong>. Sem impedimento funcional, a concessão é tecnicamente nula perante o DPME e e-SISLA.");
+    }
+    if (q1 === "Não") {
+      inconsistencias.push("⚠️ <strong>Divergência:</strong> O <strong>Quesito 1</strong> afirma que NÃO há doença/sequela prévia (<strong>Não</strong>), incompatível com parecer <strong>FAVORÁVEL</strong>.");
+    }
+    if (q2 === "Não") {
+      inconsistencias.push("⚠️ <strong>Divergência:</strong> O <strong>Quesito 2</strong> afirma que a patologia NÃO gera limitações (<strong>Não</strong>), incompatível com parecer <strong>FAVORÁVEL</strong>.");
     }
     if (limitacao === "Não") {
-      inconsistencias.push("Foi indicada <strong>Limitação Funcional: Não</strong>, divergindo do parecer <strong>FAVORÁVEL</strong>.");
+      inconsistencias.push("⚠️ <strong>Incoerência:</strong> Campo 'Limitação Funcional' está marcado como <strong>Não</strong>, divergindo do parecer <strong>FAVORÁVEL</strong>.");
     }
   }
 
-  if (inconsistencias.length > 0) {
-    textoBox.innerHTML = `<strong>Aviso de Coerência Pericial DPME:</strong><br>${inconsistencias.join("<br>")}`;
-    alertaBox.style.display = "block";
-  } else {
-    alertaBox.style.display = "none";
+  const allAnswered = (q1 === "Sim" || q1 === "Não") && (q2 === "Sim" || q2 === "Não") && (q3 === "Sim" || q3 === "Não");
+  const isError = inconsistencias.length > 0;
+  const isHarmonized = allAnswered && !isError && !!parecer;
+
+  let renderHtml = "";
+  if (isError) {
+    let botoesAcao = "";
+    if (parecer === "FAVORÁVEL") {
+      botoesAcao = `
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <button type="button" class="btn btn-outline" style="background:#fff;border-color:#F59E0B;color:#B45309;font-weight:700;font-size:11px;padding:4px 10px;cursor:pointer" onclick="aplicarAlinhamentoQuesitos('FAVORAVEL')">⚡ Alinhar Quesitos com Favorável (Sim, Sim, Sim)</button>
+          <button type="button" class="btn btn-outline" style="background:#fff;border-color:#CBD5E1;color:#475569;font-weight:600;font-size:11px;padding:4px 10px;cursor:pointer" onclick="aplicarAlinhamentoParecer('CONTRÁRIO')">⚡ Mudar Parecer para CONTRÁRIO</button>
+        </div>
+      `;
+    } else if (parecer === "CONTRÁRIO") {
+      botoesAcao = `
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <button type="button" class="btn btn-outline" style="background:#fff;border-color:#F59E0B;color:#B45309;font-weight:700;font-size:11px;padding:4px 10px;cursor:pointer" onclick="aplicarAlinhamentoQuesitos('CONTRARIO')">⚡ Alinhar Quesitos com Contrário (Sim, Sim, Não)</button>
+          <button type="button" class="btn btn-outline" style="background:#fff;border-color:#CBD5E1;color:#475569;font-weight:600;font-size:11px;padding:4px 10px;cursor:pointer" onclick="aplicarAlinhamentoParecer('FAVORÁVEL')">⚡ Mudar Parecer para FAVORÁVEL</button>
+        </div>
+      `;
+    }
+    renderHtml = `
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <span style="font-size:18px">🛡️</span>
+        <div style="flex:1">
+          <strong style="color:#B45309;font-size:12.5px;display:block;margin-bottom:3px">Aviso de Coerência Pericial DPME (Regras de Ouro e-SISLA):</strong>
+          <div style="font-size:12px;color:#92400E;line-height:1.55">${inconsistencias.join("<br>")}</div>
+          ${botoesAcao}
+        </div>
+      </div>
+    `;
+  } else if (isHarmonized) {
+    renderHtml = `
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:18px">🛡️</span>
+        <div>
+          <strong style="color:#15803D;font-size:12px">Conformidade e-SISLA Garantida:</strong>
+          <span style="font-size:12px;color:#166534">Quesitos (Q1:${q1}, Q2:${q2}, Q3:${q3}) e Parecer (${parecer}) em perfeita coerência jurídica pericial.</span>
+        </div>
+      </div>
+    `;
   }
+
+  [agilBox, sec7Box, sec8Box].forEach(box => {
+    if (!box) return;
+    if (isError) {
+      box.innerHTML = renderHtml;
+      box.style.display = "block";
+      box.style.background = "#FFFBEB";
+      box.style.border = "1.5px solid #FCD34D";
+      box.style.color = "#92400E";
+    } else if (isHarmonized) {
+      box.innerHTML = renderHtml;
+      box.style.display = "block";
+      box.style.background = "#F0FDF4";
+      box.style.border = "1.5px solid #BBF7D0";
+      box.style.color = "#166534";
+    } else {
+      box.style.display = "none";
+    }
+  });
+}
+
+function aplicarAlinhamentoQuesitos(tipo) {
+  if (tipo === "FAVORAVEL") {
+    QuesitoService.set(0, "Sim");
+    QuesitoService.set(1, "Sim");
+    QuesitoService.set(2, "Sim");
+    state.limitacaoFuncional = "Sim";
+    state.limitacaoRol = "Sim";
+    setRadio("limitacaoFuncional", "Sim");
+    setRadio("limitacaoRol", "Sim");
+    setRadio("agilLimitacaoFuncional", "Sim");
+    setRadio("agilLimitacaoRol", "Sim");
+    toast("Quesitos alinhados para Parecer FAVORÁVEL (Q1: Sim, Q2: Sim, Q3: Sim).");
+  } else {
+    QuesitoService.set(0, "Sim");
+    QuesitoService.set(1, "Sim");
+    QuesitoService.set(2, "Não");
+    state.limitacaoFuncional = "Não";
+    state.limitacaoRol = "Não";
+    setRadio("limitacaoFuncional", "Não");
+    setRadio("limitacaoRol", "Não");
+    setRadio("agilLimitacaoFuncional", "Não");
+    setRadio("agilLimitacaoRol", "Não");
+    toast("Quesitos alinhados para Parecer CONTRÁRIO (Q1: Sim, Q2: Sim, Q3: Não).");
+  }
+  renderQuesitos();
+  verificarCoerenciaPericial();
+  atualizarProgressoAgil();
+  autoSave();
+}
+
+function aplicarAlinhamentoParecer(novoParecer) {
+  state.parecer = novoParecer;
+  setRadio("parecer", novoParecer);
+  if (state.aux) state.aux.parecer = novoParecer;
+  verificarCoerenciaPericial();
+  atualizarProgressoAgil();
+  autoSave();
+  toast(`Parecer alterado para ${novoParecer} para harmonizar com os quesitos.`);
+}
+
+/* =========================================================
+   PRODUTIVIDADE MÉDICA: MONITOR DE LIMITE DE CARACTERES E-SISLA (2.000 CARACTERES)
+   ========================================================= */
+const ESISLA_TEXT_FIELDS = [
+  { id: "agilDoencaMotivo", max: 2000, label: "Queixa e Duração" },
+  { id: "doencaMotivo", max: 2000, label: "Queixa e Duração" },
+  { id: "agilHistoricoPregresso", max: 2000, label: "Antecedentes Mórbidos" },
+  { id: "historicoPregresso", max: 2000, label: "Antecedentes Mórbidos" },
+  { id: "obsDocumentos", max: 2000, label: "Atestado / Relatórios / Exames" },
+  { id: "agilExameFisicoDescricao", max: 2000, label: "Exame Físico / Achados" },
+  { id: "exameFisicoDescricao", max: 2000, label: "Exame Físico Geral" },
+  { id: "alteracoesClinicasExames", max: 2000, label: "Alterações Clínicas / Exames" },
+  { id: "agilSintomasLimitacao", max: 2000, label: "Sintomas e Limitações" },
+  { id: "sintomasLimitacao", max: 2000, label: "Sintomas / Limitações" },
+  { id: "descLimitacao", max: 2000, label: "Descrição da Limitação" },
+  { id: "atividadesComprometidas", max: 2000, label: "Atividades Comprometidas" },
+  { id: "agilJustificativa", max: 2000, label: "Justificativa Parecer Final" },
+  { id: "justificativa", max: 2000, label: "Justificativa Parecer Final" }
+];
+
+function atualizarContadorEsisla(id) {
+  const el = $(id);
+  if (!el) return;
+  const cfg = ESISLA_TEXT_FIELDS.find(f => f.id === id) || { max: 2000, label: "Campo" };
+  const max = cfg.max || 2000;
+
+  let counter = $(`counter_${id}`);
+  if (!counter) {
+    counter = document.createElement("div");
+    counter.id = `counter_${id}`;
+    counter.className = "esisla-char-counter";
+    if (el.nextSibling) {
+      el.parentNode.insertBefore(counter, el.nextSibling);
+    } else {
+      el.parentNode.appendChild(counter);
+    }
+  }
+
+  const val = String(el.value || "");
+  const chars = val.length;
+
+  if (chars === 0) {
+    counter.innerHTML = `<span style="color:#94A3B8;font-size:11px">0 / ${max.toLocaleString('pt-BR')} caracteres (limite e-SISLA)</span>`;
+    counter.style.cssText = "display:flex;align-items:center;margin-top:4px;font-size:11px";
+  } else if (chars <= 1700) {
+    counter.innerHTML = `<span style="color:#059669;font-size:11px;font-weight:600">✓ ${chars.toLocaleString('pt-BR')} / ${max.toLocaleString('pt-BR')} carac. (e-SISLA)</span>`;
+    counter.style.cssText = "display:flex;align-items:center;margin-top:4px;font-size:11px";
+  } else if (chars <= max) {
+    const restantes = max - chars;
+    counter.innerHTML = `<span style="background:#FEF3C7;color:#D97706;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700">⚠️ ${chars.toLocaleString('pt-BR')} / ${max.toLocaleString('pt-BR')} carac. (restam ${restantes} carac. para o limite do e-SISLA)</span>`;
+    counter.style.cssText = "display:flex;align-items:center;margin-top:4px;font-size:11px";
+  } else {
+    const excesso = chars - max;
+    counter.innerHTML = `
+      <span style="background:#FEE2E2;color:#DC2626;border:1px solid #FCA5A5;padding:3px 8px;border-radius:6px;font-size:11.5px;font-weight:800;display:inline-flex;align-items:center;gap:6px">
+        🚫 ${chars.toLocaleString('pt-BR')} / ${max.toLocaleString('pt-BR')} carac. (EXCEDE EM +${excesso}! O e-SISLA rejeitará ou truncará no salvamento)
+        <button type="button" class="btn btn-outline" style="font-size:10.5px;padding:2px 8px;background:#fff;color:#DC2626;border-color:#F87171;font-weight:700;border-radius:4px;cursor:pointer" onclick="ajustarLimiteEsisla('${id}', ${max})">✂️ Ajustar para ${max.toLocaleString('pt-BR')}</button>
+      </span>
+    `;
+    counter.style.cssText = "display:flex;align-items:center;margin-top:4px;font-size:11px";
+  }
+}
+
+function ajustarLimiteEsisla(id, max = 2000) {
+  const el = $(id);
+  if (!el || !el.value) return;
+  const original = el.value;
+  if (original.length <= max) return;
+
+  let trimmed = original.slice(0, max);
+  const lastPeriod = trimmed.lastIndexOf(".");
+  if (lastPeriod > max - 150) {
+    trimmed = trimmed.slice(0, lastPeriod + 1);
+  } else {
+    const lastSpace = trimmed.lastIndexOf(" ");
+    if (lastSpace > max - 60) {
+      trimmed = trimmed.slice(0, lastSpace);
+    }
+  }
+
+  el.value = trimmed;
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+  el.dispatchEvent(new Event("change", { bubbles: true }));
+  if (typeof autoSave === "function") autoSave();
+  atualizarContadorEsisla(id);
+  toast(`Texto ajustado para caber no limite de ${max.toLocaleString('pt-BR')} caracteres do e-SISLA.`);
+}
+
+function atualizarTodosContadoresEsisla() {
+  ESISLA_TEXT_FIELDS.forEach(f => {
+    if ($(f.id)) atualizarContadorEsisla(f.id);
+  });
+}
+
+function initEsislaCharCounters() {
+  ESISLA_TEXT_FIELDS.forEach(f => {
+    const el = $(f.id);
+    if (el) {
+      el.removeEventListener("input", el._esislaCharHandler);
+      el._esislaCharHandler = () => atualizarContadorEsisla(f.id);
+      el.addEventListener("input", el._esislaCharHandler);
+      atualizarContadorEsisla(f.id);
+    }
+  });
+}
+
+/* =========================================================
+   PRODUTIVIDADE MÉDICA: ALERTA DE JUNTA MÉDICA (REGRA DOS 90 / 180 DIAS)
+   ========================================================= */
+function verificarRegraJuntaMedica() {
+  const agilBox = $("juntaMedicaAlertaAgil");
+  const sec8Box = $("juntaMedicaAlertaSec8");
+
+  const diasAtuais = parseInt(state.aux?.diasConcedidos || state.aux?.diasSolicitados || $("agilDiasSolicitados")?.value || $("diasSolicitados")?.value || 0, 10) || 0;
+  const diasAcumulados = window._diasHistoricoAcumulado || 0;
+  const totalDias = diasAtuais + diasAcumulados;
+
+  if (totalDias < 90) {
+    if (agilBox) agilBox.style.display = "none";
+    if (sec8Box) sec8Box.style.display = "none";
+    return;
+  }
+
+  const is180 = totalDias >= 180;
+  const headerIcon = is180 ? "🚨" : "🏛️";
+  const title = is180 
+    ? `ALERTA LEGAL DPME — Afastamento Acumulado Crítico (≥ 180 dias): ${totalDias} dias`
+    : `DIRETRIZ DPME / LEI 10.261/68 — Afastamento Prolongado (≥ 90 dias): ${totalDias} dias`;
+  const desc = is180
+    ? `O servidor acumula <strong>${totalDias} dias</strong> de afastamento (${diasAtuais} dias neste atendimento + ${diasAcumulados} dias anteriores no último ano). O Estatuto dos Funcionários Públicos Civis de SP (Lei nº 10.261/68) e as normas do DPME prescrevem <u>avaliação por Junta Médica</u> para verificação de capacidade laborativa residual ou <strong>Readaptação Funcional</strong>.`
+    : `O servidor acumula <strong>${totalDias} dias</strong> de afastamento (${diasAtuais} dias atuais + ${diasAcumulados} dias anteriores). Conforme normas periciais do DPME e Lei 10.261/68, afastamentos a partir de 90 dias recomendam avaliação por <strong>Junta Médica Pericial</strong> para fins de Readaptação Funcional.`;
+
+  const htmlContent = `
+    <div style="display:flex;align-items:flex-start;gap:10px">
+      <span style="font-size:20px;line-height:1.2">${headerIcon}</span>
+      <div style="flex:1">
+        <strong style="color:${is180 ? '#991B1B' : '#1E3A8A'};font-size:13px;display:block;margin-bottom:3px">${title}</strong>
+        <div style="font-size:12px;color:${is180 ? '#7F1D1D' : '#1E3A8A'};line-height:1.55">${desc}</div>
+        <div style="margin-top:8px">
+          <button type="button" class="btn btn-outline" style="background:#fff;color:${is180 ? '#991B1B' : '#1E3A8A'};border:1.5px solid ${is180 ? '#F87171' : '#93C5FD'};font-weight:700;font-size:11.5px;padding:5px 12px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:6px" onclick="aplicarEncaminhamentoJuntaMedica(${totalDias})">
+            📋 Aplicar Sugestão de Junta Médica na Justificativa e Capacidade
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const boxStyle = is180 
+    ? "display:block;padding:12px 16px;background:#FEF2F2;border:1.5px solid #F87171;border-radius:12px;margin:12px 0;box-shadow:0 2px 8px rgba(220,38,38,0.06)"
+    : "display:block;padding:12px 16px;background:#EFF6FF;border:1.5px solid #93C5FD;border-radius:12px;margin:12px 0;box-shadow:0 2px 8px rgba(37,99,235,0.06)";
+
+  if (agilBox) {
+    agilBox.innerHTML = htmlContent;
+    agilBox.style.cssText = boxStyle;
+  }
+  if (sec8Box) {
+    sec8Box.innerHTML = htmlContent;
+    sec8Box.style.cssText = boxStyle;
+  }
+}
+
+function aplicarEncaminhamentoJuntaMedica(totalDias) {
+  state.capacidade = "Cabendo avaliação por Junta Médica para fins de readaptação funcional";
+  setRadio("capacidade", state.capacidade);
+
+  const textoJunta = `Em virtude do afastamento prolongado acumulado (${totalDias} dias) e da persistência de limitações funcionais para as atribuições do cargo, sugere-se convocação de Junta Médica Pericial para fins de verificação de capacidade laborativa residual e Readaptação Funcional, nos termos da Lei Estadual nº 10.261/68 e Resolução SGGD 25/2025.`;
+
+  const justEl = $("agilJustificativa");
+  const curJust = (justEl ? justEl.value : (state.aux?.justificativa || $("justificativa")?.value || "")).trim();
+
+  let novaJust = "";
+  if (!curJust) {
+    novaJust = textoJunta;
+  } else if (!curJust.includes("Junta Médica") && !curJust.includes("Readaptação Funcional")) {
+    novaJust = `${curJust}\n\n[ENCAMINHAMENTO]: ${textoJunta}`;
+  } else {
+    novaJust = curJust;
+  }
+
+  if (justEl) {
+    justEl.value = novaJust;
+    syncAgilField("justificativa", novaJust);
+  }
+  if ($("justificativa")) {
+    $("justificativa").value = novaJust;
+  }
+  if (!state.aux) state.aux = {};
+  state.aux.justificativa = novaJust;
+  state.justificativa = novaJust;
+
+  atualizarTodosContadoresEsisla();
+  verificarCoerenciaPericial();
+  atualizarProgressoAgil();
+  autoSave();
+
+  toast(`Sugestão de Junta Médica / Readaptação (${totalDias} dias) aplicada com sucesso!`);
 }
 
 /* =========================================================
@@ -7344,7 +8344,498 @@ window.addEventListener("scroll", () => {
   } else {
     hud.style.display = "none";
   }
-}, { passive: true });
+/* =========================================================
+   3. DOCUMENTAÇÃO E ATENDIMENTO AO SERVIDOR:
+   - COMPROVANTE DE COMPARECIMENTO À PERÍCIA MÉDICA
+   - BOOKMARKLET INTELIGENTE DO E-SISLA (ADEUS F12)
+   ========================================================= */
+
+function formatarDataPorExtenso(dataStr) {
+  if (!dataStr) dataStr = today();
+  const partes = String(dataStr).slice(0, 10).split('-');
+  if (partes.length === 3) {
+    const dia = parseInt(partes[2], 10);
+    const mesIdx = parseInt(partes[1], 10) - 1;
+    const ano = partes[0];
+    const meses = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+    return `${dia} de ${meses[mesIdx] || 'janeiro'} de ${ano}`;
+  }
+  return dataStr;
+}
+
+function obterDadosComprovanteAtual() {
+  syncState();
+  const v = values();
+  const cidPrincipal = state.aux?.cid || state.cid || $("cid")?.value || $("agilCid")?.value || "";
+  const cidDescr = $("cidDescricao")?.textContent || $("descrCidx")?.value || "";
+  const horaInicioVal = $("comprovanteHoraEntrada")?.value || state.aux?.horaAtd || v.horaInicio || timeNow();
+  let horaSaidaVal = $("comprovanteHoraSaida")?.value;
+  if (!horaSaidaVal && horaInicioVal) {
+    const partes = horaInicioVal.split(":");
+    if (partes.length === 2) {
+      let minTotal = parseInt(partes[0], 10) * 60 + parseInt(partes[1], 10) + 40;
+      const h = Math.floor(minTotal / 60) % 24;
+      const m = minTotal % 60;
+      horaSaidaVal = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    }
+  }
+  if (!horaSaidaVal) horaSaidaVal = timeNow();
+
+  const dataPericiaVal = $("comprovanteDataPericia")?.value || state.aux?.dataAtd || v.dataAtendimento || today();
+  const incluirCid = $("comprovanteIncluirCid")?.checked || false;
+  const observacoes = $("comprovanteObs")?.value?.trim() || "";
+
+  return {
+    protocolo: state.atendimento || v.atendimento || "SEM-PROTOCOLO",
+    nomeServidor: state.aux?.nomePaciente || state.nomePaciente || v.nomePaciente || "Servidor(a) não informado",
+    cpfServidor: formatCPF(state.aux?.cpfPaciente || state.cpfPaciente || v.cpfPaciente || ""),
+    cargo: state.aux?.cargo || state.cargo || v.cargo || "Servidor Público Estadual",
+    dataPericia: dataPericiaVal,
+    horaEntrada: horaInicioVal,
+    horaSaida: horaSaidaVal,
+    medicoPerito: state.medico || state.aux?.medicoResponsavel || v.medicoResponsavel || "Médico Perito Oficial",
+    crmPerito: state.aux?.crmResponsavel || v.crmResponsavel || "",
+    cid: cidPrincipal,
+    cidDescricao: cidDescr,
+    incluirCid: incluirCid,
+    observacoes: observacoes
+  };
+}
+
+function gerarHTMLComprovanteComparecimento(d) {
+  const dataExtenso = formatarDataPorExtenso(d.dataPericia);
+  const cidBloco = d.incluirCid && d.cid
+    ? `<div style="margin-top:14px;padding:10px 14px;background:#EFF6FF;border:1px solid #93C5FD;border-radius:6px;font-size:10.5pt;color:#1E40AF">
+         <strong>Diagnóstico informado a pedido expresso do(a) servidor(a) (Resoluções CFM nº 1.658/2002 e 1.851/2008):</strong><br>
+         CID: <strong>${esc(d.cid)}</strong> ${d.cidDescricao ? `— ${esc(d.cidDescricao)}` : ''}
+       </div>`
+    : `<div style="margin-top:14px;padding:9px 12px;background:#F8FAFC;border-left:3px solid #0F3254;font-size:9.5pt;color:#475569;line-height:1.4">
+         <strong>Cláusula de Sigilo Médico Pericial:</strong> Em cumprimento às Resoluções CFM nº 1.658/2002 e 1.851/2008 e ao Código de Ética Médica, o diagnóstico (CID) e dados clínicos detalhados são preservados sob sigilo profissional, sendo este documento suficiente e hábil para fins de justificativa funcional de comparecimento.
+       </div>`;
+
+  const obsBloco = d.observacoes
+    ? `<div style="margin-top:12px;padding:8px 12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:6px;font-size:10pt"><strong>Observações:</strong> ${esc(d.observacoes)}</div>`
+    : '';
+
+  return `<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Declaração de Comparecimento Pericial - ${esc(d.nomeServidor)}</title>
+  <style>
+    @page { size: A4 portrait; margin: 15mm 20mm; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { font-family: "Segoe UI", Arial, Helvetica, sans-serif; color: #1E293B; background: #fff; margin: 0; padding: 12px; font-size: 11pt; line-height: 1.6; }
+    .comprovante-wrapper { max-width: 190mm; margin: 0 auto; padding: 26px 30px; border: 2px solid #0F3254; border-radius: 8px; position: relative; }
+    .header-box { text-align: center; border-bottom: 2px solid #0F3254; padding-bottom: 14px; margin-bottom: 20px; }
+    .header-inst { font-size: 10pt; font-weight: 800; color: #0F3254; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; }
+    .header-sub { font-size: 8.5pt; color: #475569; margin: 2px 0 0; text-transform: uppercase; font-weight: 600; }
+    .header-title { font-size: 14.5pt; font-weight: 900; color: #073F87; margin: 14px 0 4px; text-transform: uppercase; letter-spacing: 0.02em; }
+    .header-meta { font-size: 9pt; color: #64748B; }
+    .declaracao-texto { text-align: justify; font-size: 11pt; line-height: 1.7; margin: 18px 0; color: #0F172A; }
+    .dados-card { background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 8px; padding: 14px 18px; margin: 18px 0; }
+    .d-row { display: flex; margin-bottom: 8px; font-size: 10.5pt; }
+    .d-row:last-child { margin-bottom: 0; }
+    .d-label { width: 180px; font-weight: 700; color: #334155; flex-shrink: 0; }
+    .d-val { color: #0F172A; font-weight: 600; flex: 1; }
+    .data-local { text-align: right; margin: 30px 0 40px; font-size: 11pt; color: #334155; }
+    .assinatura-box { text-align: center; margin-top: 35px; break-inside: avoid; }
+    .assinatura-linha { width: 340px; margin: 0 auto 6px; border-top: 1.5px solid #0F172A; }
+    .assinatura-nome { font-weight: 800; font-size: 11pt; color: #0F172A; }
+    .assinatura-sub { font-size: 9.5pt; color: #475569; }
+    .doc-footer { margin-top: 30px; padding-top: 10px; border-top: 1px dashed #CBD5E1; font-size: 8pt; color: #64748B; text-align: center; line-height: 1.4; }
+    .no-print { margin-bottom: 16px; display: flex; justify-content: flex-end; gap: 10px; }
+    .btn-print { background: #073F87; color: #fff; border: none; padding: 9px 20px; font-weight: 700; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    @media print {
+      .no-print { display: none !important; }
+      body { padding: 0; }
+      .comprovante-wrapper { border: 1.5px solid #0F3254; padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print">
+    <button class="btn-print" onclick="window.print()">🖨️ Imprimir Agora</button>
+    <button class="btn-print" style="background:#64748B" onclick="window.close()">✖ Fechar</button>
+  </div>
+  <div class="comprovante-wrapper">
+    <div class="header-box">
+      <div class="header-inst">GOVERNO DO ESTADO DE SÃO PAULO</div>
+      <div class="header-sub">SECRETARIA DE GESTÃO E GOVERNO DIGITAL • DEPARTAMENTO DE PERÍCIAS MÉDICAS DO ESTADO (DPME)</div>
+      <div class="header-title">DECLARAÇÃO DE COMPARECIMENTO À PERÍCIA MÉDICA</div>
+      <div class="header-meta">Atendimento Pericial Nº: <strong>${esc(d.protocolo || "—")}</strong></div>
+    </div>
+
+    <div class="declaracao-texto">
+      Declaramos, para os devidos fins de comprovação e justificativa funcional junto à unidade administrativa e/ou repartição de lotação de exercício, que o(a) servidor(a) público(a) abaixo qualificado(a) compareceu a esta Unidade Pericial Médica Oficial no dia e horários abaixo discriminados, a fim de submeter-se a avaliação médico-pericial oficial:
+    </div>
+
+    <div class="dados-card">
+      <div class="d-row">
+        <span class="d-label">Nome do(a) Servidor(a):</span>
+        <span class="d-val">${esc(d.nomeServidor || "—")}</span>
+      </div>
+      <div class="d-row">
+        <span class="d-label">CPF:</span>
+        <span class="d-val">${esc(d.cpfServidor || "—")}</span>
+      </div>
+      <div class="d-row">
+        <span class="d-label">Cargo / Função:</span>
+        <span class="d-val">${esc(d.cargo || "—")}</span>
+      </div>
+      <div class="d-row">
+        <span class="d-label">Data do Comparecimento:</span>
+        <span class="d-val">${esc(formatDate(d.dataPericia) || today())}</span>
+      </div>
+      <div class="d-row">
+        <span class="d-label">Horário de Permanência:</span>
+        <span class="d-val">Entrada: <strong>${esc(d.horaEntrada || "—")}</strong> &nbsp;|&nbsp; Saída: <strong>${esc(d.horaSaida || "—")}</strong></span>
+      </div>
+      <div class="d-row">
+        <span class="d-label">Finalidade:</span>
+        <span class="d-val">Perícia Médica Oficial para fins de Licença para Tratamento de Saúde (LTS - Art. 191/193 da Lei Estadual nº 10.261/1968).</span>
+      </div>
+    </div>
+
+    ${cidBloco}
+    ${obsBloco}
+
+    <div class="data-local">
+      São Paulo, ${dataExtenso}.
+    </div>
+
+    <div class="assinatura-box">
+      <div class="assinatura-linha"></div>
+      <div class="assinatura-nome">Dr(a). ${esc(d.medicoPerito || "Médico(a) Perito(a)")}</div>
+      <div class="assinatura-sub">Médico(a) Perito(a) Oficial ${d.crmPerito ? `— CRM: ${esc(d.crmPerito)}` : ''}</div>
+    </div>
+
+    <div class="doc-footer">
+      <strong>Aviso Legal:</strong> Esta declaração atesta estritamente o comparecimento do(a) servidor(a) no período acima discriminado para realização do ato pericial. Não constitui decisão ou concessão de licença, cuja publicação é de competência do DPME em Diário Oficial do Estado (DOE).
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+function atualizarPreviewComprovante() {
+  const d = obterDadosComprovanteAtual();
+  const box = $("comprovanteLivePreview");
+  if (!box) return;
+
+  const dataExtenso = formatarDataPorExtenso(d.dataPericia);
+  const cidAlert = d.incluirCid && d.cid
+    ? `<div style="margin-top:12px;padding:8px 12px;background:#EFF6FF;border:1px solid #93C5FD;border-radius:6px;font-size:11px;color:#1E40AF">
+         <strong>Diagnóstico informado a pedido expresso do(a) servidor(a):</strong> CID ${esc(d.cid)} ${d.cidDescricao ? `— ${esc(d.cidDescricao)}` : ''}
+       </div>`
+    : `<div style="margin-top:12px;padding:8px 10px;background:#F8FAFC;border-left:3px solid #0F3254;font-size:10.5px;color:#475569">
+         <em>Sigilo Médico Pericial (Resoluções CFM nº 1.658/2002 e 1.851/2008): Diagnóstico preservado sob sigilo profissional.</em>
+       </div>`;
+
+  const obsAlert = d.observacoes ? `<div style="margin-top:8px;font-size:11px;color:#334155"><strong>Obs:</strong> ${esc(d.observacoes)}</div>` : '';
+
+  box.innerHTML = `
+    <div style="text-align:center;border-bottom:2px solid #0F3254;padding-bottom:10px;margin-bottom:14px">
+      <div style="font-size:10px;font-weight:800;color:#0F3254;letter-spacing:0.04em">GOVERNO DO ESTADO DE SÃO PAULO • DPME</div>
+      <div style="font-size:13px;font-weight:900;color:#073F87;margin:4px 0">DECLARAÇÃO DE COMPARECIMENTO À PERÍCIA MÉDICA</div>
+      <div style="font-size:10px;color:#64748B">Atendimento Pericial Nº: <strong>${esc(d.protocolo)}</strong></div>
+    </div>
+    <p style="font-size:12px;line-height:1.5;margin:0 0 10px;text-align:justify">
+      Declaramos que o(a) servidor(a) público(a) <strong>${esc(d.nomeServidor)}</strong>, CPF <strong>${esc(d.cpfServidor || 'não informado')}</strong>, cargo <strong>${esc(d.cargo)}</strong>, compareceu a esta Unidade Pericial Médica Oficial no dia <strong>${esc(formatDate(d.dataPericia))}</strong>, com permanência das <strong>${esc(d.horaEntrada)}</strong> às <strong>${esc(d.horaSaida)}</strong>, para fins de Perícia Médica Oficial (LTS - Art. 191/193 Lei 10.261/68).
+    </p>
+    ${cidAlert}
+    ${obsAlert}
+    <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:flex-end">
+      <span style="font-size:11px;color:#475569">São Paulo, ${dataExtenso}.</span>
+      <div style="text-align:center">
+        <div style="width:200px;border-top:1px solid #1E293B;margin-bottom:4px"></div>
+        <strong style="font-size:11px;display:block">${esc(d.medicoPerito)}</strong>
+        <span style="font-size:9.5px;color:#64748B">Médico(a) Perito(a) ${d.crmPerito ? `CRM ${esc(d.crmPerito)}` : ''}</span>
+      </div>
+    </div>
+  `;
+
+  const cidBox = $("comprovanteCidBox");
+  const cidTexto = $("comprovanteCidTexto");
+  if (cidBox && cidTexto) {
+    if (d.incluirCid) {
+      cidBox.style.display = "block";
+      cidTexto.textContent = d.cid ? `${d.cid} ${d.cidDescricao ? '— ' + d.cidDescricao : ''}` : '(Nenhum CID preenchido no atendimento)';
+    } else {
+      cidBox.style.display = "none";
+    }
+  }
+}
+
+function abrirModalComprovanteComparecimento() {
+  syncState();
+  const v = values();
+  const horaInicio = state.aux?.horaAtd || v.horaInicio || timeNow();
+  if ($("comprovanteHoraEntrada")) $("comprovanteHoraEntrada").value = horaInicio;
+
+  // Calcular saída (+45min)
+  let horaTermino = "";
+  if (horaInicio) {
+    const p = horaInicio.split(":");
+    if (p.length === 2) {
+      const minTot = parseInt(p[0], 10) * 60 + parseInt(p[1], 10) + 45;
+      horaTermino = `${String(Math.floor(minTot / 60) % 24).padStart(2, "0")}:${String(minTot % 60).padStart(2, "0")}`;
+    }
+  }
+  if (!horaTermino) horaTermino = timeNow();
+  if ($("comprovanteHoraSaida")) $("comprovanteHoraSaida").value = horaTermino;
+
+  if ($("comprovanteDataPericia")) $("comprovanteDataPericia").value = state.aux?.dataAtd || v.dataAtendimento || today();
+  if ($("comprovanteIncluirCid")) $("comprovanteIncluirCid").checked = false;
+  if ($("comprovanteObs")) $("comprovanteObs").value = "";
+
+  atualizarPreviewComprovante();
+  const m = $("modalComprovanteComparecimento");
+  if (m) m.classList.add("show");
+}
+
+function imprimirComprovante() {
+  const d = obterDadosComprovanteAtual();
+  const html = gerarHTMLComprovanteComparecimento(d);
+  const w = window.open("", "_blank");
+  if (!w) {
+    toast("O navegador bloqueou a janela de impressão. Permita pop-ups.");
+    return;
+  }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+}
+
+function copiarTextoComprovante() {
+  const d = obterDadosComprovanteAtual();
+  const dataExtenso = formatarDataPorExtenso(d.dataPericia);
+  const cidTexto = d.incluirCid && d.cid
+    ? `Diagnóstico informado a pedido expresso do(a) servidor(a): CID ${d.cid}${d.cidDescricao ? ' — ' + d.cidDescricao : ''}\n`
+    : `Cláusula de Sigilo Médico Pericial (Resoluções CFM nº 1.658/2002 e 1.851/2008): O diagnóstico é preservado sob sigilo profissional.\n`;
+
+  const texto = `DECLARAÇÃO DE COMPARECIMENTO À PERÍCIA MÉDICA
+Governo do Estado de São Paulo — DPME / Ambiental Saúde
+Atendimento Nº: ${d.protocolo}
+
+Declaramos, para os devidos fins de comprovação e justificativa funcional junto à repartição de trabalho, que o(a) servidor(a) público(a) ${d.nomeServidor}, portador(a) do CPF ${d.cpfServidor || 'não informado'}, ocupante do cargo de ${d.cargo}, compareceu a esta Unidade Pericial Médica Oficial no dia ${formatDate(d.dataPericia)}, com horário de permanência das ${d.horaEntrada} às ${d.horaSaida}, a fim de submeter-se a Exame Médico-Pericial Oficial para fins de Licença para Tratamento de Saúde (LTS - Art. 191/193 da Lei nº 10.261/1968).
+
+${cidTexto}${d.observacoes ? 'Observações: ' + d.observacoes + '\n' : ''}
+São Paulo, ${dataExtenso}.
+
+_____________________________________________
+Dr(a). ${d.medicoPerito}
+Médico(a) Perito(a) Oficial ${d.crmPerito ? '— CRM: ' + d.crmPerito : ''}
+`;
+
+  navigator.clipboard.writeText(texto).then(() => {
+    toast("Declaração copiada para a área de transferência com sucesso!");
+  }).catch(() => {
+    const ta = document.createElement("textarea");
+    ta.value = texto;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
+    toast("Declaração copiada com sucesso!");
+  });
+}
+
+function gerarCodigoBookmarkletUniversal() {
+  const scriptBody = `(function(){
+  function findDoc(){
+    if(document.querySelector('textarea[name="voMedico.parRlCat"]')||document.getElementById('blocoGeral')||document.querySelector('input[name="fl_d_prev"]'))return document;
+    for(var i=0;i<window.frames.length;i++){
+      try{var d=window.frames[i].document;if(d&&(d.querySelector('textarea[name="voMedico.parRlCat"]')||d.getElementById('blocoGeral')||d.querySelector('input[name="fl_d_prev"]')))return d;}catch(_){}
+    }
+    var ifrs=document.querySelectorAll('iframe,frame');
+    for(var j=0;j<ifrs.length;j++){
+      try{var idoc=ifrs[j].contentDocument||ifrs[j].contentWindow.document;if(idoc&&(idoc.querySelector('textarea[name="voMedico.parRlCat"]')||idoc.getElementById('blocoGeral')||idoc.querySelector('input[name="fl_d_prev"]')))return idoc;}catch(_){}
+    }
+    return document;
+  }
+  function sanitizeText(v,max){if(!v)return '';var s=String(v);if(max&&s.length>max)return s.slice(0,max);return s;}
+  function preencherEsislaComDados(data){
+    var doc=findDoc();var win=doc.defaultView||window;
+    var campos=data.campos_esisla||data||{};
+    function trigger(el){if(!el)return;try{el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));el.dispatchEvent(new Event('blur',{bubbles:true}));}catch(_){}}
+    function setInput(sel,val){if(val===undefined||val===null||val==='')return;var el=doc.querySelector(sel);if(el){if(el.hasAttribute('disabled'))el.removeAttribute('disabled');el.disabled=false;el.value=val;trigger(el);}}
+    function setRadio(name,val){if(!val)return;var el=doc.querySelector('input[type="radio"][name="'+name+'"][value="'+val+'"]');if(el){el.checked=true;try{el.click();}catch(_){}el.checked=true;trigger(el);}}
+    function setCheckbox(nameOrId,checked){var el=doc.querySelector('input[type="checkbox"][name="'+nameOrId+'"]')||doc.getElementById(nameOrId);if(el){el.checked=!!checked;try{el.click();}catch(_){}el.checked=!!checked;trigger(el);}}
+    setInput('textarea[name="voMedico.parRlCat"]',sanitizeText(campos['voMedico.parRlCat'],2000));
+    setInput('textarea[name="voMedico.parRlAp"]',sanitizeText(campos['voMedico.parRlAp'],2000));
+    setInput('textarea[name="voMedico.parRlHda"]',sanitizeText(campos['voMedico.parRlHda'],2000));
+    var exApres=doc.querySelector('textarea[name="voMedico.parRlExApres"]')||doc.getElementById('idExameApres');
+    if(exApres){exApres.removeAttribute('disabled');exApres.disabled=false;}
+    setInput('textarea[name="voMedico.parRlExApres"]',sanitizeText(campos['voMedico.parRlExApres'],2000));
+    setInput('textarea[name="voMedico.parRlReqExComp"]',sanitizeText(campos['voMedico.parRlReqExComp'],2000));
+    setInput('textarea[name="voMedico.parRlComp"]',sanitizeText(campos['voMedico.parRlComp'],2000));
+    setInput('input[name="voResult.numCrm"]',campos['voResult.numCrm']);setInput('#crmMedicoAssistente',campos['voResult.numCrm']);
+    setInput('input[name="voResult.strNomeMedico"]',campos['voResult.strNomeMedico']);
+    setInput('input[name="lgPressArterialMax"]',campos['lgPressArterialMax']);setInput('#sistolicaPressao',campos['lgPressArterialMax']);
+    setInput('input[name="lgPressArterialMin"]',campos['lgPressArterialMin']);setInput('#diastolicaPressao',campos['lgPressArterialMin']);
+    setInput('input[name="lgPulsacao"]',campos['lgPulsacao']);setInput('#pulsoPressao',campos['lgPulsacao']);
+    setInput('input[name="lgAltura"]',campos['lgAltura']);setInput('#alturaBiotipo',campos['lgAltura']);
+    setInput('input[name="lgPeso"]',campos['lgPeso']);setInput('#pesoBiotipo',campos['lgPeso']);
+    if(typeof win.calcularIMC==='function'){try{win.calcularIMC();}catch(_){}}
+    var cbs=['voMedico.parEdtcspf','voMedico.parEdAc','voMedico.parEdAr','voMedico.parEdAHp','voMedico.parEdAd','voMedico.parEdAgu','voMedico.parEdAoal','voMedico.parEdAe','voMedico.parEdSn','voMedico.parEdOs','voMedico.parEdEm','voMedico.parEdOutro'];
+    var temAlgum=false;cbs.forEach(function(cbName){if(campos[cbName]){setCheckbox(cbName,true);temAlgum=true;}});
+    if(temAlgum&&typeof win.exameApresentado==='function'){try{win.exameApresentado();}catch(_){}}
+    if(exApres&&campos['voMedico.parRlExApres']){exApres.removeAttribute('disabled');exApres.disabled=false;exApres.value=sanitizeText(campos['voMedico.parRlExApres'],2000);trigger(exApres);}
+    var q1=campos['fl_d_prev']||'N';var q2=campos['fl_limit']||'N';var q3=campos['fl_imped']||'N';
+    var parecerVal=campos['voResult.voParecerFinal.flPfinal']||'F';
+    setRadio('fl_d_prev',q1);setRadio('fl_limit',q2);setRadio('fl_imped',q3);
+    setRadio('voResult.voParecerFinal.flPfinal',parecerVal);
+    if(typeof win.escondeCampos==='function'){try{win.escondeCampos(parecerVal);}catch(_){}}
+    setInput('input[name="voResult.voParecerFinal.qtDiasPm"]',campos['voResult.voParecerFinal.qtDiasPm']);
+    setInput('input[name="voResult.voParecerFinal.dtIniPm"]',campos['voResult.voParecerFinal.dtIniPm']);
+    var cid1=campos['voResult.voParecerFinal.cdCidPm'];
+    if(cid1){var inpCid1=doc.querySelector('input[name="voResult.voParecerFinal.cdCidPm"]');if(inpCid1){inpCid1.value=cid1;trigger(inpCid1);if(typeof win.carregaAjaxCid==='function'){try{win.carregaAjaxCid(inpCid1.name,'descrCidx');}catch(_){}}}}
+    setInput('input[name="voResult.voParecerFinal.nmCidPm"]',campos['voResult.voParecerFinal.nmCidPm']);
+    setInput('#descrCidx',campos['voResult.voParecerFinal.nmCidPm']);
+    var cid2=campos['voResult.voParecerFinal.cdCid2Pm'];
+    if(cid2){var inpCid2=doc.querySelector('input[name="voResult.voParecerFinal.cdCid2Pm"]');if(inpCid2){inpCid2.value=cid2;trigger(inpCid2);if(typeof win.carregaAjaxCid==='function'){try{win.carregaAjaxCid(inpCid2.name,'descrCid2x');}catch(_){}}}}
+    setInput('input[name="voResult.voParecerFinal.nmCid2Pm"]',campos['voResult.voParecerFinal.nmCid2Pm']);
+    setInput('#descrCid2x',campos['voResult.voParecerFinal.nmCid2Pm']);
+    var bg=doc.getElementById('blocoGeral')||doc.querySelector('fieldset');if(bg)bg.scrollIntoView({behavior:'smooth',block:'start'});
+    mostrarToastEsisla("✅ e-SISLA: Laudo preenchido com sucesso! Confira todos os campos antes de concluir.");
+  }
+  function mostrarToastEsisla(msg){
+    var old=document.getElementById('esislaFloatingToast');if(old)old.remove();
+    var t=document.createElement('div');t.id='esislaFloatingToast';
+    t.style.cssText='position:fixed;top:20px;right:20px;z-index:999999;background:#065F46;color:#fff;padding:16px 22px;border-radius:12px;font-family:sans-serif;font-size:14px;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,0.3);max-width:420px;line-height:1.4;border:2px solid #34D399;transition:opacity 0.4s;';
+    t.textContent=msg;document.body.appendChild(t);
+    setTimeout(function(){t.style.opacity='0';setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},400);},6000);
+  }
+  function abrirModalColagemEsisla(callback){
+    var old=document.getElementById('esislaPasteOverlay');if(old)old.remove();
+    var overlay=document.createElement('div');overlay.id='esislaPasteOverlay';
+    overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.7);z-index:999998;display:flex;align-items:center;justify-content:center;padding:16px;font-family:sans-serif;backdrop-filter:blur(3px);';
+    overlay.innerHTML='<div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:520px;box-shadow:0 20px 40px rgba(0,0,0,0.25);border:1px solid #CBD5E1;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><strong style="font-size:16px;color:#0F172A;display:flex;align-items:center;gap:8px;">⚡ Preencher e-SISLA</strong><button id="btnFecharEsislaOverlay" style="border:none;background:#F1F5F9;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:bold;color:#475569;">✕</button></div><p style="font-size:13px;color:#475569;margin-bottom:14px;line-height:1.4;">Cole abaixo o laudo copiado no sistema <strong>Ambiental</strong> (Ctrl + V) e clique em Preencher:</p><textarea id="txtEsislaPaste" placeholder="Aperte Ctrl + V aqui..." style="width:100%;height:130px;padding:10px;border:1.5px solid #CBD5E1;border-radius:8px;font-family:monospace;font-size:11px;box-sizing:border-box;resize:vertical;outline:none;"></textarea><div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;"><button id="btnCancelarEsislaPaste" style="padding:9px 16px;border:1px solid #CBD5E1;background:#fff;border-radius:8px;font-size:13px;font-weight:600;color:#475569;cursor:pointer;">Cancelar</button><button id="btnExecutarEsislaPaste" style="padding:9px 20px;background:#059669;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(5,150,105,0.3);">⚡ Preencher Campos</button></div></div>';
+    document.body.appendChild(overlay);
+    var ta=document.getElementById('txtEsislaPaste');ta.focus();
+    function fechar(){if(overlay.parentNode)overlay.parentNode.removeChild(overlay);}
+    document.getElementById('btnFecharEsislaOverlay').onclick=fechar;
+    document.getElementById('btnCancelarEsislaPaste').onclick=fechar;
+    function processar(){
+      var val=ta.value.trim();if(!val){alert('Por favor, cole os dados do laudo antes de continuar.');return;}
+      try{var obj=JSON.parse(val);fechar();callback(obj);}
+      catch(e){
+        var match=val.match(/var\\s+data\\s*=\\s*(\\{[\\s\\S]*?\\});/);
+        if(match){try{var objFromScript=JSON.parse(match[1]);fechar();callback(objFromScript);return;}catch(_){}}
+        alert('Formato não reconhecido. Certifique-se de copiar o laudo no sistema Ambiental.');
+      }
+    }
+    document.getElementById('btnExecutarEsislaPaste').onclick=processar;
+    ta.onkeydown=function(e){if(e.key==='Enter'&&e.ctrlKey)processar();};
+  }
+  if(navigator.clipboard&&navigator.clipboard.readText){
+    navigator.clipboard.readText().then(function(clipText){
+      if(clipText&&(clipText.indexOf('campos_esisla')!==-1||clipText.indexOf('voMedico')!==-1||clipText.indexOf('fl_d_prev')!==-1)){
+        try{var parsed=JSON.parse(clipText);preencherEsislaComDados(parsed);return;}catch(_){}
+      }
+      abrirModalColagemEsisla(preencherEsislaComDados);
+    }).catch(function(){abrirModalColagemEsisla(preencherEsislaComDados);});
+  }else{
+    abrirModalColagemEsisla(preencherEsislaComDados);
+  }
+})();`;
+  return 'javascript:' + encodeURIComponent(scriptBody.replace(/\s+/g, ' '));
+}
+
+function abrirModalBookmarkletAtendimento() {
+  const link = $("linkBookmarkletAtendimento");
+  if (link) {
+    link.href = gerarCodigoBookmarkletUniversal();
+  }
+  const m = $("modalBookmarkletAtendimento");
+  if (m) m.classList.add("show");
+}
+
+function copiarCodigoBookmarklet() {
+  const url = gerarCodigoBookmarkletUniversal();
+  navigator.clipboard.writeText(url).then(() => {
+    toast("Código do Favorito copiado! No navegador, crie um novo favorito e cole na URL.");
+  }).catch(() => {
+    const ta = document.createElement("textarea");
+    ta.value = url;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
+    toast("Código do Favorito copiado com sucesso!");
+  });
+}
+
+function copiarLaudoEsislaAtendimento() {
+  syncState();
+  const v = values();
+
+  // Mapear campos clínicos exatamente como esperados pelo motor e-SISLA
+  const q1 = (state.quesitos[0]?.resposta === 'Sim' ? 'S' : 'N');
+  const q2 = (state.quesitos[1]?.resposta === 'Sim' ? 'S' : 'N');
+  const q3 = (state.quesitos[2]?.resposta === 'Sim' ? 'S' : 'N');
+  const parecerVal = (state.parecer === 'FAVORÁVEL' || state.parecer === 'Favorável') ? 'F' : 'C';
+
+  const camposEsisla = {
+    'voMedico.parRlCat': sanitizeText(state.aux?.queixaDuracao || v.queixaDuracao || '', 2000),
+    'voMedico.parRlAp': sanitizeText(state.aux?.historicoPregresso || v.historicoPregresso || '', 2000),
+    'voMedico.parRlHda': sanitizeText(state.aux?.sintomasLimitacao || v.sintomasLimitacao || '', 2000),
+    'voMedico.parRlExApres': sanitizeText(state.alteracoesClinicasExames || v.alteracoesClinicasExames || '', 2000),
+    'voMedico.parRlReqExComp': sanitizeText(state.aux?.obsDocumentos || v.obsDocumentos || '', 2000),
+    'voMedico.parRlComp': sanitizeText(state.aux?.justificativa || v.justificativa || '', 2000),
+    'voResult.numCrm': state.aux?.crmCro || v.crmCro || '',
+    'voResult.strNomeMedico': state.aux?.crmCro ? `Dr(a). CRM ${state.aux.crmCro}` : '',
+    'lgPressArterialMax': state.aux?.pressaoSistolica || v.pressaoSistolica || '',
+    'lgPressArterialMin': state.aux?.pressaoDiastolica || v.pressaoDiastolica || '',
+    'lgPulsacao': state.aux?.pulso || v.pulso || '',
+    'lgAltura': state.aux?.altura || $("agilAltura")?.value || '',
+    'lgPeso': state.aux?.peso || $("agilPeso")?.value || '',
+    'fl_d_prev': q1,
+    'fl_limit': q2,
+    'fl_imped': q3,
+    'voResult.voParecerFinal.flPfinal': parecerVal,
+    'voResult.voParecerFinal.qtDiasPm': state.aux?.diasSolicitados || v.diasSolicitados || '',
+    'voResult.voParecerFinal.dtIniPm': formatDate(state.aux?.dataDocumento || v.dataDocumento || today()),
+    'voResult.voParecerFinal.cdCidPm': state.aux?.cid || v.cid || '',
+    'voResult.voParecerFinal.nmCidPm': $("cidDescricao")?.textContent || '',
+    'voMedico.parEdtcspf': 1,
+    'voMedico.parEdAc': 1,
+    'voMedico.parEdAr': 1,
+    'voMedico.parEdAHp': 1,
+    'voMedico.parEdAd': 1,
+    'voMedico.parEdAgu': 1,
+    'voMedico.parEdAoal': 1,
+    'voMedico.parEdAe': 1,
+    'voMedico.parEdSn': 1,
+    'voMedico.parEdOs': 1,
+    'voMedico.parEdEm': 1,
+    'voMedico.parEdOutro': 0
+  };
+
+  const payload = {
+    protocolo: state.atendimento || v.atendimento || "SEM-PROTOCOLO",
+    servidor: state.aux?.nomePaciente || state.nomePaciente || v.nomePaciente || "",
+    cpf: state.aux?.cpfPaciente || state.cpfPaciente || v.cpfPaciente || "",
+    ...camposEsisla,
+    campos_esisla: camposEsisla,
+    timestamp: new Date().toISOString()
+  };
+
+  const jsonStr = JSON.stringify(payload, null, 2);
+  navigator.clipboard.writeText(jsonStr).then(() => {
+    toast("📋 Dados do Laudo copiados para o e-SISLA! Na aba do e-SISLA, basta clicar no favorito '⚡ Preencher e-SISLA'.");
+  }).catch(() => {
+    const ta = document.createElement("textarea");
+    ta.value = jsonStr;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
+    toast("📋 Dados copiados! Na aba do e-SISLA, clique no favorito '⚡ Preencher e-SISLA'.");
+  });
+}
 
 window.addEventListener("keydown", (e) => {
   // Ctrl + S (ou Cmd + S): Salvar rascunho

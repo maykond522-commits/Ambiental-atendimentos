@@ -1714,6 +1714,42 @@ body.modal-lock { overscroll-behavior: none; }
     transition-duration: 0.001ms !important;
   }
 }
+
+/* --- ESTILOS DO BOOKMARKLET E-SISLA E COMPROVANTE --- */
+.btn-bookmarklet {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #10B981, #059669);
+  color: #FFFFFF !important;
+  font-weight: 800;
+  font-size: 13.5px;
+  padding: 12px 22px;
+  border-radius: 12px;
+  text-decoration: none !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+  cursor: grab;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.btn-bookmarklet:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+  transform: translateY(-2px);
+}
+.btn-bookmarklet:active {
+  cursor: grabbing;
+}
+.comprovante-preview-box {
+  background: #FFFFFF;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 10px;
+  padding: 22px 26px;
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: #1E293B;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+  line-height: 1.6;
+}
 </style>
 </head>
 <body class="admin-shell"><div class="top-sync-bar" id="topSyncBar"></div><div id="authLoading" style="position:fixed;inset:0;background:#F2F6FA;z-index:999999;display:grid;place-items:center;font-family:Inter,system-ui,sans-serif;color:#073F87"><div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #DDE6EF;border-radius:14px;padding:13px 16px;box-shadow:0 12px 35px rgba(10,30,55,.1);font-size:12px;font-weight:800"><img src="/logo.png" alt="" style="width:28px;height:28px;object-fit:contain"><span>Verificando sessão...</span></div></div>
@@ -1743,6 +1779,7 @@ body.modal-lock { overscroll-behavior: none; }
   <nav class="sidebar-nav">
     <a href="/app?novo=1" class="sidebar-link"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span>Novo atendimento</span></a>
     <a href="/gestao-medicos-admin.html" class="sidebar-link"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM16 3.5a4 4 0 0 1 0 7.8M19 14a4 4 0 0 1 2 3.5V21"/></svg><span>Gestão de médicos</span></a>
+    <a href="javascript:void(0)" onclick="abrirModalBookmarkletEsisla()" class="sidebar-link" title="Instalar Botão dos Favoritos para preencher o e-SISLA sem abrir F12"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><span>Favorito e-SISLA</span></a>
   </nav>
   <div class="sidebar-spacer"></div>
   <div class="sidebar-user"><div class="sidebar-avatar" id="sidebarAvatar">A</div><div><strong id="sidebarName">Administrador</strong><small id="sidebarRole">Acesso administrativo</small></div></div>
@@ -1796,7 +1833,7 @@ body.modal-lock { overscroll-behavior: none; }
 <div class="admin-view" id="view-busca"><div class="view-header"><div><div class="view-kicker">Consulta operacional</div><h2>Buscar atendimento</h2><p>Localize por número, paciente, CPF, médico, CID, unidade, status ou período e abra o registro completo.</p></div><span class="view-count" id="searchViewCount">— resultados</span></div>
 <section class="panel anchor-target" id="atendimentos"><div class="search-toolbar"><div class="search-toolbar-left"><span class="search-toolbar-title">Localizar atendimento</span><span class="filter-count" id="resultCount">— resultados</span></div><button class="search-reset-btn" type="button" onclick="clearFilters()" title="Limpar todos os filtros"><span class="reset-icon">↺</span> <span>Redefinir busca</span></button></div><div class="tabs"><button class="tab active" data-tab="all" onclick="setTab('all')">Todos</button><button class="tab" data-tab="draft" onclick="setTab('draft')">Rascunhos</button><button class="tab" data-tab="review" onclick="setTab('review')">Em revisão</button><button class="tab" data-tab="done" onclick="setTab('done')">Finalizados</button><button class="tab" data-tab="archived" onclick="setTab('archived')">Arquivados</button></div><div class="filters"><input class="input" id="search" placeholder="Buscar por paciente, CPF, médico, CID ou conteúdo..." oninput="refresh()" autocomplete="off"><select class="select" id="filter"><option value="all">Todos os status</option><option value="RASCUNHO">Rascunho</option><option value="EM_REVISÃO">Em revisão</option><option value="REABERTO">Reaberto</option><option value="FINALIZADO">Finalizado</option><option value="ARQUIVADO">Arquivado</option></select><input class="input" id="medico" placeholder="Médico" oninput="refresh()"><input class="input" id="cid" placeholder="CID" oninput="refresh()"><input class="input" id="unidade" placeholder="Unidade" oninput="refresh()"><input class="input" id="periodoInicio" type="date" title="Data inicial" aria-label="Data inicial"><input class="input" id="periodoFim" type="date" title="Data final" aria-label="Data final"><select class="select" id="sort" onchange="refresh()"><option value="updated">Última atualização</option><option value="date">Data do atendimento</option><option value="patient">Paciente (A–Z)</option></select></div><div class="bulk-actions-toolbar" id="bulkActionsToolbar" style="display:none;"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:13px;font-weight:800;color:#991B1B"><span id="selectedCountBadge">0</span> atendimento(s) selecionado(s)</span><span style="font-size:11.5px;color:#7F1D1D">(Apenas administradores podem excluir permanentemente do banco)</span></div><div style="display:flex;align-items:center;gap:8px"><button type="button" class="btn btn-danger" id="btnBatchDeleteAdmin" onclick="confirmBatchDeleteAdmin()" style="font-weight:700;padding:6px 14px;font-size:12px">🗑️ Excluir Selecionados do Banco</button><button type="button" class="btn btn-outline" onclick="clearSelectedRows()" style="padding:6px 12px;font-size:12px;background:#fff">Desmarcar todos</button></div></div><table><thead><tr><th class="admin-th-select"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAllRows(this.checked)" title="Selecionar todos os atendimentos exibidos" style="cursor:pointer;width:16px;height:16px"></th><th>Paciente</th><th>Data</th><th>Profissional</th><th>Dados</th><th>Status</th><th>Atualizado</th><th></th></tr></thead><tbody id="tbody"></tbody></table><div class="empty" id="empty" style="display:none">Nenhum atendimento encontrado para os filtros atuais.</div></section>
 <div class="notice">Fonte principal da Gestão: <strong>PostgreSQL/backend</strong>. O LocalStorage permanece como contingência local para rascunhos e recuperação no próprio navegador.</div></div></main></div>
-<div class="modal" id="detailModal"><div class="dialog detail-modal-dialog"><div class="dialog-head"><div><strong id="detailTitle">Atendimento</strong><span id="detailSub"></span></div><div class="esisla-toolbar"><button class="btn btn-esisla" id="generateEsislaBtn">Gerar ficha eSisla</button><button class="btn" onclick="closeModal('detailModal')">Fechar</button></div></div><div id="detailBody" class="detail"></div><div class="dialog-foot"><button class="btn" id="openEvalBtn">Abrir atendimento</button><button class="btn" id="historyBtn">Histórico</button></div></div></div>
+<div class="modal" id="detailModal"><div class="dialog detail-modal-dialog"><div class="dialog-head"><div><strong id="detailTitle">Atendimento</strong><span id="detailSub"></span></div><div class="esisla-toolbar"><button class="btn btn-outline" id="comprovanteDetailBtn" onclick="abrirComprovanteDoDetail()" style="font-weight:700">📄 Declaração</button><button class="btn btn-esisla" id="generateEsislaBtn">Gerar ficha eSisla</button><button class="btn" onclick="closeModal('detailModal')">Fechar</button></div></div><div id="detailBody" class="detail"></div><div class="dialog-foot"><button class="btn" id="openEvalBtn">Abrir atendimento</button><button class="btn" id="historyBtn">Histórico</button></div></div></div>
 <div class="modal" id="esislaModal">
   <div class="dialog esisla-dialog-window" style="width:min(940px,100%)">
     
@@ -1842,6 +1879,9 @@ body.modal-lock { overscroll-behavior: none; }
         </div>
       </div>
       
+      <!-- Painel de Segurança Jurídica e Conformidade e-SISLA (Regras de Ouro) -->
+      <div id="esislaRegrasDeOuroBanner" style="display:none;margin-bottom:14px;padding:12px 16px;border-radius:12px;font-size:12.5px"></div>
+      
       <div class="esisla-editor-container">
         <div class="esisla-editor-header">
           <div class="esisla-editor-left">
@@ -1874,6 +1914,7 @@ body.modal-lock { overscroll-behavior: none; }
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <button class="btn btn-outline" type="button" onclick="generateEsislaPDF()" style="color:#0F3254;font-weight:700">📄 Gerar PDF</button>
+        <button class="btn btn-outline" type="button" onclick="abrirModalBookmarkletEsisla()" style="border-color:#10B981;color:#047857;font-weight:700" title="Preencha o e-SISLA sem abrir o console F12 com 1 clique">⭐ Botão dos Favoritos (sem F12)</button>
         <button class="btn btn-esisla btn-copy-hero" id="copyEsislaBtn" onclick="copyEsislaScript()">⚡ Script F12</button>
       </div>
     </div>
@@ -1881,6 +1922,120 @@ body.modal-lock { overscroll-behavior: none; }
 </div>
 <div class="modal" id="historyModal"><div class="dialog history-dialog"><div class="dialog-head"><div><strong>Histórico de auditoria</strong><span id="historySub"></span></div><button class="btn" onclick="closeModal('historyModal')">Fechar</button></div><div class="history" id="historyBody"></div></div></div>
 <div class="modal" id="reasonModal"><div class="dialog" style="width:min(560px,100%)"><div class="dialog-head"><div><strong id="reasonTitle">Justificativa</strong><span>A ação será registrada no histórico do atendimento.</span></div><button class="btn" onclick="closeModal('reasonModal')">Fechar</button></div><div class="reason-wrap"><label for="reasonInput">Motivo obrigatório</label><textarea id="reasonInput" class="reason"></textarea></div><div class="dialog-foot"><button class="btn" onclick="closeModal('reasonModal')">Cancelar</button><button class="btn btn-primary" id="reasonConfirm">Confirmar</button></div></div></div>
+
+<!-- MODAL: DECLARAÇÃO DE COMPARECIMENTO À PERÍCIA MÉDICA (GESTAO) -->
+<div class="modal" id="comprovanteModal">
+  <div class="dialog" style="width:min(940px,100%);max-height:92vh">
+    <div class="dialog-head" style="background:#F8FAFC">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:24px">📄</span>
+        <div>
+          <strong style="font-size:16px;color:#0F3254">Declaração de Comparecimento à Perícia Médica</strong>
+          <span style="display:block;font-size:11px;color:#64748B;margin-top:2px">Comprovante pericial oficial para apresentação pelo servidor</span>
+        </div>
+      </div>
+      <button class="btn" onclick="closeModal('comprovanteModal')">Fechar</button>
+    </div>
+    <div class="dialog-body" style="padding:20px;display:flex;flex-direction:column;gap:16px;max-height:calc(92vh - 140px);overflow-y:auto">
+      <!-- Painel de Parâmetros -->
+      <div style="background:#F1F5F9;border:1px solid #CBD5E1;border-radius:12px;padding:14px">
+        <div style="font-size:11.5px;font-weight:800;color:#334155;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.04em">Parâmetros do Atendimento Pericial</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;color:#475569;margin-bottom:4px">Horário de Entrada (Início)</label>
+            <input type="time" class="input" id="comprovanteHoraEntradaGestao" onchange="atualizarPreviewComprovanteGestao()" style="background:#fff">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;color:#475569;margin-bottom:4px">Horário de Saída (Término)</label>
+            <input type="time" class="input" id="comprovanteHoraSaidaGestao" onchange="atualizarPreviewComprovanteGestao()" style="background:#fff">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;color:#475569;margin-bottom:4px">Data da Perícia</label>
+            <input type="date" class="input" id="comprovanteDataPericiaGestao" onchange="atualizarPreviewComprovanteGestao()" style="background:#fff">
+          </div>
+        </div>
+
+        <div style="margin-top:12px;padding-top:10px;border-top:1px dashed #CBD5E1;display:flex;flex-direction:column;gap:8px">
+          <label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:#1E293B;cursor:pointer">
+            <input type="checkbox" id="comprovanteIncluirCidGestao" onchange="atualizarPreviewComprovanteGestao()" style="margin-top:2px;accent-color:#073F87">
+            <span><strong>Incluir Código CID a pedido expresso do(a) servidor(a)</strong> (Resolução CFM nº 1.658/2002 e 1.851/2008. Mantido desmarcado por padrão em cumprimento ao sigilo médico).</span>
+          </label>
+          <div id="comprovanteCidBoxGestao" style="display:none;margin-left:24px;font-size:11.5px;color:#1D4ED8;background:#EFF6FF;padding:6px 12px;border-radius:6px;border:1px solid #BFDBFE">
+            CID a ser impresso na declaração: <strong id="comprovanteCidTextoGestao">--</strong>
+          </div>
+        </div>
+
+        <div style="margin-top:10px">
+          <label style="display:block;font-size:11px;font-weight:700;color:#475569;margin-bottom:4px">Observações Adicionais (opcional)</label>
+          <input type="text" class="input" id="comprovanteObsGestao" placeholder="Ex: Servidor compareceu para avaliação presencial acompanhado de responsável" oninput="atualizarPreviewComprovanteGestao()" style="background:#fff">
+        </div>
+      </div>
+
+      <!-- Live Preview -->
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11.5px;font-weight:800;color:#334155;text-transform:uppercase;letter-spacing:0.04em">Prévia da Declaração Formatada (Padrão Oficial)</span>
+        <span style="font-size:11px;color:#64748B">Atualização em tempo real</span>
+      </div>
+      <div id="comprovanteLivePreviewGestao" class="comprovante-preview-box">
+        <!-- Preenchido dinamicamente -->
+      </div>
+    </div>
+    <div class="dialog-foot" style="display:flex;justify-content:space-between;align-items:center">
+      <button type="button" class="btn" onclick="closeModal('comprovanteModal')">Fechar</button>
+      <div style="display:flex;gap:10px">
+        <button type="button" class="btn btn-outline" onclick="copiarTextoComprovanteGestao()" style="font-weight:700">📋 Copiar Texto</button>
+        <button type="button" class="btn btn-primary" onclick="imprimirComprovanteGestao()" style="background:#073F87;font-weight:800;display:inline-flex;align-items:center;gap:6px">
+          <span>🖨️ Imprimir Declaração</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: INSTALAÇÃO DO BOOKMARKLET E-SISLA (ADEUS F12 - GESTAO) -->
+<div class="modal" id="bookmarkletModal">
+  <div class="dialog" style="width:min(680px,100%)">
+    <div class="dialog-head" style="background:#F0FDF4">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:26px">⚡</span>
+        <div>
+          <strong style="font-size:16px;color:#065F46">Botão dos Favoritos e-SISLA (Adeus F12)</strong>
+          <span style="display:block;font-size:11px;color:#047857;margin-top:2px">Preencha o e-SISLA oficial em 1 clique direto da sua Barra de Favoritos</span>
+        </div>
+      </div>
+      <button class="btn" onclick="closeModal('bookmarkletModal')">Fechar</button>
+    </div>
+    <div class="dialog-body" style="padding:22px;display:flex;flex-direction:column;gap:18px">
+      <!-- Card do Botão Arrastável -->
+      <div style="background:linear-gradient(135deg, #ECFDF5, #D1FAE5);border:2px dashed #10B981;border-radius:14px;padding:20px;text-align:center">
+        <p style="margin:0 0 12px;font-size:13px;font-weight:700;color:#065F46">⭐ Arraste o botão verde abaixo para a sua Barra de Favoritos:</p>
+        <div style="display:flex;justify-content:center;margin-bottom:12px">
+          <a id="linkBookmarkletGestao" href="#" draggable="true" class="btn-bookmarklet" title="Arraste para sua barra de favoritos do navegador">
+            ⚡ Preencher e-SISLA
+          </a>
+        </div>
+        <span style="font-size:11px;color:#047857">💡 Se a Barra de Favoritos estiver oculta no Chrome/Edge, pressione <strong>Ctrl + Shift + B</strong> para exibi-la.</span>
+      </div>
+
+      <!-- Passo a Passo -->
+      <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;padding:16px">
+        <strong style="color:#0F3254;font-size:13px;display:block;margin-bottom:10px">Como usar no dia a dia:</strong>
+        <ol style="margin:0;padding-left:20px;font-size:12.5px;color:#334155;line-height:1.7">
+          <li><strong>Instale 1 única vez:</strong> Arraste o botão verde para a barra de favoritos do seu navegador.</li>
+          <li><strong>Na Gestão ou Atendimento:</strong> Clique em <code>Copiar JSON</code> ou <code>⚡ Copiar p/ e-SISLA</code>.</li>
+          <li><strong>Na aba do e-SISLA:</strong> Abra o prontuário no sistema do Estado e clique no favorito <code>⚡ Preencher e-SISLA</code>!</li>
+          <li><strong>Pronto:</strong> Todos os campos, quesitos e parecer são preenchidos com sanitização de 2.000 caracteres e sem precisar abrir F12 nem Console!</li>
+        </ol>
+      </div>
+    </div>
+    <div class="dialog-foot" style="display:flex;justify-content:space-between;align-items:center">
+      <button type="button" class="btn" onclick="closeModal('bookmarkletModal')">Fechar</button>
+      <button type="button" class="btn btn-outline" onclick="copiarCodigoBookmarkletEsisla()" style="font-weight:700;color:#065F46;border-color:#A7F3D0">
+        📋 Copiar Código do Favorito
+      </button>
+    </div>
+  </div>
+</div>
 
 <script>
 let accessToken = null;
@@ -1990,9 +2145,13 @@ async function view(enc){
         if(title)title.textContent=v.patient||'Paciente não informado';
         if(sub)sub.textContent=`${stateLabel[statusOf(full)]||statusOf(full)} · ${v.atd||'identificação interna'} · atualizado em ${dt(full.atualizado_em||v.updated)}`;
         if(body)body.innerHTML=detail(full);
+        window.currentDetailFull=full;
+        window.currentDetailEnc=enc;
         document.getElementById('openEvalBtn').onclick=()=>openEval(enc);
         document.getElementById('historyBtn').onclick=()=>openHistory(enc);
         document.getElementById('generateEsislaBtn').onclick=()=>generateEsisla(enc);
+        const compBtn=document.getElementById('comprovanteDetailBtn');
+        if(compBtn)compBtn.onclick=()=>abrirModalComprovanteGestao(full);
     }catch(e){
         if(body)body.innerHTML=`<div class="history-empty"><strong>Não foi possível carregar a ficha.</strong><div style="margin-top:6px">${esc(e.message||'Tente novamente.')}</div></div>`;
     }
@@ -2116,11 +2275,105 @@ function toggleEditEsisla() {
 
 function updateEsislaStats(text){
     const chip=document.getElementById('esislaStatsChip');
-    if(!chip) return;
     const str=String(text||'');
     const chars=str.length;
     const lines=str?str.split('\n').length:0;
-    chip.textContent=`${chars.toLocaleString('pt-BR')} caracteres · ${lines} linhas`;
+    if(chip) chip.textContent=`${chars.toLocaleString('pt-BR')} caracteres · ${lines} linhas`;
+
+    // Validação de Segurança Jurídica e Conformidade e-SISLA (Regras de Ouro)
+    const banner = document.getElementById('esislaRegrasDeOuroBanner');
+    if (!banner) return;
+
+    if (!str.trim()) {
+        banner.style.display = 'none';
+        return;
+    }
+
+    const dataObj = typeof gerarJsonEsisla === 'function' ? gerarJsonEsisla(str, window.currentEsislaEnc) : null;
+    if (!dataObj) return;
+
+    const msgs = [];
+    let hasCritical = false;
+
+    // 1. Incoerências jurídicas dos quesitos x parecer
+    if (dataObj.inconsistencias_juridicas && dataObj.inconsistencias_juridicas.length > 0) {
+        hasCritical = true;
+        msgs.push(`🚫 <strong>Incoerência Jurídica DPME:</strong> ${dataObj.inconsistencias_juridicas.join(' ')}`);
+    }
+
+    // 2. Limite de caracteres dos campos
+    if (dataObj.campos_excedidos && dataObj.campos_excedidos.length > 0) {
+        hasCritical = true;
+        const listaExcesso = dataObj.campos_excedidos.map(c => `<strong>${c.nome}</strong>: ${c.tamanho.toLocaleString('pt-BR')} carac. (+${c.excesso})`).join(', ');
+        msgs.push(`📏 <strong>Campos excedem o limite de 2.000 carac. do e-SISLA:</strong> ${listaExcesso}. O banco de dados do Estado pode truncar ou recusar a gravação. <button type="button" class="btn btn-outline" style="font-size:11px;padding:2px 8px;margin-left:6px;background:#fff;color:#B91C1C;border-color:#FCA5A5;font-weight:700;border-radius:4px;cursor:pointer" onclick="truncarCamposModalEsisla()">✂️ Truncar para ≤ 2.000</button>`);
+    }
+
+    // 3. Regra dos 90 / 180 dias de Junta Médica
+    if (dataObj.alerta_junta) {
+        msgs.push(`🏛️ <strong>Regra de Afastamento:</strong> ${dataObj.alerta_junta}`);
+    }
+
+    if (msgs.length > 0) {
+        banner.innerHTML = `
+            <div style="display:flex;align-items:flex-start;gap:10px">
+                <span style="font-size:18px">${hasCritical ? '🛡️' : 'ℹ️'}</span>
+                <div style="flex:1;line-height:1.55">
+                    ${msgs.join('<br><div style="margin-top:4px"></div>')}
+                </div>
+            </div>
+        `;
+        banner.style.display = 'block';
+        if (hasCritical) {
+            banner.style.background = '#FEF2F2';
+            banner.style.border = '1.5px solid #F87171';
+            banner.style.color = '#991B1B';
+        } else {
+            banner.style.background = '#EFF6FF';
+            banner.style.border = '1.5px solid #93C5FD';
+            banner.style.color = '#1E3A8A';
+        }
+    } else {
+        banner.innerHTML = `
+            <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:16px">🛡️</span>
+                <span style="font-weight:700;color:#15803D">Conformidade e-SISLA / DPME verificada:</span>
+                <span style="color:#166534">Campos dentro do limite de 2.000 caracteres e coerência entre Quesitos e Parecer respeitada.</span>
+            </div>
+        `;
+        banner.style.display = 'block';
+        banner.style.background = '#F0FDF4';
+        banner.style.border = '1.5px solid #BBF7D0';
+        banner.style.color = '#166534';
+    }
+}
+
+function truncarCamposModalEsisla() {
+    const el = document.getElementById('esislaText');
+    if (!el || !el.value) return;
+    const dataObj = gerarJsonEsisla(el.value, window.currentEsislaEnc);
+    if (!dataObj.campos_excedidos || dataObj.campos_excedidos.length === 0) {
+        if (window.AmbientalUtils?.toast) AmbientalUtils.toast("Nenhum campo excede o limite de 2.000 caracteres.");
+        return;
+    }
+    
+    let text = el.value;
+    dataObj.campos_excedidos.forEach(c => {
+        const valExcedido = (dataObj.campos_esisla || {})[c.campo];
+        if (valExcedido && valExcedido.length > 2000) {
+            let safeVal = valExcedido.slice(0, 2000);
+            const lp = safeVal.lastIndexOf('.');
+            if (lp > 1850) safeVal = safeVal.slice(0, lp + 1);
+            text = text.replace(valExcedido, safeVal);
+        }
+    });
+
+    el.value = text;
+    updateEsislaStats(text);
+    if (window.AmbientalUtils?.toast) {
+        AmbientalUtils.toast("Campos longos truncados para o limite de 2.000 caracteres com segurança!");
+    } else {
+        alert("Campos longos truncados para o limite de 2.000 caracteres com segurança!");
+    }
 }
 
 async function copyEsisla(){
@@ -2241,7 +2494,12 @@ function gerarJsonEsisla(textoFicha, enc) {
         const qStr = ext(texto, busca, '\n').toLowerCase();
         if (qStr.includes('sim')) return 'S';
         if (qStr.includes('não') || qStr.includes('nao')) return 'N';
-        if (st.quesitos && st.quesitos[num]) return st.quesitos[num] === 'S' ? 'S' : 'N';
+        const qArr = st.quesitos || aux.quesitos;
+        if (Array.isArray(qArr) && qArr[num - 1]) {
+            const r = String(qArr[num - 1].resposta || qArr[num - 1] || '').trim().toLowerCase();
+            if (r === 'sim' || r === 's') return 'S';
+            if (r === 'não' || r === 'nao' || r === 'n') return 'N';
+        }
         return 'N';
     }
     const fl_d_prev = getQuesitoVal(1, '1) Há doença(s)');
@@ -2268,6 +2526,40 @@ function gerarJsonEsisla(textoFicha, enc) {
     if (!Object.values(cb).some(Boolean) && exApres.trim()) {
         cb['voMedico.parEdOutro'] = true;
     }
+
+    const camposTextoAudit = [
+        { key: 'voMedico.parRlCat', label: 'Queixa e Duração', valor: cat, max: 2000 },
+        { key: 'voMedico.parRlAp', label: 'Antecedentes Mórbidos', valor: ap, max: 2000 },
+        { key: 'voMedico.parRlHda', label: 'Atestado / Relatórios / Exames', valor: hda, max: 2000 },
+        { key: 'voMedico.parRlExApres', label: 'Exame Físico / Achados', valor: exApres, max: 2000 },
+        { key: 'voMedico.parRlReqExComp', label: 'Limitações Físicas / Mentais', valor: reqExComp, max: 2000 },
+        { key: 'voMedico.parRlComp', label: 'Justificativa Parecer Final', valor: justif, max: 2000 }
+    ];
+
+    const camposExcedidos = camposTextoAudit
+        .filter(c => String(c.valor || '').length > c.max)
+        .map(c => ({
+            campo: c.key,
+            nome: c.label,
+            tamanho: String(c.valor || '').length,
+            excesso: String(c.valor || '').length - c.max,
+            limite: c.max
+        }));
+
+    const inconsistenciasJuridicas = [];
+    if (flPfinal === 'F' && fl_imped === 'N') {
+        inconsistenciasJuridicas.push("Parecer FAVORÁVEL com Quesito 3 marcado como NÃO (sem impedimento das funções). A legislação do DPME prevê nulidade da licença.");
+    }
+    if (flPfinal === 'C' && fl_imped === 'S') {
+        inconsistenciasJuridicas.push("Parecer CONTRÁRIO com Quesito 3 marcado como SIM (afirma impedimento para o cargo). Contradição pericial manifesta.");
+    }
+
+    const numDiasInt = parseInt(dias || 0, 10);
+    const alertaJunta = numDiasInt >= 180 
+        ? `Afastamento de ${numDiasInt} dias (≥ 180 dias): Pela Lei Estadual 10.261/68, é obrigatório encaminhamento para Junta Médica (Readaptação ou Aposentadoria).`
+        : numDiasInt >= 90
+        ? `Afastamento de ${numDiasInt} dias (≥ 90 dias): Diretriz DPME orienta avaliar encaminhamento para Junta Médica Pericial para Readaptação Funcional.`
+        : null;
 
     const camposEsisla = {
         'voMedico.parRlCat': cat,
@@ -2314,6 +2606,9 @@ function gerarJsonEsisla(textoFicha, enc) {
         protocolo: id,
         ...camposEsisla,
         campos_esisla: camposEsisla,
+        campos_excedidos: camposExcedidos,
+        inconsistencias_juridicas: inconsistenciasJuridicas,
+        alerta_junta: alertaJunta,
         ficha_esisla_texto: texto,
         justificativa: justif,
         timestamp: new Date().toISOString()
@@ -2389,19 +2684,29 @@ function gerarScriptAutoPreenchimentoEsisla(payloadObj) {
       }
     }
 
-    // 1. Textareas do Laudo Pericial
-    setInput('textarea[name="voMedico.parRlCat"]', campos['voMedico.parRlCat']);
-    setInput('textarea[name="voMedico.parRlAp"]', campos['voMedico.parRlAp']);
-    setInput('textarea[name="voMedico.parRlHda"]', campos['voMedico.parRlHda']);
+    function sanitizeText(v, max) {
+      if (!v) return '';
+      var s = String(v);
+      if (max && s.length > max) {
+        console.warn('[e-SISLA F12 Auto] Campo truncado para caber no limite do Oracle (' + max + ' carac.):', s.slice(0, 30) + '...');
+        return s.slice(0, max);
+      }
+      return s;
+    }
+
+    // 1. Textareas do Laudo Pericial (limite estrito de 2.000 caracteres do e-SISLA)
+    setInput('textarea[name="voMedico.parRlCat"]', sanitizeText(campos['voMedico.parRlCat'], 2000));
+    setInput('textarea[name="voMedico.parRlAp"]', sanitizeText(campos['voMedico.parRlAp'], 2000));
+    setInput('textarea[name="voMedico.parRlHda"]', sanitizeText(campos['voMedico.parRlHda'], 2000));
     
     var exApres = doc.querySelector('textarea[name="voMedico.parRlExApres"]') || doc.getElementById('idExameApres');
     if (exApres) {
       exApres.removeAttribute('disabled');
       exApres.disabled = false;
     }
-    setInput('textarea[name="voMedico.parRlExApres"]', campos['voMedico.parRlExApres']);
-    setInput('textarea[name="voMedico.parRlReqExComp"]', campos['voMedico.parRlReqExComp']);
-    setInput('textarea[name="voMedico.parRlComp"]', campos['voMedico.parRlComp']);
+    setInput('textarea[name="voMedico.parRlExApres"]', sanitizeText(campos['voMedico.parRlExApres'], 2000));
+    setInput('textarea[name="voMedico.parRlReqExComp"]', sanitizeText(campos['voMedico.parRlReqExComp'], 2000));
+    setInput('textarea[name="voMedico.parRlComp"]', sanitizeText(campos['voMedico.parRlComp'], 2000));
     
     // 2. Médico Assistente
     setInput('input[name="voResult.numCrm"]', campos['voResult.numCrm']);
@@ -2445,17 +2750,27 @@ function gerarScriptAutoPreenchimentoEsisla(payloadObj) {
     if (exApres && campos['voMedico.parRlExApres']) {
       exApres.removeAttribute('disabled');
       exApres.disabled = false;
-      exApres.value = campos['voMedico.parRlExApres'];
+      exApres.value = sanitizeText(campos['voMedico.parRlExApres'], 2000);
       trigger(exApres);
     }
     
     // 6. Quesitos
-    setRadio('fl_d_prev', campos['fl_d_prev'] || 'N');
-    setRadio('fl_limit', campos['fl_limit'] || 'N');
-    setRadio('fl_imped', campos['fl_imped'] || 'N');
+    var q1 = campos['fl_d_prev'] || 'N';
+    var q2 = campos['fl_limit'] || 'N';
+    var q3 = campos['fl_imped'] || 'N';
+    var parecerVal = campos['voResult.voParecerFinal.flPfinal'] || 'F';
+
+    if (parecerVal === 'F' && q3 === 'N') {
+      console.warn('[e-SISLA Alerta DPME] Incoerência: Parecer FAVORÁVEL com Quesito 3 NÃO detectado!');
+    } else if (parecerVal === 'C' && q3 === 'S') {
+      console.warn('[e-SISLA Alerta DPME] Incoerência: Parecer CONTRÁRIO com Quesito 3 SIM detectado!');
+    }
+
+    setRadio('fl_d_prev', q1);
+    setRadio('fl_limit', q2);
+    setRadio('fl_imped', q3);
     
     // 7. Parecer Médico-Pericial
-    var parecerVal = campos['voResult.voParecerFinal.flPfinal'] || 'F';
     setRadio('voResult.voParecerFinal.flPfinal', parecerVal);
     if (typeof win.escondeCampos === 'function') {
       try { win.escondeCampos(parecerVal); } catch(_) {}
@@ -2525,9 +2840,9 @@ async function copyEsislaJson(){
         ta.remove();
     }
     if (window.AmbientalUtils?.toast) {
-        AmbientalUtils.toast('Ficha em formato JSON copiada para a área de transferência!');
+        AmbientalUtils.toast('Ficha em formato JSON copiada! Na aba do e-SISLA, basta clicar no favorito "⚡ Preencher e-SISLA".');
     } else {
-        alert('Ficha em formato JSON copiada para a área de transferência!');
+        alert('Ficha copiada! Na aba do e-SISLA, basta clicar no favorito "⚡ Preencher e-SISLA".');
     }
 }
 
@@ -3035,8 +3350,457 @@ document.getElementById('reasonConfirm').onclick=async()=>{ await authReady;
         closeModal('reasonModal');
         await fetchServer();
         refresh();
-    }catch(e){alert(e.message)}
+    }catch(e){
+        alert(e.message||'Falha ao atualizar estado.');
+    }
 };
+
+/* =========================================================
+   3. DOCUMENTAÇÃO E ATENDIMENTO AO SERVIDOR (GESTÃO):
+   - COMPROVANTE DE COMPARECIMENTO À PERÍCIA MÉDICA
+   - BOOKMARKLET INTELIGENTE DO E-SISLA (ADEUS F12)
+   ========================================================= */
+
+function formatarDataPorExtensoGestao(dataStr) {
+  if (!dataStr) return '—';
+  const partes = String(dataStr).slice(0, 10).split('-');
+  if (partes.length === 3) {
+    const dia = parseInt(partes[2], 10);
+    const mesIdx = parseInt(partes[1], 10) - 1;
+    const ano = partes[0];
+    const meses = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+    return `${dia} de ${meses[mesIdx] || 'janeiro'} de ${ano}`;
+  }
+  return dataStr;
+}
+
+window.currentComprovanteAtd = null;
+
+function abrirComprovanteDoDetail() {
+  if (window.currentDetailFull) {
+    abrirModalComprovanteGestao(window.currentDetailFull);
+  } else if (window.currentDetailEnc) {
+    const id = decodeURIComponent(window.currentDetailEnc);
+    const r = find(id);
+    if (r) abrirModalComprovanteGestao(r);
+  }
+}
+
+function abrirModalComprovanteGestao(encOrObj) {
+  let item = encOrObj;
+  if (typeof encOrObj === 'string') {
+    const id = decodeURIComponent(encOrObj);
+    item = find(id) || window.currentDetailFull;
+  }
+  if (!item) {
+    alert('Atendimento não localizado para gerar declaração.');
+    return;
+  }
+  window.currentComprovanteAtd = item;
+  const v = values(item);
+
+  const horaInicioVal = v.time || (item.aux && item.aux.horaAtd) || '08:00';
+  let horaSaidaVal = '';
+  if (horaInicioVal) {
+    const partes = horaInicioVal.split(':');
+    if (partes.length === 2) {
+      let minTot = parseInt(partes[0], 10) * 60 + parseInt(partes[1], 10) + 45;
+      horaSaidaVal = `${String(Math.floor(minTot / 60) % 24).padStart(2, '0')}:${String(minTot % 60).padStart(2, '0')}`;
+    }
+  }
+  if (!horaSaidaVal) horaSaidaVal = '08:45';
+
+  const dataAtdVal = v.date || (item.aux && item.aux.dataAtd) || '';
+
+  const inHoraEntrada = document.getElementById('comprovanteHoraEntradaGestao');
+  const inHoraSaida = document.getElementById('comprovanteHoraSaidaGestao');
+  const inDataPericia = document.getElementById('comprovanteDataPericiaGestao');
+  const inIncluirCid = document.getElementById('comprovanteIncluirCidGestao');
+  const inObs = document.getElementById('comprovanteObsGestao');
+
+  if (inHoraEntrada) inHoraEntrada.value = horaInicioVal;
+  if (inHoraSaida) inHoraSaida.value = horaSaidaVal;
+  if (inDataPericia) inDataPericia.value = dataAtdVal ? String(dataAtdVal).slice(0, 10) : '';
+  if (inIncluirCid) inIncluirCid.checked = false;
+  if (inObs) inObs.value = '';
+
+  atualizarPreviewComprovanteGestao();
+  setModal('comprovanteModal', true);
+}
+
+function obterDadosComprovanteGestao() {
+  const item = window.currentComprovanteAtd || window.currentDetailFull || {};
+  const v = values(item);
+  const a = item.aux || {};
+
+  const horaEntrada = document.getElementById('comprovanteHoraEntradaGestao')?.value || v.time || a.horaAtd || '08:00';
+  const horaSaida = document.getElementById('comprovanteHoraSaidaGestao')?.value || '08:45';
+  const dataPericia = document.getElementById('comprovanteDataPericiaGestao')?.value || v.date || a.dataAtd || '';
+  const incluirCid = document.getElementById('comprovanteIncluirCidGestao')?.checked || false;
+  const observacoes = document.getElementById('comprovanteObsGestao')?.value?.trim() || '';
+
+  return {
+    protocolo: v.atd || item.atendimento || 'SEM-PROTOCOLO',
+    nomeServidor: v.patient || a.nomePaciente || item.nomePaciente || 'Servidor(a) não informado',
+    cpfServidor: v.cpf || a.cpfPaciente || item.cpfPaciente || '',
+    cargo: (v.cargo && v.cargo !== '—') ? v.cargo : (a.cargo || 'Servidor Público Estadual'),
+    dataPericia: dataPericia,
+    horaEntrada: horaEntrada,
+    horaSaida: horaSaida,
+    medicoPerito: (v.doctor && v.doctor !== '—') ? v.doctor : (item.medico || a.medicoResponsavel || 'Médico Perito Oficial'),
+    crmPerito: v.crm || a.crmResponsavel || '',
+    cid: v.cid || a.cid || '',
+    cidDescricao: (item.payload && item.payload.cidDescricao) || '',
+    incluirCid: incluirCid,
+    observacoes: observacoes
+  };
+}
+
+function gerarHTMLComprovanteComparecimentoGestao(d) {
+  const dataExtenso = formatarDataPorExtensoGestao(d.dataPericia || new Date().toISOString().slice(0, 10));
+  const cidBloco = d.incluirCid && d.cid
+    ? `<div style="margin-top:14px;padding:10px 14px;background:#EFF6FF;border:1px solid #93C5FD;border-radius:6px;font-size:10.5pt;color:#1E40AF">
+         <strong>Diagnóstico informado a pedido expresso do(a) servidor(a) (Resoluções CFM nº 1.658/2002 e 1.851/2008):</strong><br>
+         CID: <strong>${esc(d.cid)}</strong> ${d.cidDescricao ? `— ${esc(d.cidDescricao)}` : ''}
+       </div>`
+    : `<div style="margin-top:14px;padding:9px 12px;background:#F8FAFC;border-left:3px solid #0F3254;font-size:9.5pt;color:#475569;line-height:1.4">
+         <strong>Cláusula de Sigilo Médico Pericial:</strong> Em cumprimento às Resoluções CFM nº 1.658/2002 e 1.851/2008 e ao Código de Ética Médica, o diagnóstico (CID) e dados clínicos detalhados são preservados sob sigilo profissional, sendo este documento suficiente e hábil para fins de justificativa funcional de comparecimento.
+       </div>`;
+
+  const obsBloco = d.observacoes
+    ? `<div style="margin-top:12px;padding:8px 12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:6px;font-size:10pt"><strong>Observações:</strong> ${esc(d.observacoes)}</div>`
+    : '';
+
+  return `<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Declaração de Comparecimento Pericial - ${esc(d.nomeServidor)}</title>
+  <style>
+    @page { size: A4 portrait; margin: 15mm 20mm; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { font-family: "Segoe UI", Arial, Helvetica, sans-serif; color: #1E293B; background: #fff; margin: 0; padding: 12px; font-size: 11pt; line-height: 1.6; }
+    .comprovante-wrapper { max-width: 190mm; margin: 0 auto; padding: 26px 30px; border: 2px solid #0F3254; border-radius: 8px; position: relative; }
+    .header-box { text-align: center; border-bottom: 2px solid #0F3254; padding-bottom: 14px; margin-bottom: 20px; }
+    .header-inst { font-size: 10pt; font-weight: 800; color: #0F3254; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; }
+    .header-sub { font-size: 8.5pt; color: #475569; margin: 2px 0 0; text-transform: uppercase; font-weight: 600; }
+    .header-title { font-size: 14.5pt; font-weight: 900; color: #073F87; margin: 14px 0 4px; text-transform: uppercase; letter-spacing: 0.02em; }
+    .header-meta { font-size: 9pt; color: #64748B; }
+    .declaracao-texto { text-align: justify; font-size: 11pt; line-height: 1.7; margin: 18px 0; color: #0F172A; }
+    .dados-card { background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 8px; padding: 14px 18px; margin: 18px 0; }
+    .d-row { display: flex; margin-bottom: 8px; font-size: 10.5pt; }
+    .d-row:last-child { margin-bottom: 0; }
+    .d-label { width: 180px; font-weight: 700; color: #334155; flex-shrink: 0; }
+    .d-val { color: #0F172A; font-weight: 600; flex: 1; }
+    .data-local { text-align: right; margin: 30px 0 40px; font-size: 11pt; color: #334155; }
+    .assinatura-box { text-align: center; margin-top: 35px; break-inside: avoid; }
+    .assinatura-linha { width: 340px; margin: 0 auto 6px; border-top: 1.5px solid #0F172A; }
+    .assinatura-nome { font-weight: 800; font-size: 11pt; color: #0F172A; }
+    .assinatura-sub { font-size: 9.5pt; color: #475569; }
+    .doc-footer { margin-top: 30px; padding-top: 10px; border-top: 1px dashed #CBD5E1; font-size: 8pt; color: #64748B; text-align: center; line-height: 1.4; }
+    .no-print { margin-bottom: 16px; display: flex; justify-content: flex-end; gap: 10px; }
+    .btn-print { background: #073F87; color: #fff; border: none; padding: 9px 20px; font-weight: 700; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    @media print {
+      .no-print { display: none !important; }
+      body { padding: 0; }
+      .comprovante-wrapper { border: 1.5px solid #0F3254; padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print">
+    <button class="btn-print" onclick="window.print()">🖨️ Imprimir Agora</button>
+    <button class="btn-print" style="background:#64748B" onclick="window.close()">✖ Fechar</button>
+  </div>
+  <div class="comprovante-wrapper">
+    <div class="header-box">
+      <div class="header-inst">GOVERNO DO ESTADO DE SÃO PAULO</div>
+      <div class="header-sub">SECRETARIA DE GESTÃO E GOVERNO DIGITAL • DEPARTAMENTO DE PERÍCIAS MÉDICAS DO ESTADO (DPME)</div>
+      <div class="header-title">DECLARAÇÃO DE COMPARECIMENTO À PERÍCIA MÉDICA</div>
+      <div class="header-meta">Atendimento Pericial Nº: <strong>${esc(d.protocolo || "—")}</strong></div>
+    </div>
+
+    <div class="declaracao-texto">
+      Declaramos, para os devidos fins de comprovação e justificativa funcional junto à unidade administrativa e/ou repartição de lotação de exercício, que o(a) servidor(a) público(a) abaixo qualificado(a) compareceu a esta Unidade Pericial Médica Oficial no dia e horários abaixo discriminados, a fim de submeter-se a avaliação médico-pericial oficial:
+    </div>
+
+    <div class="dados-card">
+      <div class="d-row">
+        <span class="d-label">Nome do(a) Servidor(a):</span>
+        <span class="d-val">${esc(d.nomeServidor || "—")}</span>
+      </div>
+      <div class="d-row">
+        <span class="d-label">CPF:</span>
+        <span class="d-val">${esc(d.cpfServidor || "—")}</span>
+      </div>
+      <div class="d-row">
+        <span class="d-label">Cargo / Função:</span>
+        <span class="d-val">${esc(d.cargo || "—")}</span>
+      </div>
+      <div class="d-row">
+        <span class="d-label">Data do Comparecimento:</span>
+        <span class="d-val">${esc(date(d.dataPericia) || '—')}</span>
+      </div>
+      <div class="d-row">
+        <span class="d-label">Horário de Permanência:</span>
+        <span class="d-val">Entrada: <strong>${esc(d.horaEntrada || "—")}</strong> &nbsp;|&nbsp; Saída: <strong>${esc(d.horaSaida || "—")}</strong></span>
+      </div>
+      <div class="d-row">
+        <span class="d-label">Finalidade:</span>
+        <span class="d-val">Perícia Médica Oficial para fins de Licença para Tratamento de Saúde (LTS - Art. 191/193 da Lei Estadual nº 10.261/1968).</span>
+      </div>
+    </div>
+
+    ${cidBloco}
+    ${obsBloco}
+
+    <div class="data-local">
+      São Paulo, ${dataExtenso}.
+    </div>
+
+    <div class="assinatura-box">
+      <div class="assinatura-linha"></div>
+      <div class="assinatura-nome">Dr(a). ${esc(d.medicoPerito || "Médico(a) Perito(a)")}</div>
+      <div class="assinatura-sub">Médico(a) Perito(a) Oficial ${d.crmPerito ? `— CRM: ${esc(d.crmPerito)}` : ''}</div>
+    </div>
+
+    <div class="doc-footer">
+      <strong>Aviso Legal:</strong> Esta declaração atesta estritamente o comparecimento do(a) servidor(a) no período acima discriminado para realização do ato pericial. Não constitui decisão ou concessão de licença, cuja publicação é de competência do DPME em Diário Oficial do Estado (DOE).
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+function atualizarPreviewComprovanteGestao() {
+  const d = obterDadosComprovanteGestao();
+  const box = document.getElementById('comprovanteLivePreviewGestao');
+  if (!box) return;
+
+  const dataExtenso = formatarDataPorExtensoGestao(d.dataPericia || new Date().toISOString().slice(0, 10));
+  const cidAlert = d.incluirCid && d.cid
+    ? `<div style="margin-top:12px;padding:8px 12px;background:#EFF6FF;border:1px solid #93C5FD;border-radius:6px;font-size:11px;color:#1E40AF">
+         <strong>Diagnóstico informado a pedido expresso do(a) servidor(a):</strong> CID ${esc(d.cid)} ${d.cidDescricao ? `— ${esc(d.cidDescricao)}` : ''}
+       </div>`
+    : `<div style="margin-top:12px;padding:8px 10px;background:#F8FAFC;border-left:3px solid #0F3254;font-size:10.5px;color:#475569">
+         <em>Sigilo Médico Pericial (Resoluções CFM nº 1.658/2002 e 1.851/2008): Diagnóstico preservado sob sigilo profissional.</em>
+       </div>`;
+
+  const obsAlert = d.observacoes ? `<div style="margin-top:8px;font-size:11px;color:#334155"><strong>Obs:</strong> ${esc(d.observacoes)}</div>` : '';
+
+  box.innerHTML = `
+    <div style="text-align:center;border-bottom:2px solid #0F3254;padding-bottom:10px;margin-bottom:14px">
+      <div style="font-size:10px;font-weight:800;color:#0F3254;letter-spacing:0.04em">GOVERNO DO ESTADO DE SÃO PAULO • DPME</div>
+      <div style="font-size:13px;font-weight:900;color:#073F87;margin:4px 0">DECLARAÇÃO DE COMPARECIMENTO À PERÍCIA MÉDICA</div>
+      <div style="font-size:10px;color:#64748B">Atendimento Pericial Nº: <strong>${esc(d.protocolo)}</strong></div>
+    </div>
+    <p style="font-size:12px;line-height:1.5;margin:0 0 10px;text-align:justify">
+      Declaramos que o(a) servidor(a) público(a) <strong>${esc(d.nomeServidor)}</strong>, CPF <strong>${esc(d.cpfServidor || 'não informado')}</strong>, cargo <strong>${esc(d.cargo)}</strong>, compareceu a esta Unidade Pericial Médica Oficial no dia <strong>${esc(date(d.dataPericia) || '—')}</strong>, com permanência das <strong>${esc(d.horaEntrada)}</strong> às <strong>${esc(d.horaSaida)}</strong>, para fins de Perícia Médica Oficial (LTS - Art. 191/193 Lei 10.261/68).
+    </p>
+    ${cidAlert}
+    ${obsAlert}
+    <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:flex-end">
+      <span style="font-size:11px;color:#475569">São Paulo, ${dataExtenso}.</span>
+      <div style="text-align:center">
+        <div style="width:200px;border-top:1px solid #1E293B;margin-bottom:4px"></div>
+        <strong style="font-size:11px;display:block">${esc(d.medicoPerito)}</strong>
+        <span style="font-size:9.5px;color:#64748B">Médico(a) Perito(a) ${d.crmPerito ? `CRM ${esc(d.crmPerito)}` : ''}</span>
+      </div>
+    </div>
+  `;
+
+  const cidBox = document.getElementById('comprovanteCidBoxGestao');
+  const cidTexto = document.getElementById('comprovanteCidTextoGestao');
+  if (cidBox && cidTexto) {
+    if (d.incluirCid) {
+      cidBox.style.display = 'block';
+      cidTexto.textContent = d.cid ? `${d.cid} ${d.cidDescricao ? '— ' + d.cidDescricao : ''}` : '(Sem CID informado)';
+    } else {
+      cidBox.style.display = 'none';
+    }
+  }
+}
+
+function imprimirComprovanteGestao() {
+  const d = obterDadosComprovanteGestao();
+  const html = gerarHTMLComprovanteComparecimentoGestao(d);
+  const w = window.open('', '_blank');
+  if (!w) {
+    alert('O navegador bloqueou a janela de impressão. Permita pop-ups.');
+    return;
+  }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+}
+
+function copiarTextoComprovanteGestao() {
+  const d = obterDadosComprovanteGestao();
+  const dataExtenso = formatarDataPorExtensoGestao(d.dataPericia || new Date().toISOString().slice(0, 10));
+  const cidTexto = d.incluirCid && d.cid
+    ? `Diagnóstico informado a pedido expresso do(a) servidor(a): CID ${d.cid}${d.cidDescricao ? ' — ' + d.cidDescricao : ''}\n`
+    : `Cláusula de Sigilo Médico Pericial (Resoluções CFM nº 1.658/2002 e 1.851/2008): O diagnóstico é preservado sob sigilo profissional.\n`;
+
+  const texto = `DECLARAÇÃO DE COMPARECIMENTO À PERÍCIA MÉDICA
+Governo do Estado de São Paulo — DPME / Ambiental Saúde
+Atendimento Nº: ${d.protocolo}
+
+Declaramos, para os devidos fins de comprovação e justificativa funcional junto à repartição de trabalho, que o(a) servidor(a) público(a) ${d.nomeServidor}, portador(a) do CPF ${d.cpfServidor || 'não informado'}, ocupante do cargo de ${d.cargo}, compareceu a esta Unidade Pericial Médica Oficial no dia ${date(d.dataPericia)}, com horário de permanência das ${d.horaEntrada} às ${d.horaSaida}, a fim de submeter-se a Exame Médico-Pericial Oficial para fins de Licença para Tratamento de Saúde (LTS - Art. 191/193 da Lei nº 10.261/1968).
+
+${cidTexto}${d.observacoes ? 'Observações: ' + d.observacoes + '\n' : ''}
+São Paulo, ${dataExtenso}.
+
+_____________________________________________
+Dr(a). ${d.medicoPerito}
+Médico(a) Perito(a) Oficial ${d.crmPerito ? '— CRM: ' + d.crmPerito : ''}
+`;
+
+  navigator.clipboard.writeText(texto).then(() => {
+    if (window.AmbientalUtils?.toast) {
+      AmbientalUtils.toast('Declaração copiada com sucesso!');
+    } else {
+      alert('Declaração copiada com sucesso!');
+    }
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = texto;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    alert('Declaração copiada com sucesso!');
+  });
+}
+
+function gerarCodigoBookmarkletEsislaUniversal() {
+  const scriptBody = `(function(){
+  function findDoc(){
+    if(document.querySelector('textarea[name="voMedico.parRlCat"]')||document.getElementById('blocoGeral')||document.querySelector('input[name="fl_d_prev"]'))return document;
+    for(var i=0;i<window.frames.length;i++){
+      try{var d=window.frames[i].document;if(d&&(d.querySelector('textarea[name="voMedico.parRlCat"]')||d.getElementById('blocoGeral')||d.querySelector('input[name="fl_d_prev"]')))return d;}catch(_){}
+    }
+    var ifrs=document.querySelectorAll('iframe,frame');
+    for(var j=0;j<ifrs.length;j++){
+      try{var idoc=ifrs[j].contentDocument||ifrs[j].contentWindow.document;if(idoc&&(idoc.querySelector('textarea[name="voMedico.parRlCat"]')||idoc.getElementById('blocoGeral')||idoc.querySelector('input[name="fl_d_prev"]')))return idoc;}catch(_){}
+    }
+    return document;
+  }
+  function sanitizeText(v,max){if(!v)return '';var s=String(v);if(max&&s.length>max)return s.slice(0,max);return s;}
+  function preencherEsislaComDados(data){
+    var doc=findDoc();var win=doc.defaultView||window;
+    var campos=data.campos_esisla||data||{};
+    function trigger(el){if(!el)return;try{el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));el.dispatchEvent(new Event('blur',{bubbles:true}));}catch(_){}}
+    function setInput(sel,val){if(val===undefined||val===null||val==='')return;var el=doc.querySelector(sel);if(el){if(el.hasAttribute('disabled'))el.removeAttribute('disabled');el.disabled=false;el.value=val;trigger(el);}}
+    function setRadio(name,val){if(!val)return;var el=doc.querySelector('input[type="radio"][name="'+name+'"][value="'+val+'"]');if(el){el.checked=true;try{el.click();}catch(_){}el.checked=true;trigger(el);}}
+    function setCheckbox(nameOrId,checked){var el=doc.querySelector('input[type="checkbox"][name="'+nameOrId+'"]')||doc.getElementById(nameOrId);if(el){el.checked=!!checked;try{el.click();}catch(_){}el.checked=!!checked;trigger(el);}}
+    setInput('textarea[name="voMedico.parRlCat"]',sanitizeText(campos['voMedico.parRlCat'],2000));
+    setInput('textarea[name="voMedico.parRlAp"]',sanitizeText(campos['voMedico.parRlAp'],2000));
+    setInput('textarea[name="voMedico.parRlHda"]',sanitizeText(campos['voMedico.parRlHda'],2000));
+    var exApres=doc.querySelector('textarea[name="voMedico.parRlExApres"]')||doc.getElementById('idExameApres');
+    if(exApres){exApres.removeAttribute('disabled');exApres.disabled=false;}
+    setInput('textarea[name="voMedico.parRlExApres"]',sanitizeText(campos['voMedico.parRlExApres'],2000));
+    setInput('textarea[name="voMedico.parRlReqExComp"]',sanitizeText(campos['voMedico.parRlReqExComp'],2000));
+    setInput('textarea[name="voMedico.parRlComp"]',sanitizeText(campos['voMedico.parRlComp'],2000));
+    setInput('input[name="voResult.numCrm"]',campos['voResult.numCrm']);setInput('#crmMedicoAssistente',campos['voResult.numCrm']);
+    setInput('input[name="voResult.strNomeMedico"]',campos['voResult.strNomeMedico']);
+    setInput('input[name="lgPressArterialMax"]',campos['lgPressArterialMax']);setInput('#sistolicaPressao',campos['lgPressArterialMax']);
+    setInput('input[name="lgPressArterialMin"]',campos['lgPressArterialMin']);setInput('#diastolicaPressao',campos['lgPressArterialMin']);
+    setInput('input[name="lgPulsacao"]',campos['lgPulsacao']);setInput('#pulsoPressao',campos['lgPulsacao']);
+    setInput('input[name="lgAltura"]',campos['lgAltura']);setInput('#alturaBiotipo',campos['lgAltura']);
+    setInput('input[name="lgPeso"]',campos['lgPeso']);setInput('#pesoBiotipo',campos['lgPeso']);
+    if(typeof win.calcularIMC==='function'){try{win.calcularIMC();}catch(_){}}
+    var cbs=['voMedico.parEdtcspf','voMedico.parEdAc','voMedico.parEdAr','voMedico.parEdAHp','voMedico.parEdAd','voMedico.parEdAgu','voMedico.parEdAoal','voMedico.parEdAe','voMedico.parEdSn','voMedico.parEdOs','voMedico.parEdEm','voMedico.parEdOutro'];
+    var temAlgum=false;cbs.forEach(function(cbName){if(campos[cbName]){setCheckbox(cbName,true);temAlgum=true;}});
+    if(temAlgum&&typeof win.exameApresentado==='function'){try{win.exameApresentado();}catch(_){}}
+    if(exApres&&campos['voMedico.parRlExApres']){exApres.removeAttribute('disabled');exApres.disabled=false;exApres.value=sanitizeText(campos['voMedico.parRlExApres'],2000);trigger(exApres);}
+    var q1=campos['fl_d_prev']||'N';var q2=campos['fl_limit']||'N';var q3=campos['fl_imped']||'N';
+    var parecerVal=campos['voResult.voParecerFinal.flPfinal']||'F';
+    setRadio('fl_d_prev',q1);setRadio('fl_limit',q2);setRadio('fl_imped',q3);
+    setRadio('voResult.voParecerFinal.flPfinal',parecerVal);
+    if(typeof win.escondeCampos==='function'){try{win.escondeCampos(parecerVal);}catch(_){}}
+    setInput('input[name="voResult.voParecerFinal.qtDiasPm"]',campos['voResult.voParecerFinal.qtDiasPm']);
+    setInput('input[name="voResult.voParecerFinal.dtIniPm"]',campos['voResult.voParecerFinal.dtIniPm']);
+    var cid1=campos['voResult.voParecerFinal.cdCidPm'];
+    if(cid1){var inpCid1=doc.querySelector('input[name="voResult.voParecerFinal.cdCidPm"]');if(inpCid1){inpCid1.value=cid1;trigger(inpCid1);if(typeof win.carregaAjaxCid==='function'){try{win.carregaAjaxCid(inpCid1.name,'descrCidx');}catch(_){}}}}
+    setInput('input[name="voResult.voParecerFinal.nmCidPm"]',campos['voResult.voParecerFinal.nmCidPm']);
+    setInput('#descrCidx',campos['voResult.voParecerFinal.nmCidPm']);
+    var cid2=campos['voResult.voParecerFinal.cdCid2Pm'];
+    if(cid2){var inpCid2=doc.querySelector('input[name="voResult.voParecerFinal.cdCid2Pm"]');if(inpCid2){inpCid2.value=cid2;trigger(inpCid2);if(typeof win.carregaAjaxCid==='function'){try{win.carregaAjaxCid(inpCid2.name,'descrCid2x');}catch(_){}}}}
+    setInput('input[name="voResult.voParecerFinal.nmCid2Pm"]',campos['voResult.voParecerFinal.nmCid2Pm']);
+    setInput('#descrCid2x',campos['voResult.voParecerFinal.nmCid2Pm']);
+    var bg=doc.getElementById('blocoGeral')||doc.querySelector('fieldset');if(bg)bg.scrollIntoView({behavior:'smooth',block:'start'});
+    mostrarToastEsisla("✅ e-SISLA: Laudo preenchido com sucesso! Confira todos os campos antes de concluir.");
+  }
+  function mostrarToastEsisla(msg){
+    var old=document.getElementById('esislaFloatingToast');if(old)old.remove();
+    var t=document.createElement('div');t.id='esislaFloatingToast';
+    t.style.cssText='position:fixed;top:20px;right:20px;z-index:999999;background:#065F46;color:#fff;padding:16px 22px;border-radius:12px;font-family:sans-serif;font-size:14px;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,0.3);max-width:420px;line-height:1.4;border:2px solid #34D399;transition:opacity 0.4s;';
+    t.textContent=msg;document.body.appendChild(t);
+    setTimeout(function(){t.style.opacity='0';setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},400);},6000);
+  }
+  function abrirModalColagemEsisla(callback){
+    var old=document.getElementById('esislaPasteOverlay');if(old)old.remove();
+    var overlay=document.createElement('div');overlay.id='esislaPasteOverlay';
+    overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.7);z-index:999998;display:flex;align-items:center;justify-content:center;padding:16px;font-family:sans-serif;backdrop-filter:blur(3px);';
+    overlay.innerHTML='<div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:520px;box-shadow:0 20px 40px rgba(0,0,0,0.25);border:1px solid #CBD5E1;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><strong style="font-size:16px;color:#0F172A;display:flex;align-items:center;gap:8px;">⚡ Preencher e-SISLA</strong><button id="btnFecharEsislaOverlay" style="border:none;background:#F1F5F9;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:bold;color:#475569;">✕</button></div><p style="font-size:13px;color:#475569;margin-bottom:14px;line-height:1.4;">Cole abaixo o laudo copiado no sistema <strong>Ambiental</strong> (Ctrl + V) e clique em Preencher:</p><textarea id="txtEsislaPaste" placeholder="Aperte Ctrl + V aqui..." style="width:100%;height:130px;padding:10px;border:1.5px solid #CBD5E1;border-radius:8px;font-family:monospace;font-size:11px;box-sizing:border-box;resize:vertical;outline:none;"></textarea><div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;"><button id="btnCancelarEsislaPaste" style="padding:9px 16px;border:1px solid #CBD5E1;background:#fff;border-radius:8px;font-size:13px;font-weight:600;color:#475569;cursor:pointer;">Cancelar</button><button id="btnExecutarEsislaPaste" style="padding:9px 20px;background:#059669;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(5,150,105,0.3);">⚡ Preencher Campos</button></div></div>';
+    document.body.appendChild(overlay);
+    var ta=document.getElementById('txtEsislaPaste');ta.focus();
+    function fechar(){if(overlay.parentNode)overlay.parentNode.removeChild(overlay);}
+    document.getElementById('btnFecharEsislaOverlay').onclick=fechar;
+    document.getElementById('btnCancelarEsislaPaste').onclick=fechar;
+    function processar(){
+      var val=ta.value.trim();if(!val){alert('Por favor, cole os dados do laudo antes de continuar.');return;}
+      try{var obj=JSON.parse(val);fechar();callback(obj);}
+      catch(e){
+        var match=val.match(/var\\s+data\\s*=\\s*(\\{[\\s\\S]*?\\});/);
+        if(match){try{var objFromScript=JSON.parse(match[1]);fechar();callback(objFromScript);return;}catch(_){}}
+        alert('Formato não reconhecido. Certifique-se de copiar o laudo no sistema Ambiental.');
+      }
+    }
+    document.getElementById('btnExecutarEsislaPaste').onclick=processar;
+    ta.onkeydown=function(e){if(e.key==='Enter'&&e.ctrlKey)processar();};
+  }
+  if(navigator.clipboard&&navigator.clipboard.readText){
+    navigator.clipboard.readText().then(function(clipText){
+      if(clipText&&(clipText.indexOf('campos_esisla')!==-1||clipText.indexOf('voMedico')!==-1||clipText.indexOf('fl_d_prev')!==-1)){
+        try{var parsed=JSON.parse(clipText);preencherEsislaComDados(parsed);return;}catch(_){}
+      }
+      abrirModalColagemEsisla(preencherEsislaComDados);
+    }).catch(function(){abrirModalColagemEsisla(preencherEsislaComDados);});
+  }else{
+    abrirModalColagemEsisla(preencherEsislaComDados);
+  }
+})();`;
+  return 'javascript:' + encodeURIComponent(scriptBody.replace(/\s+/g, ' '));
+}
+
+function abrirModalBookmarkletEsisla() {
+  const link = document.getElementById('linkBookmarkletGestao');
+  if (link) {
+    link.href = gerarCodigoBookmarkletEsislaUniversal();
+  }
+  setModal('bookmarkletModal', true);
+}
+
+function copiarCodigoBookmarkletEsisla() {
+  const url = gerarCodigoBookmarkletEsislaUniversal();
+  navigator.clipboard.writeText(url).then(() => {
+    if (window.AmbientalUtils?.toast) {
+      AmbientalUtils.toast('Código do Favorito copiado! No navegador, crie um novo favorito e cole na URL.');
+    } else {
+      alert('Código do Favorito copiado! No navegador, crie um novo favorito e cole na URL.');
+    }
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = url;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    alert('Código do Favorito copiado com sucesso!');
+  });
+}
 
 document.getElementById('filter').addEventListener('change',()=>fetchServer().then(refresh));
 ['periodoInicio','periodoFim'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{if(document.getElementById('periodoInicio').value&&document.getElementById('periodoFim').value&&document.getElementById('periodoInicio').value>document.getElementById('periodoFim').value){alert('O período inicial não pode ser posterior ao período final.');return;} fetchServer().then(refresh)}));

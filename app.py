@@ -73,7 +73,7 @@ DB_POOL_MAX = max(DB_POOL_MIN, int(os.getenv("DB_POOL_MAX", "4" if IS_SERVERLESS
 DB_POOL = None
 
 app = Flask(__name__, static_folder=BASE_DIR, static_url_path="")
-app.config.update(JSON_SORT_KEYS=False, MAX_CONTENT_LENGTH=MAX_BODY_BYTES, REQUEST_ID_HEADER="X-Request-ID")
+app.config.update(JSON_SORT_KEYS=False, MAX_CONTENT_LENGTH=16 * 1024 * 1024, REQUEST_ID_HEADER="X-Request-ID")
 
 install_observability(app)
 
@@ -86,7 +86,7 @@ def _no_cache_dev_assets(response):
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
-    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(self), geolocation=()")
     response.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
     response.headers.setdefault("Content-Security-Policy", "default-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co https://generativelanguage.googleapis.com; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'")
     if APP_ENV == "production":
@@ -1990,6 +1990,63 @@ def gerar_relatorio_final():
         if isinstance(exc, ValueError):
             return jsonify({"error": "invalid_request", "detail": str(exc)}), 400
         return _provider_error(exc)
+
+@app.post("/api/ai/transcribe")
+def api_ai_transcribe():
+    try:
+        audio_bytes = None
+        mime_type = "audio/webm"
+        if "audio" in request.files:
+            file = request.files["audio"]
+            audio_bytes = file.read()
+            mime_type = file.mimetype or "audio/webm"
+        elif request.is_json:
+            data = request.get_json(silent=True) or {}
+            b64 = data.get("audio", "")
+            if b64:
+                import base64
+                if "," in b64:
+                    b64 = b64.split(",", 1)[1]
+                audio_bytes = base64.b64decode(b64)
+                mime_type = data.get("mime_type", "audio/webm")
+        if not audio_bytes:
+            return _error("VALIDATION_ERROR", "Nenhum áudio enviado para transcrição.", False, 400)
+        
+        client = _client()
+        prompt = (
+            "Você é um transcritor médico pericial de alta precisão. "
+            "Transcreva com fidelidade o áudio clínico a seguir em português do Brasil. "
+            "Diretrizes:\n"
+            "1. Retorne APENAS o texto falado, pontuado corretamente.\n"
+            "2. Mantenha os termos médicos, siglas e CIDs corretos.\n"
+            "3. Se houver apenas silêncio, ruído ou nenhuma fala inteligível, retorne exatamente: VAZIO.\n"
+            "4. Não adicione introduções, explicações ou aspas."
+        )
+        contents = [
+            types.Part.from_bytes(data=audio_bytes, mime_type=mime_type),
+            prompt
+        ]
+        models = [GEMINI_MODEL] + GEMINI_FALLBACK_MODELS
+        transcription = ""
+        for model in models:
+            try:
+                response = client.models.generate_content(
+                    model=model,
+                    contents=contents
+                )
+                text = str(response.text or "").strip()
+                if text.upper() == "VAZIO":
+                    text = ""
+                transcription = text
+                break
+            except Exception as e:
+                app.logger.warning("Falha ao transcrever com %s: %s", model, e)
+                continue
+        return _ok({"texto": transcription})
+    except Exception as exc:
+        app.logger.exception("transcribe_error request_id=%s", current_request_id())
+        return _error("AI_ERROR", f"Falha na transcrição: {str(exc)}", True, 500)
+
 
 
 def _require_admin():

@@ -45,6 +45,8 @@ MAX_BODY_BYTES = int(os.getenv("MAX_BODY_BYTES", "120000"))
 AI_RATE_LIMIT = int(os.getenv("AI_RATE_LIMIT_PER_MINUTE", "12"))
 RATE_WINDOW = 60
 DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL and "pooler.supabase.com:5432" in DATABASE_URL:
+    DATABASE_URL = DATABASE_URL.replace("pooler.supabase.com:5432", "pooler.supabase.com:6543")
 APP_ENV = os.getenv("APP_ENV", "development").lower()
 AUTH_REQUIRED = os.getenv("AUTH_REQUIRED", "1") == "1"
 _cors_raw = os.getenv("CORS_ORIGINS", "").strip()
@@ -57,7 +59,7 @@ else:
     # Em produção, a aplicação deve receber CORS_ORIGINS explicitamente.
     ALLOWED_ORIGINS = []
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
-ESISLA_PROMPT_VERSION = "esisla-v5-servidor-periciado-antecedentes"
+ESISLA_PROMPT_VERSION = "esisla-v6-altura-peso"
 GEMINI_FALLBACK_MODELS = [
     m.strip() for m in os.getenv("GEMINI_FALLBACK_MODELS", "gemini-3.5-flash-lite,gemini-3.5-flash").split(",")
     if m.strip() and m.strip() != GEMINI_MODEL
@@ -65,8 +67,9 @@ GEMINI_FALLBACK_MODELS = [
 GEMINI_RETRIES = max(1, int(os.getenv("GEMINI_RETRIES", "2")))
 GEMINI_BACKOFF_SECONDS = max(0.1, float(os.getenv("GEMINI_BACKOFF_SECONDS", "1.0")))
 API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
-DB_POOL_MIN = max(1, int(os.getenv("DB_POOL_MIN", "2")))
-DB_POOL_MAX = max(DB_POOL_MIN, int(os.getenv("DB_POOL_MAX", "20")))
+IS_SERVERLESS = bool(os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"))
+DB_POOL_MIN = max(1, int(os.getenv("DB_POOL_MIN", "1" if IS_SERVERLESS else "2")))
+DB_POOL_MAX = max(DB_POOL_MIN, int(os.getenv("DB_POOL_MAX", "4" if IS_SERVERLESS else "20")))
 DB_POOL = None
 
 app = Flask(__name__, static_folder=BASE_DIR, static_url_path="")
@@ -216,17 +219,35 @@ def _role_from_profile(user: dict[str, Any], db) -> tuple[str | None, dict[str, 
     cur.close()
 
     if not row or not bool(row["ativo"]):
+        g._auth_error = ("USER_INACTIVE" if row else "NO_PROFILE", "O acesso deste usuário está desativado no sistema." if row else "Sua conta não possui um perfil de acesso cadastrado no sistema.", 403)
         return None, {}
+
+    # Auto-sincroniza o email se na tabela estiver nulo ou sintético e o usuário tiver um email real no Supabase Auth
+    db_email = str(row.get("email") or "").strip().lower()
+    if email and ("@" in email) and not email.endswith("@medico.ambiental.local"):
+        if not db_email or db_email.endswith("@medico.ambiental.local") or db_email != email:
+            try:
+                with db.cursor() as u_cur:
+                    u_cur.execute("UPDATE usuarios SET email = %s WHERE id = %s", (email, row["id"]))
+                db.commit()
+                db_email = email
+            except Exception:
+                try:
+                    db.rollback()
+                except Exception:
+                    pass
 
     role = str(row.get("perfil") or "").strip()
     name = str(row.get("nome") or user_metadata.get("name") or user_metadata.get("full_name") or email.split("@")[0] or "Usuário")
     crm = str(row.get("crm") or "")
-    db_email = str(row.get("email") or email or "").strip().lower()
+    if not db_email:
+        db_email = email
     modo_atendimento = str(row.get("modo_atendimento") or "agil").strip().lower()
     if modo_atendimento not in ("agil", "extenso"):
         modo_atendimento = "agil"
 
     if role not in _ALLOWED_ROLES:
+        g._auth_error = ("NO_PROFILE", "Perfil atribuído inválido ou não autorizado.", 403)
         return None, {}
 
     return role, {
@@ -288,9 +309,12 @@ def _authenticate_request() -> tuple[dict[str, Any] | None, str | None]:
         db = get_db()
         role, profile = _role_from_profile(user, db)
         if not role:
-            raise ValueError("Perfil ausente ou inativo no banco de dados.")
+            if not getattr(g, "_auth_error", None):
+                g._auth_error = ("NO_PROFILE", "Perfil ausente ou inativo no banco de dados.", 403)
+            return None, token
     except Exception as exc:
         app.logger.warning("Falha ao resolver perfil do usuário: %s", type(exc).__name__)
+        g._auth_error = ("DB_UNAVAILABLE", "Não foi possível validar o acesso devido a uma instabilidade no servidor de dados.", 503)
         return None, token
 
     # 5. Salva no cache com TTL de até 15 minutos (ou até expiração do token)
@@ -608,6 +632,10 @@ def request_security_context():
             return
         profile, _token = _authenticate_request()
         if not profile:
+            auth_err = getattr(g, "_auth_error", None)
+            if auth_err:
+                code, msg, status_code = auth_err
+                return _error(code, msg, status_code >= 500, status_code)
             return _error("AUTH_ERROR", "Sua sessão não é válida ou expirou.", False, 401)
         request.user_profile = profile
         request.user_id = profile["id"]
@@ -921,7 +949,7 @@ OBJETIVO: organizar e REESCREVER, de forma clínica, objetiva e natural, somente
 
 REGRA CENTRAL — ZERO INFORMAÇÃO NOVA:
 - NÃO invente, complete, suponha, interprete ou deduza informações ausentes.
-- NÃO crie sinais vitais (pressao_sistolica, pressao_diastolica, pulso). Se não estiverem registrados nos dados fornecidos, DEIXE O VALOR EM BRANCO.
+- NÃO crie sinais vitais (pressao_sistolica, pressao_diastolica, pulso, altura, peso). Se não estiverem registrados nos dados fornecidos, DEIXE O VALOR EM BRANCO.
 - É permitido condensar, reorganizar e reescrever informações já fornecidas para evitar fragmentação e alcançar a excelência pericial.
 - É proibido inferir diagnóstico, gravidade, causalidade, incapacidade, prognóstico, nexo, sintomas, achados, tratamentos, limitações ou resultados.
 - Não use conhecimento médico externo para preencher lacunas.
@@ -962,12 +990,12 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
    Consolide somente outras_doencas, condicoes, antecedentes e historico_pregresso. Pode eliminar repetição e organizar o conteúdo quando isso melhora a leitura, mas não introduza condições, diagnósticos ou tratamentos não registrados.
 
 3. “(*)Exame Físico Geral” e “Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares”
-   Redija usando exclusivamente exame_fisico_tipo, exame_fisico_descricao e os valores de pressão/pulso expressamente registrados. Reorganize a apresentação dos achados direcionando para a patologia em questão:
+   Redija usando exclusivamente exame_fisico_tipo, exame_fisico_descricao e os valores de pressão/pulso/altura/peso expressamente registrados. Reorganize a apresentação dos achados direcionando para a patologia em questão:
    - Para patologia Mental / Psiquiátrica (CID F): estruture os achados psíquicos descritos: postura e acompanhamento (descrever se veio acompanhado ou desacompanhado, postura na sala de espera e durante o atendimento), orientação (tempo e espaço), aparência física e higiene, fluxo de pensamento (lentificado, acelerado, coerente, prolixo), diálogo (espontâneo, colaborativo, lentificado), psicomotricidade, humor e afeto, volição, pragmatismo (capacidade de realizar atividades rotineiras) e presença ou ausência de ideação e delírios relatados.
    - Para patologia Ortopédica / Físico-funcional: estruture os achados físicos descritos: entrada e inspeção dinâmica (marcha, uso de órteses), fácies de dor, cicatrizes cirúrgicas, trofismo muscular, mobilidade articular (amplitude de movimento ativo e passivo), força muscular (grau 5/5), presença de contraturas musculares, sensibilidade e reflexos tendinosos profundos relatados.
    - Em “Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares”, organize somente alteracoes_clinicas_exames, documentos_complementares e observacoes_documentos. Pode unir itens relacionados do próprio questionário para melhorar a leitura, sem interpretar resultados.
    - Não crie normalidade, negatividade, estado geral ou achados não escritos.
-   - Registre nos campos próprios de Pressão Arterial (Sistólica, Diastólica) e Pulso exclusivamente os valores expressamente registrados em pressao_sistolica, pressao_diastolica e pulso. Se não registrados, DEIXE O VALOR EM BRANCO.
+   - Registre nos campos próprios de Pressão Arterial (Sistólica, Diastólica), Pulso, Altura e Peso exclusivamente os valores expressamente registrados em pressao_sistolica, pressao_diastolica, pulso, altura e peso. Se não registrados, DEIXE O VALOR EM BRANCO.
 
 4. “(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)”
    Relacione expressamente as limitações físicas ou mentais com as atividades do ROL do servidor (cargo), reunindo desc_limitacao, limitacao_funcional, limitacao_rol, atividades_comprometidas, sintomas_limitacoes e obs_limitacoes:
@@ -996,7 +1024,7 @@ OUTROS CAMPOS — TRANSCRIÇÃO FIEL:
 - “Atestado/Relatório/Exames Complementares (Tipo-Data-Resultado)” padroniza a solicitação assistente no formato oficial:
   "CRM [crm_cro], solicita [dias_solicitados] dias de afastamento a partir de [data_documento], pelo CID [cid] – Relatório médico em anexo."
   (Caso não haja relatório médico anexado, indicar conforme dados; se houver outros documentos registrados em documentos_complementares, observacoes_documentos ou atestados adicionais em cids_secundarios, relacione-os também de forma sucinta com Tipo-Data-Resultado/Outros CIDs apresentados).
-- Pressão Arterial/Sistólica/Diastólica/Pulso usam somente valores explicitamente registrados.
+- Pressão Arterial/Sistólica/Diastólica/Pulso/Altura/Peso usam somente valores explicitamente registrados.
 - “(*)Parecer Médico” e “(*) Parecer Final” reproduzem somente os valores já escolhidos:
   - Nº Dias: dias concedidos/solicitados
   - Data Início: data de início da licença/perícia
@@ -1033,6 +1061,9 @@ Pressão Arterial
 Sistólica (mmHg):
 Diastólica (mmHg):
 Pulso (bpm):
+
+Altura:
+Peso:
 
 (*)Exame Físico Geral
 
@@ -1517,6 +1548,8 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
         "pressao_sistolica": payload.get("pressao_sistolica") or payload.get("pressaoSistolica") or a.get("pressaoSistolica"),
         "pressao_diastolica": payload.get("pressao_diastolica") or payload.get("pressaoDiastolica") or a.get("pressaoDiastolica"),
         "pulso": payload.get("pulso") or a.get("pulso"),
+        "altura": payload.get("altura") or payload.get("biotipoAltura") or a.get("altura") or a.get("biotipoAltura") or "",
+        "peso": payload.get("peso") or payload.get("biotipoPeso") or a.get("peso") or a.get("biotipoPeso") or "",
         "alteracoes_clinicas_exames": payload.get("alteracoes_clinicas_exames") or payload.get("alteracoesClinicasExames"),
         "exame": payload.get("exame") or {},
         "limitacao_funcional": payload.get("limitacao_funcional") or payload.get("limitacaoFuncional"),
@@ -1832,9 +1865,14 @@ def api_ai_esisla():
         cadastro_id = _get_cadastro_id(payload)
         with _cadastro_ai_lock(cadastro_id, "/api/ai/esisla"):
             instruction = _task_instruction("esisla", payload)
-            
             result, cached, _ = _generate_cached("esisla", payload, instruction, EsislaResult, force_refresh=force)
-            result = EsislaResult(ficha_esisla=_clean_esisla_text(result.ficha_esisla))
+            ficha_text = _clean_esisla_text(result.ficha_esisla)
+            alt_val = str(payload.get("altura") or "").strip()
+            peso_val = str(payload.get("peso") or "").strip()
+            if "Altura:" not in ficha_text and "Peso:" not in ficha_text:
+                alt_block = f"Altura: {alt_val}\nPeso: {peso_val}\n\n"
+                ficha_text = re.sub(r"(\(\*\)\s*Exame Físico Geral)", alt_block + r"\1", ficha_text, count=1)
+            result = EsislaResult(ficha_esisla=ficha_text)
             return jsonify({
                 "ficha_esisla": result.ficha_esisla,
                 "meta": {"cached": bool(cached), "endpoint": "esisla"}
@@ -2372,6 +2410,10 @@ def api_auth_session():
         return _error("AUTH_ERROR", "Sessão ausente.", False, 401)
     profile, _ = _authenticate_request()
     if not profile:
+        auth_err = getattr(g, "_auth_error", None)
+        if auth_err:
+            code, msg, status_code = auth_err
+            return _error(code, msg, status_code >= 500, status_code)
         return _error("AUTH_ERROR", "Não foi possível validar sua sessão.", False, 401)
         
     # Construindo a resposta direto com jsonify para evitar o Erro 500 (bug das tuplas)
@@ -2388,6 +2430,9 @@ def api_auth_session():
 def api_auth_me():
     profile, _ = _authenticate_request()
     if not profile:
+        auth_err = getattr(g, "_auth_error", None)
+        if auth_err and auth_err[2] >= 500:
+            return _error(auth_err[0], auth_err[1], True, auth_err[2])
         return _error("AUTH_ERROR", "Sua sessão não é válida ou expirou.", False, 401)
     return _ok(profile)
 
@@ -2905,6 +2950,55 @@ def api_delete_atendimento(rid):
     db.commit()
     cur.close()
     return _ok({"status":"ARQUIVADO","atualizado_em":now,"versao":next_version})
+
+@app.delete("/api/admin/atendimentos/<rid>")
+def api_admin_purge_atendimento(rid):
+    denied = _require_admin()
+    if denied: return denied
+    rid = str(rid or "").strip()
+    if not rid: return _error("VALIDATION_ERROR", "Atendimento inválido.", False, 400)
+    db = get_db(); cur = db.cursor()
+    cur.execute("SELECT id FROM atendimentos WHERE id=%s OR numero=%s", (rid, rid))
+    row = cur.fetchone()
+    if not row:
+        cur.close()
+        return _error("NOT_FOUND", "Atendimento não encontrado.", False, 404)
+    real_id = row["id"]
+    cur.execute("DELETE FROM atendimentos WHERE id=%s", (real_id,))
+    db.commit()
+    cur.close()
+    return _ok({"deleted": True, "id": real_id, "mensagem": "Atendimento excluído permanentemente do banco de dados."})
+
+@app.post("/api/admin/atendimentos/batch-delete")
+@app.delete("/api/admin/atendimentos/batch")
+def api_admin_batch_purge_atendimentos():
+    denied = _require_admin()
+    if denied: return denied
+    data = request.get_json(silent=True) or {}
+    ids = data.get("ids") or []
+    if not isinstance(ids, list) or not ids:
+        return _error("VALIDATION_ERROR", "Informe uma lista de IDs para exclusão.", False, 400)
+    
+    clean_ids = [str(x).strip() for x in ids if str(x).strip()]
+    if not clean_ids:
+        return _error("VALIDATION_ERROR", "Nenhum ID válido informado.", False, 400)
+        
+    db = get_db(); cur = db.cursor()
+    cur.execute("SELECT id FROM atendimentos WHERE id = ANY(%s) OR numero = ANY(%s)", (clean_ids, clean_ids))
+    rows = cur.fetchall()
+    real_ids = [r["id"] for r in rows]
+    deleted_count = 0
+    if real_ids:
+        cur.execute("DELETE FROM atendimentos WHERE id = ANY(%s)", (real_ids,))
+        deleted_count = cur.rowcount
+        db.commit()
+    cur.close()
+    return _ok({
+        "deleted": True,
+        "count": deleted_count,
+        "ids": real_ids,
+        "mensagem": f"{deleted_count} atendimento(s) excluído(s) permanentemente do banco de dados."
+    })
 
 @app.get("/api/atendimentos/<rid>/historico")
 def api_history(rid):

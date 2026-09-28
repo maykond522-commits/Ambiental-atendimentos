@@ -160,7 +160,7 @@ a{color:inherit}
 .exam-options{margin-top:13px;display:flex;flex-direction:column;gap:7px}
 .exam-observation{margin-top:11px}
 .exam-observation textarea{min-height:72px}
-.add-row{display:flex;align-items:center;gap:8px;margin-top:10px}
+.add-row{display:flex;align-items:center;gap:8px;margin-top:12px;margin-bottom:8px}
 .table-card{border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .table-head,.med-row{
   display:grid;grid-template-columns:1.5fr 1fr 1fr 1.5fr auto;gap:8px;padding:9px 10px;align-items:center
@@ -168,8 +168,29 @@ a{color:inherit}
 .table-head{background:#F5F8FC;color:#64748B;font-size:11px;font-weight:800}
 .med-row{border-top:1px solid #EEF2F7}
 .small-input{padding:9px 10px;font-size:12px}
-.remove{border:0;background:#FFF1F1;color:var(--danger);width:34px;height:34px;border-radius:9px;font-weight:900}
-.btn-add{border:1px dashed #A8BED8;background:#F8FBFF;color:var(--blue);padding:9px 12px;border-radius:10px;font-weight:800;font-size:12px}
+.remove{border:0;background:#FFF1F1;color:var(--danger);width:34px;height:34px;border-radius:9px;font-weight:900;cursor:pointer}
+.btn-add{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  background:#EFF6FF;
+  border:1.5px solid #2563EB;
+  color:#1D4ED8;
+  padding:10px 18px;
+  border-radius:10px;
+  font-weight:700;
+  font-size:13px;
+  cursor:pointer;
+  box-shadow:0 1px 3px rgba(37,99,235,0.12);
+  transition:all .18s ease;
+}
+.btn-add:hover{
+  background:#2563EB;
+  color:#ffffff;
+  border-color:#1D4ED8;
+  box-shadow:0 4px 12px rgba(37,99,235,0.25);
+  transform:translateY(-1px);
+}
 .quesito{
   border:1px solid var(--line);border-radius:14px;padding:15px;margin-bottom:12px;background:#FBFCFE
 }
@@ -652,10 +673,6 @@ body::before{
   border-top:1px solid #EEF2F6;
   margin-top:24px;
   padding-top:18px;
-}
-.btn-add{
-  border-color:#AFC5DB;
-  background:linear-gradient(180deg,#FBFDFF,#F4F8FC);
 }
 .modal{
   border-radius:20px;
@@ -1563,10 +1580,144 @@ body:not(.mode-agil-active) #containerModoAgil {
   font-size: 9.5px;
   padding: 2px 5px;
 }
+
+/* =========================================================
+   MELHORIAS DE ERGONOMIA E PRODUTIVIDADE MÉDICA
+   ========================================================= */
+.sticky-hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1.5px solid #CBD5E1;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
+  z-index: 9999;
+  padding: 8px 24px;
+  animation: slideDownHUD 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes slideDownHUD {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.sticky-hud-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.sticky-hud-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #1E293B;
+  font-weight: 600;
+}
+.sticky-hud-info .hud-sep {
+  color: #94A3B8;
+}
+.sticky-hud-info .hud-parecer {
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: #F1F5F9;
+}
+.sticky-hud-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.hud-save-status {
+  font-size: 11.5px;
+  color: #15803D;
+  font-weight: 700;
+}
+.btn-sm {
+  padding: 5px 12px !important;
+  font-size: 12px !important;
+}
+
+/* Voice dictation button & recording pulse */
+.voice-btn {
+  font-size: 11.5px !important;
+  padding: 3px 8px !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-color: #94A3B8 !important;
+  color: #334155 !important;
+  border-radius: 6px;
+  transition: all 0.2s;
+  background: #fff;
+}
+.voice-btn:hover {
+  background: #F1F5F9 !important;
+  border-color: #64748B !important;
+}
+.voice-btn.recording {
+  background: #FEF2F2 !important;
+  border-color: #EF4444 !important;
+  color: #DC2626 !important;
+  animation: pulseRecording 1.5s infinite;
+}
+@keyframes pulseRecording {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* Quick insertion chips */
+.chip-sm {
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  color: #1E293B;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.chip-sm:hover {
+  background: #F1F5F9;
+  border-color: #0284C7;
+  color: #0369A1;
+  transform: translateY(-1px);
+}
+.chip-sm:active {
+  transform: translateY(0);
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/auth.js"></script><script src="/api.js"></script></head>
 <body><div id="authLoading" style="position:fixed;inset:0;background:#F2F6FA;z-index:999999;display:grid;place-items:center;font-family:Inter,system-ui,sans-serif;color:#073F87"><div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #DDE6EF;border-radius:14px;padding:13px 16px;box-shadow:0 12px 35px rgba(10,30,55,.1);font-size:12px;font-weight:800"><img src="/logo.png" alt="" style="width:28px;height:28px;object-fit:contain"><span>Verificando sessão...</span></div></div>
 <div class="app">
+<!-- MINI-HUD FLUTUANTE PERICIAL (Sticky ao rolar a página) -->
+<div id="stickyDoctorHUD" class="sticky-hud" style="display:none">
+  <div class="sticky-hud-content">
+    <div class="sticky-hud-info">
+      <span style="color:#0F52BA">🩺</span>
+      <span class="hud-paciente" id="hudPaciente">Servidor: <strong>Não informado</strong></span>
+      <span class="hud-sep">•</span>
+      <span class="hud-cargo" id="hudCargo">Cargo: --</span>
+      <span class="hud-sep">•</span>
+      <span class="hud-cid" id="hudCid">CID: --</span>
+      <span class="hud-sep">•</span>
+      <span class="hud-parecer" id="hudParecer">Parecer: Não definido</span>
+    </div>
+    <div class="sticky-hud-actions">
+      <span class="hud-save-status" id="hudSaveStatus">✓ Salvo</span>
+      <button type="button" class="btn btn-outline btn-sm" onclick="saveNow()" title="Atalho: Ctrl + S">💾 Salvar</button>
+      <button type="button" class="btn btn-green btn-sm" onclick="finalizarAtendimentoHeader()" title="Atalho: Ctrl + Enter">Finalizar ✓</button>
+    </div>
+  </div>
+</div>
 <header class="header">
   <div class="header-inner">
     <div class="brand">
@@ -1585,9 +1736,6 @@ body:not(.mode-agil-active) #containerModoAgil {
     </div>
     <div class="header-actions">
       <button class="btn btn-outline optional" onclick="openManagement()">Gestão</button>
-      <button class="btn btn-outline optional" id="btnCopiarEsisla" onclick="copiarFichaEsislaRapida()" style="display:none;" title="Copiar ficha estruturada para e-Sisla (Apenas Administradores)">Copiar e-Sisla</button>
-      <button class="btn btn-outline optional" id="btnCopiarEsislaJson" onclick="copiarFichaEsislaJsonRapida()" style="display:none;color:#1E40AF;font-weight:700" title="Copiar ficha em formato JSON para o e-Sisla">{ } Copiar JSON</button>
-      <button class="btn btn-outline optional" id="btnRoboEsisla" onclick="abrirRoboEsislaModal()" style="display:none;color:#0D542B;font-weight:700" title="Ativar Robô de integração com o e-Sisla (UI.Vision)">🤖 Robô e-Sisla</button>
       <button class="btn btn-outline optional" onclick="openFinalReport()" title="Visualizar e imprimir laudo pericial">Imprimir</button>
       <button class="btn btn-danger optional" onclick="deleteAtendimento()">Excluir</button>
       <button class="btn btn-outline optional" onclick="saveNow()">Salvar rascunho</button>
@@ -1653,7 +1801,7 @@ body:not(.mode-agil-active) #containerModoAgil {
               <input class="input" type="number" min="0" step="0.1" id="agilTempoCargo" oninput="syncAgilField('tempoCargo', this.value)">
             </div>
             <div class="field col-3">
-              <label>Unidade</label>
+              <label>Ano(s)/Mes(es)/Dia(s)</label>
               <select class="select" id="agilTempoUnidade" onchange="syncAgilField('tempoUnidade', this.value)">
                 <option value="">Selecione</option>
                 <option>Anos</option>
@@ -1676,6 +1824,22 @@ body:not(.mode-agil-active) #containerModoAgil {
               <label>Quais atividades realiza atualmente?</label>
               <textarea class="textarea" id="agilAtividadesReadaptado" placeholder="Descreva as atividades atuais." oninput="syncAgilField('atividadesReadaptado', this.value)"></textarea>
             </div>
+
+            <!-- Card de Contexto e Histórico Pregresso do Servidor -->
+            <div class="field col-12" id="historicoPacienteCard" style="display:none;margin-top:4px">
+              <div style="background:#EFF6FF;border:1.5px solid #93C5FD;border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span style="font-size:20px">📋</span>
+                  <div>
+                    <div style="font-weight:700;font-size:12.5px;color:#1E3A8A" id="histCardTitulo">Histórico pericial anterior localizado</div>
+                    <div style="font-size:11.5px;color:#2563EB" id="histCardDetalhes">Carregando dados anteriores...</div>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-outline" style="font-size:12px;padding:5px 12px;background:#fff;border-color:#3B82F6;color:#1D4ED8;font-weight:700" onclick="importarAntecedentesHistorico()">
+                  <span>⚡</span> Aproveitar Antecedentes e Comorbidades
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1691,7 +1855,12 @@ body:not(.mode-agil-active) #containerModoAgil {
         <div class="agil-card-body">
           <div class="form-grid">
             <div class="field col-12">
-              <label class="required">Qual a doença está tratando que motivou o afastamento?</label>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px">
+                <label class="required" style="margin-bottom:0">Qual a doença está tratando que motivou o afastamento?</label>
+                <button type="button" class="btn btn-outline voice-btn" id="voiceBtn_agilDoencaMotivo" onclick="toggleVoiceDictation('agilDoencaMotivo')" title="Clique para ditar por voz">
+                  <span>🎙️</span> Ditado por voz
+                </button>
+              </div>
               <textarea class="textarea" id="agilDoencaMotivo" style="min-height:74px" placeholder="Descreva a doença e o motivo do afastamento..." oninput="onAgilDoencaMotivoInput(this.value)"></textarea>
               <div class="help">O que for respondido aqui preenche automaticamente o Histórico Pregresso abaixo.</div>
             </div>
@@ -1704,7 +1873,12 @@ body:not(.mode-agil-active) #containerModoAgil {
               <input class="input" id="agilFreqConsultas" placeholder="Ex.: semanal, quinzenal, mensal, conforme necessidade" oninput="syncAgilField('freqConsultas', this.value)">
             </div>
             <div class="field col-12">
-              <label class="required">Quais sintomas / limitações são referidos?</label>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px">
+                <label class="required" style="margin-bottom:0">Quais sintomas / limitações são referidos?</label>
+                <button type="button" class="btn btn-outline voice-btn" id="voiceBtn_agilSintomasLimitacao" onclick="toggleVoiceDictation('agilSintomasLimitacao')" title="Clique para ditar por voz">
+                  <span>🎙️</span> Ditado por voz
+                </button>
+              </div>
               <textarea class="textarea" id="agilSintomasLimitacao" style="min-height:74px" placeholder="Descreva os sintomas relatados e as limitações..." oninput="syncAgilField('sintomasLimitacao', this.value)"></textarea>
             </div>
           </div>
@@ -1717,7 +1891,27 @@ body:not(.mode-agil-active) #containerModoAgil {
               <div class="table-head"><div>Medicamento</div><div>Dosagem</div><div>Frequência</div><div>Observação</div><div></div></div>
               <div id="agilMedRows"></div>
             </div>
-            <div class="add-row"><button class="btn-add" type="button" onclick="addMedication()">+ Adicionar medicamento</button></div>
+            <div class="add-row" style="margin-top:8px"><button class="btn-add" type="button" onclick="addMedication()">+ Adicionar medicamento</button></div>
+
+            <!-- Chips de Inserção Rápida de Medicações Frequentes -->
+            <div style="margin-top:12px;padding:10px 12px;background:#F8FAFC;border:1px dashed #CBD5E1;border-radius:10px">
+              <div style="font-size:11.5px;font-weight:700;color:#334155;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+                <span>⚡</span> <span>Prescrições Frequentes (1 clique adiciona com dosagem em mg/dia formatada):</span>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px">
+                <button type="button" class="chip-sm" onclick="adicionarMedRapida('Sertralina', '50 mg', '1x/dia pela manhã', 'Dose diária: 50 mg/dia')">+ Sertralina 50mg</button>
+                <button type="button" class="chip-sm" onclick="adicionarMedRapida('Sertralina', '100 mg', '1x/dia pela manhã', 'Dose diária: 100 mg/dia')">+ Sertralina 100mg</button>
+                <button type="button" class="chip-sm" onclick="adicionarMedRapida('Escitalopram', '10 mg', '1x/dia pela manhã', 'Dose diária: 10 mg/dia')">+ Escitalopram 10mg</button>
+                <button type="button" class="chip-sm" onclick="adicionarMedRapida('Escitalopram', '20 mg', '1x/dia pela manhã', 'Dose diária: 20 mg/dia')">+ Escitalopram 20mg</button>
+                <button type="button" class="chip-sm" onclick="adicionarMedRapida('Clonazepam', '2 mg', '1x/dia à noite', 'Dose diária: 2 mg/dia')">+ Clonazepam 2mg</button>
+                <button type="button" class="chip-sm" onclick="adicionarMedRapida('Fluoxetina', '20 mg', '1x/dia pela manhã', 'Dose diária: 20 mg/dia')">+ Fluoxetina 20mg</button>
+                <button type="button" class="chip-sm" onclick="adicionarMedRapida('Venlafaxina', '75 mg', '1x/dia pela manhã', 'Dose diária: 75 mg/dia')">+ Venlafaxina 75mg</button>
+                <button type="button" class="chip-sm" onclick="adicionarMedRapida('Zolpidem', '10 mg', '1x/dia ao deitar', 'Dose diária: 10 mg/dia')">+ Zolpidem 10mg</button>
+                <button type="button" class="chip-sm" onclick="adicionarMedRapida('Ciclobenzaprina', '10 mg', '1x/dia à noite', 'Dose diária: 10 mg/dia')">+ Ciclobenzaprina 10mg</button>
+                <button type="button" class="chip-sm" onclick="adicionarMedRapida('Pregabalina', '75 mg', '2x/dia (12/12h)', 'Dose diária: 150 mg/dia')">+ Pregabalina 75mg 12/12h</button>
+                <button type="button" class="chip-sm" onclick="adicionarMedRapida('Dipirona', '1 g', 'se dor até 6/6h', 'Uso sintomático s/n')">+ Dipirona 1g</button>
+              </div>
+            </div>
 
             <div class="subpanel" style="margin-top:14px">
               <h4 style="margin-bottom:8px">Quando aplicável ao CID F</h4>
@@ -1797,6 +1991,52 @@ body:not(.mode-agil-active) #containerModoAgil {
                 <button type="button" class="btn-secondary-action" onclick="addSecondaryCID()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;font-size:12px;font-weight:700;color:#0F3254;background:#F1F5F9;border:1px solid #CBD5E1;border-radius:6px;cursor:pointer;transition:all 0.2s" title="Adicionar outros atestados ou CIDs apresentados pelo servidor">
                   <span style="font-size:14px;font-weight:800;color:#1B5E20">➕</span> Adicionar outro CID (Atestados adicionais)
                 </button>
+              </div>
+            </div>
+
+            <!-- Subpainel: Atestado Assistente & Calculadora Pericial de Prazos -->
+            <div class="field col-12" style="margin-top:10px">
+              <div class="subpanel" style="margin-top:0;background:#F8FAFC;border:1.5px solid #CBD5E1;border-radius:12px;padding:14px">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+                  <div style="font-weight:800;font-size:13px;color:#0F3254;display:flex;align-items:center;gap:6px">
+                    <span>📅</span>
+                    <span>Dados do Atestado do Médico Assistente &amp; Prazos</span>
+                  </div>
+                  <div id="retroacaoAlertaBadge" style="display:none;font-size:11.5px;font-weight:700;color:#9A3412;background:#FFEDD5;border:1px solid #FDBA74;padding:3px 10px;border-radius:12px">
+                    ⚠️ Atestado com &gt; 3 dias de retroação
+                  </div>
+                </div>
+                <div class="form-grid">
+                  <div class="field col-4">
+                    <label>CRM/CRO do médico assistente</label>
+                    <input class="input" id="agilCrmCro" placeholder="Ex: CRM/SP 123456" oninput="syncAgilField('crmCro', this.value)">
+                  </div>
+                  <div class="field col-4">
+                    <label>Data do atestado/relatório</label>
+                    <input class="input" type="date" id="agilDataDocumento" oninput="syncAgilField('dataDocumento', this.value); calcularDatasAtestado();">
+                  </div>
+                  <div class="field col-4">
+                    <label>Dias solicitados</label>
+                    <input class="input" type="number" min="0" id="agilDiasSolicitados" placeholder="Ex: 15" oninput="syncAgilField('diasSolicitados', this.value); calcularDatasAtestado();">
+                  </div>
+                </div>
+                
+                <!-- Resumo e Calculadora Dinâmica -->
+                <div id="calcDatasResumoBox" style="margin-top:12px;padding:10px 14px;background:#FFFFFF;border:1px solid #E2E8F0;border-radius:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+                  <div style="display:flex;align-items:center;gap:14px;font-size:12.5px;color:#334155;flex-wrap:wrap">
+                    <div><span>Data Início:</span> <strong id="calcDataInicioTxt">--/--/----</strong></div>
+                    <div><span>Término previsto:</span> <strong id="calcDataTerminoTxt" style="color:#0F52BA">--/--/----</strong></div>
+                    <div><span>Dias:</span> <strong id="calcDiasTxt">--</strong></div>
+                  </div>
+                  <div>
+                    <button type="button" class="btn btn-outline" style="font-size:11.5px;padding:4px 10px;background:#F1F5F9;font-weight:700" onclick="concederMesmosDiasAtestado()" title="Preenche o parecer com os mesmos dias e data do atestado">
+                      <span>✓</span> Conceder mesmos dias no parecer
+                    </button>
+                  </div>
+                </div>
+                <div id="retroacaoExplicacao" style="display:none;margin-top:8px;font-size:11.5px;color:#9A3412;line-height:1.4">
+                  <strong>Atenção DPME:</strong> A data do atestado possui mais de 3 dias úteis anteriores à data de hoje. Caso concedido, o DPME exige comprovação documental de internamento hospitalar ou justificativa pericial formal.
+                </div>
               </div>
             </div>
 
@@ -2241,14 +2481,45 @@ body:not(.mode-agil-active) #containerModoAgil {
             <div class="field"><label>Pressão sistólica (mmHg)</label><input class="input" type="number" min="0" id="agilPressaoSistolica" placeholder="Aferida" oninput="syncAgilField('pressaoSistolica', this.value)"></div>
             <div class="field"><label>Pressão diastólica (mmHg)</label><input class="input" type="number" min="0" id="agilPressaoDiastolica" placeholder="Aferida" oninput="syncAgilField('pressaoDiastolica', this.value)"></div>
             <div class="field"><label>Pulso (bpm)</label><input class="input" type="number" min="0" id="agilPulso" placeholder="Aferido" oninput="syncAgilField('pulso', this.value)"></div>
-            <div class="field"><label>Altura</label><input class="input" id="agilAltura" placeholder="Ex: 1,75" oninput="syncAgilField('altura', this.value)"></div>
-            <div class="field"><label>Peso</label><input class="input" id="agilPeso" placeholder="Ex: 70" oninput="syncAgilField('peso', this.value)"></div>
+            <div class="field"><label>Altura</label><input class="input" id="agilAltura" placeholder="Ex: 1,75" oninput="syncAgilField('altura', this.value); calcularIMC();"></div>
+            <div class="field"><label>Peso</label><input class="input" id="agilPeso" placeholder="Ex: 70" oninput="syncAgilField('peso', this.value); calcularIMC();"></div>
+          </div>
+
+          <!-- Card de IMC Calculado -->
+          <div id="agilImcCard" style="display:none;margin-top:10px;padding:8px 14px;background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:8px;font-size:12.5px;color:#166534;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span>⚖️</span>
+              <span><strong>IMC Calculado:</strong> <span id="agilImcValor">--</span> kg/m² — <strong id="agilImcClassificacao">--</strong></span>
+            </div>
+            <span style="font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:12px;background:#DCFCE7;color:#15803D" id="agilImcBadge">Eutrófico</span>
           </div>
 
           <div class="field col-12" style="margin-top:16px">
-            <label>(*)Exame Físico Geral — achados observados</label>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;flex-wrap:wrap">
+              <label style="margin:0;font-weight:700">(*)Exame Físico Geral — achados observados</label>
+              <div style="display:flex;align-items:center;gap:8px">
+                <button type="button" class="btn btn-outline voice-btn" id="voiceBtn_agilExameFisicoDescricao" onclick="toggleVoiceDictation('agilExameFisicoDescricao')" title="Clique para ditar achados por voz">
+                  <span>🎙️</span> Voz
+                </button>
+                <button type="button" class="btn btn-outline" id="btnAgilExameFisicoGeral" style="font-size:12px;padding:4px 10px;display:inline-flex;align-items:center;gap:6px" onclick="inserirExameFisicoGeralPadrao()" title="Inserir texto padrão do Exame Físico Geral no início deste campo">
+                  <span>🩺</span> Exame Físico Geral
+                </button>
+              </div>
+            </div>
             <textarea class="textarea" id="agilExameFisicoDescricao" style="min-height:120px" placeholder="Achados clínicos e observações do exame físico/mental..." oninput="syncAgilField('exameFisicoDescricao', this.value)"></textarea>
-            <div class="help">Preenchido automaticamente ao selecionar o exame clínico/mental ou segmentos anatômicos, disponível para revisão do médico. Alimenta o e-Sisla.</div>
+            
+            <!-- Achados Frequentes / Chips Rápidos -->
+            <div class="exam-chips-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+              <span style="font-size:11.5px;font-weight:700;color:#64748B;display:inline-flex;align-items:center">⚡ Inserção rápida de achados:</span>
+              <button type="button" class="chip-sm" onclick="inserirAchadoExame('Lasègue negativo bilateralmente.')">+ Lasègue Negativo Bilateral</button>
+              <button type="button" class="chip-sm" onclick="inserirAchadoExame('Marcha típica, sem claudicação ou uso de órteses.')">+ Marcha Típica s/ Claudicação</button>
+              <button type="button" class="chip-sm" onclick="inserirAchadoExame('Ausência de contraturas musculares paravertebrais palpáveis.')">+ Sem Contraturas Paravertebrais</button>
+              <button type="button" class="chip-sm" onclick="inserirAchadoExame('Força muscular grau V preservada em todos os membros.')">+ Força Grau V Preservada</button>
+              <button type="button" class="chip-sm" onclick="inserirAchadoExame('Sensibilidade tátil e reflexos tendinosos profundos preservados.')">+ Sensibilidade e Reflexos Preservados</button>
+              <button type="button" class="chip-sm" onclick="inserirAchadoExame('Fácies atípica, sem sinais objetivos de dor aguda no ato pericial.')">+ Fácies Atípica s/ Dor Aguda</button>
+            </div>
+
+            <div class="help" style="margin-top:6px">Preenchido automaticamente ao selecionar o exame clínico/mental ou segmentos anatômicos, disponível para revisão do médico. Alimenta o e-Sisla.</div>
           </div>
         </div>
       </div>
@@ -2263,13 +2534,27 @@ body:not(.mode-agil-active) #containerModoAgil {
         </div>
         <div class="agil-card-body">
           <div class="field col-12">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;flex-wrap:wrap">
               <label class="required" style="margin-bottom:0">Justificativa Parecer Final</label>
-              <button class="btn-ai" type="button" id="btnAgilJustificativaIA" onclick="gerarJustificativaAgilIA()" title="Gera a fundamentação técnica completa com Inteligência Artificial baseada nos fatos do atendimento" style="display:none;padding:5px 12px;font-size:12px;font-weight:700;gap:6px;align-items:center">
-                ✨ Gerar Justificativa com IA
-              </button>
+              <div style="display:flex;align-items:center;gap:8px">
+                <button type="button" class="btn btn-outline voice-btn" id="voiceBtn_agilJustificativa" onclick="toggleVoiceDictation('agilJustificativa')" title="Clique para ditar justificativa por voz">
+                  <span>🎙️</span> Voz
+                </button>
+                <button class="btn-ai" type="button" id="btnAgilJustificativaIA" onclick="gerarJustificativaAgilIA()" title="Gera a fundamentação técnica completa com Inteligência Artificial baseada nos fatos do atendimento" style="display:none;padding:5px 12px;font-size:12px;font-weight:700;gap:6px;align-items:center">
+                  ✨ Gerar Justificativa com IA
+                </button>
+              </div>
             </div>
             <textarea class="textarea" id="agilJustificativa" style="min-height:90px" placeholder="Justificativa da conclusão pericial..." oninput="syncAgilField('justificativa', this.value)"></textarea>
+            
+            <!-- Alerta de Coerência Pericial (Quesitos x Parecer) -->
+            <div id="coerenciaParecerAlerta" style="display:none;margin-top:10px;padding:10px 14px;background:#FFFBEB;border:1.5px solid #FCD34D;border-radius:10px;font-size:12.5px;color:#92400E">
+              <div style="display:flex;align-items:flex-start;gap:8px">
+                <span style="font-size:16px">⚠️</span>
+                <div id="coerenciaParecerTexto">Aviso de coerência pericial</div>
+              </div>
+            </div>
+
             <div class="help">Texto fundamentado automaticamente (o Parecer técnico Favorável/Contrário é associado em segundo plano).</div>
           </div>
         </div>
@@ -2277,13 +2562,16 @@ body:not(.mode-agil-active) #containerModoAgil {
 
       <!-- Barra de Ações do Modo Ágil -->
       <div class="agil-actions-bar" style="display:flex;justify-content:space-between;align-items:center;padding:18px 22px;background:#fff;border:1px solid #D9E2EC;border-radius:16px;box-shadow:0 4px 18px rgba(16,42,67,0.04);margin-bottom:30px">
-        <div style="display:flex;align-items:center;gap:12px">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <span class="badge" style="background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE;font-weight:700;padding:6px 14px;border-radius:20px;font-size:12px">⚡ Modo Ágil Ativo</span>
-          <span style="font-size:12px;color:#64748B">Questionário extenso ativo e sincronizado em segundo plano.</span>
+          <div id="agilProgressoBadge" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;background:#F1F5F9;color:#475569;border:1px solid #CBD5E1;transition:all 0.2s" onclick="toggleProgressoDropdown()" title="Clique para conferir os itens pendentes">
+            <span id="agilProgressoIcon">⏳</span>
+            <span id="agilProgressoTexto">Carregando status...</span>
+          </div>
         </div>
         <div style="display:flex;gap:10px;align-items:center">
-          <button type="button" class="btn btn-outline" onclick="saveNow()">Salvar rascunho</button>
-          <button type="button" class="btn btn-green" id="btnAgilFinalizar" onclick="finalizarAtendimentoAgil()" style="padding:10px 24px;font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px">
+          <button type="button" class="btn btn-outline" onclick="saveNow()" title="Atalho: Ctrl + S">💾 Salvar rascunho</button>
+          <button type="button" class="btn btn-green" id="btnAgilFinalizar" onclick="finalizarAtendimentoAgil()" style="padding:10px 24px;font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px" title="Atalho: Ctrl + Enter">
             <span>Finalizar atendimento</span>
             <span>✓</span>
           </button>
@@ -2316,7 +2604,7 @@ body:not(.mode-agil-active) #containerModoAgil {
           <div class="field col-4"><label>CPF do paciente</label><input class="input" id="cpfPaciente" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="000.000.000-00"></div>
           <div class="field col-6"><label class="required">Cargo</label><input class="input" id="cargo"></div>
           <div class="field col-3"><label>Tempo no cargo</label><input class="input" type="number" min="0" step="0.1" id="tempoCargo"></div>
-          <div class="field col-3"><label>Unidade</label><select class="select" id="tempoUnidade"><option value="">Selecione</option><option>Anos</option><option>Meses</option><option>Dias</option></select></div>
+          <div class="field col-3"><label>Ano(s)/Mes(es)/Dia(s)</label><select class="select" id="tempoUnidade"><option value="">Selecione</option><option>Anos</option><option>Meses</option><option>Dias</option></select></div>
 
           <div class="field col-3"><label class="required">Idade</label><input class="input" type="number" min="0" max="120" id="idade"></div>
 
@@ -2487,9 +2775,17 @@ body:not(.mode-agil-active) #containerModoAgil {
               <div class="field col-4"><label>Pressão diastólica (mmHg)</label><input class="input" type="number" min="0" id="pressaoDiastolica" placeholder="Somente se aferida"></div>
               <div class="field col-4"><label>Pulso (bpm)</label><input class="input" type="number" min="0" id="pulso" placeholder="Somente se aferido"></div>
             </div>
-            <div class="field"><label>(*)Exame Físico Geral — achados observados</label><textarea class="textarea" id="exameFisicoDescricao" placeholder="Ex.: achados efetivamente observados no exame físico/mental. Registre somente o que foi constatado."></textarea>
-            <div class="help">Este campo alimenta diretamente o item “(*)Exame Físico Geral” da ficha eSisla.</div>
-            <div class="field" style="margin-top:12px"><label>Alterações clínicas / resultados de exames complementares</label><textarea class="textarea" id="alteracoesClinicasExames" placeholder="Descreva apenas alterações encontradas e resultados efetivamente apresentados."></textarea></div></div>
+            <div class="field">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;flex-wrap:wrap">
+                <label style="margin:0;font-weight:700">(*)Exame Físico Geral — achados observados</label>
+                <button type="button" class="btn btn-outline" id="btnExtExameFisicoGeral" style="font-size:12px;padding:4px 10px;display:inline-flex;align-items:center;gap:6px" onclick="inserirExameFisicoGeralPadrao()" title="Inserir texto padrão do Exame Físico Geral no início deste campo">
+                  <span>🩺</span> Exame Físico Geral
+                </button>
+              </div>
+              <textarea class="textarea" id="exameFisicoDescricao" placeholder="Ex.: achados efetivamente observados no exame físico/mental. Registre somente o que foi constatado."></textarea>
+              <div class="help">Este campo alimenta diretamente o item “(*)Exame Físico Geral” da ficha eSisla.</div>
+              <div class="field" style="margin-top:12px"><label>Alterações clínicas / resultados de exames complementares</label><textarea class="textarea" id="alteracoesClinicasExames" placeholder="Descreva apenas alterações encontradas e resultados efetivamente apresentados."></textarea></div>
+            </div>
           </div>
         </div>
         <div class="notice" style="margin-top:12px"><strong>Critério de preenchimento:</strong> escolha uma única categoria. O campo descritivo deve conter somente fatos observados ou documentação efetivamente apresentada.</div>
@@ -2672,136 +2968,6 @@ body:not(.mode-agil-active) #containerModoAgil {
 <div class="footer-actions" style="margin-bottom:0;padding-bottom:0"><button class="btn btn-outline" id="diagRun" onclick="runDiagnostics()">Executar diagnóstico</button><div class="actions-right"><button class="btn btn-primary" id="diagAiTest" onclick="testDiagnosticAI()">Testar geração da IA</button></div></div>
 </div></div></div>
 
-<!-- Modal do Robô de Integração e-Sisla -->
-<div class="modal-backdrop" id="roboEsislaModal" style="z-index:90">
-  <div class="modal" style="width:min(860px,96vw)">
-    <div class="modal-head" style="background:linear-gradient(135deg, #0F3254 0%, #1A4D7A 100%);color:#fff;border-radius:18px 18px 0 0;padding:16px 22px">
-      <div style="display:flex;align-items:center;gap:12px">
-        <span style="font-size:26px">🤖</span>
-        <div>
-          <h3 style="margin:0;font-size:17px;color:#fff;font-weight:700">Robô de Integração e-Sisla (UI.Vision)</h3>
-          <div style="font-size:12px;color:#CBD5E1;margin-top:2px">Automação de preenchimento do laudo pericial diretamente no e-Sisla</div>
-        </div>
-      </div>
-      <button class="modal-close" onclick="closeModal('roboEsislaModal')" style="background:rgba(255,255,255,0.15);color:#fff;border-radius:8px">✕</button>
-    </div>
-    <div class="modal-body" style="padding:22px">
-      
-      <!-- Linha de Protocolo e Periciado -->
-      <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:14px;margin-bottom:18px;display:flex;flex-wrap:wrap;gap:16px;align-items:center">
-        <div style="flex:1;min-width:240px">
-          <label style="display:block;font-size:12px;font-weight:700;color:#0F3254;margin-bottom:4px">Protocolo do e-Sisla:</label>
-          <input class="input" id="roboProtocolo" placeholder="Digite o protocolo (ex: 2026/12345)" style="background:#fff;font-weight:700;font-size:14px;color:#0F3254">
-          <small class="help" style="margin-top:4px">O robô utiliza este número para pesquisar e abrir o laudo no e-Sisla.</small>
-        </div>
-        <div style="flex:1;min-width:240px">
-          <label style="display:block;font-size:12px;font-weight:700;color:#0F3254;margin-bottom:4px">Periciado / Parecer:</label>
-          <div id="roboInfoPericiado" style="font-size:13px;color:#334155;background:#fff;border:1px solid #CBD5E1;border-radius:6px;padding:8px 12px;min-height:38px;display:flex;align-items:center;gap:8px">
-            —
-          </div>
-        </div>
-      </div>
-
-      <!-- Grid de Ações do Robô -->
-      <div style="margin-bottom:20px">
-        <h4 style="margin:0 0 10px 0;font-size:13px;font-weight:700;color:#0F3254;text-transform:uppercase;letter-spacing:0.5px">Escolha como ativar a integração:</h4>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:12px">
-          
-          <!-- Opção 1: Ativar via UI.Vision -->
-          <div style="border:2px solid #22C55E;border-radius:10px;padding:14px;background:#F0FDF4;display:flex;flex-direction:column;justify-content:space-between">
-            <div>
-              <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:#166534;font-size:14px;margin-bottom:4px">
-                <span>🚀</span> 1. Ativar no UI.Vision
-              </div>
-              <p style="font-size:12px;color:#15803D;margin:0 0 12px 0;line-height:1.4">
-                Baixa o <code>dados_banco.csv</code> atualizado e aciona a macro <strong>Preencher_eSisla_DB</strong> via extensão.
-              </p>
-            </div>
-            <button class="btn btn-green" type="button" onclick="executarRoboUiVision()" style="width:100%;justify-content:center;font-weight:700;padding:10px">
-              ▶️ Ativar Robô UI.Vision
-            </button>
-          </div>
-
-          <!-- Opção 2: Baixar CSV -->
-          <div style="border:1px solid #CBD5E1;border-radius:10px;padding:14px;background:#F8FAFC;display:flex;flex-direction:column;justify-content:space-between">
-            <div>
-              <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:#0F3254;font-size:14px;margin-bottom:4px">
-                <span>📥</span> 2. Baixar dados_banco.csv
-              </div>
-              <p style="font-size:12px;color:#64748B;margin:0 0 12px 0;line-height:1.4">
-                Salva o CSV com Protocolo e Laudo na sua máquina para a pasta <code>datasources/</code> do robô.
-              </p>
-            </div>
-            <button class="btn btn-outline" type="button" onclick="baixarCsvRoboEsisla()" style="width:100%;justify-content:center;font-weight:700;padding:10px">
-              📥 Baixar dados_banco.csv
-            </button>
-          </div>
-
-          <!-- Opção 3: Injeção Direta 1-Clique -->
-          <div style="border:1px solid #93C5FD;border-radius:10px;padding:14px;background:#EFF6FF;display:flex;flex-direction:column;justify-content:space-between">
-            <div>
-              <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:#1E40AF;font-size:14px;margin-bottom:4px">
-                <span>⚡</span> 3. Injeção Direta (1-Clique)
-              </div>
-              <p style="font-size:12px;color:#1D4ED8;margin:0 0 12px 0;line-height:1.4">
-                Preenche todos os campos do e-Sisla via Console (F12) ou copie o JSON estruturado para análise prévia.
-              </p>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:6px">
-              <button class="btn btn-primary" type="button" onclick="copiarScriptInjecaoDireta()" style="width:100%;justify-content:center;font-weight:700;padding:9px" title="Copia o script com JSON embutido para colar no Console do e-Sisla (F12) e preencher na hora">
-                ⚡ Copiar Script / Injetar
-              </button>
-              <button class="btn btn-outline" type="button" onclick="copiarJsonFichaEsislaModal()" style="width:100%;justify-content:center;font-weight:700;padding:8px;background:#fff;border-color:#93C5FD;color:#1E40AF" title="Copia o JSON completo mapeado para os campos do e-Sisla">
-                { } Copiar JSON dos Campos
-              </button>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- Ficha Gerada -->
-      <div style="margin-top:14px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px">
-          <div style="display:flex;align-items:center;gap:8px">
-            <label style="font-size:12px;font-weight:700;color:#0F3254">Conteúdo da Ficha e-Sisla que será enviado:</label>
-            <span id="roboFichaLockBadge" style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:#F1F5F9;color:#475569;border:1px solid #CBD5E1;display:inline-flex;align-items:center;gap:4px">
-              🔒 Protegido contra edição
-            </span>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px">
-            <button type="button" class="btn btn-outline" id="btnEditarFichaRobo" onclick="toggleEditRoboFicha()" style="font-size:11px;padding:4px 8px;font-weight:700" title="Clique para liberar ou bloquear a edição manual da ficha">
-              ✏️ Editar
-            </button>
-            <button type="button" class="btn btn-outline" onclick="copiarJsonFichaEsislaModal()" style="font-size:11px;padding:4px 8px;font-weight:700;color:#1E40AF" title="Copiar ficha em formato JSON">{ } Copiar JSON</button>
-            <button type="button" class="btn btn-outline" onclick="baixarJsonRoboEsisla()" style="font-size:11px;padding:4px 8px" title="Baixar arquivo JSON mapeado para o e-Sisla">📥 Baixar .json</button>
-            <button type="button" class="btn btn-outline" onclick="copiarTextoFichaEsislaModal()" style="font-size:11px;padding:4px 8px">📋 Copiar texto</button>
-          </div>
-        </div>
-        <textarea class="textarea" id="roboFichaTexto" readonly style="min-height:160px;font-family:monospace;font-size:12px;line-height:1.4;background:#F8FAFC;cursor:default;transition:background 0.2s, box-shadow 0.2s" placeholder="Aguardando geração da ficha..."></textarea>
-      </div>
-
-      <!-- Instruções de Configuração da Macro -->
-      <div class="subpanel" style="margin-top:16px;background:#F1F5F9;border-color:#CBD5E1">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <strong style="font-size:12px;color:#0F3254">📁 Pasta da Macro UI.Vision:</strong>
-          <span style="font-size:11px;color:#64748B"><code>Macro ui vision/RoboE-sisla.json</code></span>
-        </div>
-        <div style="font-size:11px;color:#475569;line-height:1.5">
-          <strong>Como funciona a integração com o robô:</strong><br>
-          • <strong>Opção 1 (Recomendada):</strong> Clique em <em>"Ativar no UI.Vision"</em> para baixar o <code>dados_banco.csv</code> e acionar a extensão.<br>
-          • <strong>Opção 2 (Manual):</strong> Baixe o arquivo <code>dados_banco.csv</code> e mova-o para a pasta de dados do UI.Vision (ou importe pela aba CSV do UI.Vision).<br>
-          • <strong>Opção 3 (Sem extensão):</strong> Se o e-Sisla já estiver aberto no navegador, clique em <em>"Copiar Script / Injetar"</em>, vá na aba do e-Sisla, abra o Console (F12) e cole (Ctrl+V) para preencher na hora!
-        </div>
-      </div>
-
-      <div class="footer-actions" style="margin-top:18px;margin-bottom:0;padding-bottom:0">
-        <button class="btn btn-outline" onclick="closeModal('roboEsislaModal')">Fechar</button>
-      </div>
-
-    </div>
-  </div>
-</div>
 <script>
 let accessToken = null;
 let currentProfile = null;
@@ -2832,19 +2998,6 @@ const authReady = AmbientalAuth.requireAuth({area:'atendimento'}).then(async pro
     el.querySelector('small').textContent=profile.perfil||'Perfil';
     el.querySelector('button').addEventListener('click',()=>AmbientalAuth.logout());
     hdr.prepend(el);
-  }
-  const isAdmin = ["Administrador", "Coordenador", "Revisor", "Gestor"].includes(profile?.perfil);
-  const btnEsisla = document.getElementById("btnCopiarEsisla");
-  if(btnEsisla && isAdmin){
-    btnEsisla.style.display = "inline-flex";
-  }
-  const btnEsislaJson = document.getElementById("btnCopiarEsislaJson");
-  if(btnEsislaJson && isAdmin){
-    btnEsislaJson.style.display = "inline-flex";
-  }
-  const btnRobo = document.getElementById("btnRoboEsisla");
-  if(btnRobo && isAdmin){
-    btnRobo.style.display = "inline-flex";
   }
   document.getElementById('authLoading')?.remove();
 }).catch(e=>{if(e?.message!=='AUTH_REQUIRED'&&e?.message!=='PERMISSION_DENIED') console.error('Falha ao validar sessão.');throw e;});
@@ -3257,738 +3410,6 @@ async function deleteAtendimento() {
     }
 }
 
-async function copiarFichaEsislaRapida(){
-  const btn = document.getElementById("btnCopiarEsisla");
-  const oldText = btn ? btn.textContent : "Copiar e-Sisla";
-  if(btn){ btn.disabled = true; btn.textContent = "Gerando e-Sisla…"; }
-  try {
-    if (currentAttendanceMode === "agil") {
-      syncAgilToExtended();
-      ensureAgileBackgroundDefaults();
-    } else {
-      syncState();
-    }
-    const payload = JSON.parse(JSON.stringify(state));
-    payload.quesitos = QuesitoService.get();
-    payload.data_hora_atual = new Date().toISOString();
-    const histVal = state.aux?.historicoPregresso || state.historicoPregresso || $("agilHistoricoPregresso")?.value || $("historicoPregresso")?.value || "";
-    payload.antecedentes = histVal;
-    payload.historico_pregresso = histVal;
-    payload.historicoPregresso = histVal;
-    payload.cids_secundarios = state.cidsSecundarios || state.aux?.cidsSecundarios || [];
-    payload.cidsSecundarios = payload.cids_secundarios;
-    if (!payload.aux) payload.aux = {};
-    payload.aux.historicoPregresso = histVal;
-    payload.aux.antecedentes = histVal;
-    payload.aux.cidsSecundarios = payload.cids_secundarios;
-
-    const res = await AmbientalAuth.authFetch(`${getApiBase()}/api/ai/esisla`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify(payload),
-      cache: 'no-store'
-    });
-    const data = await res.json().catch(() => null);
-    if (!res.ok || !data?.ficha_esisla) {
-      throw new Error(data?.error?.message || data?.detail || "Não foi possível gerar a ficha e-Sisla.");
-    }
-
-    try {
-      await navigator.clipboard.writeText(data.ficha_esisla);
-    } catch(clipErr) {
-      const ta = document.createElement("textarea");
-      ta.value = data.ficha_esisla;
-      ta.style.position = "fixed";
-      ta.style.left = "-9999px";
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      ta.remove();
-    }
-    toast("Ficha e-Sisla copiada para a área de transferência!");
-    abrirRoboEsislaModal(data.ficha_esisla);
-  } catch(err) {
-    toast(err.message || "Erro ao gerar ou copiar ficha e-Sisla.");
-  } finally {
-    if(btn){ btn.disabled = false; btn.textContent = oldText; }
-  }
-}
-
-/* =========================================================
-   ROBÔ DE INTEGRAÇÃO AO E-SISLA (UI.VISION & INJEÇÃO DIRETA)
-   ========================================================= */
-let ultimoTextoFichaEsisla = "";
-
-async function abrirRoboEsislaModal(fichaTexto) {
-  if (fichaTexto) {
-    ultimoTextoFichaEsisla = fichaTexto;
-  }
-  const modal = $("roboEsislaModal");
-  if (!modal) return;
-
-  const proto = state.atendimento || state.aux?.protocolo || state.protocolo || "";
-  const protoInput = $("roboProtocolo");
-  if (protoInput) protoInput.value = proto;
-
-  const nome = state.aux?.nomePaciente || state.nomePaciente || "Servidor/Periciado";
-  const cid = state.cid || state.aux?.cid || "Não informado";
-  const parecer = state.parecer || "Não informado";
-  const infoEl = $("roboInfoPericiado");
-  if (infoEl) {
-    infoEl.innerHTML = `<span><strong>${esc(nome)}</strong> | CID: <strong>${esc(cid)}</strong> | Parecer: <strong>${esc(parecer)}</strong></span>`;
-  }
-
-  const txtArea = $("roboFichaTexto");
-  if (txtArea) {
-    if (fichaTexto) {
-      txtArea.value = fichaTexto;
-    } else if (ultimoTextoFichaEsisla) {
-      txtArea.value = ultimoTextoFichaEsisla;
-    } else {
-      txtArea.value = "Gerando ficha para o robô...";
-      try {
-        if (currentAttendanceMode === "agil") {
-          syncAgilToExtended();
-          ensureAgileBackgroundDefaults();
-        } else {
-          syncState();
-        }
-        const payload = JSON.parse(JSON.stringify(state));
-        payload.quesitos = QuesitoService.get();
-        payload.data_hora_atual = new Date().toISOString();
-        const histVal = state.aux?.historicoPregresso || state.historicoPregresso || $("agilHistoricoPregresso")?.value || $("historicoPregresso")?.value || "";
-        payload.antecedentes = histVal;
-        payload.historico_pregresso = histVal;
-        payload.historicoPregresso = histVal;
-        payload.cids_secundarios = state.cidsSecundarios || state.aux?.cidsSecundarios || [];
-        payload.cidsSecundarios = payload.cids_secundarios;
-        if (!payload.aux) payload.aux = {};
-        payload.aux.historicoPregresso = histVal;
-        payload.aux.antecedentes = histVal;
-        payload.aux.cidsSecundarios = payload.cids_secundarios;
-
-        const res = await AmbientalAuth.authFetch(`${getApiBase()}/api/ai/esisla`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify(payload),
-          cache: 'no-store'
-        });
-        const data = await res.json().catch(() => null);
-        if (res.ok && data?.ficha_esisla) {
-          ultimoTextoFichaEsisla = data.ficha_esisla;
-          txtArea.value = data.ficha_esisla;
-        } else {
-          txtArea.value = "Não foi possível gerar automaticamente a ficha. Verifique os dados do atendimento.";
-        }
-      } catch(e) {
-        txtArea.value = "Erro ao carregar a ficha: " + (e.message || e);
-      }
-    }
-    setRoboFichaEditable(false);
-    if (!txtArea.hasAttribute("data-bound-input")) {
-      txtArea.setAttribute("data-bound-input", "true");
-      txtArea.addEventListener("input", () => {
-        ultimoTextoFichaEsisla = txtArea.value;
-      });
-    }
-  }
-
-  modal.classList.add("show");
-}
-
-function setRoboFichaEditable(editable) {
-  const el = $("roboFichaTexto");
-  const btn = $("btnEditarFichaRobo");
-  const badge = $("roboFichaLockBadge");
-  if (!el) return;
-  if (editable) {
-    el.removeAttribute("readonly");
-    el.style.background = "#FFFFFF";
-    el.style.cursor = "text";
-    el.style.boxShadow = "inset 0 0 0 2px #93C5FD";
-    el.focus();
-    if (btn) {
-      btn.innerHTML = "🔒 Bloquear edição";
-      btn.style.background = "#FEF3C7";
-      btn.style.borderColor = "#F59E0B";
-      btn.style.color = "#92400E";
-    }
-    if (badge) {
-      badge.innerHTML = "✏️ Edição liberada";
-      badge.style.background = "#FEF3C7";
-      badge.style.color = "#92400E";
-      badge.style.borderColor = "#F59E0B";
-    }
-  } else {
-    el.setAttribute("readonly", "true");
-    el.style.background = "#F8FAFC";
-    el.style.cursor = "default";
-    el.style.boxShadow = "none";
-    if (btn) {
-      btn.innerHTML = "✏️ Editar";
-      btn.style.background = "";
-      btn.style.borderColor = "";
-      btn.style.color = "";
-    }
-    if (badge) {
-      badge.innerHTML = "🔒 Protegido contra edição";
-      badge.style.background = "#F1F5F9";
-      badge.style.color = "#475569";
-      badge.style.borderColor = "#CBD5E1";
-    }
-  }
-}
-
-function toggleEditRoboFicha() {
-  const el = $("roboFichaTexto");
-  if (!el) return;
-  const isReadOnly = el.hasAttribute("readonly");
-  setRoboFichaEditable(isReadOnly);
-}
-
-function gerarJsonEsisla(textoFicha, stateObj) {
-  const texto = String(textoFicha || ultimoTextoFichaEsisla || $("roboFichaTexto")?.value || "");
-  const st = stateObj || (typeof state !== 'undefined' ? state : {}) || {};
-  const aux = st.aux || {};
-
-  function ext(t, i, f) {
-    if (!t) return "";
-    const si = i.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
-    const sf = f ? f.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&") : "";
-    const rx = new RegExp(si + "\\s*([\\s\\S]*?)\\s*(?=" + sf + "|$)", "i");
-    const m = t.match(rx);
-    return m ? m[1].trim() : "";
-  }
-
-  // 1. Textareas principais
-  const cat = ext(texto, "(*) Queixa e Duração:", "Antecedentes Mórbidos:") || aux.queixaDuracao || st.queixaDuracao || aux.queixa || st.queixa || "";
-  const ap = ext(texto, "Antecedentes Mórbidos:", "Atestado/Relatório/Exames") || aux.historicoPregresso || st.historicoPregresso || aux.antecedentes || st.antecedentes || "";
-  const hda = ext(texto, "Atestado/Relatório/Exames Complementares (Tipo-Data-Resultado):", "Pressão Arterial") || aux.examesComplementares || st.examesComplementares || aux.documentosApresentados || st.documentosApresentados || "";
-  const exApres = ext(texto, "Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:", "(*)Descrição da(s) Limitação") || aux.alteracoesClinicas || st.alteracoesClinicas || aux.exameFisico || st.exameFisico || "";
-  const reqExComp = ext(texto, "(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):", "(*)Parecer Médico") || aux.limitacoes || st.limitacoes || aux.limitacaoFuncional || st.limitacaoFuncional || "";
-  
-  // Justificativa médica
-  let justif = ext(texto, "(*)Justificativa Parecer Médico", "(*) Parecer Final");
-  if (!justif) justif = ext(texto, "(*) Justificativa Parecer Final", "FIM_INEXISTENTE");
-  if (!justif) justif = aux.justificativa || st.justificativa || "";
-
-  // 2. Médico Assistente (CRM e Nome)
-  let crm = aux.crm || st.crm || aux.crmAssistente || st.crmAssistente || "";
-  if (!crm) {
-    const mCrm = hda.match(/CRM[:\s]*([0-9A-Z\-\/]+)/i) || texto.match(/CRM\s*(?:do\s*médico\s*assistente)?[:\s]*([0-9A-Z\-\/]+)/i);
-    if (mCrm) crm = mCrm[1].trim();
-  }
-  let nomeMed = aux.nomeMedico || st.nomeMedico || aux.medicoAssistente || st.medicoAssistente || "";
-
-  // 3. Pressão e Pulso
-  let paSis = ext(texto, "Sistólica (mmHg):", "Diastólica") || aux.pressaoSistolica || st.pressaoSistolica || aux.paSistolica || "";
-  let paDia = ext(texto, "Diastólica (mmHg):", "Pulso") || aux.pressaoDiastolica || st.pressaoDiastolica || aux.paDiastolica || "";
-  let pulso = ext(texto, "Pulso (bpm):", "(*)Exame") || aux.pulso || st.pulso || "";
-
-  if (paSis) paSis = paSis.replace(/[^0-9]/g, "");
-  if (paDia) paDia = paDia.replace(/[^0-9]/g, "");
-  if (pulso) pulso = pulso.replace(/[^0-9]/g, "");
-
-  // 4. Biotipo (Altura e Peso)
-  let altura = aux.altura || st.altura || aux.biotipoAltura || "";
-  let peso = aux.peso || st.peso || aux.biotipoPeso || "";
-
-  // 5. CIDs e Parecer
-  let cid1 = ext(texto, "CID 10:", "Descrição:").split(",")[0].trim() || st.cid || aux.cid || "";
-  let descrCid1 = ext(texto, "Descrição:", "Médico Perito:").split("\n")[0].trim() || aux.doencaMotivo || st.doencaMotivo || "";
-  
-  const cidsSec = st.cidsSecundarios || aux.cidsSecundarios || [];
-  let cid2 = "";
-  let descrCid2 = "";
-  if (Array.isArray(cidsSec) && cidsSec.length > 0) {
-    cid2 = cidsSec[0].codigo || cidsSec[0].cid || "";
-    descrCid2 = cidsSec[0].descricao || cidsSec[0].nome || "";
-  }
-
-  let dias = ext(texto, "Nº Dias:", "Data Início:") || aux.diasConcedidos || st.diasConcedidos || aux.diasAfastamento || st.diasAfastamento || "";
-  dias = dias ? String(dias).replace(/[^0-9]/g, "") : "";
-  let dtIni = ext(texto, "Data Início:", "CID 10:") || aux.dataInicio || st.dataInicio || aux.dataDocumento || st.dataDocumento || "";
-  dtIni = dtIni.split("\n")[0].trim();
-
-  const pText = ext(texto, "(*)Parecer Médico", "Nº Dias:") || st.parecer || aux.parecer || "";
-  const flPfinal = pText.toUpperCase().includes("CONTRÁRIO") ? "C" : "F";
-
-  // 6. Quesitos
-  function getQuesitoVal(num, busca) {
-    const qStr = ext(texto, busca, "\n").toLowerCase();
-    if (qStr.includes("sim")) return "S";
-    if (qStr.includes("não") || qStr.includes("nao")) return "N";
-    if (typeof QuesitoService !== "undefined" && QuesitoService.get) {
-      const q = QuesitoService.get();
-      if (q && q[num]) return q[num] === "S" ? "S" : "N";
-    }
-    return "N";
-  }
-  const fl_d_prev = getQuesitoVal(1, "1) Há doença(s)");
-  const fl_limit = getQuesitoVal(2, "2) A(s) doença(s)");
-  const fl_imped = getQuesitoVal(3, "3) A(s) limitação(ões)");
-
-  // 7. Checkboxes do Exame Físico / Mental
-  const cidCode = (cid1 || "").toUpperCase();
-  const fullContext = (texto + " " + (aux.doencaMotivo || "") + " " + (aux.diagnostico || "") + " " + (aux.exameFisico || "")).toLowerCase();
-  
-  const cb = {
-    "voMedico.parEdtcspf": cidCode.startsWith("L") || fullContext.includes("dermat") || fullContext.includes("pele"),
-    "voMedico.parEdAc": cidCode.startsWith("I") || fullContext.includes("hipertens") || fullContext.includes("cardio") || fullContext.includes("circulat"),
-    "voMedico.parEdAr": cidCode.startsWith("J") || fullContext.includes("respirat") || fullContext.includes("pulmon") || fullContext.includes("asma"),
-    "voMedico.parEdAHp": cidCode.startsWith("D") || fullContext.includes("anemia") || fullContext.includes("hemo") || fullContext.includes("linfo"),
-    "voMedico.parEdAd": cidCode.startsWith("K") || fullContext.includes("digest") || fullContext.includes("gastr") || fullContext.includes("hepat"),
-    "voMedico.parEdAgu": cidCode.startsWith("N") || fullContext.includes("renal") || fullContext.includes("urin") || fullContext.includes("genit"),
-    "voMedico.parEdAoal": cidCode.startsWith("M") || fullContext.includes("osteomuscular") || fullContext.includes("ortop") || fullContext.includes("lomb") || fullContext.includes("coluna") || fullContext.includes("articular"),
-    "voMedico.parEdAe": cidCode.startsWith("E") || fullContext.includes("endocrin") || fullContext.includes("diabet") || fullContext.includes("tireoid"),
-    "voMedico.parEdSn": cidCode.startsWith("G") || fullContext.includes("nervoso") || fullContext.includes("neurol") || fullContext.includes("epilep"),
-    "voMedico.parEdOs": cidCode.startsWith("H") || fullContext.includes("sentidos") || fullContext.includes("olho") || fullContext.includes("visão") || fullContext.includes("ouvid"),
-    "voMedico.parEdEm": cidCode.startsWith("F") || fullContext.includes("mental") || fullContext.includes("psiquiat") || fullContext.includes("depress") || fullContext.includes("ansied") || fullContext.includes("humor"),
-    "voMedico.parEdOutro": false
-  };
-  if (!Object.values(cb).some(Boolean) && exApres.trim()) {
-    cb["voMedico.parEdOutro"] = true;
-  }
-
-  // Dicionário exato de campos do fieldset#blocoGeral do e-Sisla
-  const camposEsisla = {
-    "voMedico.parRlCat": cat,
-    "voMedico.parRlAp": ap,
-    "voMedico.parRlHda": hda,
-    "voResult.numCrm": crm,
-    "voResult.strNomeMedico": nomeMed,
-    "lgPressArterialMax": paSis,
-    "lgPressArterialMin": paDia,
-    "lgPulsacao": pulso,
-    "lgAltura": altura,
-    "lgPeso": peso,
-    "voMedico.parEdtcspf": cb["voMedico.parEdtcspf"],
-    "voMedico.parEdAc": cb["voMedico.parEdAc"],
-    "voMedico.parEdAr": cb["voMedico.parEdAr"],
-    "voMedico.parEdAHp": cb["voMedico.parEdAHp"],
-    "voMedico.parEdAd": cb["voMedico.parEdAd"],
-    "voMedico.parEdAgu": cb["voMedico.parEdAgu"],
-    "voMedico.parEdAoal": cb["voMedico.parEdAoal"],
-    "voMedico.parEdAe": cb["voMedico.parEdAe"],
-    "voMedico.parEdSn": cb["voMedico.parEdSn"],
-    "voMedico.parEdOs": cb["voMedico.parEdOs"],
-    "voMedico.parEdEm": cb["voMedico.parEdEm"],
-    "voMedico.parEdOutro": cb["voMedico.parEdOutro"],
-    "voMedico.parRlExApres": exApres,
-    "voMedico.parRlReqExComp": reqExComp,
-    "fl_d_prev": fl_d_prev,
-    "fl_limit": fl_limit,
-    "fl_imped": fl_imped,
-    "voResult.voParecerFinal.flPfinal": flPfinal,
-    "voResult.voParecerFinal.qtDiasPm": dias,
-    "voResult.voParecerFinal.dtIniPm": dtIni,
-    "voResult.voParecerFinal.cdCidPm": cid1,
-    "voResult.voParecerFinal.nmCidPm": descrCid1,
-    "voResult.voParecerFinal.cdCid2Pm": cid2,
-    "voResult.voParecerFinal.nmCid2Pm": descrCid2,
-    "voMedico.parRlComp": justif
-  };
-
-  const proto = (typeof $ === "function" && $("roboProtocolo")?.value?.trim()) || st.atendimento || aux.protocolo || st.protocolo || "SEM_PROTOCOLO";
-
-  return {
-    protocolo: proto,
-    ...camposEsisla,
-    campos_esisla: camposEsisla,
-    ficha_esisla_texto: texto,
-    justificativa: justif,
-    timestamp: new Date().toISOString()
-  };
-}
-
-function gerarScriptAutoPreenchimentoEsisla(payloadObj) {
-  const jsonStr = JSON.stringify(payloadObj, null, 2);
-  return `(function() {
-  try {
-    var data = ${jsonStr};
-    var campos = data.campos_esisla || data || {};
-    
-    function findDoc() {
-      if (document.querySelector('textarea[name="voMedico.parRlCat"]') || document.getElementById('blocoGeral')) return document;
-      for (var i = 0; i < window.frames.length; i++) {
-        try {
-          var d = window.frames[i].document;
-          if (d && (d.querySelector('textarea[name="voMedico.parRlCat"]') || d.getElementById('blocoGeral'))) return d;
-        } catch(_) {}
-      }
-      var iframes = document.querySelectorAll('iframe, frame');
-      for (var j = 0; j < iframes.length; j++) {
-        try {
-          var idoc = iframes[j].contentDocument || iframes[j].contentWindow.document;
-          if (idoc && (idoc.querySelector('textarea[name="voMedico.parRlCat"]') || idoc.getElementById('blocoGeral'))) return idoc;
-        } catch(_) {}
-      }
-      return document;
-    }
-    
-    var doc = findDoc();
-    var win = doc.defaultView || window;
-    
-    function trigger(el) {
-      if (!el) return;
-      try {
-        el.dispatchEvent(new Event('input', { bubbles: true }));
-        el.dispatchEvent(new Event('change', { bubbles: true }));
-        el.dispatchEvent(new Event('blur', { bubbles: true }));
-      } catch(_) {}
-    }
-    
-    function setInput(sel, val) {
-      if (val === undefined || val === null || val === '') return;
-      var el = doc.querySelector(sel);
-      if (el) {
-        if (el.hasAttribute('disabled')) el.removeAttribute('disabled');
-        el.disabled = false;
-        el.value = val;
-        trigger(el);
-      }
-    }
-    
-    function setRadio(name, val) {
-      if (!val) return;
-      var el = doc.querySelector('input[type="radio"][name="' + name + '"][value="' + val + '"]');
-      if (el) {
-        el.checked = true;
-        try { el.click(); } catch(_) {}
-        el.checked = true;
-        trigger(el);
-      }
-    }
-    
-    function setCheckbox(nameOrId, checked) {
-      var el = doc.querySelector('input[type="checkbox"][name="' + nameOrId + '"]') || doc.getElementById(nameOrId);
-      if (el) {
-        el.checked = !!checked;
-        try { el.click(); } catch(_) {}
-        el.checked = !!checked;
-        trigger(el);
-      }
-    }
-
-    // 1. Textareas do Laudo Pericial
-    setInput('textarea[name="voMedico.parRlCat"]', campos['voMedico.parRlCat']);
-    setInput('textarea[name="voMedico.parRlAp"]', campos['voMedico.parRlAp']);
-    setInput('textarea[name="voMedico.parRlHda"]', campos['voMedico.parRlHda']);
-    
-    // Habilita e preenche idExameApres
-    var exApres = doc.querySelector('textarea[name="voMedico.parRlExApres"]') || doc.getElementById('idExameApres');
-    if (exApres) {
-      exApres.removeAttribute('disabled');
-      exApres.disabled = false;
-    }
-    setInput('textarea[name="voMedico.parRlExApres"]', campos['voMedico.parRlExApres']);
-    setInput('textarea[name="voMedico.parRlReqExComp"]', campos['voMedico.parRlReqExComp']);
-    setInput('textarea[name="voMedico.parRlComp"]', campos['voMedico.parRlComp']);
-    
-    // 2. Médico Assistente
-    setInput('input[name="voResult.numCrm"]', campos['voResult.numCrm']);
-    setInput('#crmMedicoAssistente', campos['voResult.numCrm']);
-    setInput('input[name="voResult.strNomeMedico"]', campos['voResult.strNomeMedico']);
-    
-    // 3. Pressão Arterial e Pulso
-    setInput('input[name="lgPressArterialMax"]', campos['lgPressArterialMax']);
-    setInput('#sistolicaPressao', campos['lgPressArterialMax']);
-    setInput('input[name="lgPressArterialMin"]', campos['lgPressArterialMin']);
-    setInput('#diastolicaPressao', campos['lgPressArterialMin']);
-    setInput('input[name="lgPulsacao"]', campos['lgPulsacao']);
-    setInput('#pulsoPressao', campos['lgPulsacao']);
-    
-    // 4. Biotipo
-    setInput('input[name="lgAltura"]', campos['lgAltura']);
-    setInput('#alturaBiotipo', campos['lgAltura']);
-    setInput('input[name="lgPeso"]', campos['lgPeso']);
-    setInput('#pesoBiotipo', campos['lgPeso']);
-    if (typeof win.calcularIMC === 'function') {
-      try { win.calcularIMC(); } catch(_) {}
-    }
-    
-    // 5. Exame Físico / Mental Checkboxes
-    var cbs = [
-      'voMedico.parEdtcspf', 'voMedico.parEdAc', 'voMedico.parEdAr',
-      'voMedico.parEdAHp', 'voMedico.parEdAd', 'voMedico.parEdAgu',
-      'voMedico.parEdAoal', 'voMedico.parEdAe', 'voMedico.parEdSn',
-      'voMedico.parEdOs', 'voMedico.parEdEm', 'voMedico.parEdOutro'
-    ];
-    var temAlgumMarcado = false;
-    cbs.forEach(function(cbName) {
-      if (campos[cbName]) {
-        setCheckbox(cbName, true);
-        temAlgumMarcado = true;
-      }
-    });
-    if (temAlgumMarcado && typeof win.exameApresentado === 'function') {
-      try { win.exameApresentado(); } catch(_) {}
-    }
-    if (exApres && campos['voMedico.parRlExApres']) {
-      exApres.removeAttribute('disabled');
-      exApres.disabled = false;
-      exApres.value = campos['voMedico.parRlExApres'];
-      trigger(exApres);
-    }
-    
-    // 6. Quesitos
-    setRadio('fl_d_prev', campos['fl_d_prev'] || 'N');
-    setRadio('fl_limit', campos['fl_limit'] || 'N');
-    setRadio('fl_imped', campos['fl_imped'] || 'N');
-    
-    // 7. Parecer Médico-Pericial
-    var parecerVal = campos['voResult.voParecerFinal.flPfinal'] || 'F';
-    setRadio('voResult.voParecerFinal.flPfinal', parecerVal);
-    if (typeof win.escondeCampos === 'function') {
-      try { win.escondeCampos(parecerVal); } catch(_) {}
-    }
-    
-    // 8. Concessão (Dias, Início, CIDs)
-    setInput('input[name="voResult.voParecerFinal.qtDiasPm"]', campos['voResult.voParecerFinal.qtDiasPm']);
-    setInput('input[name="voResult.voParecerFinal.dtIniPm"]', campos['voResult.voParecerFinal.dtIniPm']);
-    
-    var cid1 = campos['voResult.voParecerFinal.cdCidPm'];
-    if (cid1) {
-      var inpCid1 = doc.querySelector('input[name="voResult.voParecerFinal.cdCidPm"]');
-      if (inpCid1) {
-        inpCid1.value = cid1;
-        trigger(inpCid1);
-        if (typeof win.carregaAjaxCid === 'function') {
-          try { win.carregaAjaxCid(inpCid1.name, 'descrCidx'); } catch(_) {}
-        }
-      }
-    }
-    setInput('input[name="voResult.voParecerFinal.nmCidPm"]', campos['voResult.voParecerFinal.nmCidPm']);
-    setInput('#descrCidx', campos['voResult.voParecerFinal.nmCidPm']);
-    
-    var cid2 = campos['voResult.voParecerFinal.cdCid2Pm'];
-    if (cid2) {
-      var inpCid2 = doc.querySelector('input[name="voResult.voParecerFinal.cdCid2Pm"]');
-      if (inpCid2) {
-        inpCid2.value = cid2;
-        trigger(inpCid2);
-        if (typeof win.carregaAjaxCid === 'function') {
-          try { win.carregaAjaxCid(inpCid2.name, 'descrCid2x'); } catch(_) {}
-        }
-      }
-    }
-    setInput('input[name="voResult.voParecerFinal.nmCid2Pm"]', campos['voResult.voParecerFinal.nmCid2Pm']);
-    setInput('#descrCid2x', campos['voResult.voParecerFinal.nmCid2Pm']);
-    
-    // 9. Rolar até o bloco geral para conferência do perito
-    var bg = doc.getElementById('blocoGeral') || doc.querySelector('fieldset');
-    if (bg) {
-      bg.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-    
-    // 10. Alerta amigável reforçando que NÃO foi finalizado automaticamente
-    alert("✅ e-Sisla: Todos os campos do laudo foram preenchidos com sucesso!\n\n📋 A perícia NÃO foi finalizada automaticamente para que você possa analisar e conferir todos os campos antes de concluir.");
-  } catch(err) {
-    alert("❌ Erro ao preencher campos do e-Sisla: " + err.message);
-  }
-})();`;
-}
-
-function gerarCsvRoboContent() {
-  const proto = $("roboProtocolo")?.value?.trim() || state.atendimento || "SEM_PROTOCOLO";
-  const texto = $("roboFichaTexto")?.value || ultimoTextoFichaEsisla || "";
-  const justif = state.aux?.justificativa || state.justificativa || "";
-  const jsonObj = gerarJsonEsisla(texto, state);
-  
-  const payloadObj = {
-    protocolo: proto,
-    ficha_esisla: texto,
-    campos_esisla: jsonObj.campos_esisla,
-    justificativa: justif
-  };
-  const jsonStr = JSON.stringify(payloadObj);
-
-  const escapeCsv = (val) => '"' + String(val).replace(/"/g, '""') + '"';
-  return "\uFEFF" + escapeCsv(proto) + "," + escapeCsv(jsonStr) + "\r\n";
-}
-
-function baixarCsvRoboEsisla() {
-  try {
-    const csvData = gerarCsvRoboContent();
-    const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "dados_banco.csv";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    toast("Arquivo dados_banco.csv baixado com sucesso!");
-  } catch(e) {
-    toast("Erro ao baixar dados_banco.csv: " + (e.message || e));
-  }
-}
-
-function baixarJsonRoboEsisla() {
-  try {
-    const texto = $("roboFichaTexto")?.value || ultimoTextoFichaEsisla || "";
-    const jsonObj = gerarJsonEsisla(texto, state);
-    const prettyJson = JSON.stringify(jsonObj, null, 2);
-    const blob = new Blob([prettyJson], { type: "application/json;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    const proto = (jsonObj.protocolo || "atendimento").replace(/[^a-zA-Z0-9_\-]/g, "_");
-    a.download = `Ficha-eSisla-${proto}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    toast("Arquivo JSON da Ficha e-Sisla baixado com sucesso!");
-  } catch(e) {
-    toast("Erro ao baixar JSON: " + (e.message || e));
-  }
-}
-
-function executarRoboUiVision() {
-  baixarCsvRoboEsisla();
-  
-  const macroName = "Preencher_eSisla_DB";
-  const uiVisionChromeUrl = `chrome-extension://kglbdihdcnciobeiimejmpcddcmpnkgj/editor.html?macro=${macroName}&direct=1&closeRPA=0`;
-  
-  try {
-    const w = window.open(uiVisionChromeUrl, "_blank");
-    if (!w) {
-      toast("Abra o UI.Vision e execute a macro Preencher_eSisla_DB.");
-    } else {
-      toast("Robô acionado! Execute a macro no UI.Vision com o e-Sisla aberto.");
-    }
-  } catch(e) {
-    toast("Abra a extensão UI.Vision para iniciar a automação.");
-  }
-}
-
-async function copiarTextoFichaEsislaModal() {
-  const txtArea = $("roboFichaTexto");
-  if (!txtArea || !txtArea.value.trim()) {
-    return toast("Nenhum texto disponível para copiar.");
-  }
-  try {
-    await navigator.clipboard.writeText(txtArea.value);
-    toast("Texto da Ficha e-Sisla copiado!");
-  } catch(e) {
-    txtArea.select();
-    document.execCommand("copy");
-    toast("Texto da Ficha e-Sisla copiado!");
-  }
-}
-
-async function copiarJsonFichaEsislaModal() {
-  const texto = $("roboFichaTexto")?.value || ultimoTextoFichaEsisla || "";
-  const jsonObj = gerarJsonEsisla(texto, state);
-  const prettyJson = JSON.stringify(jsonObj, null, 2);
-  try {
-    await navigator.clipboard.writeText(prettyJson);
-    toast("JSON dos campos do e-Sisla copiado para a área de transferência!");
-  } catch(e) {
-    const ta = document.createElement("textarea");
-    ta.value = prettyJson;
-    ta.style.position = "fixed";
-    ta.style.left = "-9999px";
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand("copy");
-    ta.remove();
-    toast("JSON dos campos do e-Sisla copiado para a área de transferência!");
-  }
-}
-
-async function copiarFichaEsislaJsonRapida() {
-  const btn = $("btnCopiarEsislaJson");
-  const oldText = btn ? btn.textContent : "";
-  if (btn) { btn.disabled = true; btn.textContent = "Gerando JSON..."; }
-
-  try {
-    let texto = ultimoTextoFichaEsisla || $("roboFichaTexto")?.value || "";
-    if (!texto) {
-      if (currentAttendanceMode === "agil") {
-        syncAgilToExtended();
-        ensureAgileBackgroundDefaults();
-      } else {
-        syncState();
-      }
-      const payload = JSON.parse(JSON.stringify(state));
-      payload.quesitos = QuesitoService.get();
-      payload.data_hora_atual = new Date().toISOString();
-      const histVal = state.aux?.historicoPregresso || state.historicoPregresso || $("agilHistoricoPregresso")?.value || $("historicoPregresso")?.value || "";
-      payload.antecedentes = histVal;
-      payload.historico_pregresso = histVal;
-      payload.historicoPregresso = histVal;
-      payload.cids_secundarios = state.cidsSecundarios || state.aux?.cidsSecundarios || [];
-      payload.cidsSecundarios = payload.cids_secundarios;
-      if (!payload.aux) payload.aux = {};
-      payload.aux.historicoPregresso = histVal;
-      payload.aux.antecedentes = histVal;
-      payload.aux.cidsSecundarios = payload.cids_secundarios;
-
-      const res = await AmbientalAuth.authFetch(`${getApiBase()}/api/ai/esisla`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(payload),
-        cache: 'no-store'
-      });
-      const data = await res.json().catch(() => null);
-      if (res.ok && data?.ficha_esisla) {
-        ultimoTextoFichaEsisla = data.ficha_esisla;
-        texto = data.ficha_esisla;
-      }
-    }
-
-    const jsonObj = gerarJsonEsisla(texto, state);
-    const prettyJson = JSON.stringify(jsonObj, null, 2);
-
-    try {
-      await navigator.clipboard.writeText(prettyJson);
-    } catch(_) {
-      const ta = document.createElement("textarea");
-      ta.value = prettyJson;
-      ta.style.position = "fixed";
-      ta.style.left = "-9999px";
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      ta.remove();
-    }
-    toast("Ficha em formato JSON copiada para a área de transferência!");
-    abrirRoboEsislaModal(texto);
-  } catch(err) {
-    toast(err.message || "Erro ao gerar ou copiar JSON do e-Sisla.");
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = oldText; }
-  }
-}
-
-async function copiarScriptInjecaoDireta() {
-  const texto = $("roboFichaTexto")?.value || ultimoTextoFichaEsisla || "";
-  if (!texto) {
-    return toast("Gere a ficha e-Sisla antes de copiar o script de injeção.");
-  }
-
-  const jsonObj = gerarJsonEsisla(texto, state);
-  const scriptCode = gerarScriptAutoPreenchimentoEsisla(jsonObj);
-
-  try {
-    await navigator.clipboard.writeText(scriptCode);
-    toast("Script copiado! Abra o e-Sisla, tecle F12, vá na aba Console e aperte Ctrl+V.");
-  } catch(e) {
-    const ta = document.createElement("textarea");
-    ta.value = scriptCode;
-    ta.style.position = "fixed";
-    ta.style.left = "-9999px";
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand("copy");
-    ta.remove();
-    toast("Script copiado! Abra o e-Sisla, tecle F12, vá na aba Console e aperte Ctrl+V.");
-  }
-}
-  
 function selectCID(code){
   const found = findCID(code);
   const cleanCode = code || "";
@@ -4930,7 +4351,7 @@ function renderQuesitos(){
 }
 function setQuesitoAnswer(i,v){
   QuesitoService.set(i,v); const card=document.querySelectorAll(".quesito-fixed")[i]; if(card){card.classList.toggle("answered",!!QuesitoService.getAnswer(i));card.classList.toggle("unanswered",!QuesitoService.getAnswer(i));const st=card.querySelector(".q-state");if(st)st.textContent=QuesitoService.getAnswer(i)?`✓ ${QuesitoService.getAnswer(i)}`:"Pendente";}
-  updateQuesitoWarning(); updateStepValidation(); autoSave();
+  updateQuesitoWarning(); updateStepValidation(); if (typeof verificarCoerenciaPericial === "function") verificarCoerenciaPericial(); if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil(); autoSave();
 }
 function updateQuesitoWarning(){
   const box=$("quesitosWarning");if(!box)return; const qv=QuesitoService.validate();
@@ -5462,6 +4883,64 @@ document.addEventListener("click", e => {
    MODO ÁGIL & AUTOMAÇÃO CLÍNICA
    ========================================================= */
 
+const TEXTO_EXAME_FISICO_GERAL_PADRAO = `Bom do estado geral, nutrição adequada, sem alterações na coloração e hidratação de mucosas.  
+EXAME FÍSICO DO AP.RESPIRATÓRIO: Eupnêico, sem esforço respiratório (tiragens ou uso de musculatura acessória). Expansibilidade preservada bilateralmente. FTV uniformemente palpável bilateralmente. Som claro pulmonar, atimpânico à percussão. Murmúrio Vesicular universalmente audível s/ ruídos adventícios 
+EXAME FÍSICO DO AP. CARDIOVASCULAR: Precórdio normodinâmico. Ictus de VE invisível, palpável em 5º EIC na LHCE medindo cerca de 2 polpas digitais, não propulsivo. Ausência de atritos. RCR 2T c/ BNF. Ausência de sopros ou extrassístoles. Ausência de turgência de jugular. Patológica (TJP) Pulsos arteriais periféricos simétricos, sincrônicos e com boa amplitude.`;
+
+function extrairOuPreservarExameGeral(novoConteudo) {
+  const currentAgil = $("agilExameFisicoDescricao") ? $("agilExameFisicoDescricao").value : "";
+  const currentExt = $("exameFisicoDescricao") ? $("exameFisicoDescricao").value : "";
+  const current = (currentAgil || currentExt || state.exameFisicoDescricao || "").trim();
+
+  const temGeral = current.includes("EXAME FÍSICO DO AP.RESPIRATÓRIO:") || current.includes("Bom do estado geral");
+  if (!temGeral) {
+    return novoConteudo;
+  }
+  if (novoConteudo && (novoConteudo.includes("EXAME FÍSICO DO AP.RESPIRATÓRIO:") || novoConteudo.includes("Bom do estado geral"))) {
+    return novoConteudo;
+  }
+  return novoConteudo ? (TEXTO_EXAME_FISICO_GERAL_PADRAO + "\n\n" + novoConteudo) : TEXTO_EXAME_FISICO_GERAL_PADRAO;
+}
+
+function inserirExameFisicoGeralPadrao() {
+  const agilEl = $("agilExameFisicoDescricao");
+  const extEl = $("exameFisicoDescricao");
+  const altEl = $("alteracoesClinicasExames");
+
+  let current = "";
+  if (agilEl && agilEl.value) {
+    current = agilEl.value;
+  } else if (extEl && extEl.value) {
+    current = extEl.value;
+  } else if (state.exameFisicoDescricao) {
+    current = state.exameFisicoDescricao;
+  }
+
+  current = (current || "").trim();
+
+  if (current.includes("EXAME FÍSICO DO AP.RESPIRATÓRIO:") || current.includes("Bom do estado geral")) {
+    toast("O texto do Exame Físico Geral já está presente neste campo.");
+    return;
+  }
+
+  let novoTexto = TEXTO_EXAME_FISICO_GERAL_PADRAO;
+  if (current.length > 0) {
+    novoTexto = TEXTO_EXAME_FISICO_GERAL_PADRAO + "\n\n" + current;
+  }
+
+  state.exameFisicoDescricao = novoTexto;
+  state.alteracoesClinicasExames = novoTexto;
+  if (!state.aux) state.aux = {};
+  state.aux.exameFisicoDescricao = novoTexto;
+
+  if (agilEl) agilEl.value = novoTexto;
+  if (extEl) extEl.value = novoTexto;
+  if (altEl) altEl.value = novoTexto;
+
+  autoSave();
+  toast("Exame Físico Geral inserido no início do campo!");
+}
+
 const TEXTO_EXAME_MENTAL_NORMAL = `Nível de consciência: Preservado
 Orientação: Global preservada em tempo e espaço
 Atenção e concentração:  Sem desvios, preservados.
@@ -5824,13 +5303,14 @@ function aplicarRegioesOsteomusculares() {
     }
     justificativaTexto = justificativaTexto.replace(/\.;/g, ";").replace(/;\./g, ".").replace(/\.\./g, ".");
       
-    state.exameFisicoDescricao = examesTexto;
-    state.alteracoesClinicasExames = examesTexto;
+    const descFinalOsteo = extrairOuPreservarExameGeral(examesTexto);
+    state.exameFisicoDescricao = descFinalOsteo;
+    state.alteracoesClinicasExames = descFinalOsteo;
     if (!state.aux) state.aux = {};
-    state.aux.exameFisicoDescricao = examesTexto;
-    if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = examesTexto;
-    if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = examesTexto;
-    if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = examesTexto;
+    state.aux.exameFisicoDescricao = descFinalOsteo;
+    if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = descFinalOsteo;
+    if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = descFinalOsteo;
+    if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = descFinalOsteo;
     
     state.limitacaoFuncional = "Sim";
     state.limitacaoRol = "Sim";
@@ -5884,13 +5364,14 @@ function aplicarOsteomuscularNormal() {
   if ($("exameFisicoTipo")) $("exameFisicoTipo").value = "Aparelho Osteomuscular e Tecido Conjutivo";
   if ($("agilExameFisicoTipo")) $("agilExameFisicoTipo").value = "Aparelho Osteomuscular e Tecido Conjutivo";
   
-  state.exameFisicoDescricao = TEXTO_OSTEO_NORMAL_EXAME;
-  state.alteracoesClinicasExames = TEXTO_OSTEO_NORMAL_EXAME;
+  const descOsteoNormal = extrairOuPreservarExameGeral(TEXTO_OSTEO_NORMAL_EXAME);
+  state.exameFisicoDescricao = descOsteoNormal;
+  state.alteracoesClinicasExames = descOsteoNormal;
   if (!state.aux) state.aux = {};
-  state.aux.exameFisicoDescricao = TEXTO_OSTEO_NORMAL_EXAME;
-  if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = TEXTO_OSTEO_NORMAL_EXAME;
-  if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = TEXTO_OSTEO_NORMAL_EXAME;
-  if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = TEXTO_OSTEO_NORMAL_EXAME;
+  state.aux.exameFisicoDescricao = descOsteoNormal;
+  if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = descOsteoNormal;
+  if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = descOsteoNormal;
+  if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = descOsteoNormal;
   
   state.limitacaoFuncional = "Não";
   state.limitacaoRol = "Não";
@@ -5927,14 +5408,17 @@ function limparOsteomuscular() {
   state.osteomuscularRegioes = {};
   state.osteomuscularResultado = "";
   
-  // Limpar texto de exame físico
-  state.exameFisicoDescricao = "";
-  state.alteracoesClinicasExames = "";
+  // Limpar texto de exame físico (preservando Exame Físico Geral se presente)
+  const curEx = state.exameFisicoDescricao || "";
+  const temGeralEx = curEx.includes("EXAME FÍSICO DO AP.RESPIRATÓRIO:") || curEx.includes("Bom do estado geral");
+  const clearedDesc = temGeralEx ? TEXTO_EXAME_FISICO_GERAL_PADRAO : "";
+  state.exameFisicoDescricao = clearedDesc;
+  state.alteracoesClinicasExames = clearedDesc;
   if (!state.aux) state.aux = {};
-  state.aux.exameFisicoDescricao = "";
-  if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = "";
-  if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = "";
-  if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = "";
+  state.aux.exameFisicoDescricao = clearedDesc;
+  if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = clearedDesc;
+  if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = clearedDesc;
+  if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = clearedDesc;
   
   // Limpar limitações
   state.limitacaoFuncional = "";
@@ -6234,6 +5718,10 @@ function syncExtendedToAgil() {
       badge.innerHTML = `<strong>${esc(f?.c || cidVal)}</strong>${f?.n ? " — " + esc(f.n) : ""}`;
     }
   }
+
+  setVal("agilCrmCro", state.aux.crmCro || state.crmCro || $("crmCro")?.value || "");
+  setVal("agilDataDocumento", state.aux.dataDocumento || state.dataDocumento || $("dataDocumento")?.value || "");
+  setVal("agilDiasSolicitados", state.aux.diasSolicitados || state.diasSolicitados || $("diasSolicitados")?.value || "");
   
   const exTipo = state.exameFisicoTipo || $("exameFisicoTipo")?.value || "";
   const isOsteo = (exTipo === "Aparelho Osteomuscular e Tecido Conjutivo");
@@ -6298,6 +5786,14 @@ function syncExtendedToAgil() {
     state.cidsSecundarios = state.aux.cidsSecundarios;
   }
   renderSecondaryCIDs();
+
+  if (typeof calcularDatasAtestado === "function") calcularDatasAtestado();
+  if (typeof calcularIMC === "function") calcularIMC();
+  if (typeof verificarHistoricoPericiado === "function") {
+    verificarHistoricoPericiado(state.aux.cpfPaciente || state.cpfPaciente || $("agilCpfPaciente")?.value || "");
+  }
+  if (typeof verificarCoerenciaPericial === "function") verificarCoerenciaPericial();
+  if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
 }
 
 function syncAgilToExtended() {
@@ -6404,6 +5900,24 @@ function syncAgilToExtended() {
     state.cid = agilCid; state.aux.cid = agilCid;
     if ($("cid")) $("cid").value = agilCid;
   }
+
+  const crmCro = getV("agilCrmCro");
+  if (crmCro) {
+    state.aux.crmCro = crmCro; state.crmCro = crmCro;
+    if ($("crmCro")) $("crmCro").value = crmCro;
+  }
+
+  const dtDoc = getV("agilDataDocumento");
+  if (dtDoc) {
+    state.aux.dataDocumento = dtDoc; state.dataDocumento = dtDoc;
+    if ($("dataDocumento")) $("dataDocumento").value = dtDoc;
+  }
+
+  const diasSol = getV("agilDiasSolicitados");
+  if (diasSol) {
+    state.aux.diasSolicitados = diasSol; state.diasSolicitados = diasSol;
+    if ($("diasSolicitados")) $("diasSolicitados").value = diasSol;
+  }
   
   const exTipo = getV("agilExameFisicoTipo");
   if (exTipo) {
@@ -6468,6 +5982,22 @@ function syncAgilField(field, value) {
   if (field === "pressaoSistolica" || field === "pressaoDiastolica" || field === "pulso") {
     if (typeof checkVitalsPadraoState === "function") checkVitalsPadraoState();
   }
+  if (field === "altura" || field === "peso") {
+    if (typeof calcularIMC === "function") calcularIMC();
+  }
+  if (field === "dataDocumento" || field === "diasSolicitados") {
+    if (typeof calcularDatasAtestado === "function") calcularDatasAtestado();
+  }
+  if (field === "exameFisicoDescricao") {
+    state.alteracoesClinicasExames = value;
+    if ($("alteracoesClinicasExames") && $("alteracoesClinicasExames") !== document.activeElement) {
+      $("alteracoesClinicasExames").value = value;
+    }
+  }
+  if (field === "justificativa") {
+    if (typeof verificarCoerenciaPericial === "function") verificarCoerenciaPericial();
+  }
+  if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
   autoSave();
 }
 
@@ -6478,6 +6008,8 @@ function syncAgilCpf(value) {
   state.cpfPaciente = formatted;
   if (!state.aux) state.aux = {};
   state.aux.cpfPaciente = formatted;
+  if (typeof verificarHistoricoPericiado === "function") verificarHistoricoPericiado(formatted);
+  if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
   autoSave();
 }
 
@@ -6486,6 +6018,8 @@ function syncAgilRadio(field, value) {
   state[field] = value;
   state.aux[field] = value;
   setRadio(field, value);
+  if (typeof verificarCoerenciaPericial === "function") verificarCoerenciaPericial();
+  if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
   autoSave();
 }
 
@@ -6493,6 +6027,7 @@ function syncAgilCheckbox(field, checked) {
   state[field] = !!checked;
   const el = $(field);
   if (el) el.checked = !!checked;
+  if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
   autoSave();
 }
 
@@ -6504,6 +6039,7 @@ function syncAgilReadaptado(val) {
   setRadio("agilReadaptado", val);
   $("readaptadoPanel")?.classList.toggle("hidden", val !== "Sim");
   $("agilReadaptadoPanel")?.classList.toggle("hidden", val !== "Sim");
+  if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
   autoSave();
 }
 
@@ -6515,6 +6051,7 @@ function syncAgilAlteracaoMed(val) {
   setRadio("agilAlteracaoMed", val);
   $("alteracaoPanel")?.classList.toggle("hidden", val !== "Sim");
   $("agilAlteracaoPanel")?.classList.toggle("hidden", val !== "Sim");
+  if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
   autoSave();
 }
 
@@ -6526,6 +6063,7 @@ function syncAgilOutrasDoencas(val) {
   setRadio("agilOutrasDoencas", val);
   $("doencasPanel")?.classList.toggle("hidden", val !== "Sim");
   $("agilDoencasPanel")?.classList.toggle("hidden", val !== "Sim");
+  if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
   autoSave();
 }
 
@@ -6546,6 +6084,7 @@ function onAgilDoencaMotivoInput(val) {
     if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = val;
   }
   
+  if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
   autoSave();
 }
 
@@ -6579,12 +6118,16 @@ function onAgilExameTipoChange(val) {
     state.osteomuscularRegioes = {};
     if (typeof updateOsteoUI === "function") updateOsteoUI();
     const cur = state.exameFisicoDescricao || "";
-    if (cur === TEXTO_EXAME_MENTAL_NORMAL || cur === TEXTO_EXAME_MENTAL_ALTERADO || cur === TEXTO_OSTEO_NORMAL || cur.includes("Trapézios sem contraturas") || cur.includes("mobilidade ativa e passiva normais")) {
-      state.exameFisicoDescricao = "";
-      state.alteracoesClinicasExames = "";
-      if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = "";
-      if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = "";
-      if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = "";
+    const temGeralCur = cur.includes("EXAME FÍSICO DO AP.RESPIRATÓRIO:") || cur.includes("Bom do estado geral");
+    if (cur === TEXTO_EXAME_MENTAL_NORMAL || cur === TEXTO_EXAME_MENTAL_ALTERADO || cur === TEXTO_OSTEO_NORMAL || cur.includes("Trapézios sem contraturas") || cur.includes("mobilidade ativa e passiva normais") || (temGeralCur && (cur.includes("Nível de consciência:") || cur.includes("Apresentas-e consciente") || cur.includes("mobilidade ativa")))) {
+      const resetVal = temGeralCur ? TEXTO_EXAME_FISICO_GERAL_PADRAO : "";
+      state.exameFisicoDescricao = resetVal;
+      state.alteracoesClinicasExames = resetVal;
+      if (!state.aux) state.aux = {};
+      state.aux.exameFisicoDescricao = resetVal;
+      if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = resetVal;
+      if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = resetVal;
+      if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = resetVal;
     }
     renderOutrosUI();
   } else {
@@ -6937,11 +6480,14 @@ function aplicarExameMentalNormal() {
   if ($("exameFisicoTipo")) $("exameFisicoTipo").value = "Exame Mental";
   if ($("agilExameFisicoTipo")) $("agilExameFisicoTipo").value = "Exame Mental";
   
-  state.exameFisicoDescricao = TEXTO_EXAME_MENTAL_NORMAL;
-  state.alteracoesClinicasExames = TEXTO_EXAME_MENTAL_NORMAL;
-  if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = TEXTO_EXAME_MENTAL_NORMAL;
-  if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = TEXTO_EXAME_MENTAL_NORMAL;
-  if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = TEXTO_EXAME_MENTAL_NORMAL;
+  const descMentalNormal = extrairOuPreservarExameGeral(TEXTO_EXAME_MENTAL_NORMAL);
+  state.exameFisicoDescricao = descMentalNormal;
+  state.alteracoesClinicasExames = descMentalNormal;
+  if (!state.aux) state.aux = {};
+  state.aux.exameFisicoDescricao = descMentalNormal;
+  if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = descMentalNormal;
+  if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = descMentalNormal;
+  if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = descMentalNormal;
   
   state.limitacaoFuncional = "Não";
   state.limitacaoRol = "Não";
@@ -6978,11 +6524,14 @@ function aplicarExameMentalAlterado() {
   if ($("exameFisicoTipo")) $("exameFisicoTipo").value = "Exame Mental";
   if ($("agilExameFisicoTipo")) $("agilExameFisicoTipo").value = "Exame Mental";
   
-  state.exameFisicoDescricao = TEXTO_EXAME_MENTAL_ALTERADO;
-  state.alteracoesClinicasExames = TEXTO_EXAME_MENTAL_ALTERADO;
-  if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = TEXTO_EXAME_MENTAL_ALTERADO;
-  if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = TEXTO_EXAME_MENTAL_ALTERADO;
-  if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = TEXTO_EXAME_MENTAL_ALTERADO;
+  const descMentalAlterado = extrairOuPreservarExameGeral(TEXTO_EXAME_MENTAL_ALTERADO);
+  state.exameFisicoDescricao = descMentalAlterado;
+  state.alteracoesClinicasExames = descMentalAlterado;
+  if (!state.aux) state.aux = {};
+  state.aux.exameFisicoDescricao = descMentalAlterado;
+  if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = descMentalAlterado;
+  if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = descMentalAlterado;
+  if ($("alteracoesClinicasExames")) $("alteracoesClinicasExames").value = descMentalAlterado;
   
   state.limitacaoFuncional = "Sim";
   state.limitacaoRol = "Sim";
@@ -7240,6 +6789,600 @@ function finalizarAtendimentoAgil() {
   openFinalizeDialog();
 }
 
+/* =========================================================
+   PRODUTIVIDADE MÉDICA: CALCULADORA DE PRAZOS & RETROAÇÃO
+   ========================================================= */
+function calcularDatasAtestado() {
+  const dtDoc = $("agilDataDocumento")?.value || state.aux?.dataDocumento || "";
+  const diasStr = $("agilDiasSolicitados")?.value || state.aux?.diasSolicitados || "";
+  const dias = parseInt(diasStr, 10);
+  
+  const alertBadge = $("retroacaoAlertaBadge");
+  const alertExp = $("retroacaoExplicacao");
+  const inicioTxt = $("calcDataInicioTxt");
+  const terminoTxt = $("calcDataTerminoTxt");
+  const diasTxt = $("calcDiasTxt");
+
+  if (!dtDoc) {
+    if (alertBadge) alertBadge.style.display = "none";
+    if (alertExp) alertExp.style.display = "none";
+    if (inicioTxt) inicioTxt.textContent = "--/--/----";
+    if (terminoTxt) terminoTxt.textContent = "--/--/----";
+    if (diasTxt) diasTxt.textContent = "--";
+    return;
+  }
+
+  const parts = dtDoc.split("-");
+  if (parts.length === 3) {
+    const docDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    const now = new Date();
+    const todayZero = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    // Diferença em dias corridos entre hoje e a data do documento
+    const diffTime = todayZero.getTime() - docDate.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays > 3) {
+      if (alertBadge) alertBadge.style.display = "inline-flex";
+      if (alertExp) alertExp.style.display = "block";
+    } else {
+      if (alertBadge) alertBadge.style.display = "none";
+      if (alertExp) alertExp.style.display = "none";
+    }
+
+    const fmtDoc = `${String(parts[2]).padStart(2, "0")}/${String(parts[1]).padStart(2, "0")}/${parts[0]}`;
+    if (inicioTxt) inicioTxt.textContent = fmtDoc;
+
+    if (!isNaN(dias) && dias > 0) {
+      if (diasTxt) diasTxt.textContent = `${dias} dia${dias > 1 ? "s" : ""}`;
+      const endDate = new Date(docDate.getTime());
+      endDate.setDate(endDate.getDate() + (dias - 1));
+      const endDay = String(endDate.getDate()).padStart(2, "0");
+      const endMonth = String(endDate.getMonth() + 1).padStart(2, "0");
+      const endYear = endDate.getFullYear();
+      if (terminoTxt) terminoTxt.textContent = `${endDay}/${endMonth}/${endYear}`;
+    } else {
+      if (diasTxt) diasTxt.textContent = "--";
+      if (terminoTxt) terminoTxt.textContent = "--/--/----";
+    }
+  }
+}
+
+function concederMesmosDiasAtestado() {
+  const dtDoc = $("agilDataDocumento")?.value || state.aux?.dataDocumento || "";
+  const diasStr = $("agilDiasSolicitados")?.value || state.aux?.diasSolicitados || "";
+  const dias = parseInt(diasStr, 10);
+  
+  if (!dtDoc) {
+    toast("Informe primeiro a data do atestado para calcular o período.");
+    return;
+  }
+
+  state.parecer = "FAVORÁVEL";
+  setRadio("parecer", "FAVORÁVEL");
+  state.limitacaoFuncional = "Sim";
+  state.limitacaoRol = "Sim";
+  setRadio("limitacaoFuncional", "Sim");
+  setRadio("limitacaoRol", "Sim");
+  state.capacidade = "Capacidade parcial e temporariamente prejudicada";
+  setRadio("capacidade", "Capacidade parcial e temporariamente prejudicada");
+  QuesitoService.set(0, "Sim");
+  QuesitoService.set(1, "Sim");
+  QuesitoService.set(2, "Sim");
+  renderQuesitos();
+
+  if (!state.aux) state.aux = {};
+  state.aux.diasConcedidos = isNaN(dias) ? (diasStr || "1") : dias;
+  state.aux.dataInicioAfastamento = dtDoc;
+  
+  calcularDatasAtestado();
+  const termTxt = $("calcDataTerminoTxt")?.textContent || "";
+  const iniTxt = $("calcDataInicioTxt")?.textContent || "";
+  
+  const justEl = $("agilJustificativa");
+  if (justEl) {
+    const curJust = justEl.value.trim();
+    const complemento = ` Período concedido de ${dias || diasStr || 1} dia(s), de ${iniTxt} a ${termTxt}.`;
+    if (!curJust || curJust === TEXTO_JUSTIFICATIVA_ALTERADO || curJust.startsWith("Capacidade laborativa parcial")) {
+      justEl.value = `Capacidade laborativa parcial e temporariamente prejudicada.${complemento}`;
+      syncAgilField("justificativa", justEl.value);
+    }
+  }
+  
+  autoSave();
+  verificarCoerenciaPericial();
+  atualizarProgressoAgil();
+  toast(`Parecer FAVORÁVEL ajustado com período concedido de ${dias || diasStr || 1} dia(s).`);
+}
+
+/* =========================================================
+   PRODUTIVIDADE MÉDICA: CÁLCULO AUTOMÁTICO DE IMC
+   ========================================================= */
+function calcularIMC() {
+  const altRaw = ($("agilAltura")?.value || state.aux?.altura || "").toString().replace(",", ".").trim();
+  const pesoRaw = ($("agilPeso")?.value || state.aux?.peso || "").toString().replace(",", ".").trim();
+  
+  let h = parseFloat(altRaw);
+  const w = parseFloat(pesoRaw);
+
+  const imcCard = $("agilImcCard");
+  const valEl = $("agilImcValor");
+  const classEl = $("agilImcClassificacao");
+  const badgeEl = $("agilImcBadge");
+
+  if (isNaN(h) || isNaN(w) || h <= 0 || w <= 0) {
+    if (imcCard) imcCard.style.display = "none";
+    return;
+  }
+
+  // Tratamento para altura digitada em cm (ex: 175 -> 1.75)
+  if (h > 3.0) {
+    h = h / 100;
+  }
+
+  if (h < 0.5 || h > 2.6 || w < 20 || w > 350) {
+    if (imcCard) imcCard.style.display = "none";
+    return;
+  }
+
+  const imc = w / (h * h);
+  const rounded = imc.toFixed(1);
+
+  let classificacao = "Eutrófico (Peso normal)";
+  let badgeText = "Eutrófico";
+  let bg = "#DCFCE7";
+  let fg = "#15803D";
+
+  if (imc < 18.5) {
+    classificacao = "Abaixo do peso ideal";
+    badgeText = "Abaixo do peso";
+    bg = "#FEF3C7";
+    fg = "#92400E";
+  } else if (imc < 25.0) {
+    classificacao = "Eutrófico (Peso normal)";
+    badgeText = "Eutrófico";
+    bg = "#DCFCE7";
+    fg = "#15803D";
+  } else if (imc < 30.0) {
+    classificacao = "Sobrepeso";
+    badgeText = "Sobrepeso";
+    bg = "#FEF9C3";
+    fg = "#854D0E";
+  } else if (imc < 35.0) {
+    classificacao = "Obesidade Grau I";
+    badgeText = "Obesidade I";
+    bg = "#FEE2E2";
+    fg = "#991B1B";
+  } else if (imc < 40.0) {
+    classificacao = "Obesidade Grau II (Severa)";
+    badgeText = "Obesidade II";
+    bg = "#FEE2E2";
+    fg = "#991B1B";
+  } else {
+    classificacao = "Obesidade Grau III (Mórbida)";
+    badgeText = "Obesidade III";
+    bg = "#7F1D1D";
+    fg = "#FFFFFF";
+  }
+
+  if (valEl) valEl.textContent = rounded;
+  if (classEl) classEl.textContent = classificacao;
+  if (badgeEl) {
+    badgeEl.textContent = badgeText;
+    badgeEl.style.backgroundColor = bg;
+    badgeEl.style.color = fg;
+  }
+  if (imcCard) imcCard.style.display = "flex";
+
+  if (!state.aux) state.aux = {};
+  state.aux.imc = rounded;
+  state.aux.imcClassificacao = classificacao;
+}
+
+/* =========================================================
+   PRODUTIVIDADE MÉDICA: CHIPS DE MEDICAÇÃO RÁPIDA
+   ========================================================= */
+function adicionarMedRapida(med, dose, freq, obs) {
+  addMedication({
+    medicamento: med,
+    dosagem: dose,
+    frequencia: freq,
+    observacao: obs
+  });
+  toast(`Medicamento ${med} (${dose}) adicionado.`);
+  atualizarProgressoAgil();
+}
+
+/* =========================================================
+   PRODUTIVIDADE MÉDICA: DITADO NATIVO POR VOZ (Web Speech API)
+   ========================================================= */
+let activeSpeechRecognition = null;
+let activeVoiceTargetId = null;
+
+function toggleVoiceDictation(targetId) {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    toast("O reconhecimento de voz nativo não é suportado neste navegador. Utilize o Google Chrome ou Microsoft Edge.");
+    return;
+  }
+
+  const btnId = `voiceBtn_${targetId}`;
+  const btn = $(btnId);
+
+  // Se já estiver gravando para este campo, interrompe
+  if (activeSpeechRecognition && activeVoiceTargetId === targetId) {
+    try { activeSpeechRecognition.stop(); } catch (_) {}
+    activeSpeechRecognition = null;
+    activeVoiceTargetId = null;
+    if (btn) btn.classList.remove("recording");
+    toast("Gravação de voz finalizada.");
+    return;
+  }
+
+  // Se estiver gravando para outro campo, interrompe o anterior
+  if (activeSpeechRecognition) {
+    try { activeSpeechRecognition.stop(); } catch (_) {}
+    const prevBtn = $(`voiceBtn_${activeVoiceTargetId}`);
+    if (prevBtn) prevBtn.classList.remove("recording");
+  }
+
+  try {
+    const recognition = new SpeechRecognition();
+    recognition.lang = "pt-BR";
+    recognition.continuous = true;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      activeSpeechRecognition = recognition;
+      activeVoiceTargetId = targetId;
+      if (btn) btn.classList.add("recording");
+      toast("Escutando... Fale seus achados clínicos com clareza.");
+    };
+
+    recognition.onresult = (event) => {
+      const results = event.results;
+      const transcript = results[results.length - 1][0].transcript.trim();
+      if (!transcript) return;
+      
+      const targetEl = $(targetId);
+      if (targetEl) {
+        const curVal = targetEl.value.trim();
+        const newVal = curVal ? `${curVal} ${transcript}` : transcript;
+        targetEl.value = newVal;
+        
+        if (targetId === "agilExameFisicoDescricao") {
+          syncAgilField("exameFisicoDescricao", newVal);
+        } else if (targetId === "agilJustificativa") {
+          syncAgilField("justificativa", newVal);
+        } else if (targetId === "agilDoencaMotivo") {
+          onAgilDoencaMotivoInput(newVal);
+        } else if (targetId === "agilSintomasLimitacao") {
+          syncAgilField("sintomasLimitacao", newVal);
+        }
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.warn("Speech recognition error:", event.error);
+      if (btn) btn.classList.remove("recording");
+      activeSpeechRecognition = null;
+      activeVoiceTargetId = null;
+      if (event.error !== "no-speech") {
+        toast("Reconhecimento de voz: " + event.error);
+      }
+    };
+
+    recognition.onend = () => {
+      if (btn) btn.classList.remove("recording");
+      if (activeVoiceTargetId === targetId) {
+        activeSpeechRecognition = null;
+        activeVoiceTargetId = null;
+      }
+    };
+
+    recognition.start();
+  } catch (err) {
+    console.error("Falha ao iniciar SpeechRecognition:", err);
+    toast("Não foi possível acessar o microfone.");
+  }
+}
+
+/* =========================================================
+   PRODUTIVIDADE MÉDICA: CHIPS DE ACHADOS DO EXAME FÍSICO
+   ========================================================= */
+function inserirAchadoExame(texto) {
+  const el = $("agilExameFisicoDescricao");
+  if (!el) return;
+  const cur = el.value.trim();
+  if (cur.includes(texto)) {
+    toast("Este achado já está inserido no exame.");
+    return;
+  }
+  const updated = cur ? `${cur}\n${texto}` : texto;
+  el.value = updated;
+  syncAgilField("exameFisicoDescricao", updated);
+  toast(`Achado inserido: "${texto.slice(0, 32)}..."`);
+  atualizarProgressoAgil();
+}
+
+/* =========================================================
+   PRODUTIVIDADE MÉDICA: HISTÓRICO PERICIAL PREGRESSO DO SERVIDOR
+   ========================================================= */
+window._ultimoAtendimentoHistorico = null;
+
+async function verificarHistoricoPericiado(cpf) {
+  if (!cpf) {
+    $("historicoPacienteCard") && ($("historicoPacienteCard").style.display = "none");
+    return;
+  }
+  const clean = cpf.replace(/\D/g, "");
+  if (clean.length !== 11) {
+    $("historicoPacienteCard") && ($("historicoPacienteCard").style.display = "none");
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/atendimentos?q=${encodeURIComponent(clean)}`, {
+      headers: typeof AmbientalAuth !== "undefined" ? AmbientalAuth.headers() : {}
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const items = Array.isArray(data) ? data : (data.items || []);
+    
+    // Filtra para remover o atendimento atual
+    const anteriores = items.filter(atd => {
+      const atdId = atd.id || atd.atendimento || atd._id;
+      return String(atdId) !== String(state.atendimento);
+    });
+
+    if (anteriores.length > 0) {
+      anteriores.sort((a, b) => new Date(b.created_at || b.data_atendimento || 0) - new Date(a.created_at || a.data_atendimento || 0));
+      const ultimo = anteriores[0];
+      window._ultimoAtendimentoHistorico = ultimo;
+
+      const card = $("historicoPacienteCard");
+      const dtUltimo = ultimo.data_atendimento || ultimo.created_at || "Data anterior";
+      const cidUltimo = ultimo.cid || ultimo.payload?.cid || "Não informado";
+      const cargoUltimo = ultimo.cargo || ultimo.payload?.cargo || "";
+
+      if ($("histCardTitulo")) {
+        $("histCardTitulo").textContent = `Histórico pericial localizado: Atendimento anterior com CID ${cidUltimo}`;
+      }
+      if ($("histCardDetalhes")) {
+        $("histCardDetalhes").textContent = `Data: ${dtUltimo.slice(0, 10)} ${cargoUltimo ? `• Cargo: ${cargoUltimo}` : ""} • Clique para reaproveitar comorbidades/antecedentes crônicos.`;
+      }
+      if (card) card.style.display = "block";
+    } else {
+      if ($("historicoPacienteCard")) $("historicoPacienteCard").style.display = "none";
+    }
+  } catch (err) {
+    console.warn("Falha ao buscar histórico de atendimentos:", err);
+  }
+}
+
+function importarAntecedentesHistorico() {
+  const atd = window._ultimoAtendimentoHistorico;
+  if (!atd) {
+    toast("Nenhum atendimento anterior selecionado.");
+    return;
+  }
+  const payload = atd.payload || atd;
+  let importados = 0;
+
+  // Importar comorbidades / outras doenças
+  const conds = payload.conditions || payload.condicoes || [];
+  if (Array.isArray(conds) && conds.length > 0) {
+    state.conditions = JSON.parse(JSON.stringify(conds));
+    renderConditions();
+    state.outrasDoencas = "Sim";
+    setRadio("outrasDoencas", "Sim");
+    setRadio("agilOutrasDoencas", "Sim");
+    $("doencasPanel")?.classList.remove("hidden");
+    $("agilDoencasPanel")?.classList.remove("hidden");
+    importados += conds.length;
+  }
+
+  // Importar medicações contínuas se a lista atual estiver vazia
+  const meds = payload.medications || payload.medicamentos || [];
+  if (Array.isArray(meds) && meds.length > 0 && state.medications.length === 0) {
+    state.medications = JSON.parse(JSON.stringify(meds));
+    renderMedications();
+    importados += meds.length;
+  }
+
+  // Importar histórico pregresso prévio
+  const hist = payload.historicoPregresso || payload.aux?.historicoPregresso;
+  if (hist && (!state.aux.historicoPregresso || state.aux.historicoPregresso === "Nega")) {
+    state.aux.historicoPregresso = hist;
+    state.historicoPregresso = hist;
+    if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = hist;
+    if ($("historicoPregresso")) $("historicoPregresso").value = hist;
+    importados++;
+  }
+
+  autoSave();
+  toast(`Histórico importado: ${importados} item(ns) crônico(s) reaproveitado(s).`);
+}
+
+/* =========================================================
+   PRODUTIVIDADE MÉDICA: DETECTOR DE COERÊNCIA PERICIAL (Quesitos x Parecer)
+   ========================================================= */
+function verificarCoerenciaPericial() {
+  const alertaBox = $("coerenciaParecerAlerta");
+  const textoBox = $("coerenciaParecerTexto");
+  if (!alertaBox || !textoBox) return;
+
+  const parecer = state.parecer || getRadio("parecer");
+  const q3 = QuesitoService.getAnswer(2); // Quesito 3: limitação impede atividades do rol?
+  const limitacao = state.limitacaoFuncional || getRadio("limitacaoFuncional");
+
+  const inconsistencias = [];
+
+  if (parecer === "CONTRÁRIO") {
+    if (q3 === "Sim") {
+      inconsistencias.push("O <strong>Quesito 3</strong> afirma que a limitação impede atividade do rol (<strong>Sim</strong>), mas o parecer pericial está marcado como <strong>CONTRÁRIO</strong>.");
+    }
+    if (limitacao === "Sim") {
+      inconsistencias.push("Foi indicada <strong>Limitação Funcional: Sim</strong>, divergindo do parecer <strong>CONTRÁRIO</strong>.");
+    }
+  } else if (parecer === "FAVORÁVEL") {
+    if (q3 === "Não") {
+      inconsistencias.push("O <strong>Quesito 3</strong> afirma que a limitação NÃO impede atividades (<strong>Não</strong>), mas o parecer pericial está marcado como <strong>FAVORÁVEL</strong>.");
+    }
+    if (limitacao === "Não") {
+      inconsistencias.push("Foi indicada <strong>Limitação Funcional: Não</strong>, divergindo do parecer <strong>FAVORÁVEL</strong>.");
+    }
+  }
+
+  if (inconsistencias.length > 0) {
+    textoBox.innerHTML = `<strong>Aviso de Coerência Pericial DPME:</strong><br>${inconsistencias.join("<br>")}`;
+    alertaBox.style.display = "block";
+  } else {
+    alertaBox.style.display = "none";
+  }
+}
+
+/* =========================================================
+   PRODUTIVIDADE MÉDICA: CHECKLIST INTERATIVO DE PENDÊNCIAS
+   ========================================================= */
+function atualizarProgressoAgil() {
+  const badge = $("agilProgressoBadge");
+  const icon = $("agilProgressoIcon");
+  const txt = $("agilProgressoTexto");
+  if (!badge || !txt) return;
+
+  const checks = [
+    { label: "Cargo", ok: !!state.aux?.cargo, id: "agilCargo" },
+    { label: "Idade", ok: !!state.aux?.idade, id: "agilIdade" },
+    { label: "Readaptado", ok: !!state.readaptado, id: "agilReadaptado_Nao" },
+    { label: "Doença que motivou o afastamento", ok: !!state.aux?.doencaMotivo, id: "agilDoencaMotivo" },
+    { label: "Sintomas e limitações referidos", ok: !!state.aux?.sintomasLimitacao, id: "agilSintomasLimitacao" },
+    { label: "CID Principal", ok: !!state.cid, id: "agilCid" },
+    { label: "Tipo de exame físico / mental", ok: !!state.exameFisicoTipo, id: "agilExameFisicoTipo" },
+    {
+      label: "Achados do Exame",
+      ok: state.exameFisicoTipo === "Exame Mental" ? !!state.exameMentalResultado :
+          state.exameFisicoTipo === "Aparelho Osteomuscular e Tecido Conjutivo" ? (Object.keys(state.osteomuscularRegioes || {}).length > 0 || state.osteomuscularResultado === "Normal") :
+          state.exameFisicoTipo === "Outros" ? (!!state.outrosSubtipo && !!state.outrosResultado && !!(state.exameFisicoDescricao || $("agilExameFisicoDescricao")?.value?.trim())) :
+          !!(state.exameFisicoDescricao || $("agilExameFisicoDescricao")?.value?.trim()),
+      id: "agilExameFisicoDescricao"
+    },
+    { label: "Justificativa Parecer Final", ok: !!(state.aux?.justificativa || $("agilJustificativa")?.value?.trim()), id: "agilJustificativa" }
+  ];
+
+  const total = checks.length;
+  const completed = checks.filter(c => c.ok).length;
+  const pendentes = checks.filter(c => !c.ok);
+
+  window._itensPendentesAgil = pendentes;
+
+  if (completed === total) {
+    badge.style.background = "#DCFCE7";
+    badge.style.color = "#15803D";
+    badge.style.borderColor = "#86EFAC";
+    if (icon) icon.textContent = "✓";
+    txt.textContent = "Pronto para finalizar (100%)";
+  } else {
+    badge.style.background = "#FEF3C7";
+    badge.style.color = "#92400E";
+    badge.style.borderColor = "#FCD34D";
+    if (icon) icon.textContent = "⏳";
+    txt.textContent = `${completed}/${total} itens preenchidos (${pendentes.length} pendente${pendentes.length > 1 ? "s" : ""})`;
+  }
+
+  atualizarMiniHUD();
+}
+
+function toggleProgressoDropdown() {
+  const pendentes = window._itensPendentesAgil || [];
+  if (pendentes.length === 0) {
+    toast("Todos os campos obrigatórios estão preenchidos! Atendimento pronto para finalização.");
+    return;
+  }
+  const lista = pendentes.map(p => `• ${p.label}`).join("\n");
+  toast(`Itens pendentes no Modo Ágil:\n${lista}\n\nFocando no primeiro campo...`);
+  const primeiro = pendentes[0];
+  if (primeiro && $(primeiro.id)) {
+    $(primeiro.id).scrollIntoView({ behavior: "smooth", block: "center" });
+    try { $(primeiro.id).focus(); } catch (_) {}
+  }
+}
+
+/* =========================================================
+   PRODUTIVIDADE MÉDICA: MINI-HUD FLUTUANTE & ATALHOS DE TECLADO
+   ========================================================= */
+function atualizarMiniHUD() {
+  const hud = $("stickyDoctorHUD");
+  if (!hud) return;
+
+  const pacName = state.aux?.nomePaciente || state.nomePaciente || "Servidor não informado";
+  const cargoVal = state.aux?.cargo || state.cargo || "--";
+  const cidVal = state.cid || state.aux?.cid || "--";
+  const parecerVal = state.parecer || "Não definido";
+
+  if ($("hudPaciente")) $("hudPaciente").innerHTML = `Servidor: <strong>${esc(pacName.slice(0, 26))}</strong>`;
+  if ($("hudCargo")) $("hudCargo").textContent = `Cargo: ${cargoVal.slice(0, 18)}`;
+  if ($("hudCid")) $("hudCid").textContent = `CID: ${cidVal}`;
+  
+  const hudPar = $("hudParecer");
+  if (hudPar) {
+    hudPar.textContent = `Parecer: ${parecerVal}`;
+    hudPar.className = "hud-parecer " + (parecerVal === "FAVORÁVEL" ? "parecer-fav" : parecerVal === "CONTRÁRIO" ? "parecer-cont" : "");
+  }
+}
+
+function finalizarAtendimentoHeader() {
+  finalizeFromHeader();
+}
+
+window.addEventListener("scroll", () => {
+  const hud = $("stickyDoctorHUD");
+  if (!hud) return;
+  if (window.scrollY > 220) {
+    hud.style.display = "block";
+    atualizarMiniHUD();
+  } else {
+    hud.style.display = "none";
+  }
+}, { passive: true });
+
+window.addEventListener("keydown", (e) => {
+  // Ctrl + S (ou Cmd + S): Salvar rascunho
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+    e.preventDefault();
+    saveNow();
+    return;
+  }
+
+  // Ctrl + Enter: Finalizar atendimento
+  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+    e.preventDefault();
+    if (typeof currentAttendanceMode !== "undefined" && currentAttendanceMode === "agil") {
+      finalizarAtendimentoAgil();
+    } else {
+      finalizeFromHeader();
+    }
+    return;
+  }
+
+  // Alt + G: Inserir texto padrão de Exame Físico Geral
+  if (e.altKey && e.key.toLowerCase() === "g") {
+    e.preventDefault();
+    inserirExameFisicoGeralPadrao();
+    return;
+  }
+
+  // Alt + J: Gerar Justificativa com IA
+  if (e.altKey && e.key.toLowerCase() === "j") {
+    e.preventDefault();
+    if ($("btnAgilJustificativaIA") && $("btnAgilJustificativaIA").style.display !== "none") {
+      gerarJustificativaAgilIA();
+    } else if (typeof gerarJustificativaIA === "function") {
+      gerarJustificativaIA();
+    }
+    return;
+  }
+});
 </script>
 </div> <!-- Fecha a div .app -->
 

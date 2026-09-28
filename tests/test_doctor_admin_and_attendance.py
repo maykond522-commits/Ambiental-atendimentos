@@ -46,17 +46,19 @@ def test_api_js_admin_and_esisla_contract():
     assert "esisla: (payload) =>" in API_JS
 
 
-def test_attendance_esisla_restricted_to_admins_only():
-    # Button must be hidden by default
-    assert 'id="btnCopiarEsisla"' in ATTENDANCE
-    assert 'style="display:none;"' in ATTENDANCE
+def test_attendance_header_actions():
+    # Only Gestão, Imprimir, Excluir, Salvar rascunho, Finalizar in header
+    header_block = ATTENDANCE[ATTENDANCE.find('<div class="header-actions">'):ATTENDANCE.find('</header>')]
+    assert 'onclick="openManagement()"' in header_block
+    assert 'onclick="openFinalReport()"' in header_block
+    assert 'onclick="deleteAtendimento()"' in header_block
+    assert 'onclick="saveNow()"' in header_block
+    assert 'onclick="finalizeFromHeader()"' in header_block
     
-    # Must explicitly verify administrative role before displaying
-    assert '["Administrador", "Coordenador", "Revisor", "Gestor"].includes(profile?.perfil)' in ATTENDANCE
-    
-    # Must copy to clipboard
-    assert 'navigator.clipboard.writeText' in ATTENDANCE
-    assert 'copiarFichaEsislaRapida' in ATTENDANCE
+    # Must NOT have esisla or robo buttons in attendance header
+    assert 'btnCopiarEsisla' not in header_block
+    assert 'btnCopiarEsislaJson' not in header_block
+    assert 'btnRoboEsisla' not in header_block
 
 
 def test_attendance_optimizations_and_safety():
@@ -841,11 +843,7 @@ def test_antecedentes_morbidos_and_historico_pregresso_integration():
     assert 'name="outrasDoencas" value="Sim" checked' in ATTENDANCE
     assert 'state.outrasDoencas = "Sim"' in ATTENDANCE
 
-    # 3. e-Sisla payload passes antecedentes and historico_pregresso
-    assert 'payload.antecedentes = histVal' in ATTENDANCE
-    assert 'payload.historico_pregresso = histVal' in ATTENDANCE
-
-    # 4. _minimal_ai_context maps historico_pregresso and antecedentes
+    # 3. _minimal_ai_context maps historico_pregresso and antecedentes
     ctx = _minimal_ai_context({
         "atendimento": "123",
         "historicoPregresso": "Cirurgia de menisco em 2021",
@@ -1100,24 +1098,16 @@ def test_secondary_cid_feature_and_ai_prompt_integration():
     assert "- CID: F32.1\n" in prompt_single
 
 
-def test_robo_esisla_integration():
+def test_robo_removed_from_attendance_and_macros_preserved():
     import json
     from pathlib import Path
 
-    # 1. Button and modal elements in HTML
-    assert 'id="btnRoboEsisla"' in ATTENDANCE
-    assert 'id="roboEsislaModal"' in ATTENDANCE
-    assert 'id="roboProtocolo"' in ATTENDANCE
-    assert 'id="roboFichaTexto"' in ATTENDANCE
+    # 1. UI elements removed as requested by user
+    assert 'id="btnRoboEsisla"' not in ATTENDANCE
+    assert 'id="roboEsislaModal"' not in ATTENDANCE
+    assert 'abrirRoboEsislaModal' not in ATTENDANCE
 
-    # 2. JavaScript helper functions for Robot integration
-    assert 'function abrirRoboEsislaModal(' in ATTENDANCE
-    assert 'function baixarCsvRoboEsisla()' in ATTENDANCE
-    assert 'function executarRoboUiVision()' in ATTENDANCE
-    assert 'function copiarScriptInjecaoDireta()' in ATTENDANCE
-    assert 'abrirRoboEsislaModal(data.ficha_esisla)' in ATTENDANCE
-
-    # 3. Macro files in "Macro ui vision" folder
+    # 2. Macro files in "Macro ui vision" folder preserved for user's rewrite
     macro_dir = Path("Macro ui vision")
     assert macro_dir.is_dir()
 
@@ -1126,24 +1116,235 @@ def test_robo_esisla_integration():
     with open(robo_file, "r", encoding="utf-8") as f:
         robo_json = json.load(f)
     assert robo_json["Name"] == "Preencher_eSisla_DB"
-    assert any(cmd["Command"] == "csvRead" and cmd["Target"] == "dados_banco.csv" for cmd in robo_json["Commands"])
 
     preencher_file = macro_dir / "Preencher_eSisla_DB.json"
     assert preencher_file.is_file()
-    with open(preencher_file, "r", encoding="utf-8") as f:
-        preencher_json = json.load(f)
-    assert preencher_json["Name"] == "Preencher_eSisla_DB"
-
-    readme_file = macro_dir / "README.md"
-    assert readme_file.is_file()
 
 
+def test_field_label_unidade_renamed_to_anos_meses_dias():
+    # Modo Ágil and Versão Estendida
+    assert '<label>Ano(s)/Mes(es)/Dia(s)</label>' in ATTENDANCE
+    assert 'id="agilTempoUnidade"' in ATTENDANCE
+    assert 'id="tempoUnidade"' in ATTENDANCE
 
 
+def test_adicionar_medicamento_button_styling():
+    # .btn-add styling improved with border, font, background, and hover effects
+    assert '.btn-add{' in ATTENDANCE
+    assert 'background:#EFF6FF;' in ATTENDANCE
+    assert 'border:1.5px solid #2563EB;' in ATTENDANCE
 
 
+def test_gestao_admin_batch_and_single_delete():
+    # Endpoints in app.py
+    from app import app
+    client = app.test_client()
+
+    # Unauthorized access check
+    res = client.delete("/api/admin/atendimentos/nonexistent")
+    assert res.status_code in [401, 403]
+
+    res_batch = client.post("/api/admin/atendimentos/batch-delete", json={"ids": ["1", "2"]})
+    assert res_batch.status_code in [401, 403]
+
+    # Frontend Gestão elements
+    assert 'id="bulkActionsToolbar"' in GESTAO_ATENDIMENTOS
+    assert 'id="selectAllCheckbox"' in GESTAO_ATENDIMENTOS
+    assert 'confirmBatchDeleteAdmin()' in GESTAO_ATENDIMENTOS
+    assert 'confirmSingleDeleteAdmin(' in GESTAO_ATENDIMENTOS
+    assert 'col-patient' in GESTAO_ATENDIMENTOS
+    assert 'sub-clamp' in GESTAO_ATENDIMENTOS
 
 
+def test_gestao_esisla_buttons_and_pdf():
+    # esislaModal buttons: only Editar, Gerar PDF, and Script F12
+    modal_head = GESTAO_ATENDIMENTOS[GESTAO_ATENDIMENTOS.find('class="esisla-editor-header"'):GESTAO_ATENDIMENTOS.find('id="esislaText"')]
+    assert 'id="esislaToggleEditBtn"' in modal_head
+    assert 'generateEsislaPDF()' in modal_head
+    assert 'copyEsislaScript()' in modal_head
+    assert 'copyEsislaJson()' not in modal_head
+
+    # PDF function implemented
+    assert 'function generateEsislaPDF()' in GESTAO_ATENDIMENTOS
 
 
+def test_esisla_prompt_and_context_altura_peso():
+    from app import _minimal_ai_context, TASK_PROMPTS
+    
+    ctx = _minimal_ai_context({
+        "atendimento": "123",
+        "altura": "1.75",
+        "peso": "78",
+        "pa": "120/80",
+        "pulso": "72"
+    })
+    assert ctx["altura"] == "1.75"
+    assert ctx["peso"] == "78"
 
+    prompt_tpl = TASK_PROMPTS["esisla"]
+    assert "Altura:" in prompt_tpl
+    assert "Peso:" in prompt_tpl
+    assert "Pulso (bpm):" in prompt_tpl
+
+
+def test_api_ai_esisla_endpoint_executes_successfully(monkeypatch):
+    from app import app, EsislaResult
+
+    # Mock auth request
+    monkeypatch.setattr("app._authenticate_request", lambda: ({"id": "1", "email": "admin@ambiental.com", "nome": "Admin", "perfil": "Administrador"}, "token123"))
+
+    # Mock _generate_cached so we don't call Gemini external network
+    sample_ficha = (
+        "Registro da perícia Médica para Licença\n\n"
+        "(*) Queixa e Duração:\nDor lombar há 5 dias\n\n"
+        "Antecedentes Mórbidos:\nNega comorbidades\n\n"
+        "Pressão Arterial\nSistólica (mmHg): 120\nDiastólica (mmHg): 80\nPulso (bpm): 72\n\n"
+        "(*)Exame Físico Geral\nNormal"
+    )
+    monkeypatch.setattr("app._generate_cached", lambda *args, **kwargs: (EsislaResult(ficha_esisla=sample_ficha), False, "hash123"))
+
+    client = app.test_client()
+    res = client.post("/api/ai/esisla", json={
+        "atendimento": "954378632",
+        "nomePaciente": "Servidor Teste",
+        "altura": "1.70",
+        "peso": "70"
+    })
+
+    assert res.status_code == 200
+    data = res.get_json()
+    assert "ficha_esisla" in data
+    assert "Altura: 1.70" in data["ficha_esisla"]
+    assert "Peso: 70" in data["ficha_esisla"]
+
+
+def test_exame_fisico_geral_button_and_prepend_logic():
+    # Buttons present in Modo Ágil and Versão Estendida
+    assert 'id="btnAgilExameFisicoGeral"' in ATTENDANCE
+    assert 'id="btnExtExameFisicoGeral"' in ATTENDANCE
+    assert 'onclick="inserirExameFisicoGeralPadrao()"' in ATTENDANCE
+    assert "Exame Físico Geral" in ATTENDANCE
+
+    # Constant definition and contents
+    assert "const TEXTO_EXAME_FISICO_GERAL_PADRAO =" in ATTENDANCE
+    assert "Bom do estado geral, nutrição adequada, sem alterações na coloração e hidratação de mucosas." in ATTENDANCE
+    assert "EXAME FÍSICO DO AP.RESPIRATÓRIO: Eupnêico, sem esforço respiratório" in ATTENDANCE
+    assert "Som claro pulmonar, atimpânico" in ATTENDANCE
+    assert "Murmúrio Vesicular universalmente audível s/ ruídos adventícios" in ATTENDANCE
+    assert "EXAME FÍSICO DO AP. CARDIOVASCULAR: Precórdio normodinâmico" in ATTENDANCE
+    assert "Ictus de VE invisível, palpável em 5º EIC na LHCE" in ATTENDANCE
+    assert "RCR 2T c/ BNF. Ausência de sopros ou extrassístoles" in ATTENDANCE
+    assert "turgência de jugular. Patológica (TJP) Pulsos arteriais periféricos simétricos, sincrônicos e com boa amplitude." in ATTENDANCE
+
+    # Function insertion and preservation logic
+    assert "function inserirExameFisicoGeralPadrao()" in ATTENDANCE
+    assert 'TEXTO_EXAME_FISICO_GERAL_PADRAO + "\\n\\n" + current' in ATTENDANCE
+    assert "function extrairOuPreservarExameGeral(novoConteudo)" in ATTENDANCE
+    assert "extrairOuPreservarExameGeral(TEXTO_EXAME_MENTAL_NORMAL)" in ATTENDANCE
+    assert "extrairOuPreservarExameGeral(TEXTO_EXAME_MENTAL_ALTERADO)" in ATTENDANCE
+    assert "extrairOuPreservarExameGeral(TEXTO_OSTEO_NORMAL_EXAME)" in ATTENDANCE
+
+
+def test_doctor_productivity_date_calculator_and_retroaction():
+    # 1. HTML elements in Modo Ágil
+    assert 'id="agilCrmCro"' in ATTENDANCE
+    assert 'id="agilDataDocumento"' in ATTENDANCE
+    assert 'id="agilDiasSolicitados"' in ATTENDANCE
+    assert 'id="retroacaoAlertaBadge"' in ATTENDANCE
+    assert 'id="calcDatasResumoBox"' in ATTENDANCE
+    assert 'concederMesmosDiasAtestado()' in ATTENDANCE
+
+    # 2. JavaScript logic
+    assert "function calcularDatasAtestado()" in ATTENDANCE
+    assert "function concederMesmosDiasAtestado()" in ATTENDANCE
+    assert "diffDays > 3" in ATTENDANCE
+    assert 'retroacaoAlertaBadge' in ATTENDANCE
+    assert 'concederMesmosDiasAtestado' in ATTENDANCE
+
+    # 3. Two-way sync with Versão Estendida
+    assert 'setVal("agilCrmCro"' in ATTENDANCE
+    assert 'setVal("agilDataDocumento"' in ATTENDANCE
+    assert 'setVal("agilDiasSolicitados"' in ATTENDANCE
+    assert 'crmCro = getV("agilCrmCro")' in ATTENDANCE
+
+
+def test_doctor_productivity_bmi_calculator_and_badge():
+    # 1. HTML elements
+    assert 'id="agilImcCard"' in ATTENDANCE
+    assert 'id="agilImcValor"' in ATTENDANCE
+    assert 'id="agilImcClassificacao"' in ATTENDANCE
+    assert 'id="agilImcBadge"' in ATTENDANCE
+
+    # 2. Function and thresholds
+    assert "function calcularIMC()" in ATTENDANCE
+    assert "Eutrófico (Peso normal)" in ATTENDANCE
+    assert "Sobrepeso" in ATTENDANCE
+    assert "Obesidade Grau I" in ATTENDANCE
+    assert "Obesidade Grau II" in ATTENDANCE
+    assert "Obesidade Grau III" in ATTENDANCE
+
+    # 3. Input handlers
+    assert "calcularIMC();" in ATTENDANCE
+
+
+def test_doctor_productivity_medications_and_exam_chips():
+    # 1. Medication quick chips
+    assert "adicionarMedRapida('Sertralina', '50 mg'" in ATTENDANCE
+    assert "adicionarMedRapida('Escitalopram', '10 mg'" in ATTENDANCE
+    assert "adicionarMedRapida('Clonazepam', '2 mg'" in ATTENDANCE
+    assert "Dose diária: 50 mg/dia" in ATTENDANCE
+    assert "function adicionarMedRapida(med, dose, freq, obs)" in ATTENDANCE
+
+    # 2. Exam quick chips
+    assert "inserirAchadoExame('Lasègue negativo bilateralmente.')" in ATTENDANCE
+    assert "inserirAchadoExame('Marcha típica, sem claudicação ou uso de órteses.')" in ATTENDANCE
+    assert "inserirAchadoExame('Ausência de contraturas musculares paravertebrais palpáveis.')" in ATTENDANCE
+    assert "function inserirAchadoExame(texto)" in ATTENDANCE
+
+
+def test_doctor_productivity_voice_dictation_web_speech():
+    # 1. Voice buttons in text areas
+    assert 'id="voiceBtn_agilDoencaMotivo"' in ATTENDANCE
+    assert 'id="voiceBtn_agilSintomasLimitacao"' in ATTENDANCE
+    assert 'id="voiceBtn_agilExameFisicoDescricao"' in ATTENDANCE
+    assert 'id="voiceBtn_agilJustificativa"' in ATTENDANCE
+
+    # 2. Native Web Speech API integration
+    assert "function toggleVoiceDictation(targetId)" in ATTENDANCE
+    assert "window.SpeechRecognition || window.webkitSpeechRecognition" in ATTENDANCE
+    assert 'recognition.lang = "pt-BR"' in ATTENDANCE
+    assert "recording" in ATTENDANCE
+
+
+def test_doctor_productivity_history_import_and_coherence_detector():
+    # 1. History banner
+    assert 'id="historicoPacienteCard"' in ATTENDANCE
+    assert 'function verificarHistoricoPericiado(cpf)' in ATTENDANCE
+    assert 'function importarAntecedentesHistorico()' in ATTENDANCE
+
+    # 2. Pericial Coherence Detector
+    assert 'id="coerenciaParecerAlerta"' in ATTENDANCE
+    assert 'id="coerenciaParecerTexto"' in ATTENDANCE
+    assert 'function verificarCoerenciaPericial()' in ATTENDANCE
+    assert 'Aviso de Coerência Pericial DPME' in ATTENDANCE
+
+
+def test_doctor_productivity_mini_hud_and_keyboard_shortcuts():
+    # 1. Sticky Mini-HUD
+    assert 'id="stickyDoctorHUD"' in ATTENDANCE
+    assert 'id="hudPaciente"' in ATTENDANCE
+    assert 'id="hudCargo"' in ATTENDANCE
+    assert 'id="hudCid"' in ATTENDANCE
+    assert 'id="hudParecer"' in ATTENDANCE
+    assert 'function atualizarMiniHUD()' in ATTENDANCE
+
+    # 2. Progress checklist
+    assert 'id="agilProgressoBadge"' in ATTENDANCE
+    assert 'function atualizarProgressoAgil()' in ATTENDANCE
+    assert 'function toggleProgressoDropdown()' in ATTENDANCE
+
+    # 3. Keyboard shortcuts
+    assert 'e.key.toLowerCase() === "s"' in ATTENDANCE
+    assert 'e.key === "Enter"' in ATTENDANCE
+    assert 'e.key.toLowerCase() === "g"' in ATTENDANCE
+    assert 'e.key.toLowerCase() === "j"' in ATTENDANCE

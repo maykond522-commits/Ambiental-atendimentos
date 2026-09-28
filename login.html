@@ -157,13 +157,14 @@ h1{margin:12px 0 16px;font-size:clamp(34px,4vw,56px);line-height:1.05;letter-spa
   function clearStatus(){statusBox.className="status";statusBox.textContent=""}
   function fieldErr(input,err,msg){$(err).textContent=msg||"";input.classList.toggle("invalid",!!msg);if(msg)input.setAttribute("aria-invalid","true");else input.removeAttribute("aria-invalid")}
   function setLoading(on){btn.disabled=on;spinner.classList.toggle("hidden",!on);submitText.textContent=on?"Autenticando...":"Entrar no sistema"}
-  function humanLoginError(err,code){
+  function humanLoginError(err,code,msgDetails){
     if(code==="NO_PROFILE") return ["error","Perfil não habilitado","Sua conta foi autenticada, mas ainda não possui um perfil de acesso ativo no sistema. Procure o administrador.","!"];
-    if(code==="AUTH_SERVER_UNAVAILABLE") return ["error","Sistema temporariamente indisponível","Não foi possível concluir a validação do acesso no servidor. Tente novamente em alguns instantes.","!"];
-    const msg=String(err?.message||"").toLowerCase();
-    if(!navigator.onLine||msg.includes("network")||msg.includes("fetch")) return ["error","Não foi possível conectar ao sistema","Verifique sua conexão e tente novamente.","!"];
+    if(code==="USER_INACTIVE") return ["error","Acesso desativado","Sua conta está inativa no sistema. Procure o administrador.","!"];
+    if(code==="AUTH_SERVER_UNAVAILABLE"||code==="DB_UNAVAILABLE") return ["error","Sistema temporariamente indisponível",msgDetails||"Não foi possível concluir a validação do acesso no servidor. Tente novamente em alguns instantes.","!"];
+    const msg=String(msgDetails||err?.message||"").toLowerCase();
+    if(!navigator.onLine||code==="NETWORK_ERROR"||msg.includes("network")||msg.includes("fetch")) return ["error","Não foi possível conectar ao sistema","Verifique sua conexão e tente novamente.","!"];
     if(msg.includes("invalid login")||msg.includes("invalid credentials")||msg.includes("invalid")) return ["error","Não foi possível entrar","Verifique seu e-mail e senha e tente novamente.","!"];
-    return ["error","Não foi possível entrar","Verifique suas credenciais e tente novamente.","!"];
+    return ["error","Não foi possível entrar",msgDetails||"Verifique suas credenciais e tente novamente.","!"];
   }
 
   await AmbientalAuth.init().catch(()=>{status(statusBox,"error","Sistema temporariamente indisponível. Tente novamente em alguns instantes.","!");});
@@ -221,7 +222,7 @@ h1{margin:12px 0 16px;font-size:clamp(34px,4vw,56px);line-height:1.05;letter-spa
     const result=await AmbientalAuth.login(loginEmail,pv,remember.checked).catch(err=>({ok:false,error:err}));
     if(!result?.ok){
       setLoading(false);
-      const [type,title,msg,ic]=humanLoginError(result?.error,result?.code);
+      const [type,title,msg,ic]=humanLoginError(result?.error,result?.code,result?.message);
       status(statusBox,type,`<strong>${title}</strong><br>${msg}`,ic);
       return;
     }

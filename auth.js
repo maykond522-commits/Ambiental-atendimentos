@@ -118,24 +118,44 @@
   }
 
   async function syncServerSession(token) {
-    if (!token) return false;
+    if (!token) return { ok: false, code: "NO_TOKEN" };
     const tokenHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token))
       .then(buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join(""))
       .catch(() => "");
-    if (tokenHash && tokenHash === STATE.syncedTokenHash) return true;
+    if (tokenHash && tokenHash === STATE.syncedTokenHash) return { ok: true };
     if (STATE.syncPromise) return STATE.syncPromise;
     STATE.syncPromise = (async () => {
       try {
-        const res = await fetch("/api/auth/session", {
+        let res = await fetch("/api/auth/session", {
           method: "POST",
           credentials: "same-origin",
           headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
           cache: "no-store",
         });
-        if (res.ok && tokenHash) STATE.syncedTokenHash = tokenHash;
-        return res.ok;
-      } catch {
-        return false;
+        // Se deu erro de servidor (5xx) por cold start ou indisponibilidade temporária, tenta 1 retry rápido
+        if (!res.ok && res.status >= 500) {
+          await new Promise(r => setTimeout(r, 600));
+          res = await fetch("/api/auth/session", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
+            cache: "no-store",
+          });
+        }
+        const data = await res.json().catch(() => null);
+        if (res.ok) {
+          if (tokenHash) STATE.syncedTokenHash = tokenHash;
+          if (data?.data) STATE.profile = data.data;
+          return { ok: true, profile: data?.data };
+        }
+        return {
+          ok: false,
+          status: res.status,
+          code: data?.error?.code || (res.status === 403 ? "NO_PROFILE" : "AUTH_SERVER_UNAVAILABLE"),
+          message: data?.error?.message,
+        };
+      } catch (err) {
+        return { ok: false, code: "NETWORK_ERROR", message: "Falha de conexão com o servidor.", error: err };
       } finally {
         STATE.syncPromise = null;
       }
@@ -206,11 +226,14 @@
     }
     STATE.remember = !!remember;
     const serverSynced = await syncServerSession(result.data.session.access_token);
-    if (!serverSynced) {
+    const syncOk = serverSynced === true || serverSynced?.ok === true;
+    if (!syncOk) {
       await client.auth.signOut({ scope: "local" }).catch(() => {});
-      return { ok: false, code: "AUTH_SERVER_UNAVAILABLE" };
+      const code = serverSynced?.code || "AUTH_SERVER_UNAVAILABLE";
+      const message = serverSynced?.message;
+      return { ok: false, code, message };
     }
-    const profile = await me();
+    const profile = (typeof serverSynced === "object" && serverSynced?.profile) ? serverSynced.profile : await me();
     if (!profile) {
       await client.auth.signOut({ scope: "local" }).catch(() => {});
       await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }).catch(() => {});

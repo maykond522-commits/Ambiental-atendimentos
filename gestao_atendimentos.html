@@ -851,6 +851,28 @@ tbody tr { transition: background .12s ease; }
 tbody tr:hover { background: #F9FBFD; }
 .main-id { font-weight: 900; color: var(--blue); font-size: 12.5px; }
 .sub { display: block; color: var(--muted); font-size: 10.5px; margin-top: 3px; }
+.col-patient { max-width: 260px; min-width: 170px; }
+.sub-clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  line-height: 1.35;
+}
+.admin-th-select, .admin-td-select { width: 38px; text-align: center; vertical-align: middle; }
+.bulk-actions-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #FEF2F2;
+  border: 1.5px solid #FECACA;
+  border-radius: 10px;
+  padding: 9px 14px;
+  margin: 12px 0;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.08);
+}
 
 /* Emblemas de Status */
 .badge {
@@ -1772,7 +1794,7 @@ body.modal-lock { overscroll-behavior: none; }
 <div class="admin-view" id="view-indicadores"><div class="view-header"><div><div class="view-kicker">Performance operacional</div><h2>Indicadores e resultados</h2><p>Resumo operacional dos atendimentos, pendências, finalizações e atualizações recentes.</p></div><span class="view-count">Leitura executiva</span></div>
 <section class="stats anchor-target" id="indicadores"><div class="stat"><span>Total</span><b id="statTotal">—</b></div><div class="stat"><span>Rascunhos</span><b id="statDraft">—</b></div><div class="stat"><span>Em revisão</span><b id="statReview">—</b></div><div class="stat"><span>Finalizados</span><b id="statDone">—</b></div><div class="stat"><span>Arquivados</span><b id="statArchived">—</b></div><div class="stat"><span>Pendências</span><b id="statPending">—</b></div><div class="stat"><span>Atualizados hoje</span><b id="statRecent">—</b></div></section></div>
 <div class="admin-view" id="view-busca"><div class="view-header"><div><div class="view-kicker">Consulta operacional</div><h2>Buscar atendimento</h2><p>Localize por número, paciente, CPF, médico, CID, unidade, status ou período e abra o registro completo.</p></div><span class="view-count" id="searchViewCount">— resultados</span></div>
-<section class="panel anchor-target" id="atendimentos"><div class="search-toolbar"><div class="search-toolbar-left"><span class="search-toolbar-title">Localizar atendimento</span><span class="filter-count" id="resultCount">— resultados</span></div><button class="search-reset-btn" type="button" onclick="clearFilters()" title="Limpar todos os filtros"><span class="reset-icon">↺</span> <span>Redefinir busca</span></button></div><div class="tabs"><button class="tab active" data-tab="all" onclick="setTab('all')">Todos</button><button class="tab" data-tab="draft" onclick="setTab('draft')">Rascunhos</button><button class="tab" data-tab="review" onclick="setTab('review')">Em revisão</button><button class="tab" data-tab="done" onclick="setTab('done')">Finalizados</button><button class="tab" data-tab="archived" onclick="setTab('archived')">Arquivados</button></div><div class="filters"><input class="input" id="search" placeholder="Buscar por paciente, CPF, médico, CID ou conteúdo..." oninput="refresh()" autocomplete="off"><select class="select" id="filter"><option value="all">Todos os status</option><option value="RASCUNHO">Rascunho</option><option value="EM_REVISÃO">Em revisão</option><option value="REABERTO">Reaberto</option><option value="FINALIZADO">Finalizado</option><option value="ARQUIVADO">Arquivado</option></select><input class="input" id="medico" placeholder="Médico" oninput="refresh()"><input class="input" id="cid" placeholder="CID" oninput="refresh()"><input class="input" id="unidade" placeholder="Unidade" oninput="refresh()"><input class="input" id="periodoInicio" type="date" title="Data inicial" aria-label="Data inicial"><input class="input" id="periodoFim" type="date" title="Data final" aria-label="Data final"><select class="select" id="sort" onchange="refresh()"><option value="updated">Última atualização</option><option value="date">Data do atendimento</option><option value="patient">Paciente (A–Z)</option></select></div><table><thead><tr><th>Paciente</th><th>Data</th><th>Profissional</th><th>Dados</th><th>Status</th><th>Atualizado</th><th></th></tr></thead><tbody id="tbody"></tbody></table><div class="empty" id="empty" style="display:none">Nenhum atendimento encontrado para os filtros atuais.</div></section>
+<section class="panel anchor-target" id="atendimentos"><div class="search-toolbar"><div class="search-toolbar-left"><span class="search-toolbar-title">Localizar atendimento</span><span class="filter-count" id="resultCount">— resultados</span></div><button class="search-reset-btn" type="button" onclick="clearFilters()" title="Limpar todos os filtros"><span class="reset-icon">↺</span> <span>Redefinir busca</span></button></div><div class="tabs"><button class="tab active" data-tab="all" onclick="setTab('all')">Todos</button><button class="tab" data-tab="draft" onclick="setTab('draft')">Rascunhos</button><button class="tab" data-tab="review" onclick="setTab('review')">Em revisão</button><button class="tab" data-tab="done" onclick="setTab('done')">Finalizados</button><button class="tab" data-tab="archived" onclick="setTab('archived')">Arquivados</button></div><div class="filters"><input class="input" id="search" placeholder="Buscar por paciente, CPF, médico, CID ou conteúdo..." oninput="refresh()" autocomplete="off"><select class="select" id="filter"><option value="all">Todos os status</option><option value="RASCUNHO">Rascunho</option><option value="EM_REVISÃO">Em revisão</option><option value="REABERTO">Reaberto</option><option value="FINALIZADO">Finalizado</option><option value="ARQUIVADO">Arquivado</option></select><input class="input" id="medico" placeholder="Médico" oninput="refresh()"><input class="input" id="cid" placeholder="CID" oninput="refresh()"><input class="input" id="unidade" placeholder="Unidade" oninput="refresh()"><input class="input" id="periodoInicio" type="date" title="Data inicial" aria-label="Data inicial"><input class="input" id="periodoFim" type="date" title="Data final" aria-label="Data final"><select class="select" id="sort" onchange="refresh()"><option value="updated">Última atualização</option><option value="date">Data do atendimento</option><option value="patient">Paciente (A–Z)</option></select></div><div class="bulk-actions-toolbar" id="bulkActionsToolbar" style="display:none;"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:13px;font-weight:800;color:#991B1B"><span id="selectedCountBadge">0</span> atendimento(s) selecionado(s)</span><span style="font-size:11.5px;color:#7F1D1D">(Apenas administradores podem excluir permanentemente do banco)</span></div><div style="display:flex;align-items:center;gap:8px"><button type="button" class="btn btn-danger" id="btnBatchDeleteAdmin" onclick="confirmBatchDeleteAdmin()" style="font-weight:700;padding:6px 14px;font-size:12px">🗑️ Excluir Selecionados do Banco</button><button type="button" class="btn btn-outline" onclick="clearSelectedRows()" style="padding:6px 12px;font-size:12px;background:#fff">Desmarcar todos</button></div></div><table><thead><tr><th class="admin-th-select"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAllRows(this.checked)" title="Selecionar todos os atendimentos exibidos" style="cursor:pointer;width:16px;height:16px"></th><th>Paciente</th><th>Data</th><th>Profissional</th><th>Dados</th><th>Status</th><th>Atualizado</th><th></th></tr></thead><tbody id="tbody"></tbody></table><div class="empty" id="empty" style="display:none">Nenhum atendimento encontrado para os filtros atuais.</div></section>
 <div class="notice">Fonte principal da Gestão: <strong>PostgreSQL/backend</strong>. O LocalStorage permanece como contingência local para rascunhos e recuperação no próprio navegador.</div></div></main></div>
 <div class="modal" id="detailModal"><div class="dialog detail-modal-dialog"><div class="dialog-head"><div><strong id="detailTitle">Atendimento</strong><span id="detailSub"></span></div><div class="esisla-toolbar"><button class="btn btn-esisla" id="generateEsislaBtn">Gerar ficha eSisla</button><button class="btn" onclick="closeModal('detailModal')">Fechar</button></div></div><div id="detailBody" class="detail"></div><div class="dialog-foot"><button class="btn" id="openEvalBtn">Abrir atendimento</button><button class="btn" id="historyBtn">Histórico</button></div></div></div>
 <div class="modal" id="esislaModal">
@@ -1833,9 +1855,12 @@ body.modal-lock { overscroll-behavior: none; }
             <button class="btn-copy-mini" id="esislaToggleEditBtn" type="button" onclick="toggleEditEsisla()" title="Clique para liberar ou bloquear a edição manual do texto">
               ✏️ Editar
             </button>
-            <button class="btn-copy-mini" type="button" onclick="copyEsislaJson()" style="color:#1E40AF;font-weight:700" title="Copiar ficha em formato JSON">{ } Copiar JSON</button>
-            <button class="btn-copy-mini" type="button" onclick="copyEsislaScript()" style="color:#0D542B;font-weight:700" title="Copiar script com o JSON para preencher no Console do e-Sisla (F12)">⚡ Script F12</button>
-            <button class="btn-copy-mini" id="esislaCopyHeaderBtn" type="button" onclick="copyEsisla()">📋 Copiar texto</button>
+            <button class="btn-copy-mini" type="button" onclick="generateEsislaPDF()" style="color:#0F3254;font-weight:700" title="Gerar e salvar ou imprimir arquivo PDF desta ficha e-Sisla">
+              📄 Gerar PDF
+            </button>
+            <button class="btn-copy-mini" type="button" onclick="copyEsislaScript()" style="color:#0D542B;font-weight:700" title="Copiar script com o JSON para preencher no Console do e-Sisla (F12)">
+              ⚡ Script F12
+            </button>
           </div>
         </div>
         <textarea id="esislaText" class="esisla-text locked" readonly spellcheck="false" aria-label="Ficha eSisla gerada" placeholder="Aguardando geração da ficha..."></textarea>
@@ -1845,12 +1870,11 @@ body.modal-lock { overscroll-behavior: none; }
     <div class="dialog-foot esisla-modal-foot">
       <div class="esisla-foot-left">
         <button class="btn btn-download-file" id="downloadEsislaBtn" onclick="downloadEsisla()">📥 Baixar (.txt)</button>
-        <button class="btn btn-download-file" id="downloadEsislaJsonBtn" onclick="downloadEsislaJson()" style="border-color:#93C5FD;color:#1E40AF">📥 Baixar (.json)</button>
         <button class="btn btn-outline" id="regenerateEsislaBtn" onclick="generateEsisla(window.currentEsislaEnc, true)">🔄 Apagar Cache e Refazer</button>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
-        <button class="btn btn-outline" onclick="copyEsislaJson()" style="color:#1E40AF;border-color:#93C5FD;font-weight:700">{ } Copiar JSON</button>
-        <button class="btn btn-esisla btn-copy-hero" id="copyEsislaBtn" onclick="copyEsisla()">Copiar Ficha Completa</button>
+        <button class="btn btn-outline" type="button" onclick="generateEsislaPDF()" style="color:#0F3254;font-weight:700">📄 Gerar PDF</button>
+        <button class="btn btn-esisla btn-copy-hero" id="copyEsislaBtn" onclick="copyEsislaScript()">⚡ Script F12</button>
       </div>
     </div>
   </div>
@@ -1860,7 +1884,10 @@ body.modal-lock { overscroll-behavior: none; }
 
 <script>
 let accessToken = null;
+let currentUserProfile = null;
+const isAdmin = () => ["Administrador", "Coordenador", "Gestor"].includes(currentUserProfile?.perfil || "") || (window.AmbientalAuth && AmbientalAuth.can && AmbientalAuth.can('delete'));
 const authReady = AmbientalAuth.requireAuth({area:'gestao'}).then(async profile=>{
+    currentUserProfile = profile;
     accessToken = await AmbientalAuth.getAccessToken();
     const name = document.getElementById('userName');
     const role = document.getElementById('userRole');
@@ -1932,12 +1959,12 @@ async function fetchServer(){
     const empty=document.getElementById('empty');if(!serverItems.length)empty.textContent='Nenhum atendimento encontrado no LocalStorage ou no backend.';else empty.textContent='';return remote.length>0||localItems.length>0;
 }
 function setTab(v){tab=v;document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===v));const f=document.getElementById('filter');f.value=v==='all'?'all':({draft:'RASCUNHO',review:'EM_REVISÃO',done:'FINALIZADO',archived:'ARQUIVADO'}[v]||'all');fetchServer().then(refresh)}
-function refresh(){const q=document.getElementById('search').value.trim().toLowerCase();const medico=document.getElementById('medico').value.trim().toLowerCase();const cid=document.getElementById('cid').value.trim().toLowerCase();const unidade=document.getElementById('unidade').value.trim().toLowerCase();const ini=document.getElementById('periodoInicio').value;const fim=document.getElementById('periodoFim').value;const sort=document.getElementById('sort').value;let list=serverItems.filter(r=>{const v=values(r),st=statusOf(r),d=String(v.date||'');if(tab==='draft'&&st!=='RASCUNHO')return false;if(tab==='review'&&st!=='EM_REVISÃO')return false;if(tab==='done'&&st!=='FINALIZADO')return false;if(tab==='archived'&&st!=='ARQUIVADO')return false;if(document.getElementById('filter').value!=='all'&&st!==document.getElementById('filter').value)return false;if(medico&&!String(v.doctor).toLowerCase().includes(medico))return false;if(cid&&!String(v.cid).toLowerCase().includes(cid))return false;if(unidade&&!String(v.unidade).toLowerCase().includes(unidade))return false;if(ini&&d<ini)return false;if(fim&&d>fim)return false;return !q||hay(r,q)});list.sort((a,b)=>sort==='patient'?String(values(a).patient||'').localeCompare(String(values(b).patient||''),'pt-BR',{sensitivity:'base'}):sort==='date'?String(b.aux?.dataAtd||'').localeCompare(String(a.aux?.dataAtd||'')):String(b.__registryAt||b.atualizado_em||'').localeCompare(String(a.__registryAt||a.atualizado_em||'')));document.getElementById('empty').style.display=list.length?'none':'block';document.getElementById('tbody').innerHTML=list.map(row).join('');renderRecentHistory();const rc=document.getElementById('resultCount');if(rc)rc.textContent=`${list.length} resultado${list.length===1?'':'s'}`;const sc=document.getElementById('searchViewCount');if(sc)sc.textContent=`${list.length} resultado${list.length===1?'':'s'}`}
+function refresh(){const q=document.getElementById('search').value.trim().toLowerCase();const medico=document.getElementById('medico').value.trim().toLowerCase();const cid=document.getElementById('cid').value.trim().toLowerCase();const unidade=document.getElementById('unidade').value.trim().toLowerCase();const ini=document.getElementById('periodoInicio').value;const fim=document.getElementById('periodoFim').value;const sort=document.getElementById('sort').value;let list=serverItems.filter(r=>{const v=values(r),st=statusOf(r),d=String(v.date||'');if(tab==='draft'&&st!=='RASCUNHO')return false;if(tab==='review'&&st!=='EM_REVISÃO')return false;if(tab==='done'&&st!=='FINALIZADO')return false;if(tab==='archived'&&st!=='ARQUIVADO')return false;if(document.getElementById('filter').value!=='all'&&st!==document.getElementById('filter').value)return false;if(medico&&!String(v.doctor).toLowerCase().includes(medico))return false;if(cid&&!String(v.cid).toLowerCase().includes(cid))return false;if(unidade&&!String(v.unidade).toLowerCase().includes(unidade))return false;if(ini&&d<ini)return false;if(fim&&d>fim)return false;return !q||hay(r,q)});list.sort((a,b)=>sort==='patient'?String(values(a).patient||'').localeCompare(String(values(b).patient||''),'pt-BR',{sensitivity:'base'}):sort==='date'?String(b.aux?.dataAtd||'').localeCompare(String(a.aux?.dataAtd||'')):String(b.__registryAt||b.atualizado_em||'').localeCompare(String(a.__registryAt||a.atualizado_em||'')));document.getElementById('empty').style.display=list.length?'none':'block';document.getElementById('tbody').innerHTML=list.map(row).join('');updateBulkToolbar();renderRecentHistory();const rc=document.getElementById('resultCount');if(rc)rc.textContent=`${list.length} resultado${list.length===1?'':'s'}`;const sc=document.getElementById('searchViewCount');if(sc)sc.textContent=`${list.length} resultado${list.length===1?'':'s'}`}
 function clearFilters(navigateToSearch = false){['search','medico','cid','unidade','periodoInicio','periodoFim'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});const f=document.getElementById('filter');if(f)f.value='all';const so=document.getElementById('sort');if(so)so.value='updated';tab='all';document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab==='all'));const isDashboard=document.getElementById('view-dashboard')?.classList.contains('active');const shouldNavigate=navigateToSearch||isDashboard;if(shouldNavigate&&typeof window.goToSection==='function'){window.goToSection('atendimentos')}fetchServer().then(()=>{refresh();if(window.AmbientalUtils?.toast){AmbientalUtils.toast('Filtros redefinidos com sucesso!')}})}
 function focusSearch(){if(typeof window.goToSection==='function'){window.goToSection('atendimentos')}else{const v=document.getElementById('view-busca');if(v)document.querySelectorAll('.admin-view').forEach(x=>x.classList.toggle('active',x===v))}setTimeout(()=>{const el=document.getElementById('search');if(el){el.focus();try{el.scrollIntoView({behavior:'smooth',block:'center'})}catch(_){}}},120)}
 document.addEventListener('keydown',e=>{if(e.key==='/'&&document.activeElement?.tagName!=='INPUT'&&document.activeElement?.tagName!=='TEXTAREA'){e.preventDefault();focusSearch()}if(e.key==='Escape'&&document.activeElement===document.getElementById('search'))document.getElementById('search').blur()});
 let latestStats=null;function pct(n,d){return d?Math.round((Number(n||0)/Number(d||0))*100):0}function setBar(id,value,total,valId){const width=total?Math.max(0,Math.min(100,(Number(value||0)/Number(total))*100)):0;const el=document.getElementById(id);if(el)el.style.width=width+'%';const v=document.getElementById(valId);if(v)v.textContent=Number(value||0)}function renderStats(s){latestStats=s||{};document.getElementById('statTotal').textContent=s.total??0;document.getElementById('statDraft').textContent=s.rascunhos??0;document.getElementById('statReview').textContent=s.revisao??0;document.getElementById('statDone').textContent=s.finalizados??0;document.getElementById('statArchived').textContent=s.arquivados??0;document.getElementById('statPending').textContent=s.pendentes??0;document.getElementById('statRecent').textContent=s.atualizados_recentes??0;document.getElementById('dashTotal').textContent=s.total??0;document.getElementById('dashRecent').textContent=(s.atualizados_recentes??0)+' atualizados recentemente';document.getElementById('dashDone').textContent=s.finalizados??0;document.getElementById('dashDoneRate').textContent=pct(s.finalizados,s.total)+'% do total';document.getElementById('dashFav').textContent=s.favoraveis??0;document.getElementById('dashFavRate').textContent=pct(s.favoraveis,s.total)+'% dos registros';document.getElementById('dashContra').textContent=s.contrarios??0;document.getElementById('dashContraRate').textContent=pct(s.contrarios,s.total)+'% dos registros';document.getElementById('dashPending').textContent=s.pendentes??0;document.getElementById('dashComplete').textContent=(s.completude_media??0)+'%';document.getElementById('dashAlerts').textContent=s.alertas??0;document.getElementById('dashDoctors').textContent=s.medicos_ativos_na_gestao??0;setBar('barFav',s.favoraveis,s.total,'barFavVal');setBar('barContra',s.contrarios,s.total,'barContraVal');setBar('barUndefined',s.pareceres_nao_definidos,s.total,'barUndefinedVal');setBar('barDone',s.finalizados,s.total,'barDoneVal');setBar('barReview',s.revisao,s.total,'barReviewVal');setBar('barDraft',s.rascunhos,s.total,'barDraftVal');const body=document.getElementById('doctorDashboardBody');const rows=Array.isArray(s.por_medico)?s.por_medico:[];body.innerHTML=rows.length?rows.map(d=>`<tr><td>${esc(d.medico)}<div class="doctor-rate">${pct(d.finalizados,d.total)}% finalizados</div></td><td class="doctor-num">${d.total||0}</td><td class="doctor-num">${d.finalizados||0}</td><td class="doctor-num">${d.favoraveis||0}</td><td class="doctor-num">${d.contrarios||0}</td><td class="doctor-num">${pct(d.finalizados,d.total)}%</td></tr>`).join(''):'<tr><td colspan="6" style="text-align:center;color:#8A99AC;padding:18px">Nenhum atendimento disponível no escopo atual.</td></tr>'}
-function row(r){const v=values(r),st=statusOf(r),cls=st==='FINALIZADO'?'done':st==='EM_REVISÃO'?'review':st==='REABERTO'?'reopened':st==='ARQUIVADO'?'archived':'';let more='';if(st==='RASCUNHO')more+=`<button onclick="openEval('${encodeURIComponent(v.atd)}')">Continuar</button><button onclick="openReason('archive','${encodeURIComponent(v.atd)}')">Arquivar</button>`;if(st==='EM_REVISÃO'||st==='REABERTO')more+=`<button onclick="openEval('${encodeURIComponent(v.atd)}')">Continuar</button><button onclick="openReason('archive','${encodeURIComponent(v.atd)}')">Arquivar</button>`;if(st==='FINALIZADO')more+=`<button onclick="openReason('reopen','${encodeURIComponent(v.atd)}')">Reabrir</button><button onclick="openDocument('${encodeURIComponent(v.atd)}')">Visualizar documento</button><button onclick="openReason('archive','${encodeURIComponent(v.atd)}')">Arquivar</button>`;if(st==='ARQUIVADO')more+=`<button onclick="openReason('restore','${encodeURIComponent(v.atd)}')">Restaurar</button>`;return`<tr><td><span class="main-id">${esc(v.patient||'Paciente não informado')}</span>${v.cpf?`<span class="sub">CPF: ${esc(v.cpf)}</span>`:''}<span class="sub">${esc(v.doenca||'Avaliação médico-pericial')}</span></td><td><strong>${esc(date(v.date))}</strong>${v.time?`<span class="sub">${esc(v.time)} · horário de início</span>`:'<span class="sub">Horário não informado</span>'}</td><td><span class="main-name">${esc(v.doctor||'Médico não informado')}</span>${v.crm?`<span class="sub">CRM/CRO: ${esc(v.crm)}</span>`:''}</td><td><b>${esc(v.cargo&&v.cargo!=='—'?v.cargo:'Cargo não informado')}</b><span class="sub">${v.unidade?`Unidade: ${esc(v.unidade)} · `:''}CID: ${esc(v.cid||'—')} · ${esc(v.idade||'—')} anos</span>${v.dias?`<span class="sub">Dias solicitados: ${esc(v.dias)}</span>`:''}</td><td><span class="badge ${cls}"><span class="dot"></span>${esc(stateLabel[st]||st)}</span></td><td><strong>${esc(dt(v.updated))}</strong></td><td><div class="row-actions"><button class="row-btn-open" type="button" onclick="view('${encodeURIComponent(v.atd)}')" title="Visualizar ficha completa do atendimento"><span>Abrir ficha</span><span class="row-btn-arrow">→</span></button><details class="more"><summary class="row-btn-more" title="Mais opções para este atendimento"><span>Mais</span><span class="more-caret">▾</span></summary><div class="more-menu">${more}<button onclick="openHistory('${encodeURIComponent(v.atd)}')">Ver histórico</button></div></details></div></td></tr>`}
+function row(r){const v=values(r),st=statusOf(r),cls=st==='FINALIZADO'?'done':st==='EM_REVISÃO'?'review':st==='REABERTO'?'reopened':st==='ARQUIVADO'?'archived':'';const id=v.atd||r.atendimento||r.id||'';const isSelected=selectedAtdIds.has(String(id));const adminMode=isAdmin();let more='';if(st==='RASCUNHO')more+=`<button onclick="openEval('${encodeURIComponent(v.atd)}')">Continuar</button><button onclick="openReason('archive','${encodeURIComponent(v.atd)}')">Arquivar</button>`;if(st==='EM_REVISÃO'||st==='REABERTO')more+=`<button onclick="openEval('${encodeURIComponent(v.atd)}')">Continuar</button><button onclick="openReason('archive','${encodeURIComponent(v.atd)}')">Arquivar</button>`;if(st==='FINALIZADO')more+=`<button onclick="openReason('reopen','${encodeURIComponent(v.atd)}')">Reabrir</button><button onclick="openDocument('${encodeURIComponent(v.atd)}')">Visualizar documento</button><button onclick="openReason('archive','${encodeURIComponent(v.atd)}')">Arquivar</button>`;if(st==='ARQUIVADO')more+=`<button onclick="openReason('restore','${encodeURIComponent(v.atd)}')">Restaurar</button>`;if(adminMode)more+=`<button onclick="confirmSingleDeleteAdmin('${encodeURIComponent(id)}')" style="color:#DC2626;font-weight:700">🗑️ Excluir do Banco</button>`;const selectTd=`<td class="admin-td-select"><input type="checkbox" class="row-select-checkbox" data-id="${esc(id)}" onchange="toggleRowSelect('${esc(id)}', this.checked)" ${isSelected?'checked':''} style="cursor:pointer;width:16px;height:16px" title="Selecionar para exclusão"></td>`;return`<tr>${selectTd}<td class="col-patient"><span class="main-id">${esc(v.patient||'Paciente não informado')}</span>${v.cpf?`<span class="sub">CPF: ${esc(v.cpf)}</span>`:''}<span class="sub sub-clamp" title="${esc(v.doenca||'Avaliação médico-pericial')}">${esc(v.doenca||'Avaliação médico-pericial')}</span></td><td><strong>${esc(date(v.date))}</strong>${v.time?`<span class="sub">${esc(v.time)} · horário de início</span>`:'<span class="sub">Horário não informado</span>'}</td><td><span class="main-name">${esc(v.doctor||'Médico não informado')}</span>${v.crm?`<span class="sub">CRM/CRO: ${esc(v.crm)}</span>`:''}</td><td><b>${esc(v.cargo&&v.cargo!=='—'?v.cargo:'Cargo não informado')}</b><span class="sub">${v.unidade?`Unidade: ${esc(v.unidade)} · `:''}CID: ${esc(v.cid||'—')} · ${esc(v.idade||'—')} anos</span>${v.dias?`<span class="sub">Dias solicitados: ${esc(v.dias)}</span>`:''}</td><td><span class="badge ${cls}"><span class="dot"></span>${esc(stateLabel[st]||st)}</span></td><td><strong>${esc(dt(v.updated))}</strong></td><td><div class="row-actions"><button class="row-btn-open" type="button" onclick="view('${encodeURIComponent(v.atd)}')" title="Visualizar ficha completa do atendimento"><span>Abrir ficha</span><span class="row-btn-arrow">→</span></button><details class="more"><summary class="row-btn-more" title="Mais opções para este atendimento"><span>Mais</span><span class="more-caret">▾</span></summary><div class="more-menu">${more}<button onclick="openHistory('${encodeURIComponent(v.atd)}')">Ver histórico</button></div></details></div></td></tr>`}
 function find(id){return serverItems.find(x=>String(x.atendimento)===id)}
 async function view(enc){
     const id=decodeURIComponent(enc),r=find(id);
@@ -2546,6 +2573,311 @@ function downloadEsislaJson(){
     if (window.AmbientalUtils?.toast) {
         AmbientalUtils.toast('Download da ficha e-Sisla (.json) iniciado com sucesso!');
     }
+}
+
+/* =========================================================
+   GERAÇÃO DE PDF E-SISLA E GESTÃO / EXCLUSÃO DE BANCO
+   ========================================================= */
+const selectedAtdIds = new Set();
+
+function toggleRowSelect(id, checked) {
+  if (checked) {
+    selectedAtdIds.add(String(id));
+  } else {
+    selectedAtdIds.delete(String(id));
+  }
+  updateBulkToolbar();
+}
+
+function toggleSelectAllRows(checked) {
+  const cbs = document.querySelectorAll(".row-select-checkbox");
+  cbs.forEach(cb => {
+    cb.checked = checked;
+    const id = cb.getAttribute("data-id");
+    if (id) {
+      if (checked) selectedAtdIds.add(String(id));
+      else selectedAtdIds.delete(String(id));
+    }
+  });
+  updateBulkToolbar();
+}
+
+function clearSelectedRows() {
+  selectedAtdIds.clear();
+  const selectAll = document.getElementById("selectAllCheckbox");
+  if (selectAll) selectAll.checked = false;
+  document.querySelectorAll(".row-select-checkbox").forEach(cb => { cb.checked = false; });
+  updateBulkToolbar();
+}
+
+function updateBulkToolbar() {
+  const bar = document.getElementById("bulkActionsToolbar");
+  const badge = document.getElementById("selectedCountBadge");
+  const count = selectedAtdIds.size;
+  if (badge) badge.textContent = count;
+  if (bar) {
+    bar.style.display = count > 0 ? "flex" : "none";
+  }
+  const selectAll = document.getElementById("selectAllCheckbox");
+  const cbs = document.querySelectorAll(".row-select-checkbox");
+  if (selectAll && cbs.length > 0) {
+    selectAll.checked = count > 0 && Array.from(cbs).every(cb => cb.checked);
+  }
+}
+
+async function confirmBatchDeleteAdmin() {
+  const ids = Array.from(selectedAtdIds);
+  if (!ids.length) {
+    alert("Selecione pelo menos um atendimento para excluir.");
+    return;
+  }
+  const confirmMsg = `ATENÇÃO: Deseja realmente EXCLUIR PERMANENTEMENTE ${ids.length} atendimento(s) do banco de dados?\n\nEsta ação apagará definitivamente os atendimentos de teste e não poderá ser desfeita.`;
+  if (!confirm(confirmMsg)) return;
+
+  const btn = document.getElementById("btnBatchDeleteAdmin");
+  if (btn) { btn.disabled = true; btn.textContent = "Excluindo..."; }
+
+  try {
+    const token = accessToken || await AmbientalAuth.getAccessToken();
+    const res = await fetch("/api/admin/atendimentos/batch-delete", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ ids: ids })
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data?.success) {
+      throw new Error(data?.error?.message || data?.detail || "Falha ao excluir atendimentos do banco.");
+    }
+
+    try {
+      let locals = JSON.parse(localStorage.getItem(REGISTRY_KEY) || "[]");
+      locals = locals.filter(item => !ids.includes(String(item.atendimento || item.id || "")));
+      localStorage.setItem(REGISTRY_KEY, JSON.stringify(locals));
+      localItems = locals;
+    } catch(e) {}
+
+    selectedAtdIds.clear();
+    updateBulkToolbar();
+    if (window.AmbientalUtils?.toast) {
+      AmbientalUtils.toast(data.data?.mensagem || `${ids.length} atendimento(s) excluído(s) com sucesso!`);
+    } else {
+      alert(data.data?.mensagem || `${ids.length} atendimento(s) excluído(s) com sucesso!`);
+    }
+    await fetchServer();
+    refresh();
+  } catch(err) {
+    alert("Erro ao excluir: " + (err.message || err));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "🗑️ Excluir Selecionados do Banco"; }
+  }
+}
+
+async function confirmSingleDeleteAdmin(encId) {
+  const id = decodeURIComponent(encId);
+  const r = find(id);
+  const patient = r ? (values(r).patient || id) : id;
+  const confirmMsg = `ATENÇÃO: Deseja realmente EXCLUIR PERMANENTEMENTE o atendimento de "${patient}" (ID: ${id}) do banco de dados?\n\nEsta ação não poderá ser desfeita.`;
+  if (!confirm(confirmMsg)) return;
+
+  try {
+    const token = accessToken || await AmbientalAuth.getAccessToken();
+    const res = await fetch(`/api/admin/atendimentos/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data?.success) {
+      throw new Error(data?.error?.message || data?.detail || "Falha ao excluir atendimento do banco.");
+    }
+
+    try {
+      let locals = JSON.parse(localStorage.getItem(REGISTRY_KEY) || "[]");
+      locals = locals.filter(item => String(item.atendimento || item.id || "") !== id);
+      localStorage.setItem(REGISTRY_KEY, JSON.stringify(locals));
+      localItems = locals;
+    } catch(e) {}
+
+    selectedAtdIds.delete(id);
+    updateBulkToolbar();
+    if (window.AmbientalUtils?.toast) {
+      AmbientalUtils.toast("Atendimento excluído permanentemente do banco de dados!");
+    } else {
+      alert("Atendimento excluído permanentemente do banco de dados!");
+    }
+    await fetchServer();
+    refresh();
+  } catch(err) {
+    alert("Erro ao excluir: " + (err.message || err));
+  }
+}
+
+function generateEsislaPDF() {
+  const text = document.getElementById('esislaText')?.value || '';
+  if (!text.trim()) {
+    alert("Gere o conteúdo da ficha e-Sisla antes de imprimir ou salvar em PDF.");
+    return;
+  }
+  const enc = window.currentEsislaEnc;
+  const r = enc ? find(decodeURIComponent(enc)) : null;
+  const v = r ? values(r) : {};
+  const patient = v.patient || 'Servidor/Periciado';
+  const cpf = v.cpf || '';
+  const cargo = v.cargo || '';
+  const dateStr = v.date ? date(v.date) : new Date().toLocaleDateString('pt-BR');
+  const medico = v.doctor || '';
+  const crm = v.crm || '';
+  const atdId = v.atd || (r ? r.atendimento : '') || '';
+
+  const win = window.open('', '_blank', 'width=900,height=800');
+  if (!win) {
+    alert("Pop-up bloqueado pelo navegador. Permita pop-ups para gerar o PDF.");
+    return;
+  }
+
+  const escapeHtml = str => String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const formattedText = escapeHtml(text);
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Ficha Médico-Pericial e-Sisla - ${escapeHtml(patient)}</title>
+  <style>
+    @page { size: A4; margin: 18mm 15mm 18mm 15mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.5;
+      color: #1e293b;
+      margin: 0;
+      padding: 24px;
+      background: #fff;
+    }
+    .header {
+      border-bottom: 2px solid #0F3254;
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .header-titles h1 {
+      font-size: 15pt;
+      font-weight: 800;
+      color: #0F3254;
+      margin: 0 0 4px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .header-titles h2 {
+      font-size: 11pt;
+      font-weight: 600;
+      color: #334155;
+      margin: 0;
+    }
+    .meta-box {
+      background: #F8FAFC;
+      border: 1px solid #CBD5E1;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 8px 16px;
+      font-size: 10pt;
+    }
+    .meta-item { display: flex; gap: 6px; }
+    .meta-item strong { color: #0F3254; min-width: 80px; }
+    .content-box {
+      font-family: "Courier New", Courier, monospace;
+      font-size: 10pt;
+      line-height: 1.55;
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 6px;
+      padding: 16px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #0f172a;
+    }
+    .footer {
+      margin-top: 24px;
+      padding-top: 12px;
+      border-top: 1px solid #CBD5E1;
+      display: flex;
+      justify-content: space-between;
+      font-size: 8.5pt;
+      color: #64748B;
+    }
+    .no-print {
+      margin-bottom: 16px;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .btn-print {
+      background: #0F3254;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 11pt;
+      cursor: pointer;
+    }
+    @media print {
+      .no-print { display: none !important; }
+      body { padding: 0; }
+      .content-box { border: none; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print">
+    <button class="btn-print" onclick="window.print()">🖨️ Salvar como PDF / Imprimir</button>
+  </div>
+  <div class="header">
+    <div class="header-titles">
+      <h1>Diretoria de Perícias Médicas do Estado — DPME / SP</h1>
+      <h2>Ficha Pericial e-Sisla — Avaliação Médico-Pericial</h2>
+    </div>
+    <div style="text-align:right;font-size:9pt;color:#64748B">
+      <div>Data de Emissão: ${escapeHtml(dateStr)}</div>
+      ${atdId ? `<div>Atendimento: <strong>${escapeHtml(atdId)}</strong></div>` : ''}
+    </div>
+  </div>
+
+  <div class="meta-box">
+    <div class="meta-item"><strong>Paciente:</strong> <span>${escapeHtml(patient)}</span></div>
+    <div class="meta-item"><strong>CPF:</strong> <span>${escapeHtml(cpf || '—')}</span></div>
+    <div class="meta-item"><strong>Cargo:</strong> <span>${escapeHtml(cargo || '—')}</span></div>
+    <div class="meta-item"><strong>Médico:</strong> <span>${escapeHtml(medico || '—')} ${crm ? `(CRM: ${escapeHtml(crm)})` : ''}</span></div>
+  </div>
+
+  <div class="content-box">${formattedText}</div>
+
+  <div class="footer">
+    <span>Documento gerado automaticamente pelo Sistema Ambiental Perícias Médicas</span>
+    <span>Padrão e-Sisla DPME/SP</span>
+  </div>
+
+  <script>
+    window.addEventListener('load', function() {
+      setTimeout(function() { window.print(); }, 400);
+    });
+  <\/script>
+</body>
+</html>`;
+
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
 }
 
 async function triggerRefresh(){

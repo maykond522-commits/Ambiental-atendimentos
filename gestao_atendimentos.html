@@ -2345,12 +2345,16 @@ async function generateEsisla(enc, forceRefresh = false){
         if(overlay){overlay.classList.add('show');overlay.setAttribute('aria-busy','true');}
         setStage(1,'Gerando ficha eSisla','Lendo os dados completos do atendimento...',18);
         let full = r;
-        if(r.__source === 'server' && !r.payload){
-            const detailResponse = await AmbientalAuth.authFetch('/api/atendimentos/' + encodeURIComponent(id), {cache:'no-store'});
-            const detailBody = await detailResponse.json().catch(()=>null);
-            if(!detailResponse.ok || !detailBody?.success || !detailBody?.data?.payload) throw new Error(detailBody?.error?.message || 'Não foi possível carregar os dados completos do atendimento.');
-            full = {...r, ...detailBody.data.payload, payload: detailBody.data.payload};
+        if (!full?.payload || !full?.payload?.cid || (r.__source === 'server' && !r.payload)) {
+            try {
+                const detailResponse = await AmbientalAuth.authFetch('/api/atendimentos/' + encodeURIComponent(id), {cache:'no-store'});
+                const detailBody = await detailResponse.json().catch(()=>null);
+                if (detailResponse.ok && detailBody?.success && detailBody?.data?.payload) {
+                    full = {...r, ...detailBody.data.payload, payload: detailBody.data.payload};
+                }
+            } catch(_) {}
         }
+        window.currentDetailFull = full;
         setStage(2,'Estruturando ficha','Organizando os campos no formato oficial...',48);
         const payload = normalizeRecordPayload(full); payload.data_hora_atual = new Date().toISOString();
         if(forceRefresh){payload.force_refresh=true; if(sub)sub.textContent='Atualizando a ficha com os dados mais recentes do servidor...';}
@@ -2384,48 +2388,134 @@ function renderEsislaBlocos(textoFicha) {
         return;
     }
 
+    const enc = window.currentEsislaEnc;
+    let recordObj = null;
+    if (enc && typeof enc === 'object') {
+        recordObj = enc;
+    } else if (typeof enc === 'string' && enc) {
+        recordObj = typeof currentRecord === 'function' ? currentRecord(enc) : null;
+    }
+    if (!recordObj && window.currentDetailFull) {
+        recordObj = window.currentDetailFull;
+    }
+    const st = recordObj?.payload || recordObj || {};
+    const aux = st.aux || recordObj?.aux || {};
+
     function ext(t, i, f) {
         if (!t) return '';
-        const si = i.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-        const sf = f ? f.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') : '';
-        const rx = new RegExp(si + '\\s*([\\s\\S]*?)\\s*(?=' + sf + '|$)', 'i');
+        function toRegex(s) {
+            if (!s) return '';
+            let p = s.replace(/:+$/, '').trim();
+            p = p.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            p = p.replace(/\\\(\\\*\\\)\s*/g, '\\(\\s*\\*\\s*\\)\\s*');
+            return p + ':?';
+        }
+        const si = toRegex(i);
+        const sf = toRegex(f);
+        const rx = new RegExp(si + '\\s*([\\s\\S]*?)\\s*(?=' + (sf ? sf : '$') + '|$)', 'i');
         const m = t.match(rx);
         return m ? m[1].trim() : '';
     }
 
-    const queixa = ext(str, '(*) Queixa e Duração:', 'Antecedentes Mórbidos:');
-    const antecedentes = ext(str, 'Antecedentes Mórbidos:', 'Atestado/Relatório/Exames');
-    const atestado = ext(str, 'Atestado/Relatório/Exames Complementares (Tipo-Data-Resultado):', 'Pressão Arterial');
+    const queixa = ext(str, '(*) Queixa e Duração', 'Antecedentes Mórbidos') || st.queixaDuracao || aux.queixaDuracao || '';
+    const antecedentes = ext(str, 'Antecedentes Mórbidos', 'Atestado') || st.historicoPregresso || aux.historicoPregresso || st.antecedentes || aux.antecedentes || '';
+    const atestado = ext(str, 'Atestado/Relatório/Exames Complementares', 'Pressão Arterial') || ext(str, 'Atestado', 'Pressão Arterial') || st.documentosApresentados || aux.documentosApresentados || '';
     
-    // Sinais Vitais
-    const paSis = ext(str, 'Sistólica (mmHg):', 'Diastólica');
-    const paDia = ext(str, 'Diastólica (mmHg):', 'Pulso');
-    const pulso = ext(str, 'Pulso (bpm):', 'Altura');
-    const altura = ext(str, 'Altura:', 'Peso');
-    const peso = ext(str, 'Peso:', '(*)Exame');
+    // Sinais Vitais e Biometria
+    const paSis = ext(str, 'Sistólica (mmHg)', 'Diastólica') || ext(str, 'Sistólica', 'Diastólica') || st.pressaoSistolica || aux.pressaoSistolica || '';
+    const paDia = ext(str, 'Diastólica (mmHg)', 'Pulso') || ext(str, 'Diastólica', 'Pulso') || st.pressaoDiastolica || aux.pressaoDiastolica || '';
+    const pulso = ext(str, 'Pulso (bpm)', 'Altura') || ext(str, 'Pulso', 'Altura') || st.pulso || aux.pulso || '';
+    let altura = ext(str, 'Altura', 'Peso') || st.altura || aux.altura || st.agilAltura || aux.agilAltura || st.biotipoAltura || aux.biotipoAltura || '';
+    let peso = ext(str, 'Peso', '(*)Exame') || ext(str, 'Peso', 'Descrição') || st.peso || aux.peso || st.agilPeso || aux.agilPeso || st.biotipoPeso || aux.biotipoPeso || '';
 
-    const exameFisico = ext(str, '(*)Exame Físico Geral:', 'Descrição das Alterações Clínicas');
-    const alteracoes = ext(str, 'Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:', '(*)Descrição da(s) Limitação');
-    const limitacoes = ext(str, '(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):', '(*)Parecer Médico');
+    let altFormat = altura;
+    if (altFormat) {
+        let s = String(altFormat).trim().replace(/[^\d,\.]/g, '');
+        if (s.includes('.')) s = s.replace('.', ',');
+        else if (!s.includes(',') && s.length >= 3) s = s.slice(0, 1) + ',' + s.slice(1, 3);
+        altFormat = s;
+    }
+    const pesoDigits = String(peso || '').replace(/\D/g, '').slice(0, 3);
+
+    // Exame Físico Geral e Tipo/Checkbox
+    const exameFisico = ext(str, '(*)Exame Físico Geral', 'Descrição das Alterações Clínicas') || st.exameFisicoDescricao || aux.exameFisicoDescricao || st.agilExameFisicoDescricao || aux.agilExameFisicoDescricao || '';
+    const exTipo = st.exameFisicoTipo || aux.exameFisicoTipo || st.agilExameFisicoTipo || aux.agilExameFisicoTipo || '';
+    const outrosSub = st.outrosSubtipo || aux.outrosSubtipo || st.areaExameClinico || aux.areaExameClinico || '';
+    let sistemaNome = exTipo;
+    if ((exTipo === 'Outros' || !exTipo) && outrosSub) {
+        sistemaNome = outrosSub;
+    }
+    if (!sistemaNome && (st.cid || aux.cid)) {
+        const c = String(st.cid || aux.cid).toUpperCase();
+        if (c.startsWith('M')) sistemaNome = 'Aparelho Osteomuscular e Tecido Conjuntivo';
+        else if (c.startsWith('F')) sistemaNome = 'Exame Mental';
+    }
+
+    const alteracoes = ext(str, 'Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares', '(*)Descrição da(s) Limitação') 
+        || ext(str, 'Descrição das Alterações Clínicas', '(*)Descrição da(s) Limitação') 
+        || st.alteracoesClinicasExames || aux.alteracoesClinicasExames || '';
+    const limitacoes = ext(str, '(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)', '(*)Parecer Médico') 
+        || ext(str, '(*)Descrição da(s) Limitação', '(*)Parecer Médico') 
+        || st.descLimitacao || aux.descLimitacao || st.limitacaoFuncional || '';
     
     // Parecer
-    const parecerBloco = ext(str, '(*)Parecer Médico:', '(*)Resposta aos quesitos');
-    const parecerTipo = (parecerBloco.match(/Parecer:\s*([^\n\r]+)/i) || [])[1]?.trim() || (parecerBloco.toUpperCase().includes('CONTRÁRIO') ? 'CONTRÁRIO' : (parecerBloco.toUpperCase().includes('FAVORÁVEL') ? 'FAVORÁVEL' : ''));
-    const dias = (parecerBloco.match(/N[ºo°]\s*Dias:\s*([^\n\r]+)/i) || [])[1]?.trim() || '';
-    const dtIni = (parecerBloco.match(/Data\s*In[íi]cio:\s*([^\n\r]+)/i) || [])[1]?.trim() || '';
-    const cid = (parecerBloco.match(/CID\s*10:\s*([^\n\r]+)/i) || [])[1]?.trim() || '';
-    const cidDesc = (parecerBloco.match(/Descri[çc][ãa]o:\s*([^\n\r]+)/i) || [])[1]?.trim() || '';
-    const medPerito = (parecerBloco.match(/M[ée]dico\s*Perito:\s*([^\n\r]+)/i) || [])[1]?.trim() || '';
-    const crmPerito = (parecerBloco.match(/CRM:\s*([^\n\r]+)/i) || [])[1]?.trim() || '';
+    const parecerBloco = ext(str, '(*)Parecer Médico', '(*)Resposta aos quesitos');
+    const parecerFinalBloco = ext(str, '(*) Parecer Final', 'FIM_INEXISTENTE') || ext(str, '(*)Parecer Final', 'FIM_INEXISTENTE');
+
+    let parecerTipo = (parecerBloco.match(/Parecer:\s*([^\n\r]+)/i) || [])[1]?.trim() || '';
+    if (!parecerTipo) {
+        if (parecerBloco.toUpperCase().includes('CONTRÁRIO') || str.toUpperCase().includes('PARECER: CONTRÁRIO')) parecerTipo = 'CONTRÁRIO';
+        else if (parecerBloco.toUpperCase().includes('FAVORÁVEL') || str.toUpperCase().includes('PARECER: FAVORÁVEL')) parecerTipo = 'FAVORÁVEL';
+        else if (st.parecer || aux.parecer) parecerTipo = String(st.parecer || aux.parecer).toUpperCase();
+    }
+
+    let dias = (parecerBloco.match(/N[ºo°\.]*\s*Dias:\s*([^\n\r]+)/i) || [])[1]?.trim()
+        || (parecerFinalBloco.match(/N[ºo°\.]*\s*Dias:\s*([^\n\r]+)/i) || [])[1]?.trim()
+        || st.diasSolicitados || aux.diasSolicitados || st.diasConcedidos || aux.diasConcedidos || '';
+    dias = dias ? String(dias).replace(/[^0-9]/g, '') : '';
+
+    let dtIni = (parecerBloco.match(/Data\s*In[íi]cio:\s*([^\n\r]+)/i) || [])[1]?.trim()
+        || (parecerFinalBloco.match(/Data\s*In[íi]cio:\s*([^\n\r]+)/i) || [])[1]?.trim()
+        || st.dataInicio || aux.dataInicio || st.dataDocumento || aux.dataDocumento || '';
+    dtIni = dtIni.split('\n')[0].trim();
+
+    let cid = (parecerBloco.match(/CID\s*(?:10)?:\s*([^\n\r]+)/i) || [])[1]?.trim()
+        || (parecerFinalBloco.match(/CID\s*(?:10)?:\s*([^\n\r]+)/i) || [])[1]?.trim()
+        || st.cid || aux.cid || '';
+
+    let cidDesc = (parecerBloco.match(/Descri[çc][ãa]o:\s*([^\n\r]+)/i) || [])[1]?.trim()
+        || (parecerFinalBloco.match(/Descri[çc][ãa]o:\s*([^\n\r]+)/i) || [])[1]?.trim()
+        || st.doencaMotivo || aux.doencaMotivo || '';
+
+    let medPerito = (parecerBloco.match(/M[ée]dico\s*Perito:\s*([^\n\r]+)/i) || [])[1]?.trim()
+        || st.medico || aux.medico || st.medicoResponsavel || '';
+
+    let crmPerito = (parecerBloco.match(/CRM:\s*([^\n\r]+)/i) || [])[1]?.trim()
+        || st.crmResponsavel || aux.crmResponsavel || '';
 
     // Quesitos
-    const q1 = ext(str, '1) Há doença(s)', '\n') || ext(str, '1)', '\n');
-    const q2 = ext(str, '2) A(s) doença(s)', '\n') || ext(str, '2)', '\n');
-    const q3 = ext(str, '3) A(s) limitação(ões)', '\n') || ext(str, '3)', '\n');
+    function getQuesitoVal(num, busca) {
+        const qStr = (ext(str, busca, '\n') || ext(str, num + ')', '\n')).toLowerCase();
+        if (qStr.includes('sim')) return 'SIM';
+        if (qStr.includes('não') || qStr.includes('nao')) return 'NÃO';
+        const qArr = st.quesitos || aux.quesitos;
+        if (Array.isArray(qArr) && qArr[num - 1]) {
+            const r = String(qArr[num - 1].resposta || qArr[num - 1] || '').trim().toLowerCase();
+            if (r === 'sim' || r === 's') return 'SIM';
+            if (r === 'não' || r === 'nao' || r === 'n') return 'NÃO';
+        }
+        return '';
+    }
+    const q1 = getQuesitoVal(1, '1) Há doença(s)');
+    const q2 = getQuesitoVal(2, '2) A(s) doença(s)');
+    const q3 = getQuesitoVal(3, '3) A(s) limitação(ões)');
 
-    let justif = ext(str, '(*)Justificativa Parecer Médico:', '(*) Parecer Final');
+    let justif = ext(str, '(*)Justificativa Parecer Médico', '(*) Parecer Final');
+    if (!justif) justif = ext(str, '(*)Justificativa Parecer Médico', 'FIM_INEXISTENTE');
     if (!justif) justif = ext(str, '(*) Justificativa Parecer Final', 'FIM_INEXISTENTE');
-    if (!justif) justif = ext(str, '(*)Justificativa Parecer Médico:', 'FIM_INEXISTENTE');
+    if (!justif) {
+        justif = st.justificativa || aux.justificativa || st.agilJustificativa || aux.agilJustificativa || '';
+    }
 
     function escTxt(v) {
         if (!v) return '<span style="color:#94A3B8;font-style:italic">Não informado</span>';
@@ -2497,11 +2587,11 @@ function renderEsislaBlocos(textoFicha) {
                 </div>
                 <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
                     <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">Altura</span>
-                    <strong style="font-size:13px;color:#0F172A">${altura ? altura + ' m' : '<span style="color:#94A3B8;font-weight:normal">Não inf.</span>'}</strong>
+                    <strong style="font-size:13px;color:#0F172A">${altFormat ? altFormat + ' m' : '<span style="color:#94A3B8;font-weight:normal">Não inf.</span>'}</strong>
                 </div>
                 <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
                     <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">Peso</span>
-                    <strong style="font-size:13px;color:#0F172A">${peso ? peso + ' kg' : '<span style="color:#94A3B8;font-weight:normal">Não inf.</span>'}</strong>
+                    <strong style="font-size:13px;color:#0F172A">${pesoDigits ? pesoDigits + ' kg' : '<span style="color:#94A3B8;font-weight:normal">Não inf.</span>'}</strong>
                 </div>
             </div>
         </div>
@@ -2511,6 +2601,12 @@ function renderEsislaBlocos(textoFicha) {
                 <span style="font-size:13px">🩺</span>
                 <span style="font-weight:800;font-size:11.5px;color:#1E3A8A;text-transform:uppercase;letter-spacing:.03em">Exame Físico Geral</span>
             </div>
+            ${sistemaNome ? `
+            <div style="margin-bottom:8px;display:flex;align-items:center;gap:6px">
+                <span style="font-size:11px;padding:3px 8px;border-radius:5px;background:#EFF6FF;color:#1D4ED8;font-weight:700;border:1px solid #BFDBFE">
+                    ☑️ Checkbox e-SISLA: ${esc(sistemaNome)}
+                </span>
+            </div>` : ''}
             <div style="font-size:12px;color:#1E293B;line-height:1.6">${escTxt(exameFisico)}</div>
         </div>
 
@@ -2842,27 +2938,64 @@ function downloadEsisla(){
 
 function gerarJsonEsisla(textoFicha, enc) {
     const texto = String(textoFicha || document.getElementById('esislaText')?.value || '');
-    const st = enc?.payload || enc || {};
-    const aux = st.aux || enc?.aux || {};
+    let recordObj = null;
+    if (enc && typeof enc === 'object') {
+        recordObj = enc;
+    } else if (typeof enc === 'string' && enc) {
+        recordObj = typeof currentRecord === 'function' ? currentRecord(enc) : null;
+    }
+    if (!recordObj && window.currentDetailFull) {
+        recordObj = window.currentDetailFull;
+    }
+    const st = recordObj?.payload || recordObj || {};
+    const aux = st.aux || recordObj?.aux || {};
 
     function ext(t, i, f) {
         if (!t) return '';
-        const si = i.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-        const sf = f ? f.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') : '';
-        const rx = new RegExp(si + '\\s*([\\s\\S]*?)\\s*(?=' + sf + '|$)', 'i');
+        function toRegex(s) {
+            if (!s) return '';
+            let p = s.replace(/:+$/, '').trim();
+            p = p.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            p = p.replace(/\\\(\\\*\\\)\s*/g, '\\(\\s*\\*\\s*\\)\\s*');
+            return p + ':?';
+        }
+        const si = toRegex(i);
+        const sf = toRegex(f);
+        const rx = new RegExp(si + '\\s*([\\s\\S]*?)\\s*(?=' + (sf ? sf : '$') + '|$)', 'i');
         const m = t.match(rx);
         return m ? m[1].trim() : '';
     }
 
-    const cat = ext(texto, '(*) Queixa e Duração:', 'Antecedentes Mórbidos:') || aux.queixaDuracao || st.queixaDuracao || aux.queixa || st.queixa || '';
-    const ap = ext(texto, 'Antecedentes Mórbidos:', 'Atestado/Relatório/Exames') || aux.historicoPregresso || st.historicoPregresso || aux.antecedentes || st.antecedentes || '';
-    const hda = ext(texto, 'Atestado/Relatório/Exames Complementares (Tipo-Data-Resultado):', 'Pressão Arterial') || aux.examesComplementares || st.examesComplementares || aux.documentosApresentados || st.documentosApresentados || '';
-    const exApres = ext(texto, 'Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:', '(*)Descrição da(s) Limitação') || aux.alteracoesClinicas || st.alteracoesClinicas || aux.exameFisico || st.exameFisico || '';
-    const reqExComp = ext(texto, '(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):', '(*)Parecer Médico') || aux.limitacoes || st.limitacoes || aux.limitacaoFuncional || st.limitacaoFuncional || '';
+    const cat = ext(texto, '(*) Queixa e Duração', 'Antecedentes Mórbidos') || aux.queixaDuracao || st.queixaDuracao || aux.queixa || st.queixa || '';
+    const ap = ext(texto, 'Antecedentes Mórbidos', 'Atestado') || aux.historicoPregresso || st.historicoPregresso || aux.antecedentes || st.antecedentes || '';
+    const hda = ext(texto, 'Atestado/Relatório/Exames Complementares', 'Pressão Arterial') || ext(texto, 'Atestado', 'Pressão Arterial') || aux.examesComplementares || st.examesComplementares || aux.documentosApresentados || st.documentosApresentados || '';
+    
+    const exameFisicoTexto = ext(texto, '(*)Exame Físico Geral', 'Descrição das Alterações Clínicas')
+        || st.exameFisicoDescricao || aux.exameFisicoDescricao || st.agilExameFisicoDescricao || aux.agilExameFisicoDescricao || '';
+    
+    const alteracoesTexto = ext(texto, 'Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares', '(*)Descrição da(s) Limitação')
+        || ext(texto, 'Descrição das Alterações Clínicas', '(*)Descrição da(s) Limitação')
+        || aux.alteracoesClinicas || st.alteracoesClinicas || aux.alteracoesClinicasExames || st.alteracoesClinicasExames || '';
+
+    // No e-SISLA o campo voMedico.parRlExApres (idExameApres) deve conter os achados do Exame Físico Geral e o Relato dos Exames Complementares
+    let exApres = exameFisicoTexto.trim();
+    if (alteracoesTexto.trim()) {
+        if (!exApres.includes(alteracoesTexto.trim())) {
+            exApres = (exApres ? exApres + '\n\n' : '') + alteracoesTexto.trim();
+        }
+    }
+    if (!exApres) {
+        exApres = aux.exameFisico || st.exameFisico || '';
+    }
+
+    const reqExComp = ext(texto, '(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)', '(*)Parecer Médico')
+        || ext(texto, '(*)Descrição da(s) Limitação', '(*)Parecer Médico')
+        || aux.limitacoes || st.limitacoes || aux.limitacaoFuncional || st.limitacaoFuncional || '';
     
     let justif = ext(texto, '(*)Justificativa Parecer Médico', '(*) Parecer Final');
+    if (!justif) justif = ext(texto, '(*)Justificativa Parecer Médico', 'FIM_INEXISTENTE');
     if (!justif) justif = ext(texto, '(*) Justificativa Parecer Final', 'FIM_INEXISTENTE');
-    if (!justif) justif = aux.justificativa || st.justificativa || '';
+    if (!justif) justif = aux.justificativa || st.justificativa || aux.agilJustificativa || st.agilJustificativa || '';
 
     let crm = aux.crm || st.crm || aux.crmAssistente || st.crmAssistente || '';
     if (!crm) {
@@ -2871,19 +3004,19 @@ function gerarJsonEsisla(textoFicha, enc) {
     }
     let nomeMed = aux.nomeMedico || st.nomeMedico || aux.medicoAssistente || st.medicoAssistente || '';
 
-    let paSis = ext(texto, 'Sistólica (mmHg):', 'Diastólica') || aux.pressaoSistolica || st.pressaoSistolica || aux.paSistolica || '';
-    let paDia = ext(texto, 'Diastólica (mmHg):', 'Pulso') || aux.pressaoDiastolica || st.pressaoDiastolica || aux.paDiastolica || '';
-    let pulso = ext(texto, 'Pulso (bpm):', '(*)Exame') || aux.pulso || st.pulso || '';
+    let paSis = ext(texto, 'Sistólica (mmHg)', 'Diastólica') || ext(texto, 'Sistólica', 'Diastólica') || aux.pressaoSistolica || st.pressaoSistolica || aux.paSistolica || '';
+    let paDia = ext(texto, 'Diastólica (mmHg)', 'Pulso') || ext(texto, 'Diastólica', 'Pulso') || aux.pressaoDiastolica || st.pressaoDiastolica || aux.paDiastolica || '';
+    let pulso = ext(texto, 'Pulso (bpm)', 'Altura') || ext(texto, 'Pulso', 'Altura') || aux.pulso || st.pulso || '';
 
     if (paSis) paSis = paSis.replace(/[^0-9]/g, '');
     if (paDia) paDia = paDia.replace(/[^0-9]/g, '');
     if (pulso) pulso = pulso.replace(/[^0-9]/g, '');
 
-    let altura = aux.altura || st.altura || aux.biotipoAltura || '';
-    let peso = aux.peso || st.peso || aux.biotipoPeso || '';
+    let altura = ext(texto, 'Altura', 'Peso') || aux.altura || st.altura || aux.biotipoAltura || st.agilAltura || aux.agilAltura || '';
+    let peso = ext(texto, 'Peso', '(*)Exame') || ext(texto, 'Peso', 'Descrição') || aux.peso || st.peso || aux.biotipoPeso || st.agilPeso || aux.agilPeso || '';
 
-    let cid1 = ext(texto, 'CID 10:', 'Descrição:').split(',')[0].trim() || st.cid || aux.cid || '';
-    let descrCid1 = ext(texto, 'Descrição:', 'Médico Perito:').split('\n')[0].trim() || aux.doencaMotivo || st.doencaMotivo || '';
+    let cid1 = ext(texto, 'CID 10', 'Descrição').split(',')[0].trim() || st.cid || aux.cid || '';
+    let descrCid1 = ext(texto, 'Descrição', 'Médico Perito').split('\n')[0].trim() || ext(texto, 'Descrição', 'Diretor DPME').split('\n')[0].trim() || aux.doencaMotivo || st.doencaMotivo || '';
     
     const cidsSec = st.cidsSecundarios || aux.cidsSecundarios || [];
     let cid2 = '';
@@ -2893,16 +3026,16 @@ function gerarJsonEsisla(textoFicha, enc) {
         descrCid2 = cidsSec[0].descricao || cidsSec[0].nome || '';
     }
 
-    let dias = ext(texto, 'Nº Dias:', 'Data Início:') || aux.diasConcedidos || st.diasConcedidos || aux.diasAfastamento || st.diasAfastamento || '';
+    let dias = ext(texto, 'Nº Dias', 'Data Início') || aux.diasConcedidos || st.diasConcedidos || aux.diasSolicitados || st.diasSolicitados || aux.diasAfastamento || st.diasAfastamento || '';
     dias = dias ? String(dias).replace(/[^0-9]/g, '') : '';
-    let dtIni = ext(texto, 'Data Início:', 'CID 10:') || aux.dataInicio || st.dataInicio || aux.dataDocumento || st.dataDocumento || '';
+    let dtIni = ext(texto, 'Data Início', 'CID 10') || aux.dataInicio || st.dataInicio || aux.dataDocumento || st.dataDocumento || '';
     dtIni = dtIni.split('\n')[0].trim();
 
-    const pText = ext(texto, '(*)Parecer Médico', 'Nº Dias:') || st.parecer || aux.parecer || '';
-    const flPfinal = pText.toUpperCase().includes('CONTRÁRIO') ? 'C' : 'F';
+    const pText = ext(texto, '(*)Parecer Médico', 'Nº Dias') || ext(texto, '(*)Parecer Médico', '(*)Resposta aos quesitos') || st.parecer || aux.parecer || '';
+    const flPfinal = (pText.toUpperCase().includes('CONTRÁRIO') || texto.toUpperCase().includes('PARECER: CONTRÁRIO')) ? 'C' : 'F';
 
     function getQuesitoVal(num, busca) {
-        const qStr = ext(texto, busca, '\n').toLowerCase();
+        const qStr = (ext(texto, busca, '\n') || ext(texto, num + ')', '\n')).toLowerCase();
         if (qStr.includes('sim')) return 'S';
         if (qStr.includes('não') || qStr.includes('nao')) return 'N';
         const qArr = st.quesitos || aux.quesitos;
@@ -2917,22 +3050,37 @@ function gerarJsonEsisla(textoFicha, enc) {
     const fl_limit = getQuesitoVal(2, '2) A(s) doença(s)');
     const fl_imped = getQuesitoVal(3, '3) A(s) limitação(ões)');
 
-    const cidCode = (cid1 || '').toUpperCase();
-    const fullContext = (texto + ' ' + (aux.doencaMotivo || '') + ' ' + (aux.diagnostico || '') + ' ' + (aux.exameFisico || '')).toLowerCase();
-    
+    const exTipo = String(st.exameFisicoTipo || aux.exameFisicoTipo || st.agilExameFisicoTipo || aux.agilExameFisicoTipo || '').toLowerCase();
+    const outrosSub = String(st.outrosSubtipo || aux.outrosSubtipo || st.areaExameClinico || aux.areaExameClinico || '').toLowerCase();
+    const cidCode = (cid1 || st.cid || aux.cid || '').toUpperCase();
+    const fullContext = (texto + ' ' + exTipo + ' ' + outrosSub + ' ' + (aux.doencaMotivo || '') + ' ' + (aux.diagnostico || '') + ' ' + (aux.exameFisico || '')).toLowerCase();
+
+    const isAoal = exTipo.includes('osteomuscular') || outrosSub.includes('osteomuscular') || outrosSub.includes('ortop');
+    const isEm = exTipo.includes('mental') || outrosSub.includes('mental') || outrosSub.includes('psiqui');
+    const isAc = exTipo.includes('circulat') || outrosSub.includes('circulat') || outrosSub.includes('cardio');
+    const isAr = exTipo.includes('respirat') || outrosSub.includes('respirat') || outrosSub.includes('pulmon');
+    const isTcspf = exTipo.includes('pele') || exTipo.includes('dermat') || outrosSub.includes('pele') || outrosSub.includes('dermat') || outrosSub.includes('subcut');
+    const isAd = exTipo.includes('digest') || outrosSub.includes('digest') || outrosSub.includes('gastr');
+    const isAgu = exTipo.includes('genit') || outrosSub.includes('genit') || outrosSub.includes('urin') || outrosSub.includes('renal');
+    const isAHp = exTipo.includes('hemolin') || outrosSub.includes('hemolin') || outrosSub.includes('hemat') || outrosSub.includes('anemia');
+    const isAe = exTipo.includes('endocrin') || outrosSub.includes('endocrin') || outrosSub.includes('metabol') || outrosSub.includes('diabet');
+    const isSn = exTipo.includes('nervoso') || outrosSub.includes('nervoso') || outrosSub.includes('neurol');
+    const isOs = exTipo.includes('sentidos') || outrosSub.includes('sentidos') || outrosSub.includes('olho') || outrosSub.includes('oftalm') || outrosSub.includes('otol');
+    const isOutro = exTipo.includes('outro') || outrosSub.includes('outro');
+
     const cb = {
-        'voMedico.parEdtcspf': cidCode.startsWith('L') || fullContext.includes('dermat') || fullContext.includes('pele'),
-        'voMedico.parEdAc': cidCode.startsWith('I') || fullContext.includes('hipertens') || fullContext.includes('cardio') || fullContext.includes('circulat'),
-        'voMedico.parEdAr': cidCode.startsWith('J') || fullContext.includes('respirat') || fullContext.includes('pulmon') || fullContext.includes('asma'),
-        'voMedico.parEdAHp': cidCode.startsWith('D') || fullContext.includes('anemia') || fullContext.includes('hemo') || fullContext.includes('linfo'),
-        'voMedico.parEdAd': cidCode.startsWith('K') || fullContext.includes('digest') || fullContext.includes('gastr') || fullContext.includes('hepat'),
-        'voMedico.parEdAgu': cidCode.startsWith('N') || fullContext.includes('renal') || fullContext.includes('urin') || fullContext.includes('genit'),
-        'voMedico.parEdAoal': cidCode.startsWith('M') || fullContext.includes('osteomuscular') || fullContext.includes('ortop') || fullContext.includes('lomb') || fullContext.includes('coluna') || fullContext.includes('articular'),
-        'voMedico.parEdAe': cidCode.startsWith('E') || fullContext.includes('endocrin') || fullContext.includes('diabet') || fullContext.includes('tireoid'),
-        'voMedico.parEdSn': cidCode.startsWith('G') || fullContext.includes('nervoso') || fullContext.includes('neurol') || fullContext.includes('epilep'),
-        'voMedico.parEdOs': cidCode.startsWith('H') || fullContext.includes('sentidos') || fullContext.includes('olho') || fullContext.includes('visão') || fullContext.includes('ouvid'),
-        'voMedico.parEdEm': cidCode.startsWith('F') || fullContext.includes('mental') || fullContext.includes('psiquiat') || fullContext.includes('depress') || fullContext.includes('ansied') || fullContext.includes('humor'),
-        'voMedico.parEdOutro': false
+        'voMedico.parEdtcspf': isTcspf || (!isAoal && !isEm && (cidCode.startsWith('L') || fullContext.includes('dermat') || fullContext.includes('pele'))),
+        'voMedico.parEdAc': isAc || (!isAoal && !isEm && (cidCode.startsWith('I') || fullContext.includes('hipertens') || fullContext.includes('cardio') || fullContext.includes('circulat'))),
+        'voMedico.parEdAr': isAr || (!isAoal && !isEm && (cidCode.startsWith('J') || fullContext.includes('respirat') || fullContext.includes('pulmon') || fullContext.includes('asma'))),
+        'voMedico.parEdAHp': isAHp || (!isAoal && !isEm && (cidCode.startsWith('D') || fullContext.includes('anemia') || fullContext.includes('hemo') || fullContext.includes('linfo'))),
+        'voMedico.parEdAd': isAd || (!isAoal && !isEm && (cidCode.startsWith('K') || fullContext.includes('digest') || fullContext.includes('gastr') || fullContext.includes('hepat'))),
+        'voMedico.parEdAgu': isAgu || (!isAoal && !isEm && (cidCode.startsWith('N') || fullContext.includes('renal') || fullContext.includes('urin') || fullContext.includes('genit'))),
+        'voMedico.parEdAoal': isAoal || (!isEm && (cidCode.startsWith('M') || fullContext.includes('osteomuscular') || fullContext.includes('ortop') || fullContext.includes('lomb') || fullContext.includes('coluna') || fullContext.includes('articular'))),
+        'voMedico.parEdAe': isAe || (!isAoal && !isEm && (cidCode.startsWith('E') || fullContext.includes('endocrin') || fullContext.includes('diabet') || fullContext.includes('tireoid'))),
+        'voMedico.parEdSn': isSn || (!isAoal && !isEm && (cidCode.startsWith('G') || fullContext.includes('nervoso') || fullContext.includes('neurol') || fullContext.includes('epilep'))),
+        'voMedico.parEdOs': isOs || (!isAoal && !isEm && (cidCode.startsWith('H') || fullContext.includes('sentidos') || fullContext.includes('olho') || fullContext.includes('visão') || fullContext.includes('ouvid'))),
+        'voMedico.parEdEm': isEm || (!isAoal && (cidCode.startsWith('F') || fullContext.includes('mental') || fullContext.includes('psiquiat') || fullContext.includes('depress') || fullContext.includes('ansied') || fullContext.includes('humor'))),
+        'voMedico.parEdOutro': isOutro
     };
     if (!Object.values(cb).some(Boolean) && exApres.trim()) {
         cb['voMedico.parEdOutro'] = true;
@@ -3247,14 +3395,14 @@ function gerarScriptAutoPreenchimentoEsisla(payloadObj) {
     var bJust = doc.getElementById('blocoJustificativa');
     if (parecerVal === 'F') {
       if (bFav) bFav.style.display = 'block';
-      if (bJust && !campos['voMedico.parRlComp']) bJust.style.display = 'none';
+      if (bJust && campos['voMedico.parRlComp']) bJust.style.display = 'block';
     } else {
       if (bFav) bFav.style.display = 'none';
       if (bJust) bJust.style.display = 'block';
     }
 
     // 9. Concessão (Dias, Início, CIDs)
-    var diasSol = (campos['voResult.voParecerFinal.qtDiasPm'] || '').toString().replace(/\\D/g, '').slice(0, 3);
+    var diasSol = (campos['voResult.voParecerFinal.qtDiasPm'] || '').toString().replace(/\D/g, '').slice(0, 3);
     var dtIniSol = sanitizeText(campos['voResult.voParecerFinal.dtIniPm'], 10);
     setInput('input[name="voResult.voParecerFinal.qtDiasPm"]', diasSol);
     setInput('#qtDiasPm', diasSol);
@@ -3298,7 +3446,13 @@ function gerarScriptAutoPreenchimentoEsisla(payloadObj) {
     }
 
     // 10. Justificativa Parecer Médico
+    var elJust = doc.getElementById('justificaPericia') || doc.querySelector('textarea[name="voMedico.parRlComp"]');
+    if (elJust) {
+      elJust.removeAttribute('disabled');
+      elJust.disabled = false;
+    }
     setInput('textarea[name="voMedico.parRlComp"]', sanitizeText(campos['voMedico.parRlComp'], 2000));
+    setInput('#justificaPericia', sanitizeText(campos['voMedico.parRlComp'], 2000));
     
     // 11. Rolar até o bloco geral para conferência do perito
     var bg = doc.getElementById('blocoGeral') || doc.querySelector('fieldset');

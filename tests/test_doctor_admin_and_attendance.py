@@ -1610,5 +1610,98 @@ def test_detail_modal_versao_txt_and_toggle_edit():
     assert "setEsislaViewMode('blocos');" in GESTAO_ATENDIMENTOS
 
 
+def test_esisla_generation_altura_peso_exame_checkbox_parecer_and_justificativa(monkeypatch):
+    from app import app, EsislaResult, _minimal_ai_context, TASK_PROMPTS
+
+    # 1. _minimal_ai_context extrai agilAltura, biotipoAltura, agilPeso, biotipoPeso, agilExameFisicoDescricao, agilExameFisicoTipo, agilJustificativa
+    ctx = _minimal_ai_context({
+        "atendimento": "999",
+        "agilAltura": "1.82",
+        "biotipoPeso": "85",
+        "agilExameFisicoTipo": "Aparelho Osteomuscular e Tecido Conjuntivo",
+        "agilExameFisicoDescricao": "Lombalgia com contratura paravertebral moderada e Lasegue negativo.",
+        "agilJustificativa": "Incapacidade laboral temporária para atividades de esforço físico.",
+        "parecer": "Favorável",
+        "dias_solicitados": "14",
+        "data_documento": "2026-09-29",
+        "cid": "M54.5",
+        "doenca_motivo": "Dor lombar baixa",
+        "medico": "Dr. Perito Oficial",
+        "crm_responsavel": "123456/SP"
+    })
+    assert ctx["altura"] == "1.82"
+    assert ctx["peso"] == "85"
+    assert ctx["exame_fisico_tipo"] == "Aparelho Osteomuscular e Tecido Conjuntivo"
+    assert ctx["exame_fisico_descricao"] == "Lombalgia com contratura paravertebral moderada e Lasegue negativo."
+    assert ctx["justificativa"] == "Incapacidade laboral temporária para atividades de esforço físico."
+
+    # 2. Prompt do e-SISLA contém diretrizes para Altura, Peso, Checkbox de Exame Físico, Parecer e Justificativa
+    prompt = TASK_PROMPTS["esisla"]
+    assert "Quando altura e peso constarem nos dados fornecidos (altura, peso), preencha OBRIGATORIAMENTE os campos 'Altura: [altura]' e 'Peso: [peso]'" in prompt
+    assert "ESTE CAMPO É EXCLUSIVO PARA O EXAME FÍSICO / MENTAL DIRETO REALIZADO PELO MÉDICO PERITO" in prompt
+    assert "REGRA DE AJUSTE PARA ACHADOS MUITO CURTOS (SOMENTE EM CASOS EXTREMOS)" in prompt
+    assert "(*)Justificativa Parecer Médico" in prompt
+
+    # 3. Post-processing em /api/ai/esisla preenche dados faltantes automaticamente
+    monkeypatch.setattr("app._authenticate_request", lambda: ({"id": "1", "email": "admin@ambiental.com", "nome": "Admin", "perfil": "Administrador"}, "token123"))
+
+    sample_ficha_com_lacunas = (
+        "Registro da perícia Médica para Licença\n\n"
+        "(*) Queixa e Duração:\nServidor de 45 anos...\n\n"
+        "Antecedentes Mórbidos:\nNega comorbidades.\n\n"
+        "Atestado/Relatório/Exames Complementares (Tipo-Data-Resultado):\nCRM 123456\n\n"
+        "Pressão Arterial\nSistólica (mmHg): 120\nDiastólica (mmHg): 80\nPulso (bpm): 75\n\n"
+        "Altura:\nPeso:\n\n"
+        "(*)Exame Físico Geral\n\n"
+        "Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:\nNão foram apresentados exames complementares.\n\n"
+        "(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):\nApresenta limitações...\n\n"
+        "(*)Parecer Médico\nParecer:\nNº Dias:\nData Início:\nCID 10:\nDescrição:\nMédico Perito:\nCRM:\nDt/Hr Perícia: 29/09/2026 14:00\n\n"
+        "(*)Resposta aos quesitos\n1) Não\n2) Não\n3) Sim\n\n"
+        "(*)Justificativa Parecer Médico\n\n"
+        "(*) Parecer Final\n\nNº Dias:\nData Início:\nCID 10:\nDescrição:\nDiretor DPME:\nData P.F.:"
+    )
+    monkeypatch.setattr("app._generate_cached", lambda *args, **kwargs: (EsislaResult(ficha_esisla=sample_ficha_com_lacunas), False, "hash123"))
+
+    client = app.test_client()
+    res = client.post("/api/ai/esisla", json={
+        "atendimento": "ATD-101",
+        "altura": "1.82",
+        "peso": "85",
+        "parecer": "Favorável",
+        "dias_solicitados": "14",
+        "data_documento": "2026-09-29",
+        "cid": "M54.5",
+        "doenca_motivo": "Dor lombar baixa",
+        "medico": "Dr. Perito Oficial",
+        "crm_responsavel": "123456/SP",
+        "exame_fisico_tipo": "Aparelho Osteomuscular e Tecido Conjuntivo",
+        "exame_fisico_descricao": "Lombalgia com contratura muscular",
+        "justificativa": "Capacidade laborativa temporariamente prejudicada"
+    })
+    assert res.status_code == 200
+    data = res.get_json()
+    f_text = data["ficha_esisla"]
+    assert "Altura: 1.82" in f_text
+    assert "Peso: 85" in f_text
+    assert "Parecer: FAVORÁVEL" in f_text
+    assert "Nº Dias: 14" in f_text
+    assert "Data Início: 29/09/2026" in f_text
+    assert "CID 10: M54.5" in f_text
+    assert "Descrição: Dor lombar baixa" in f_text
+    assert "Médico Perito: Dr. Perito Oficial" in f_text
+    assert "CRM: 123456/SP" in f_text
+    assert "Aparelho Osteomuscular e Tecido Conjuntivo: Lombalgia com contratura muscular" in f_text
+    assert "Capacidade laborativa temporariamente prejudicada" in f_text
+
+    # 4. Contratos de frontend em gestao_atendimentos.html
+    assert '☑️ Checkbox e-SISLA:' in GESTAO_ATENDIMENTOS
+    assert 'toRegex(s)' in GESTAO_ATENDIMENTOS
+    assert 'voMedico.parRlExApres' in GESTAO_ATENDIMENTOS
+    assert 'idExameApres' in GESTAO_ATENDIMENTOS
+    assert 'justificaPericia' in GESTAO_ATENDIMENTOS
+    assert 'voMedico.lgAltura' in GESTAO_ATENDIMENTOS
+    assert 'voMedico.lgPeso' in GESTAO_ATENDIMENTOS
+
+
 
 

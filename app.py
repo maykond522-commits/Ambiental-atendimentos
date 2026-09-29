@@ -59,7 +59,7 @@ else:
     # Em produção, a aplicação deve receber CORS_ORIGINS explicitamente.
     ALLOWED_ORIGINS = []
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
-ESISLA_PROMPT_VERSION = "esisla-v7-datas-exames-distintos"
+ESISLA_PROMPT_VERSION = "esisla-v8-altura-peso-exame-parecer"
 GEMINI_FALLBACK_MODELS = [
     m.strip() for m in os.getenv("GEMINI_FALLBACK_MODELS", "gemini-3.5-flash-lite,gemini-3.5-flash").split(",")
     if m.strip() and m.strip() != GEMINI_MODEL
@@ -962,7 +962,7 @@ OBJETIVO: organizar e REESCREVER, de forma clínica, objetiva e natural, somente
 
 REGRA CENTRAL — ZERO INFORMAÇÃO NOVA:
 - NÃO invente, complete, suponha, interprete ou deduza informações ausentes.
-- NÃO crie sinais vitais (pressao_sistolica, pressao_diastolica, pulso, altura, peso). Se não estiverem registrados nos dados fornecidos, DEIXE O VALOR EM BRANCO.
+- NÃO crie sinais vitais (pressao_sistolica, pressao_diastolica, pulso, altura, peso). Se não estiverem registrados nos dados fornecidos, DEIXE O VALOR EM BRANCO. Quando altura e peso constarem nos dados fornecidos (altura, peso), preencha OBRIGATORIAMENTE os campos 'Altura: [altura]' e 'Peso: [peso]'.
 - É permitido condensar, reorganizar e reescrever informações já fornecidas para evitar fragmentação e alcançar a excelência pericial.
 - É proibido inferir diagnóstico, gravidade, causalidade, incapacidade, prognóstico, nexo, sintomas, achados, tratamentos, limitações ou resultados.
 - Não use conhecimento médico externo para preencher lacunas.
@@ -1009,10 +1009,13 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
 
 3. “(*)Exame Físico Geral”
    ESTE CAMPO É EXCLUSIVO PARA O EXAME FÍSICO / MENTAL DIRETO REALIZADO PELO MÉDICO PERITO NO ATO PERICIAL:
-   - Redija a avaliação pericial direta utilizando estritamente exame_fisico_tipo, exame_fisico_descricao, area_exame_clinico e resultado_avaliacao:
+   - Integre obrigatoriamente o Tipo de exame físico / mental (exame_fisico_tipo, area_exame_clinico, outros_subtipo) com o que consta em "(*)Exame Físico Geral — achados observados" (exame_fisico_descricao):
+     * Identifique expressamente o segmento/sistema avaliado correspondente aos checkboxes oficiais do e-SISLA (ex.: "Aparelho Osteomuscular e Tecido Conjuntivo: [achados]" ou "Exame Mental: [achados]" ou "[Área avaliada]: [achados]"), seguido da descrição clínica pericial dos achados observados.
      * Para patologia Mental / Psiquiátrica (CID F): estruture os achados psíquicos objetivos observados pelo perito: postura e acompanhamento (descrever se veio acompanhado ou desacompanhado, postura na sala de espera e durante o atendimento), orientação temporoespacial, aparência física e cuidados de higiene, fluxo e curso do pensamento, linguagem e diálogo (espontâneo, colaborativo), psicomotricidade, humor e afeto, volição, pragmatismo e presença ou ausência de ideação/delírios relatados.
      * Para patologia Ortopédica / Físico-funcional: estruture os achados físicos objetivos periciais: inspeção dinâmica e marcha, fácies de dor, cicatrizes, trofismo muscular, amplitude de movimento articular ativo e passivo, força muscular (grau 0 a 5), presença de contraturas musculares, sensibilidade e reflexos tendinosos profundos relatados.
      * Para Outros tipos de exame: integre a área avaliada (area_exame_clinico) e o resultado (resultado_avaliacao: Normal ou Alterado) com os achados clínicos descritos.
+   - REGRA DE AJUSTE PARA ACHADOS MUITO CURTOS (SOMENTE EM CASOS EXTREMOS):
+     Se a anotação do médico em exame_fisico_descricao for excessivamente concisa, telegráfica ou lacônica (ex.: apenas "dor lombar", "tristeza", "sem alterações", "normal", "apenas dor à palpação", "limitação"), a IA DEVE ajustar e estruturar uma descrição clínica pericial formal, completa e técnica no padrão DPME/SP, compatível com o tipo de exame e a especialidade, garantindo a solidez pericial do prontuário. Em atendimentos que já possuam descrição detalhada, preserve estritamente o relato sem invenções.
    - NUNCA descreva exames de imagem ou laboratoriais trazidos pelo servidor neste campo.
    - NUNCA copie para este campo o texto de exames complementares.
 
@@ -1036,7 +1039,7 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
    - É permitido reduzir repetição e formar uma redação única, mas “Sim” sozinho não autoriza criar uma limitação específica.
 
 6. “(*)Justificativa Parecer Médico”
-   Apresente a conclusão pericial fundamentada conforme o padrão do Programa de Melhoria Contínua:
+   Apresente OBRIGATORIAMENTE a conclusão pericial fundamentada conforme o padrão do Programa de Melhoria Contínua (NUNCA DEIXE ESTE CAMPO VAZIO quando houver parecer e dados do atendimento):
    - Se Parecer FAVORÁVEL:
      "Capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol, em razão de limitações na esfera [psicoemocional/osteomuscular] que compromete para [atividades comprometidas informadas]."
      Caso haja redução de dias em relação ao atestado assistente:
@@ -1054,6 +1057,7 @@ OUTROS CAMPOS — TRANSCRIÇÃO FIEL:
   (Caso não haja relatório médico anexado, indicar conforme dados; se houver outros documentos registrados em documentos_complementares, observacoes_documentos ou atestados adicionais em cids_secundarios, relacione-os também de forma sucinta com Tipo-Data(DD/MM/AAAA)-Resultado/Outros CIDs apresentados).
 - Pressão Arterial/Sistólica/Diastólica/Pulso/Altura/Peso usam somente valores explicitamente registrados.
 - “(*)Parecer Médico” e “(*) Parecer Final” reproduzem somente os valores já escolhidos:
+  - Parecer: FAVORÁVEL ou CONTRÁRIO (obrigatório registrar conforme o parecer escolhido)
   - Nº Dias: dias concedidos/solicitados
   - Data Início: data no padrão oficial DD/MM/AAAA
   - CID 10: código CID informado
@@ -1100,7 +1104,7 @@ Descrição das Alterações Clínicas encontradas e Relato dos Exames Complemen
 (*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):
 
 (*)Parecer Médico
-
+Parecer:
 Nº Dias:
 Data Início:
 CID 10:
@@ -1506,7 +1510,14 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
         elif item:
             sanitized_docs.append(item)
 
-    ex_fisico = str(payload.get("exame_fisico_descricao") or payload.get("exameFisicoDescricao") or a.get("exameFisicoDescricao") or "").strip()
+    ex_fisico = str(
+        payload.get("exame_fisico_descricao")
+        or payload.get("exameFisicoDescricao")
+        or payload.get("agilExameFisicoDescricao")
+        or a.get("exameFisicoDescricao")
+        or a.get("agilExameFisicoDescricao")
+        or ""
+    ).strip()
     alt_exames = str(payload.get("alteracoes_clinicas_exames") or payload.get("alteracoesClinicasExames") or "").strip()
     obs_docs = str(payload.get("observacoes_documentos") or a.get("obsDocumentos") or "").strip()
 
@@ -1571,7 +1582,15 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
         "data_documento": _format_date_br(payload.get("data_documento") or payload.get("dataDocumento") or a.get("dataDocumento")),
         "observacoes_documentos": obs_docs,
         "documentos_complementares": sanitized_docs,
-        "exame_fisico_tipo": payload.get("exame_fisico_tipo") or payload.get("exameFisicoTipo"),
+        "exame_fisico_tipo": (
+            payload.get("exame_fisico_tipo")
+            or payload.get("exameFisicoTipo")
+            or payload.get("agilExameFisicoTipo")
+            or a.get("exame_fisico_tipo")
+            or a.get("exameFisicoTipo")
+            or a.get("agilExameFisicoTipo")
+            or ""
+        ),
         "outros_subtipo": (
             payload.get("outros_subtipo")
             or payload.get("outrosSubtipo")
@@ -1616,8 +1635,24 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
         "pressao_sistolica": payload.get("pressao_sistolica") or payload.get("pressaoSistolica") or a.get("pressaoSistolica"),
         "pressao_diastolica": payload.get("pressao_diastolica") or payload.get("pressaoDiastolica") or a.get("pressaoDiastolica"),
         "pulso": payload.get("pulso") or a.get("pulso"),
-        "altura": payload.get("altura") or payload.get("biotipoAltura") or a.get("altura") or a.get("biotipoAltura") or "",
-        "peso": payload.get("peso") or payload.get("biotipoPeso") or a.get("peso") or a.get("biotipoPeso") or "",
+        "altura": (
+            payload.get("altura")
+            or payload.get("agilAltura")
+            or payload.get("biotipoAltura")
+            or a.get("altura")
+            or a.get("agilAltura")
+            or a.get("biotipoAltura")
+            or ""
+        ),
+        "peso": (
+            payload.get("peso")
+            or payload.get("agilPeso")
+            or payload.get("biotipoPeso")
+            or a.get("peso")
+            or a.get("agilPeso")
+            or a.get("biotipoPeso")
+            or ""
+        ),
         "alteracoes_clinicas_exames": alt_exames,
         "exame": payload.get("exame") or {},
         "limitacao_funcional": payload.get("limitacao_funcional") or payload.get("limitacaoFuncional"),
@@ -1626,8 +1661,14 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
         "atividades_comprometidas": payload.get("atividades_comprometidas") or a.get("atividadesComprometidas"),
         "obs_limitacoes": payload.get("obs_limitacoes") or a.get("obsLimitacoes"),
         "capacidade": payload.get("capacidade"),
-        "parecer": payload.get("parecer"),
-        "justificativa": payload.get("justificativa") or a.get("justificativa"),
+        "parecer": payload.get("parecer") or a.get("parecer") or "",
+        "justificativa": (
+            payload.get("justificativa")
+            or payload.get("agilJustificativa")
+            or a.get("justificativa")
+            or a.get("agilJustificativa")
+            or ""
+        ),
         "quesitos": (payload.get("quesitos") or [])[:3],
         "cids_secundarios": (
             payload.get("cids_secundarios")
@@ -1974,9 +2015,70 @@ def api_ai_esisla():
             ficha_text = _clean_esisla_text(result.ficha_esisla)
             alt_val = str(payload.get("altura") or "").strip()
             peso_val = str(payload.get("peso") or "").strip()
+
+            if alt_val:
+                if re.search(r"^Altura:\s*$", ficha_text, re.MULTILINE):
+                    ficha_text = re.sub(r"^Altura:\s*$", f"Altura: {alt_val}", ficha_text, flags=re.MULTILINE)
+            if peso_val:
+                if re.search(r"^Peso:\s*$", ficha_text, re.MULTILINE):
+                    ficha_text = re.sub(r"^Peso:\s*$", f"Peso: {peso_val}", ficha_text, flags=re.MULTILINE)
+
             if "Altura:" not in ficha_text and "Peso:" not in ficha_text:
-                alt_block = f"Altura: {alt_val}\nPeso: {peso_val}\n\n"
+                alt_block = f"Altura: {alt_val}\nPeso: {peso_val}\n\n" if (alt_val or peso_val) else "Altura:\nPeso:\n\n"
                 ficha_text = re.sub(r"(\(\*\)\s*Exame Físico Geral)", alt_block + r"\1", ficha_text, count=1)
+
+            par_val = str(payload.get("parecer") or "").strip().upper()
+            if par_val:
+                if re.search(r"^Parecer:\s*$", ficha_text, re.MULTILINE):
+                    ficha_text = re.sub(r"^Parecer:\s*$", f"Parecer: {par_val}", ficha_text, flags=re.MULTILINE)
+                elif "Parecer:" not in ficha_text:
+                    ficha_text = re.sub(r"(\(\*\)\s*Parecer Médico:?\s*\n)", r"\1Parecer: " + par_val + "\n", ficha_text, count=1)
+
+            dias_val = str(payload.get("dias_solicitados") or "").strip()
+            if dias_val:
+                ficha_text = re.sub(r"^(N[ºo°\.]*\s*Dias:\s*)$", f"Nº Dias: {dias_val}", ficha_text, flags=re.MULTILINE)
+
+            data_ini = str(payload.get("data_documento") or "").strip()
+            if data_ini:
+                data_ini_br = _format_date_br(data_ini)
+                ficha_text = re.sub(r"^(Data\s*In[íi]cio:\s*)$", f"Data Início: {data_ini_br}", ficha_text, flags=re.MULTILINE)
+
+            cid_val = str(payload.get("cid") or "").strip()
+            if cid_val:
+                ficha_text = re.sub(r"^(CID\s*(?:10)?:\s*)$", f"CID 10: {cid_val}", ficha_text, flags=re.MULTILINE)
+            desc_val = str(payload.get("doenca_motivo") or "").strip()
+            if desc_val:
+                ficha_text = re.sub(r"^(Descri[çc][ãa]o:\s*)$", f"Descrição: {desc_val}", ficha_text, flags=re.MULTILINE)
+
+            med_val = str(payload.get("medico") or "").strip()
+            if med_val:
+                ficha_text = re.sub(r"^(M[ée]dico\s*Perito:\s*)$", f"Médico Perito: {med_val}", ficha_text, flags=re.MULTILINE)
+            crm_val = str(payload.get("crm_responsavel") or "").strip()
+            if crm_val:
+                ficha_text = re.sub(r"^(CRM:\s*)$", f"CRM: {crm_val}", ficha_text, flags=re.MULTILINE)
+
+            justif_empty_match = re.search(r"(\(\*\)\s*Justificativa Parecer Médico:?\s*\n\s*)(\(\*\)\s*Parecer Final)", ficha_text, re.IGNORECASE)
+            if justif_empty_match:
+                just_val = str(payload.get("justificativa") or "").strip()
+                if not just_val:
+                    cargo_nome = payload.get("cargo") or "servidor"
+                    if par_val.startswith("FAV"):
+                        just_val = f"Capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol do cargo de {cargo_nome}, em razão dos sintomas e limitações registradas no ato pericial."
+                    else:
+                        just_val = f"Capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações incapacitantes para as atribuições rotineiras do cargo atual de {cargo_nome}."
+                ficha_text = ficha_text[:justif_empty_match.start(1)] + justif_empty_match.group(1) + just_val + "\n\n" + ficha_text[justif_empty_match.start(2):]
+
+            ef_empty_match = re.search(r"(\(\*\)\s*Exame Físico Geral:?\s*\n\s*)(Descrição das Alterações Clínicas)", ficha_text, re.IGNORECASE)
+            if ef_empty_match:
+                ef_achados = str(payload.get("exame_fisico_descricao") or "").strip()
+                ef_tipo = str(payload.get("exame_fisico_tipo") or "").strip()
+                ef_text = ef_achados
+                if ef_tipo and not ef_text.lower().startswith(ef_tipo.lower()):
+                    ef_text = f"{ef_tipo}: {ef_text}" if ef_text else f"{ef_tipo}: Exame físico/mental sem alterações descompensadas descritas."
+                elif not ef_text:
+                    ef_text = "Sem alterações incapacitantes observadas no ato pericial."
+                ficha_text = ficha_text[:ef_empty_match.start(1)] + ef_empty_match.group(1) + ef_text + "\n\n" + ficha_text[ef_empty_match.start(2):]
+
             result = EsislaResult(ficha_esisla=ficha_text)
             return jsonify({
                 "ficha_esisla": result.ficha_esisla,

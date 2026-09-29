@@ -2622,8 +2622,8 @@ body:not(.mode-agil-active) #containerModoAgil {
             </div>
             <textarea class="textarea" id="agilJustificativa" style="min-height:90px" placeholder="Justificativa da conclusão pericial..." oninput="syncAgilField('justificativa', this.value)"></textarea>
 
-            <!-- Quesitos Oficiais e-SISLA / DPME no Modo Ágil -->
-            <div id="agilQuesitosContainer" style="margin-top:12px;padding:12px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px">
+            <!-- Quesitos Oficiais e-SISLA / DPME no Modo Ágil (Atua 100% em segundo plano / nos fundos) -->
+            <div id="agilQuesitosContainer" style="display:none;margin-top:12px;padding:12px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap">
                 <div style="display:flex;align-items:center;gap:6px">
                   <span style="font-size:14px">❓</span>
@@ -4696,16 +4696,16 @@ function renderAgilQuesitos() {
   }
 }
 
-function ensureDefaultQuesitos() {
-  const qv = QuesitoService.validate();
-  if (qv.answered < 3) {
-    const p = String(state.parecer || getRadio("parecer") || "").toUpperCase();
-    const isFav = p.includes("FAV");
-    if (!QuesitoService.getAnswer(0)) QuesitoService.set(0, "Sim");
-    if (!QuesitoService.getAnswer(1)) QuesitoService.set(1, "Sim");
-    if (!QuesitoService.getAnswer(2)) QuesitoService.set(2, isFav ? "Sim" : "Não");
-    state.quesitos = QuesitoService.get();
+function ensureDefaultQuesitos(force) {
+  const p = String(state.parecer || getRadio("parecer") || "FAVORÁVEL").toUpperCase();
+  const isFav = p.includes("FAV");
+  const isAgil = !document.body.classList.contains("extended-mode");
+  if (isAgil || force || QuesitoService.validate().answered < 3) {
+    QuesitoService.set(0, "Sim");
+    QuesitoService.set(1, "Sim");
+    QuesitoService.set(2, isFav ? "Sim" : "Não");
   }
+  state.quesitos = QuesitoService.get();
 }
 
 function renderQuesitos(){
@@ -8055,6 +8055,10 @@ function verificarCoerenciaPericial() {
 
   [agilBox, sec7Box, sec8Box].forEach(box => {
     if (!box) return;
+    if (box === agilBox) {
+      box.style.display = "none";
+      return;
+    }
     if (isError) {
       box.innerHTML = renderHtml;
       box.style.display = "block";
@@ -8754,7 +8758,7 @@ function gerarCodigoBookmarkletUniversal() {
     if(typeof win.TextoIMC==='function'){try{win.TextoIMC();}catch(_){}}
     if(typeof win.calcularIMC==='function'){try{win.calcularIMC();}catch(_){}}
     var cbs=[{n:'voMedico.parEdtcspf',id:'idParEdtcspf'},{n:'voMedico.parEdAc',id:'idParEdAc'},{n:'voMedico.parEdAr',id:'idParEdAr'},{n:'voMedico.parEdAHp',id:'idParEdAHp'},{n:'voMedico.parEdAd',id:'idParEdAd'},{n:'voMedico.parEdAgu',id:'idParEdAgu'},{n:'voMedico.parEdAoal',id:'idParEdAoal'},{n:'voMedico.parEdAe',id:'idParEdAe'},{n:'voMedico.parEdSn',id:'idParEdSn'},{n:'voMedico.parEdOs',id:'idParEdOs'},{n:'voMedico.parEdEm',id:'idParEdEm'},{n:'voMedico.parEdOutro',id:'idParEdOutro'}];
-    var temAlgum=false;cbs.forEach(function(item){var chk=!!(campos[item.n]||campos[item.id]);if(chk){setCheckbox(item.n,item.id,true);temAlgum=true;}});
+    var temAlgum=false;cbs.forEach(function(item){var chk=!!(campos[item.n]||campos[item.id]);setCheckbox(item.n,item.id,chk);if(chk){temAlgum=true;}});
     if(temAlgum&&typeof win.exameApresentado==='function'){try{win.exameApresentado();}catch(_){}}
     var exApres=doc.getElementById('idExameApres')||doc.querySelector('textarea[name="voMedico.parRlExApres"]');
     if(exApres){exApres.removeAttribute('disabled');exApres.disabled=false;}
@@ -8912,6 +8916,77 @@ function copiarCodigoBookmarklet() {
   });
 }
 
+function detectarSistemaExameFisico(st, aux, texto, cidCode) {
+  const exTipo = String(st?.exameFisicoTipo || aux?.exameFisicoTipo || st?.agilExameFisicoTipo || aux?.agilExameFisicoTipo || '').trim().toLowerCase();
+  const outrosSub = String(st?.outrosSubtipo || aux?.outrosSubtipo || st?.areaExameClinico || aux?.areaExameClinico || '').trim().toLowerCase();
+  const exameFisicoLinha1 = (String(texto || '').match(/\(\*\)\s*Exame Físico Geral:?\s*\n\s*([^\n\r]+)/i) || [])[1]?.toLowerCase() || '';
+
+  // 1. Aparelho Osteomuscular e Tecido Conjuntivo (prioridade se escolhido no atendimento)
+  if (exTipo.includes('osteomuscular') || exTipo.includes('conjutivo') || exTipo.includes('conjuntivo') || outrosSub.includes('osteomuscular') || outrosSub.includes('ortop') || exameFisicoLinha1.includes('osteomuscular') || exameFisicoLinha1.includes('conjutivo') || exameFisicoLinha1.includes('conjuntivo')) {
+    return 'aoal';
+  }
+  // 2. Exame Mental
+  if (exTipo === 'exame mental' || (exTipo.includes('mental') && !exTipo.includes('físic')) || outrosSub.includes('mental') || outrosSub.includes('psiqui') || exameFisicoLinha1.startsWith('exame mental')) {
+    return 'em';
+  }
+  // 3. Aparelho Circulatório
+  if (exTipo.includes('circulat') || outrosSub.includes('circulat') || outrosSub.includes('cardio') || exameFisicoLinha1.includes('circulat')) {
+    return 'ac';
+  }
+  // 4. Aparelho Respiratório
+  if (exTipo.includes('respirat') || outrosSub.includes('respirat') || outrosSub.includes('pulmon') || exameFisicoLinha1.includes('respirat')) {
+    return 'ar';
+  }
+  // 5. Tecido celular subcutâneo Pele e Fâneros
+  if (exTipo.includes('pele') || exTipo.includes('fânero') || exTipo.includes('subcut') || exTipo.includes('dermat') || outrosSub.includes('pele') || exameFisicoLinha1.includes('pele') || exameFisicoLinha1.includes('subcut')) {
+    return 'tcspf';
+  }
+  // 6. Aparelho Digestivo
+  if (exTipo.includes('digest') || outrosSub.includes('digest') || outrosSub.includes('gastr') || exameFisicoLinha1.includes('digest')) {
+    return 'ad';
+  }
+  // 7. Aparelho Geniturinário
+  if (exTipo.includes('genit') || outrosSub.includes('genit') || outrosSub.includes('urin') || outrosSub.includes('renal') || exameFisicoLinha1.includes('genit')) {
+    return 'agu';
+  }
+  // 8. Aparelho Hemolinfopoiético
+  if (exTipo.includes('hemolin') || outrosSub.includes('hemolin') || outrosSub.includes('hemat') || exameFisicoLinha1.includes('hemolin')) {
+    return 'ahp';
+  }
+  // 9. Aparelho Endócrino
+  if (exTipo.includes('endocrin') || outrosSub.includes('endocrin') || outrosSub.includes('metabol') || outrosSub.includes('diabet') || exameFisicoLinha1.includes('endocrin')) {
+    return 'ae';
+  }
+  // 10. Sistema Nervoso
+  if (exTipo.includes('nervoso') || outrosSub.includes('nervoso') || outrosSub.includes('neurol') || exameFisicoLinha1.includes('nervoso')) {
+    return 'sn';
+  }
+  // 11. Órgãos dos Sentidos
+  if (exTipo.includes('sentidos') || outrosSub.includes('sentidos') || outrosSub.includes('oftalm') || outrosSub.includes('otol') || exameFisicoLinha1.includes('sentidos')) {
+    return 'os';
+  }
+  // 12. Outros
+  if (exTipo.includes('outro') || outrosSub.includes('outro')) {
+    return 'outro';
+  }
+
+  // Fallback estrito pelo código CID
+  const c = String(cidCode || '').toUpperCase().trim();
+  if (c.startsWith('M')) return 'aoal';
+  if (c.startsWith('F')) return 'em';
+  if (c.startsWith('I')) return 'ac';
+  if (c.startsWith('J')) return 'ar';
+  if (c.startsWith('L')) return 'tcspf';
+  if (c.startsWith('K')) return 'ad';
+  if (c.startsWith('N')) return 'agu';
+  if (c.startsWith('D')) return 'ahp';
+  if (c.startsWith('E')) return 'ae';
+  if (c.startsWith('G')) return 'sn';
+  if (c.startsWith('H')) return 'os';
+
+  return 'aoal';
+}
+
 function copiarLaudoEsislaAtendimento() {
   syncState();
   const v = values();
@@ -8923,7 +8998,16 @@ function copiarLaudoEsislaAtendimento() {
   const parecerVal = (state.parecer === 'FAVORÁVEL' || state.parecer === 'Favorável') ? 'F' : 'C';
 
   // 1. Queixa e Duração (max 2000)
-  const cat = sanitizeText(state.aux?.queixaDuracao || v.queixaDuracao || '', 2000);
+  let cat = sanitizeText(state.aux?.queixaDuracao || v.queixaDuracao || '', 2000);
+
+  // Se houver relatos reais de exames complementares (não boilerplates nem "Em anexo"), integra em queixas conforme solicitado
+  const altRaw = String(state.alteracoesClinicasExames || v.alteracoesClinicasExames || '').trim();
+  const cleanAltRaw = altRaw.replace(/^(?:em\s+anexo\.?|não\s+foram\s+apresentados[^\n\r]*|nada\s+consta[^\n\r]*|sem\s+exames[^\n\r]*)\s*$/i, '').trim();
+  if (cleanAltRaw && !cleanAltRaw.toLowerCase().includes('em anexo') && !cleanAltRaw.toLowerCase().includes('não foram apresentados') && cleanAltRaw.length > 5) {
+    if (!cat.includes(cleanAltRaw)) {
+      cat = sanitizeText((cat ? cat + '\n\n' : '') + 'Exames apresentados: ' + cleanAltRaw, 2000);
+    }
+  }
 
   // 2. Antecedentes Mórbidos (max 2000)
   const ap = sanitizeText(state.aux?.historicoPregresso || v.historicoPregresso || state.aux?.doencaMotivo || v.doencaMotivo || '', 2000);
@@ -8954,17 +9038,21 @@ function copiarLaudoEsislaAtendimento() {
   hda = sanitizeText(hda, 2500);
 
   // 4. Exame Físico Geral / Descrição das Alterações Clínicas e Exames (max 2500)
+  // No e-SISLA o campo voMedico.parRlExApres (idExameApres) deve conter exclusivamente os achados do Exame Físico Geral direto
   let exApres = '';
   if (state.fichaEsisla) {
-    const m = state.fichaEsisla.match(/Descrição das Alterações Clínicas encontradas[^:]*:\s*([\s\S]*?)(?=\n\s*(?:\(\*\)Descrição da\(s\) Limitação|Limitação|$))/i);
+    const m = state.fichaEsisla.match(/\(\*\)\s*Exame Físico Geral:?\s*([\s\S]*?)(?=\n\s*(?:Descrição das Alterações Clínicas|\(\*\)Descrição da\(s\) Limitação|Limitação|$))/i);
     if (m && m[1].trim()) exApres = m[1].trim();
+    if (!exApres) {
+      const m2 = state.fichaEsisla.match(/Descrição das Alterações Clínicas encontradas[^:]*:\s*([\s\S]*?)(?=\n\s*(?:\(\*\)Descrição da\(s\) Limitação|Limitação|$))/i);
+      if (m2 && m2[1].trim()) exApres = m2[1].trim();
+    }
   }
   if (!exApres) {
-    const p1 = (state.exameFisicoDescricao || v.exameFisicoDescricao || '').trim();
-    const p2 = (state.alteracoesClinicasExames || v.alteracoesClinicasExames || '').trim();
-    if (p1 && p2 && p1 !== p2) exApres = p1 + '\n' + p2;
-    else exApres = p2 || p1 || '';
+    exApres = (state.exameFisicoDescricao || v.exameFisicoDescricao || '').trim();
   }
+  // Remove "Em anexo" boilerplate
+  exApres = exApres.replace(/^(?:[\s\r\n]*em\s+anexo\.?[\s\r\n]*)+$/gi, '').trim();
   exApres = sanitizeText(exApres, 2500);
 
   // 5. Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) (max 2500)
@@ -9007,22 +9095,22 @@ function copiarLaudoEsislaAtendimento() {
   }
   const peso = String(state.aux?.peso || $("agilPeso")?.value || '').replace(/\D/g, '').slice(0, 3);
 
-  // 10. Checkboxes Sistemas (valor 'X')
+  // 10. Checkboxes Sistemas (estritamente o sistema escolhido no atendimento, sem marcação inadvertida de Exame Mental)
   const cidCode = (state.aux?.cid || v.cid || '').toUpperCase();
-  const fullCtx = ((state.aux?.doencaMotivo || '') + ' ' + (state.aux?.diagnostico || '') + ' ' + exApres + ' ' + reqExComp).toLowerCase();
+  const sistemaEscolhido = detectarSistemaExameFisico(state, state.aux || v, state.fichaEsisla, cidCode);
   const cb = {
-    'voMedico.parEdtcspf': (cidCode.startsWith('L') || fullCtx.includes('dermat') || fullCtx.includes('pele')) ? 'X' : '',
-    'voMedico.parEdAc': (cidCode.startsWith('I') || fullCtx.includes('hipertens') || fullCtx.includes('cardio') || fullCtx.includes('circulat')) ? 'X' : '',
-    'voMedico.parEdAr': (cidCode.startsWith('J') || fullCtx.includes('respirat') || fullCtx.includes('pulmon') || fullCtx.includes('asma')) ? 'X' : '',
-    'voMedico.parEdAHp': (cidCode.startsWith('D') || fullCtx.includes('anemia') || fullCtx.includes('hemo') || fullCtx.includes('linfo')) ? 'X' : '',
-    'voMedico.parEdAd': (cidCode.startsWith('K') || fullCtx.includes('digest') || fullCtx.includes('gastr') || fullCtx.includes('hepat')) ? 'X' : '',
-    'voMedico.parEdAgu': (cidCode.startsWith('N') || fullCtx.includes('renal') || fullCtx.includes('urin') || fullCtx.includes('genit')) ? 'X' : '',
-    'voMedico.parEdAoal': (cidCode.startsWith('M') || fullCtx.includes('osteomuscular') || fullCtx.includes('ortop') || fullCtx.includes('lomb') || fullCtx.includes('coluna') || fullCtx.includes('articular')) ? 'X' : '',
-    'voMedico.parEdAe': (cidCode.startsWith('E') || fullCtx.includes('endocrin') || fullCtx.includes('diabet') || fullCtx.includes('tireoid')) ? 'X' : '',
-    'voMedico.parEdSn': (cidCode.startsWith('G') || fullCtx.includes('nervoso') || fullCtx.includes('neurol') || fullCtx.includes('epilep')) ? 'X' : '',
-    'voMedico.parEdOs': (cidCode.startsWith('H') || fullCtx.includes('sentidos') || fullCtx.includes('olho') || fullCtx.includes('visão') || fullCtx.includes('ouvid')) ? 'X' : '',
-    'voMedico.parEdEm': (cidCode.startsWith('F') || fullCtx.includes('mental') || fullCtx.includes('psiquiat') || fullCtx.includes('depress') || fullCtx.includes('ansied') || fullCtx.includes('humor')) ? 'X' : '',
-    'voMedico.parEdOutro': ''
+    'voMedico.parEdtcspf': sistemaEscolhido === 'tcspf' ? 'X' : '',
+    'voMedico.parEdAc': sistemaEscolhido === 'ac' ? 'X' : '',
+    'voMedico.parEdAr': sistemaEscolhido === 'ar' ? 'X' : '',
+    'voMedico.parEdAHp': sistemaEscolhido === 'ahp' ? 'X' : '',
+    'voMedico.parEdAd': sistemaEscolhido === 'ad' ? 'X' : '',
+    'voMedico.parEdAgu': sistemaEscolhido === 'agu' ? 'X' : '',
+    'voMedico.parEdAoal': sistemaEscolhido === 'aoal' ? 'X' : '',
+    'voMedico.parEdAe': sistemaEscolhido === 'ae' ? 'X' : '',
+    'voMedico.parEdSn': sistemaEscolhido === 'sn' ? 'X' : '',
+    'voMedico.parEdOs': sistemaEscolhido === 'os' ? 'X' : '',
+    'voMedico.parEdEm': sistemaEscolhido === 'em' ? 'X' : '',
+    'voMedico.parEdOutro': sistemaEscolhido === 'outro' ? 'X' : ''
   };
   if (!Object.values(cb).some(Boolean) && exApres.trim()) {
     cb['voMedico.parEdOutro'] = 'X';

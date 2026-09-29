@@ -1060,15 +1060,17 @@ OUTROS CAMPOS — TRANSCRIÇÃO FIEL:
   - Parecer: FAVORÁVEL ou CONTRÁRIO (obrigatório registrar conforme o parecer escolhido)
   - Nº Dias: dias concedidos/solicitados
   - Data Início: data no padrão oficial DD/MM/AAAA
-  - CID 10: código CID informado
+  - CID 10: código CID principal informado
   - Descrição: motivo/diagnóstico informado
+  - CID 10 Secundário: se houver CIDs secundários/adicionais apresentados, registre obrigatoriamente nesta linha o código do CID secundário
+  - Descrição Secundária: diagnóstico/descrição do CID secundário (se houver)
   - Médico Perito: médico responsável pelo atendimento
   - CRM: CRM do médico perito responsável
   - Dt/Hr Perícia: data e hora no padrão oficial DD/MM/AAAA HH:MM
-- “(*)Resposta aos quesitos” reproduz somente as respostas efetivamente registradas (Sim / Não / Deixar em branco se não respondido):
-  1) Há doença(s) ou sequela(s) de doença(s) prévia(s)?
-  2) A(s) doença(s) ou sequela(s) de doença(s) prévia(s) gera(m) limitação(ões) para periciando(a)?
-  3) A(s) limitação(ões) impede(m) o(a) periciando(a) de exercer alguma atividade do rol?
+- “(*)Resposta aos quesitos” preenche rigorosamente conforme o parecer e a condição de readaptado:
+  - Se Parecer FAVORÁVEL: 1) Sim, 2) Sim, 3) Sim
+  - Se Parecer CONTRÁRIO e o colaborador FOR readaptado: 1) Sim, 2) Sim, 3) Não
+  - Se Parecer CONTRÁRIO e o colaborador NÃO for readaptado: 1) Sim, 2) Não, 3) Não
 - “Médico Perito” e “CRM” usam somente os dados do profissional responsável já gravados no atendimento.
 - “CRM ou CRO do médico assistente” é um campo independente e nunca deve receber automaticamente o CRM do médico responsável.
 - Não acrescente o texto legal da justificativa final nem artigos ou decretos legais.
@@ -1109,6 +1111,8 @@ Nº Dias:
 Data Início:
 CID 10:
 Descrição:
+CID 10 Secundário:
+Descrição Secundária:
 Médico Perito:
 CRM:
 Dt/Hr Perícia:
@@ -1126,6 +1130,8 @@ Nº Dias:
 Data Início:
 CID 10:
 Descrição:
+CID 10 Secundário:
+Descrição Secundária:
 Diretor DPME:
 Data P.F.:
 
@@ -2092,6 +2098,27 @@ def api_ai_esisla():
             if desc_val:
                 ficha_text = re.sub(r"^(Descri[çc][ãa]o:\s*)$", f"Descrição: {desc_val}", ficha_text, flags=re.MULTILINE)
 
+            # Inserir CID Secundário se houver no payload
+            cids_sec = payload.get("cids_secundarios") or []
+            cid_sec_code = ""
+            cid_sec_desc = ""
+            if isinstance(cids_sec, list) and len(cids_sec) > 0:
+                first_sec = cids_sec[0]
+                if isinstance(first_sec, dict):
+                    cid_sec_code = str(first_sec.get("cid") or first_sec.get("codigo") or "").strip()
+                    cid_sec_desc = str(first_sec.get("descricao") or first_sec.get("nome") or "").strip()
+                elif isinstance(first_sec, str):
+                    cid_sec_code = first_sec.strip()
+
+            if cid_sec_code:
+                if re.search(r"^CID\s*(?:10)?\s*Secund[áa]rio:\s*$", ficha_text, re.MULTILINE | re.IGNORECASE):
+                    ficha_text = re.sub(r"^(CID\s*(?:10)?\s*Secund[áa]rio:\s*)$", f"CID 10 Secundário: {cid_sec_code}", ficha_text, flags=re.MULTILINE | re.IGNORECASE)
+                elif "CID 10 Secundário:" not in ficha_text:
+                    sec_insert = f"CID 10 Secundário: {cid_sec_code}\nDescrição Secundária: {cid_sec_desc}\n"
+                    ficha_text = re.sub(r"(Descri[çc][ãa]o:[^\n\r]*\n)", r"\1" + sec_insert, ficha_text, count=1)
+                if cid_sec_desc:
+                    ficha_text = re.sub(r"^(Descri[çc][ãa]o\s*Secund[áa]ria:\s*)$", f"Descrição Secundária: {cid_sec_desc}", ficha_text, flags=re.MULTILINE | re.IGNORECASE)
+
             med_val = str(payload.get("medico") or "").strip()
             if med_val:
                 ficha_text = re.sub(r"^(M[ée]dico\s*Perito:\s*)$", f"Médico Perito: {med_val}", ficha_text, flags=re.MULTILINE)
@@ -2125,21 +2152,24 @@ def api_ai_esisla():
             ficha_text = re.sub(r"Atestado/Relat[óo]rio/Exames Complementares\s*\([^\)]*Tipo[^\)]*\):?", "Atestado/Relatório/Exames Complementares:", ficha_text, flags=re.IGNORECASE)
             ficha_text = re.sub(r"\(\s*Tipo-Data-Resultado\s*\):?\s*", "", ficha_text, flags=re.IGNORECASE)
 
-            # Garantir preenchimento dos 3 quesitos oficiais (Sim / Não)
-            q_list = payload.get("quesitos") or []
-            q1_ans = (q_list[0].get("resposta") if len(q_list) > 0 and isinstance(q_list[0], dict) else "") or "Sim"
-            q2_ans = (q_list[1].get("resposta") if len(q_list) > 1 and isinstance(q_list[1], dict) else "") or "Sim"
-            q3_ans = (q_list[2].get("resposta") if len(q_list) > 2 and isinstance(q_list[2], dict) else "") or ("Não" if "CONTR" in par_val else "Sim")
+            # Garantir preenchimento dos 3 quesitos oficiais conforme regra pericial
+            is_readap = str(payload.get("readaptado") or "").strip().lower() in ("sim", "s")
+            is_contra = "CONTR" in par_val
+            if is_contra:
+                q1_ans = "Sim"
+                q2_ans = "Sim" if is_readap else "Não"
+                q3_ans = "Não"
+            else:
+                q1_ans = "Sim"
+                q2_ans = "Sim"
+                q3_ans = "Sim"
 
             q_section = re.search(r"(\(\*\)\s*Resposta aos quesitos.*?)(\(\*\)\s*Justificativa|\Z)", ficha_text, re.DOTALL | re.IGNORECASE)
             if q_section:
                 q_block = q_section.group(1)
-                if not re.search(r"1\)[^\n\r]+?\b(Sim|Não|Nao)\b", q_block, re.IGNORECASE):
-                    q_block = re.sub(r"(1\)[^\n\r]+)", r"\1 " + q1_ans, q_block, count=1)
-                if not re.search(r"2\)[^\n\r]+?\b(Sim|Não|Nao)\b", q_block, re.IGNORECASE):
-                    q_block = re.sub(r"(2\)[^\n\r]+)", r"\1 " + q2_ans, q_block, count=1)
-                if not re.search(r"3\)[^\n\r]+?\b(Sim|Não|Nao)\b", q_block, re.IGNORECASE):
-                    q_block = re.sub(r"(3\)[^\n\r]+)", r"\1 " + q3_ans, q_block, count=1)
+                q_block = re.sub(r"(1\)[^\n\r]+?)(?:\s+(?:Sim|Não|Nao))?(\s*[\r\n]|$)", r"\1 " + q1_ans + r"\2", q_block, count=1, flags=re.IGNORECASE)
+                q_block = re.sub(r"(2\)[^\n\r]+?)(?:\s+(?:Sim|Não|Nao))?(\s*[\r\n]|$)", r"\1 " + q2_ans + r"\2", q_block, count=1, flags=re.IGNORECASE)
+                q_block = re.sub(r"(3\)[^\n\r]+?)(?:\s+(?:Sim|Não|Nao))?(\s*[\r\n]|$)", r"\1 " + q3_ans + r"\2", q_block, count=1, flags=re.IGNORECASE)
                 ficha_text = ficha_text[:q_section.start(1)] + q_block + ficha_text[q_section.end(1):]
 
             result = EsislaResult(ficha_esisla=ficha_text)

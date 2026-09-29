@@ -2621,6 +2621,24 @@ function renderEsislaBlocos(textoFicha) {
         || (parecerFinalBloco.match(/Descri[çc][ãa]o:\s*([^\n\r]+)/i) || [])[1]?.trim()
         || st.doencaMotivo || aux.doencaMotivo || '';
 
+    let cidSec = (parecerBloco.match(/CID\s*(?:10)?\s*Secund[áa]rio:\s*([^\n\r]+)/i) || [])[1]?.trim()
+        || (parecerFinalBloco.match(/CID\s*(?:10)?\s*Secund[áa]rio:\s*([^\n\r]+)/i) || [])[1]?.trim() || '';
+
+    let cidSecDesc = (parecerBloco.match(/Descri[çc][ãa]o\s*Secund[áa]ria:\s*([^\n\r]+)/i) || [])[1]?.trim()
+        || (parecerFinalBloco.match(/Descri[çc][ãa]o\s*Secund[áa]ria:\s*([^\n\r]+)/i) || [])[1]?.trim() || '';
+
+    const cidsSecArr = st.cidsSecundarios || aux.cidsSecundarios || [];
+    if (!cidSec && Array.isArray(cidsSecArr) && cidsSecArr.length > 0) {
+        const cs0 = cidsSecArr[0];
+        cidSec = (typeof cs0 === 'object' ? (cs0.codigo || cs0.cid) : cs0) || '';
+        cidSecDesc = (typeof cs0 === 'object' ? (cs0.descricao || cs0.nome) : '') || '';
+    }
+    if (!cidSec && cid && cid.includes(',')) {
+        const parts = cid.split(',');
+        cid = parts[0].trim();
+        cidSec = parts[1].trim();
+    }
+
     let medPerito = (parecerBloco.match(/M[ée]dico\s*Perito:\s*([^\n\r]+)/i) || [])[1]?.trim()
         || st.medico || aux.medico || st.medicoResponsavel || '';
 
@@ -2628,7 +2646,16 @@ function renderEsislaBlocos(textoFicha) {
         || st.crmResponsavel || aux.crmResponsavel || '';
 
     // Quesitos
+    const isContra = (parecerTipo || '').toUpperCase().includes('CONTR');
+    const isReadap = String(st.readaptado || aux.readaptado || '').trim().toLowerCase() === 'sim'
+        || (str.match(/readaptad[oa]/i) && !str.match(/n[ãa]o\s+readaptad[oa]/i));
+
     function getQuesitoVal(num, busca) {
+        if (isContra) {
+            if (num === 1) return 'SIM';
+            if (num === 2) return isReadap ? 'SIM' : 'NÃO';
+            if (num === 3) return 'NÃO';
+        }
         const qStr = (ext(str, busca, '\n') || ext(str, num + ')', '\n')).toLowerCase();
         if (qStr.includes('sim')) return 'SIM';
         if (qStr.includes('não') || qStr.includes('nao')) return 'NÃO';
@@ -2638,10 +2665,6 @@ function renderEsislaBlocos(textoFicha) {
             if (r === 'sim' || r === 's') return 'SIM';
             if (r === 'não' || r === 'nao' || r === 'n') return 'NÃO';
         }
-        // Fallback pericial DPME/e-SISLA: nunca exibir travessão quando houver Parecer pericial
-        const isContra = (parecerTipo || '').toUpperCase().includes('CONTR');
-        if (num === 1 || num === 2) return 'SIM';
-        if (num === 3) return isContra ? 'NÃO' : 'SIM';
         return 'SIM';
     }
     const q1 = getQuesitoVal(1, '1) Há doença(s)');
@@ -2776,8 +2799,13 @@ function renderEsislaBlocos(textoFicha) {
                 </div>
                 <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
                     <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">CID 10 Principal</span>
-                    <strong style="font-size:13px;color:#0F172A">${escTxt(cid)} ${cidDesc ? '<small style="font-size:11px;font-weight:normal;color:#475569">(' + esc(cidDesc) + ')</small>' : ''}</strong>
+                    <strong style="font-size:13px;color:#0F172A">${escTxt(cid)} ${cidDesc ? '<small style="font-size:11px;font-weight:normal;color:#475569">(' + esc(cidDesc.length > 80 ? cidDesc.slice(0, 80) + '...' : cidDesc) + ')</small>' : ''}</strong>
                 </div>
+                ${cidSec ? `
+                <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
+                    <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">CID 10 Secundário</span>
+                    <strong style="font-size:13px;color:#0F172A">${escTxt(cidSec)} ${cidSecDesc ? '<small style="font-size:11px;font-weight:normal;color:#475569">(' + esc(cidSecDesc.length > 80 ? cidSecDesc.slice(0, 80) + '...' : cidSecDesc) + ')</small>' : ''}</strong>
+                </div>` : ''}
                 ${medPerito ? `
                 <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
                     <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">Médico Perito / CRM</span>
@@ -3176,9 +3204,15 @@ function gerarJsonEsisla(textoFicha, enc) {
     
     let cid2 = cidsExtraidos[1] || '';
     let descrCid2 = '';
+    if (!cid2) {
+        const mSec = texto.match(/CID\s*(?:10)?\s*Secund[áa]rio:\s*([A-Z0-9\.]+)/i);
+        if (mSec) cid2 = mSec[1].trim();
+        const mSecDesc = texto.match(/Descri[çc][ãa]o\s*Secund[áa]ria:\s*([^\n\r]+)/i);
+        if (mSecDesc) descrCid2 = mSecDesc[1].trim();
+    }
     if (cid2 && Array.isArray(cidsSec)) {
-        const found = cidsSec.find(cs => (cs.codigo || cs.cid || '').toString().toUpperCase() === cid2);
-        if (found) descrCid2 = found.descricao || found.nome || '';
+        const found = cidsSec.find(cs => (cs.codigo || cs.cid || '').toString().toUpperCase() === cid2.toUpperCase());
+        if (found && !descrCid2) descrCid2 = found.descricao || found.nome || '';
     }
 
     const pText = ext(texto, '(*)Parecer Médico', 'Nº Dias') || ext(texto, '(*)Parecer Médico', '(*)Resposta aos quesitos') || st.parecer || aux.parecer || '';
@@ -3199,7 +3233,15 @@ function gerarJsonEsisla(textoFicha, enc) {
     let dtIni = ext(texto, 'Data Início', 'CID 10') || aux.dataInicio || st.dataInicio || aux.dataDocumento || st.dataDocumento || '';
     dtIni = dtIni.split('\n')[0].trim();
 
+    const fl_isReadap = String(st.readaptado || aux.readaptado || '').trim().toLowerCase() === 'sim'
+        || (texto.match(/readaptad[oa]/i) && !texto.match(/n[ãa]o\s+readaptad[oa]/i));
+
     function getQuesitoVal(num, busca) {
+        if (flPfinal === 'C') {
+            if (num === 1) return 'S';
+            if (num === 2) return fl_isReadap ? 'S' : 'N';
+            if (num === 3) return 'N';
+        }
         const qStr = (ext(texto, busca, '\n') || ext(texto, num + ')', '\n')).toLowerCase();
         if (qStr.includes('sim')) return 'S';
         if (qStr.includes('não') || qStr.includes('nao')) return 'N';
@@ -3208,11 +3250,6 @@ function gerarJsonEsisla(textoFicha, enc) {
             const r = String(qArr[num - 1].resposta || qArr[num - 1] || '').trim().toLowerCase();
             if (r === 'sim' || r === 's') return 'S';
             if (r === 'não' || r === 'nao' || r === 'n') return 'N';
-        }
-        // Fallback pericial coerente com o Parecer
-        if (flPfinal === 'C') {
-            if (num === 1 || num === 2) return 'S';
-            if (num === 3) return 'N';
         }
         return 'S';
     }

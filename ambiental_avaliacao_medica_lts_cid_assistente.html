@@ -4567,8 +4567,12 @@ async function saveNow(){
 
 function toggleReadaptado(){
   const val = getRadio("readaptado") || getRadio("agilReadaptado");
+  state.readaptado = val;
+  if (!state.aux) state.aux = {};
+  state.aux.readaptado = val;
   $("readaptadoPanel")?.classList.toggle("hidden", val !== "Sim");
   $("agilReadaptadoPanel")?.classList.toggle("hidden", val !== "Sim");
+  if (typeof ajustarQuesitosPorParecerEReadaptacao === "function") ajustarQuesitosPorParecerEReadaptacao();
 }
 function toggleAlteracaoMed(){
   const val = getRadio("alteracaoMed") || getRadio("agilAlteracaoMed");
@@ -4718,14 +4722,40 @@ function renderAgilQuesitos() {
   }
 }
 
+function ajustarQuesitosPorParecerEReadaptacao() {
+  const p = String(state.parecer || getRadio("parecer") || "FAVORÁVEL").toUpperCase();
+  const isFav = p.includes("FAV");
+  const isReadap = String(state.readaptado || state.aux?.readaptado || (typeof getRadio === 'function' ? (getRadio("readaptado") || getRadio("agilReadaptado")) : "") || "").trim().toLowerCase() === "sim";
+
+  QuesitoService.set(0, "Sim");
+  if (isFav) {
+    QuesitoService.set(1, "Sim");
+    QuesitoService.set(2, "Sim");
+  } else {
+    // Parecer CONTRÁRIO:
+    // Se colaborador for readaptado: 1) Sim, 2) Sim, 3) Não
+    // Se NÃO for readaptado: 1) Sim, 2) Não, 3) Não
+    QuesitoService.set(1, isReadap ? "Sim" : "Não");
+    QuesitoService.set(2, "Não");
+  }
+  state.quesitos = QuesitoService.get();
+  renderQuesitos();
+}
+
 function ensureDefaultQuesitos(force) {
   const p = String(state.parecer || getRadio("parecer") || "FAVORÁVEL").toUpperCase();
   const isFav = p.includes("FAV");
+  const isReadap = String(state.readaptado || state.aux?.readaptado || (typeof getRadio === 'function' ? (getRadio("readaptado") || getRadio("agilReadaptado")) : "") || "").trim().toLowerCase() === "sim";
   const isAgil = !document.body.classList.contains("extended-mode");
   if (isAgil || force || QuesitoService.validate().answered < 3) {
     QuesitoService.set(0, "Sim");
-    QuesitoService.set(1, "Sim");
-    QuesitoService.set(2, isFav ? "Sim" : "Não");
+    if (isFav) {
+      QuesitoService.set(1, "Sim");
+      QuesitoService.set(2, "Sim");
+    } else {
+      QuesitoService.set(1, isReadap ? "Sim" : "Não");
+      QuesitoService.set(2, "Não");
+    }
   }
   state.quesitos = QuesitoService.get();
 }
@@ -5817,16 +5847,9 @@ function aplicarOsteomuscularNormal() {
   state.aux.descLimitacao = TEXTO_OSTEO_NORMAL_LIMITACAO;
   if ($("descLimitacao")) $("descLimitacao").value = TEXTO_OSTEO_NORMAL_LIMITACAO;
   
-  QuesitoService.set(0, "Sim");
-  QuesitoService.set(1, "Sim");
-  QuesitoService.set(2, "Não");
-  renderQuesitos();
-  
-  state.capacidade = "Capacidade laborativa preservada";
-  setRadio("capacidade", "Capacidade laborativa preservada");
-  
   state.parecer = "CONTRÁRIO";
   setRadio("parecer", "CONTRÁRIO");
+  ajustarQuesitosPorParecerEReadaptacao();
   
   state.aux.justificativa = TEXTO_OSTEO_NORMAL_JUSTIFICATIVA;
   state.justificativa = TEXTO_OSTEO_NORMAL_JUSTIFICATIVA;
@@ -6479,6 +6502,7 @@ function syncAgilReadaptado(val) {
   setRadio("agilReadaptado", val);
   $("readaptadoPanel")?.classList.toggle("hidden", val !== "Sim");
   $("agilReadaptadoPanel")?.classList.toggle("hidden", val !== "Sim");
+  if (typeof ajustarQuesitosPorParecerEReadaptacao === "function") ajustarQuesitosPorParecerEReadaptacao();
   if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
   autoSave();
 }
@@ -6642,10 +6666,7 @@ function escolherOutrosResultado(resultado) {
     setRadio("capacidade", "Capacidade laborativa preservada");
     state.parecer = "CONTRÁRIO";
     setRadio("parecer", "CONTRÁRIO");
-    QuesitoService.set(0, "Sim");
-    QuesitoService.set(1, "Sim");
-    QuesitoService.set(2, "Não");
-    renderQuesitos();
+    ajustarQuesitosPorParecerEReadaptacao();
     if (typeof atualizarDiasConcedidosAutomatico === "function") atualizarDiasConcedidosAutomatico();
     toast(`Avaliação (${state.outrosSubtipo || "Outros"}): NORMAL.`);
   } else if (resultado === "Alterado") {
@@ -6955,16 +6976,9 @@ function aplicarExameMentalNormal() {
   state.aux.descLimitacao = TEXTO_LIMITACAO_NORMAL;
   if ($("descLimitacao")) $("descLimitacao").value = TEXTO_LIMITACAO_NORMAL;
   
-  QuesitoService.set(0, "Sim");
-  QuesitoService.set(1, "Sim");
-  QuesitoService.set(2, "Não");
-  renderQuesitos();
-  
-  state.capacidade = "Capacidade laborativa preservada";
-  setRadio("capacidade", "Capacidade laborativa preservada");
-  
   state.parecer = "CONTRÁRIO";
   setRadio("parecer", "CONTRÁRIO");
+  ajustarQuesitosPorParecerEReadaptacao();
   
   state.aux.justificativa = TEXTO_JUSTIFICATIVA_NORMAL;
   state.justificativa = TEXTO_JUSTIFICATIVA_NORMAL;
@@ -7094,9 +7108,6 @@ function ensureAgileBackgroundDefaults() {
       state.parecer = "FAVORÁVEL";
       state.aux.justificativa = state.aux.justificativa || $("agilJustificativa")?.value || TEXTO_JUSTIFICATIVA_ALTERADO;
       state.justificativa = state.aux.justificativa;
-      QuesitoService.set(0, "Sim");
-      QuesitoService.set(1, "Sim");
-      QuesitoService.set(2, "Sim");
     } else {
       state.limitacaoFuncional = "Não";
       state.limitacaoRol = "Não";
@@ -7104,9 +7115,6 @@ function ensureAgileBackgroundDefaults() {
       state.parecer = "CONTRÁRIO";
       state.aux.justificativa = state.aux.justificativa || $("agilJustificativa")?.value || TEXTO_JUSTIFICATIVA_NORMAL;
       state.justificativa = state.aux.justificativa;
-      QuesitoService.set(0, "Sim");
-      QuesitoService.set(1, "Sim");
-      QuesitoService.set(2, "Não");
     }
   } else if (state.exameFisicoTipo === "Aparelho Osteomuscular e Tecido Conjutivo") {
     const hasAlterado = Object.values(state.osteomuscularRegioes || {}).some(v => v === "Alterado");
@@ -7117,9 +7125,6 @@ function ensureAgileBackgroundDefaults() {
       state.parecer = "FAVORÁVEL";
       state.aux.justificativa = state.aux.justificativa || $("agilJustificativa")?.value || (state.descLimitacao ? `Capacidade parcial e temporariamente prejudicada, ${state.descLimitacao}` : TEXTO_JUSTIFICATIVA_ALTERADO);
       state.justificativa = state.aux.justificativa;
-      QuesitoService.set(0, "Sim");
-      QuesitoService.set(1, "Sim");
-      QuesitoService.set(2, "Sim");
     } else {
       state.limitacaoFuncional = "Não";
       state.limitacaoRol = "Não";
@@ -7127,9 +7132,6 @@ function ensureAgileBackgroundDefaults() {
       state.parecer = "CONTRÁRIO";
       state.aux.justificativa = state.aux.justificativa || $("agilJustificativa")?.value || TEXTO_OSTEO_NORMAL_JUSTIFICATIVA;
       state.justificativa = state.aux.justificativa;
-      QuesitoService.set(0, "Sim");
-      QuesitoService.set(1, "Sim");
-      QuesitoService.set(2, "Não");
     }
   } else if (state.exameFisicoTipo === "Outros") {
     if (state.outrosResultado === "Alterado") {
@@ -7139,9 +7141,6 @@ function ensureAgileBackgroundDefaults() {
       state.parecer = "FAVORÁVEL";
       state.aux.justificativa = state.aux.justificativa || $("agilJustificativa")?.value || "";
       state.justificativa = state.aux.justificativa;
-      QuesitoService.set(0, "Sim");
-      QuesitoService.set(1, "Sim");
-      QuesitoService.set(2, "Sim");
     } else {
       state.limitacaoFuncional = "Não";
       state.limitacaoRol = "Não";
@@ -7149,9 +7148,6 @@ function ensureAgileBackgroundDefaults() {
       state.parecer = "CONTRÁRIO";
       state.aux.justificativa = state.aux.justificativa || $("agilJustificativa")?.value || "";
       state.justificativa = state.aux.justificativa;
-      QuesitoService.set(0, "Sim");
-      QuesitoService.set(1, "Sim");
-      QuesitoService.set(2, "Não");
     }
   } else {
     state.limitacaoFuncional = state.limitacaoFuncional || "Não";
@@ -7160,18 +7156,13 @@ function ensureAgileBackgroundDefaults() {
     state.parecer = state.parecer || "CONTRÁRIO";
     state.aux.justificativa = state.aux.justificativa || $("agilJustificativa")?.value || "Avaliação pericial clínica sem evidências de incapacidade laborativa no momento do exame pericial.";
     state.justificativa = state.aux.justificativa;
-    if (QuesitoService.validate().answered < 3) {
-      QuesitoService.set(0, "Sim");
-      QuesitoService.set(1, "Sim");
-      QuesitoService.set(2, "Não");
-    }
   }
   setRadio("limitacaoFuncional", state.limitacaoFuncional);
   setRadio("limitacaoRol", state.limitacaoRol);
   setRadio("capacidade", state.capacidade);
   setRadio("parecer", state.parecer);
   if ($("justificativa")) $("justificativa").value = state.aux.justificativa || "";
-  renderQuesitos();
+  ajustarQuesitosPorParecerEReadaptacao();
 }
 
 function finalizarAtendimentoAgil() {
@@ -8178,16 +8169,17 @@ function aplicarAlinhamentoQuesitos(tipo) {
     setRadio("agilLimitacaoRol", "Sim");
     toast("Quesitos alinhados para Parecer FAVORÁVEL (Q1: Sim, Q2: Sim, Q3: Sim).");
   } else {
+    const isReadap = String(state.readaptado || state.aux?.readaptado || (typeof getRadio === 'function' ? (getRadio("readaptado") || getRadio("agilReadaptado")) : "") || "").trim().toLowerCase() === "sim";
     QuesitoService.set(0, "Sim");
-    QuesitoService.set(1, "Sim");
+    QuesitoService.set(1, isReadap ? "Sim" : "Não");
     QuesitoService.set(2, "Não");
-    state.limitacaoFuncional = "Não";
+    state.limitacaoFuncional = isReadap ? "Sim" : "Não";
     state.limitacaoRol = "Não";
-    setRadio("limitacaoFuncional", "Não");
+    setRadio("limitacaoFuncional", isReadap ? "Sim" : "Não");
     setRadio("limitacaoRol", "Não");
-    setRadio("agilLimitacaoFuncional", "Não");
+    setRadio("agilLimitacaoFuncional", isReadap ? "Sim" : "Não");
     setRadio("agilLimitacaoRol", "Não");
-    toast("Quesitos alinhados para Parecer CONTRÁRIO (Q1: Sim, Q2: Sim, Q3: Não).");
+    toast(`Quesitos alinhados para Parecer CONTRÁRIO (Q1: Sim, Q2: ${isReadap ? "Sim" : "Não"}, Q3: Não).`);
   }
   renderQuesitos();
   verificarCoerenciaPericial();
@@ -9080,10 +9072,11 @@ function copiarLaudoEsislaAtendimento() {
   const v = values();
 
   // Mapear quesitos e parecer
-  const q1 = (state.quesitos[0]?.resposta === 'Sim' ? 'S' : 'N');
-  const q2 = (state.quesitos[1]?.resposta === 'Sim' ? 'S' : 'N');
-  const q3 = (state.quesitos[2]?.resposta === 'Sim' ? 'S' : 'N');
   const parecerVal = (state.parecer === 'FAVORÁVEL' || state.parecer === 'Favorável') ? 'F' : 'C';
+  const isReadap = String(state.readaptado || state.aux?.readaptado || v.readaptado || '').trim().toLowerCase() === 'sim';
+  let q1 = 'S';
+  let q2 = parecerVal === 'C' ? (isReadap ? 'S' : 'N') : 'S';
+  let q3 = parecerVal === 'C' ? 'N' : 'S';
 
   // 1. Queixa e Duração (max 2000)
   let cat = sanitizeText(state.aux?.queixaDuracao || v.queixaDuracao || '', 2000);

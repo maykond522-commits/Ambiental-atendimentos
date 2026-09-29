@@ -1876,6 +1876,40 @@ def test_correspondencia_exata_sistemas_exame_fisico_esisla():
         assert "exTipo === 'exame mental'" in code
 
 
+def test_quesitos_readaptado_e_contrario_e_cid_secundario():
+    """Valida:
+    1. Quesitos para parecer CONTRÁRIO + readaptado (Sim, Sim, Não)
+    2. Quesitos para parecer CONTRÁRIO + não readaptado (Sim, Não, Não)
+    3. Exibição e geração de CID 10 Secundário no card do parecer e na ficha e-SISLA
+    """
+    gestao = (ROOT / "gestao_atendimentos.html").read_text(encoding="utf-8")
+    atd = (ROOT / "ambiental_avaliacao_medica_lts_cid_assistente.html").read_text(encoding="utf-8")
+    app_py = (ROOT / "app.py").read_text(encoding="utf-8")
+
+    # 1. Regra dos quesitos no gestao_atendimentos
+    assert "if (num === 1) return 'SIM';" in gestao
+    assert "if (num === 2) return isReadap ? 'SIM' : 'NÃO';" in gestao
+    assert "if (num === 3) return 'NÃO';" in gestao
+    assert "if (num === 2) return fl_isReadap ? 'S' : 'N';" in gestao
+
+    # 2. Regra dos quesitos no atendimento
+    assert "ajustarQuesitosPorParecerEReadaptacao" in atd
+    assert "QuesitoService.set(1, isReadap ? \"Sim\" : \"Não\");" in atd
+    assert "QuesitoService.set(2, \"Não\");" in atd
+
+    # 3. Card do parecer médico pericial com CID 10 Secundário
+    assert "CID 10 Secundário" in gestao
+    assert "${cidSec ? `" in gestao
+
+    # 4. Geração e-SISLA no app.py com CID 10 Secundário e quesitos periciais
+    assert "CID 10 Secundário:" in app_py
+    assert "Descrição Secundária:" in app_py
+    assert "q2_ans = \"Sim\" if is_readap else \"Não\"" in app_py
+    assert "Se Parecer CONTRÁRIO e o colaborador FOR readaptado: 1) Sim, 2) Sim, 3) Não" in app_py
+    assert "Se Parecer CONTRÁRIO e o colaborador NÃO for readaptado: 1) Sim, 2) Não, 3) Não" in app_py
+
+
+
 
 
 

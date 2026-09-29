@@ -1052,7 +1052,7 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
    Se o perito tiver fornecido justificativa própria em justificativa, incorpore harmonicamente suas palavras a esta fundamentação padrão. Não acrescente o texto legal da justificativa final nem qualquer texto fixo que não esteja presente nos dados fornecidos.
 
 OUTROS CAMPOS — TRANSCRIÇÃO FIEL:
-- “Atestado/Relatório/Exames Complementares (Tipo-Data-Resultado)” padroniza a solicitação assistente no formato oficial:
+- “Atestado/Relatório/Exames Complementares” padroniza a solicitação assistente no formato oficial:
   "CRM [crm_cro], solicita [dias_solicitados] dias de afastamento a partir de [data_documento], pelo CID [cid] – Relatório médico em anexo."
   (Caso não haja relatório médico anexado, indicar conforme dados; se houver outros documentos registrados em documentos_complementares, observacoes_documentos ou atestados adicionais em cids_secundarios, relacione-os também de forma sucinta com Tipo-Data(DD/MM/AAAA)-Resultado/Outros CIDs apresentados).
 - Pressão Arterial/Sistólica/Diastólica/Pulso/Altura/Peso usam somente valores explicitamente registrados.
@@ -1087,7 +1087,7 @@ Registro da perícia Médica para Licença
 
 Antecedentes Mórbidos:
 
-Atestado/Relatório/Exames Complementares (Tipo-Data-Resultado):
+Atestado/Relatório/Exames Complementares:
 
 Pressão Arterial
 Sistólica (mmHg):
@@ -1530,6 +1530,27 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
         else:
             alt_exames = ""
 
+    raw_q = payload.get("quesitos") or a.get("quesitos") or []
+    par_up = str(payload.get("parecer") or a.get("parecer") or "").upper()
+    is_contr = "CONTR" in par_up
+    fixed_q_defs = [
+        (1, "Há doença(s) ou sequela(s) de doença(s) prévia(s)?", "Sim"),
+        (2, "A(s) doença(s) ou sequela(s) de doença(s) prévia(s) gera(m) limitação(ões) para periciando(a)?", "Sim"),
+        (3, "A(s) limitação(ões) impede(m) o(a) periciando(a) de exercer alguma atividade do rol?", "Não" if is_contr else "Sim"),
+    ]
+    norm_quesitos = []
+    for idx, (qid, qpergunta, qdefault) in enumerate(fixed_q_defs):
+        ans = ""
+        if idx < len(raw_q):
+            item = raw_q[idx]
+            if isinstance(item, dict):
+                ans = str(item.get("resposta") or "").strip()
+            elif isinstance(item, str):
+                ans = item.strip()
+        if not ans and par_up:
+            ans = qdefault
+        norm_quesitos.append({"id": qid, "pergunta": qpergunta, "resposta": ans})
+
     return {
         "atendimento": payload.get("atendimento"),
         "data_atendimento": _format_date_br(payload.get("data_atendimento") or a.get("dataAtd")),
@@ -1669,7 +1690,7 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
             or a.get("agilJustificativa")
             or ""
         ),
-        "quesitos": (payload.get("quesitos") or [])[:3],
+        "quesitos": norm_quesitos,
         "cids_secundarios": (
             payload.get("cids_secundarios")
             or payload.get("cidsSecundarios")
@@ -1997,6 +2018,10 @@ def _clean_esisla_text(text: str) -> str:
             fallback_exames = "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial."
             text = text[:m_dup.start()] + h1 + b1 + h2 + fallback_exames + "\n\n" + h3 + text[m_dup.end():]
 
+    # Remover marcador (Tipo-Data-Resultado) para preservar padrão visual limpo
+    text = re.sub(r"Atestado/Relat[óo]rio/Exames Complementares\s*\([^\)]*Tipo[^\)]*\):?", "Atestado/Relatório/Exames Complementares:", text, flags=re.IGNORECASE)
+    text = re.sub(r"\(\s*Tipo-Data-Resultado\s*\):?\s*", "", text, flags=re.IGNORECASE)
+
     return text
 
 
@@ -2078,6 +2103,27 @@ def api_ai_esisla():
                 elif not ef_text:
                     ef_text = "Sem alterações incapacitantes observadas no ato pericial."
                 ficha_text = ficha_text[:ef_empty_match.start(1)] + ef_empty_match.group(1) + ef_text + "\n\n" + ficha_text[ef_empty_match.start(2):]
+
+            # Remove qualquer resquício de (Tipo-Data-Resultado)
+            ficha_text = re.sub(r"Atestado/Relat[óo]rio/Exames Complementares\s*\([^\)]*Tipo[^\)]*\):?", "Atestado/Relatório/Exames Complementares:", ficha_text, flags=re.IGNORECASE)
+            ficha_text = re.sub(r"\(\s*Tipo-Data-Resultado\s*\):?\s*", "", ficha_text, flags=re.IGNORECASE)
+
+            # Garantir preenchimento dos 3 quesitos oficiais (Sim / Não)
+            q_list = payload.get("quesitos") or []
+            q1_ans = (q_list[0].get("resposta") if len(q_list) > 0 and isinstance(q_list[0], dict) else "") or "Sim"
+            q2_ans = (q_list[1].get("resposta") if len(q_list) > 1 and isinstance(q_list[1], dict) else "") or "Sim"
+            q3_ans = (q_list[2].get("resposta") if len(q_list) > 2 and isinstance(q_list[2], dict) else "") or ("Não" if "CONTR" in par_val else "Sim")
+
+            q_section = re.search(r"(\(\*\)\s*Resposta aos quesitos.*?)(\(\*\)\s*Justificativa|\Z)", ficha_text, re.DOTALL | re.IGNORECASE)
+            if q_section:
+                q_block = q_section.group(1)
+                if not re.search(r"1\)[^\n\r]+?\b(Sim|Não|Nao)\b", q_block, re.IGNORECASE):
+                    q_block = re.sub(r"(1\)[^\n\r]+)", r"\1 " + q1_ans, q_block, count=1)
+                if not re.search(r"2\)[^\n\r]+?\b(Sim|Não|Nao)\b", q_block, re.IGNORECASE):
+                    q_block = re.sub(r"(2\)[^\n\r]+)", r"\1 " + q2_ans, q_block, count=1)
+                if not re.search(r"3\)[^\n\r]+?\b(Sim|Não|Nao)\b", q_block, re.IGNORECASE):
+                    q_block = re.sub(r"(3\)[^\n\r]+)", r"\1 " + q3_ans, q_block, count=1)
+                ficha_text = ficha_text[:q_section.start(1)] + q_block + ficha_text[q_section.end(1):]
 
             result = EsislaResult(ficha_esisla=ficha_text)
             return jsonify({

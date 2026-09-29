@@ -1692,6 +1692,7 @@ def test_esisla_generation_altura_peso_exame_checkbox_parecer_and_justificativa(
     assert "CRM: 123456/SP" in f_text
     assert "Aparelho Osteomuscular e Tecido Conjuntivo: Lombalgia com contratura muscular" in f_text
     assert "Capacidade laborativa temporariamente prejudicada" in f_text
+    assert "(Tipo-Data-Resultado)" not in f_text
 
     # 4. Contratos de frontend em gestao_atendimentos.html
     assert '☑️ Checkbox e-SISLA:' in GESTAO_ATENDIMENTOS
@@ -1701,6 +1702,43 @@ def test_esisla_generation_altura_peso_exame_checkbox_parecer_and_justificativa(
     assert 'justificaPericia' in GESTAO_ATENDIMENTOS
     assert 'voMedico.lgAltura' in GESTAO_ATENDIMENTOS
     assert 'voMedico.lgPeso' in GESTAO_ATENDIMENTOS
+
+
+def test_esisla_remocao_tipo_data_resultado_quesitos_salvamento_e_script_f12_parecer_cids():
+    from app import TASK_PROMPTS, _clean_esisla_text, _minimal_ai_context
+
+    # 1. Ausência de (Tipo-Data-Resultado) nos prompts oficiais e limpeza ativa
+    assert "(Tipo-Data-Resultado)" not in TASK_PROMPTS["esisla"]
+    suja = "Registro da perícia Médica para Licença\n\nAtestado/Relatório/Exames Complementares (Tipo-Data-Resultado):\nAtestado CRM 12345"
+    limpa = _clean_esisla_text(suja)
+    assert "(Tipo-Data-Resultado)" not in limpa
+    assert "Atestado/Relatório/Exames Complementares:" in limpa
+
+    # 2. Normalização automática de quesitos em _minimal_ai_context para nunca ficarem vazios/—
+    ctx_favoravel = _minimal_ai_context({"parecer": "Favorável", "quesitos": []})
+    assert len(ctx_favoravel["quesitos"]) == 3
+    assert [q["resposta"] for q in ctx_favoravel["quesitos"]] == ["Sim", "Sim", "Sim"]
+    ctx_contrario = _minimal_ai_context({"parecer": "Contrário", "quesitos": []})
+    assert len(ctx_contrario["quesitos"]) == 3
+    assert [q["resposta"] for q in ctx_contrario["quesitos"]] == ["Sim", "Sim", "Não"]
+
+    # 3. Contratos de Modo Ágil e salvamento de quesitos no formulário de atendimento
+    assert 'id="agilQuesitosContainer"' in ATTENDANCE
+    assert 'id="agilQuesitosList"' in ATTENDANCE
+    assert 'renderAgilQuesitos' in ATTENDANCE
+    assert 'ensureDefaultQuesitos' in ATTENDANCE
+    assert 'Harmonizar com Parecer' in ATTENDANCE
+
+    # 4. Contratos de Parecer Final e limite estrito de 2 CIDs no Script F12 e JSON e-SISLA
+    assert 'setParecerFinal' in GESTAO_ATENDIMENTOS
+    assert 'mudaSituacao' in GESTAO_ATENDIMENTOS
+    assert 'escondeCampos' in GESTAO_ATENDIMENTOS
+    assert 'cdCidPm' in GESTAO_ATENDIMENTOS
+    assert 'cdCid2Pm' in GESTAO_ATENDIMENTOS
+    assert 'nmCidPm2' in GESTAO_ATENDIMENTOS
+    # Bookmarklet universal também com setParecerFinal
+    assert 'setParecerFinal' in ATTENDANCE
+
 
 
 

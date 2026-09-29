@@ -2621,6 +2621,21 @@ body:not(.mode-agil-active) #containerModoAgil {
               </div>
             </div>
             <textarea class="textarea" id="agilJustificativa" style="min-height:90px" placeholder="Justificativa da conclusão pericial..." oninput="syncAgilField('justificativa', this.value)"></textarea>
+
+            <!-- Quesitos Oficiais e-SISLA / DPME no Modo Ágil -->
+            <div id="agilQuesitosContainer" style="margin-top:12px;padding:12px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="font-size:14px">❓</span>
+                  <strong style="font-size:12px;color:#1E3A8A;text-transform:uppercase;letter-spacing:.02em">Quesitos Oficiais DPME / e-SISLA</strong>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span id="agilQuesitosStatusBadge" style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;background:#DCFCE7;color:#15803D">3/3 Respondidos</span>
+                  <button type="button" class="btn btn-outline" style="padding:2px 8px;font-size:10.5px;font-weight:700;color:#2563EB;border-color:#BFDBFE;background:#EFF6FF;cursor:pointer" onclick="aplicarAlinhamentoQuesitos(state.parecer==='CONTRÁRIO'?'CONTRARIO':'FAVORAVEL')">⚡ Harmonizar com Parecer</button>
+                </div>
+              </div>
+              <div id="agilQuesitosList" style="display:flex;flex-direction:column;gap:6px"></div>
+            </div>
             
             <!-- Alerta de Coerência Pericial (Quesitos x Parecer) -->
             <div id="coerenciaParecerAlerta" class="esisla-coerencia-card" style="display:none;margin-top:10px;padding:10px 14px;background:#FFFBEB;border:1.5px solid #FCD34D;border-radius:10px;font-size:12.5px;color:#92400E">
@@ -4195,6 +4210,9 @@ function syncState(){
     state.exameFisicoDescricao=$("exameFisicoDescricao")?.value||state.exameFisicoDescricao||"";
     state.alteracoesClinicasExames=$("alteracoesClinicasExames")?.value||state.alteracoesClinicasExames||"";
     state.exam={selected:state.exameFisicoTipo,descricao:state.exameFisicoDescricao};
+    if (typeof QuesitoService !== "undefined") {
+      state.quesitos = QuesitoService.get();
+    }
 
     state.aux={
       dataAtd:getVal("dataAtd", prevAux.dataAtd || today()),
@@ -4252,7 +4270,7 @@ function applyState(){
   $("exameFisicoDescricao") && ($("exameFisicoDescricao").value=state.exameFisicoDescricao||"");
   $("alteracoesClinicasExames") && ($("alteracoesClinicasExames").value=state.alteracoesClinicasExames||"");
   setRadio("readaptado",state.readaptado);setRadio("outrasDoencas",state.outrasDoencas);setRadio("alteracaoMed",state.alteracaoMed);setRadio("limitacaoFuncional",state.limitacaoFuncional);setRadio("limitacaoRol",state.limitacaoRol);setRadio("parecer",state.parecer);setRadio("capacidade",state.capacidade); $("psicoterapia").checked=!!state.psicoterapia;$("fisioterapia").checked=!!state.fisioterapia;
-  togglePanelsOnly(); updateLimitacaoStatus(); renderMedications();renderConditions();renderDocumentRecords();renderQuesitos();renderExam();renderSecondaryCIDs();renderParecerHint();applyFinalizedLock(); if($("cid").value)renderCIDAssist(findCID($("cid").value)||null); syncExtendedToAgil(); go(Math.min(9,Math.max(1,Number(state.current)||1)));
+  togglePanelsOnly(); updateLimitacaoStatus(); renderMedications();renderConditions();renderDocumentRecords();if(typeof ensureDefaultQuesitos==="function")ensureDefaultQuesitos();renderQuesitos();renderExam();renderSecondaryCIDs();renderParecerHint();applyFinalizedLock(); if($("cid").value)renderCIDAssist(findCID($("cid").value)||null); syncExtendedToAgil(); go(Math.min(9,Math.max(1,Number(state.current)||1)));
 }
 function togglePanelsOnly(){
   const readapVal = getRadio("readaptado") || getRadio("agilReadaptado");
@@ -4447,8 +4465,11 @@ function autoSave(){
   if(__isAutoSaving) return;
   __isAutoSaving = true;
   try {
-    if(isFinalizedReadOnly())return;
-    syncState(); QuesitoService.get(); updateProgress(); invalidateAICache();
+    if (typeof ensureDefaultQuesitos === "function") ensureDefaultQuesitos();
+    syncState();
+    state.quesitos = QuesitoService.get();
+    updateProgress();
+    invalidateAICache();
     if(!state.atendimento){
       setPersistStatus("","Não salvo — clique em Salvar rascunho");
       clearTimeout(window.__saveTimer);
@@ -4642,14 +4663,62 @@ function syncQuesitoStateFromDOM(){
 }
 function getQuesitoAnswers(){ return QuesitoService.validate().answers; }
 function getQuesitoValidation(){ return QuesitoService.validate(); }
+function renderAgilQuesitos() {
+  const box = $("agilQuesitosList");
+  if (!box) return;
+  const qs = QuesitoService.get();
+  box.innerHTML = qs.map((q, i) => {
+    const isSim = q.resposta === "Sim";
+    const isNao = q.resposta === "Não";
+    return `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:#fff;border:1px solid #E2E8F0;border-radius:6px;gap:8px">
+        <span style="font-size:12px;color:#334155;font-weight:600;flex:1">${i+1}) ${esc(q.pergunta)}</span>
+        <div style="display:flex;gap:6px">
+          <button type="button" class="btn" style="padding:3px 12px;font-size:11.5px;font-weight:700;border-radius:5px;cursor:pointer;border:1.5px solid ${isSim ? '#059669' : '#CBD5E1'};background:${isSim ? '#DEF7EC' : '#fff'};color:${isSim ? '#03543F' : '#64748B'}" onclick="setQuesitoAnswer(${i},'Sim')">Sim</button>
+          <button type="button" class="btn" style="padding:3px 12px;font-size:11.5px;font-weight:700;border-radius:5px;cursor:pointer;border:1.5px solid ${isNao ? '#DC2626' : '#CBD5E1'};background:${isNao ? '#FDE8E8' : '#fff'};color:${isNao ? '#9B1C1C' : '#64748B'}" onclick="setQuesitoAnswer(${i},'Não')">Não</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  const badge = $("agilQuesitosStatusBadge");
+  if (badge) {
+    const ans = QuesitoService.validate().answered;
+    if (ans === 3) {
+      badge.textContent = "3/3 Respondidos";
+      badge.style.background = "#DCFCE7";
+      badge.style.color = "#15803D";
+    } else {
+      badge.textContent = `${ans}/3 Respondidos`;
+      badge.style.background = "#FEF3C7";
+      badge.style.color = "#92400E";
+    }
+  }
+}
+
+function ensureDefaultQuesitos() {
+  const qv = QuesitoService.validate();
+  if (qv.answered < 3) {
+    const p = String(state.parecer || getRadio("parecer") || "").toUpperCase();
+    const isFav = p.includes("FAV");
+    if (!QuesitoService.getAnswer(0)) QuesitoService.set(0, "Sim");
+    if (!QuesitoService.getAnswer(1)) QuesitoService.set(1, "Sim");
+    if (!QuesitoService.getAnswer(2)) QuesitoService.set(2, isFav ? "Sim" : "Não");
+    state.quesitos = QuesitoService.get();
+  }
+}
+
 function renderQuesitos(){
-  ensureFixedQuesitos(); const box=$("quesitos"); if(!box)return;
-  box.innerHTML=QuesitoService.get().map((q,i)=>`<div class="quesito-fixed ${q.resposta?"answered":"unanswered"}"><div class="q-title"><span>${i+1}) ${esc(q.pergunta)}</span><span class="q-state">${q.resposta?`✓ ${esc(q.resposta)}`:"Pendente"}</span></div><div class="q-answer"><label class="choice"><input type="radio" name="quesito-${i}" value="Sim" ${q.resposta==="Sim"?"checked":""} onchange="setQuesitoAnswer(${i},'Sim')"><span>Sim</span></label><label class="choice"><input type="radio" name="quesito-${i}" value="Não" ${q.resposta==="Não"?"checked":""} onchange="setQuesitoAnswer(${i},'Não')"><span>Não</span></label></div></div>`).join("");
+  ensureFixedQuesitos(); const box=$("quesitos");
+  if(box) {
+    box.innerHTML=QuesitoService.get().map((q,i)=>`<div class="quesito-fixed ${q.resposta?"answered":"unanswered"}"><div class="q-title"><span>${i+1}) ${esc(q.pergunta)}</span><span class="q-state">${q.resposta?`✓ ${esc(q.resposta)}`:"Pendente"}</span></div><div class="q-answer"><label class="choice"><input type="radio" name="quesito-${i}" value="Sim" ${q.resposta==="Sim"?"checked":""} onchange="setQuesitoAnswer(${i},'Sim')"><span>Sim</span></label><label class="choice"><input type="radio" name="quesito-${i}" value="Não" ${q.resposta==="Não"?"checked":""} onchange="setQuesitoAnswer(${i},'Não')"><span>Não</span></label></div></div>`).join("");
+  }
+  renderAgilQuesitos();
   updateQuesitoWarning();
 }
 function setQuesitoAnswer(i,v){
   QuesitoService.set(i,v); const card=document.querySelectorAll(".quesito-fixed")[i]; if(card){card.classList.toggle("answered",!!QuesitoService.getAnswer(i));card.classList.toggle("unanswered",!QuesitoService.getAnswer(i));const st=card.querySelector(".q-state");if(st)st.textContent=QuesitoService.getAnswer(i)?`✓ ${QuesitoService.getAnswer(i)}`:"Pendente";}
-  updateQuesitoWarning(); updateStepValidation(); if (typeof verificarCoerenciaPericial === "function") verificarCoerenciaPericial(); if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil(); autoSave();
+  renderAgilQuesitos(); updateQuesitoWarning(); updateStepValidation(); if (typeof verificarCoerenciaPericial === "function") verificarCoerenciaPericial(); if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil(); autoSave();
 }
 function updateQuesitoWarning(){
   const box=$("quesitosWarning");if(!box)return; const qv=QuesitoService.validate();
@@ -6308,6 +6377,8 @@ function syncAgilToExtended() {
   if (Array.isArray(state.cidsSecundarios)) {
     state.aux.cidsSecundarios = state.cidsSecundarios;
   }
+  if (typeof ensureDefaultQuesitos === "function") ensureDefaultQuesitos();
+  if (typeof QuesitoService !== "undefined") state.quesitos = QuesitoService.get();
 }
 
 function syncAgilField(field, value) {
@@ -8694,11 +8765,63 @@ function gerarCodigoBookmarkletUniversal() {
     setRadio('fl_limit',q2,q2==='S'?'idFl_limitS':'idFl_limitN');if(typeof win.limpaCamposQuesitos==='function'){try{win.limpaCamposQuesitos(q2);}catch(_){}}
     setRadio('fl_imped',q3,q3==='S'?'idFl_impedS':'idFl_impedN');if(typeof win.limpaCamposQuesitos==='function'){try{win.limpaCamposQuesitos(q3);}catch(_){}}
     var parecerVal=campos['voResult.voParecerFinal.flPfinal']||'F';
-    setRadio('voResult.voParecerFinal.flPfinal',parecerVal,parecerVal==='F'?'decPericialF':'decPericialC');
-    if(typeof win.mudaSituacao==='function'){try{win.mudaSituacao();}catch(_){}}
-    if(typeof win.escondeCampos==='function'){try{win.escondeCampos(parecerVal);}catch(_){}}
-    var bFav=doc.getElementById('blocoFavoravel');var bJust=doc.getElementById('blocoJustificativa');
-    if(parecerVal==='F'){if(bFav)bFav.style.display='block';if(bJust&&!campos['voMedico.parRlComp'])bJust.style.display='none';}else{if(bFav)bFav.style.display='none';if(bJust)bJust.style.display='block';}
+    function setParecerFinal(val) {
+      var isFav = (val === 'F' || val === 'FAVORÁVEL' || val === 'Favorável');
+      var targetVal = isFav ? 'F' : 'C';
+      var targetId = isFav ? 'decPericialF' : 'decPericialC';
+      var otherId = isFav ? 'decPericialC' : 'decPericialF';
+      var targetName = 'voResult.voParecerFinal.flPfinal';
+      function findInput(idPref, vPref, isFavFlag) {
+        var el = doc.getElementById(idPref);
+        if (!el) el = doc.getElementById(isFavFlag ? 'flPfinalF' : 'flPfinalC');
+        if (!el) el = doc.getElementById(isFavFlag ? 'idFlPfinalF' : 'idFlPfinalC');
+        if (!el) el = doc.querySelector('input[name="' + targetName + '"][value="' + vPref + '"]');
+        if (!el) el = doc.querySelector('input[name*="flPfinal"][value="' + vPref + '"]');
+        if (!el) el = doc.querySelector('input[name*="decPericial"][value="' + vPref + '"]');
+        if (!el) {
+          var labels = doc.querySelectorAll('label, span, td, b, font');
+          var searchWord = isFavFlag ? 'Favor' : 'Contr';
+          for (var k = 0; k < labels.length; k++) {
+            var txt = (labels[k].textContent || '').trim();
+            if (txt.indexOf(searchWord) !== -1) {
+              var inp = labels[k].querySelector('input') || 
+                        (labels[k].htmlFor ? doc.getElementById(labels[k].htmlFor) : null) ||
+                        labels[k].previousElementSibling ||
+                        labels[k].nextElementSibling;
+              if (inp && (inp.tagName === 'INPUT' || (inp = inp.querySelector('input')))) {
+                el = inp;
+                break;
+              }
+            }
+          }
+        }
+        return el;
+      }
+      var targetEl = findInput(targetId, targetVal, isFav);
+      var otherEl = findInput(otherId, isFav ? 'C' : 'F', !isFav);
+      if (otherEl) { otherEl.checked = false; trigger(otherEl); }
+      if (targetEl) {
+        if (targetEl.hasAttribute('disabled')) targetEl.removeAttribute('disabled');
+        targetEl.disabled = false;
+        if (!targetEl.checked) { try { targetEl.click(); } catch(_) {} }
+        targetEl.checked = true;
+        trigger(targetEl);
+      }
+      if (typeof win.mudaSituacao === 'function') { try { win.mudaSituacao(); } catch(_) {} }
+      if (typeof win.escondeCampos === 'function') { try { win.escondeCampos(targetVal); } catch(_) {} }
+      if (targetEl) { targetEl.checked = true; trigger(targetEl); }
+      if (otherEl) { otherEl.checked = false; }
+      var bFav = doc.getElementById('blocoFavoravel');
+      var bJust = doc.getElementById('blocoJustificativa');
+      if (isFav) {
+        if (bFav) bFav.style.display = 'block';
+        if (bJust && campos['voMedico.parRlComp']) bJust.style.display = 'block';
+      } else {
+        if (bFav) bFav.style.display = 'none';
+        if (bJust) bJust.style.display = 'block';
+      }
+    }
+    setParecerFinal(parecerVal);
     var diasSol=(campos['voResult.voParecerFinal.qtDiasPm']||'').toString().replace(/\\D/g,'').slice(0,3);
     var dtIniSol=sanitizeText(campos['voResult.voParecerFinal.dtIniPm'],10);
     setInput('input[name="voResult.voParecerFinal.qtDiasPm"]',diasSol);setInput('#qtDiasPm',diasSol);

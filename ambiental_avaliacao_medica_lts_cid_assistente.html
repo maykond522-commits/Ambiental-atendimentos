@@ -2067,8 +2067,13 @@ body:not(.mode-agil-active) #containerModoAgil {
             </div>
 
             <!-- Subpainel: Atestado Assistente & Calculadora Pericial de Prazos -->
+            <!-- Subpainel: Atestado Assistente & Calculadora Pericial de Prazos (oculto por padrão com checkbox) -->
             <div class="field col-12" style="margin-top:10px">
-              <div class="subpanel" style="margin-top:0;background:#F8FAFC;border:1.5px solid #CBD5E1;border-radius:12px;padding:14px">
+              <label style="display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:#0F3254;cursor:pointer;background:#F8FAFC;border:1.5px solid #CBD5E1;padding:8px 14px;border-radius:10px;user-select:none;margin-bottom:6px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
+                <input type="checkbox" id="agilCheckAtestadoAssistente" onchange="toggleAtestadoAssistente(this.checked)" style="width:17px;height:17px;accent-color:#2563EB;cursor:pointer">
+                <span>📅 Informar Dados do Atestado do Médico Assistente &amp; Prazos</span>
+              </label>
+              <div id="agilAtestadoAssistenteSubpanel" class="subpanel" style="display:none;margin-top:2px;background:#F8FAFC;border:1.5px solid #CBD5E1;border-radius:12px;padding:14px">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
                   <div style="font-weight:800;font-size:13px;color:#0F3254;display:flex;align-items:center;gap:6px">
                     <span>📅</span>
@@ -4003,6 +4008,23 @@ async function gerarJustificativaAgilIA(){
   if (aiInFlight) {
     toast("Já existe uma geração de IA em andamento para este cadastro. Aguarde a conclusão.");
     return;
+  }
+  if (state.exameFisicoTipo === "Outros" && state.outrosResultado === "Alterado") {
+    const cidVal = state.cid || state.aux?.cid || $("cid")?.value || $("agilCid")?.value || "";
+    const cidInfo = typeof findCID === "function" ? findCID(cidVal) : null;
+    const cidNome = cidInfo?.n || state.aux?.doencaMotivo || "patologia em tratamento";
+    const cargoNome = state.aux?.cargo || state.cargo || $("cargo")?.value || $("agilCargo")?.value || "servidor";
+    if (!state.descLimitacao && !state.aux?.descLimitacao) {
+      const limitacaoCid = `Limitações funcionais decorrentes do quadro clínico (${cidVal ? cidVal + ' - ' : ''}${cidNome}), com redução temporária do rendimento e necessidade de repouso/adaptação funcional para as atividades do cargo de ${cargoNome}.`;
+      state.descLimitacao = limitacaoCid;
+      if (!state.aux) state.aux = {};
+      state.aux.descLimitacao = limitacaoCid;
+      if ($("descLimitacao")) $("descLimitacao").value = limitacaoCid;
+      if (!state.aux.sintomasLimitacao) {
+        state.aux.sintomasLimitacao = limitacaoCid;
+        state.sintomasLimitacao = limitacaoCid;
+      }
+    }
   }
   syncAgilToExtended();
   const btn = $("btnAgilJustificativaIA");
@@ -6134,6 +6156,11 @@ function syncExtendedToAgil() {
   setVal("agilDataDocumento", state.aux.dataDocumento || state.dataDocumento || $("dataDocumento")?.value || "");
   setVal("agilDiasSolicitados", state.aux.diasSolicitados || state.diasSolicitados || $("diasSolicitados")?.value || "");
   
+  const temDadosAtestado = !!(state.aux?.crmCro || state.crmCro || $("crmCro")?.value || state.aux?.dataDocumento || state.dataDocumento || $("dataDocumento")?.value || state.aux?.diasSolicitados || state.diasSolicitados || $("diasSolicitados")?.value);
+  if (typeof toggleAtestadoAssistente === "function") {
+    toggleAtestadoAssistente(temDadosAtestado);
+  }
+  
   const exTipo = state.exameFisicoTipo || $("exameFisicoTipo")?.value || "";
   const isOsteo = (exTipo === "Aparelho Osteomuscular e Tecido Conjutivo");
   const isMental = (exTipo === "Exame Mental");
@@ -6328,6 +6355,9 @@ function syncAgilToExtended() {
   if (diasSol) {
     state.aux.diasSolicitados = diasSol; state.diasSolicitados = diasSol;
     if ($("diasSolicitados")) $("diasSolicitados").value = diasSol;
+  }
+  if (typeof atualizarDiasConcedidosAutomatico === "function") {
+    atualizarDiasConcedidosAutomatico();
   }
   
   const exTipo = getV("agilExameFisicoTipo");
@@ -6616,6 +6646,7 @@ function escolherOutrosResultado(resultado) {
     QuesitoService.set(1, "Sim");
     QuesitoService.set(2, "Não");
     renderQuesitos();
+    if (typeof atualizarDiasConcedidosAutomatico === "function") atualizarDiasConcedidosAutomatico();
     toast(`Avaliação (${state.outrosSubtipo || "Outros"}): NORMAL.`);
   } else if (resultado === "Alterado") {
     state.limitacaoFuncional = "Sim";
@@ -6630,7 +6661,27 @@ function escolherOutrosResultado(resultado) {
     QuesitoService.set(1, "Sim");
     QuesitoService.set(2, "Sim");
     renderQuesitos();
-    toast(`Avaliação (${state.outrosSubtipo || "Outros"}): ALTERADO.`);
+
+    // Limitações funcionais baseadas no CID aplicado e nas atividades do cargo (sem descrever exame físico)
+    const cidVal = state.cid || state.aux?.cid || $("cid")?.value || $("agilCid")?.value || "";
+    const cidInfo = typeof findCID === "function" ? findCID(cidVal) : null;
+    const cidNome = cidInfo?.n || state.aux?.doencaMotivo || "patologia em tratamento";
+    const cargoNome = state.aux?.cargo || state.cargo || $("cargo")?.value || $("agilCargo")?.value || "servidor";
+
+    if (!state.descLimitacao && !state.aux?.descLimitacao) {
+      const limitacaoCid = `Limitações funcionais decorrentes do quadro clínico (${cidVal ? cidVal + ' - ' : ''}${cidNome}), com redução temporária do rendimento e necessidade de repouso/adaptação funcional para as atividades do cargo de ${cargoNome}.`;
+      state.descLimitacao = limitacaoCid;
+      if (!state.aux) state.aux = {};
+      state.aux.descLimitacao = limitacaoCid;
+      if ($("descLimitacao")) $("descLimitacao").value = limitacaoCid;
+      if (!state.aux.sintomasLimitacao) {
+        state.aux.sintomasLimitacao = limitacaoCid;
+        state.sintomasLimitacao = limitacaoCid;
+      }
+    }
+
+    if (typeof atualizarDiasConcedidosAutomatico === "function") atualizarDiasConcedidosAutomatico();
+    toast(`Avaliação (${state.outrosSubtipo || "Outros"}): ALTERADO. Limitações funcionais vinculadas ao CID.`);
   }
   autoSave();
 }
@@ -7196,6 +7247,43 @@ function finalizarAtendimentoAgil() {
 /* =========================================================
    PRODUTIVIDADE MÉDICA: CALCULADORA DE PRAZOS & RETROAÇÃO
    ========================================================= */
+function toggleAtestadoAssistente(aberto) {
+  const panel = $("agilAtestadoAssistenteSubpanel");
+  if (panel) {
+    panel.style.display = aberto ? "block" : "none";
+  }
+  const chk = $("agilCheckAtestadoAssistente");
+  if (chk && chk.checked !== !!aberto) {
+    chk.checked = !!aberto;
+  }
+  atualizarDiasConcedidosAutomatico();
+}
+
+function atualizarDiasConcedidosAutomatico() {
+  const p = String(state.parecer || $("parecer")?.value || "").toUpperCase();
+  const isContrario = p.includes("CONTRÁR") || p.includes("CONTRAR");
+  const diasInput = $("agilDiasSolicitados");
+  const diasNormInput = $("diasSolicitados");
+
+  if (!state.aux) state.aux = {};
+
+  if (isContrario) {
+    state.aux.diasConcedidos = "0";
+    state.diasConcedidos = "0";
+  } else {
+    let currentDias = state.aux.diasConcedidos || state.aux.diasSolicitados || diasInput?.value || diasNormInput?.value || "";
+    currentDias = String(currentDias).replace(/\D/g, "");
+    if (!currentDias || currentDias === "0") {
+      currentDias = "1";
+    }
+    state.aux.diasConcedidos = currentDias;
+    state.diasConcedidos = currentDias;
+    if (!state.aux.diasSolicitados) state.aux.diasSolicitados = currentDias;
+    if (diasInput && !diasInput.value) diasInput.value = currentDias;
+    if (diasNormInput && !diasNormInput.value) diasNormInput.value = currentDias;
+  }
+}
+
 function calcularDatasAtestado() {
   const dtDoc = $("agilDataDocumento")?.value || state.aux?.dataDocumento || "";
   const diasStr = $("agilDiasSolicitados")?.value || state.aux?.diasSolicitados || "";
@@ -8919,56 +9007,45 @@ function copiarCodigoBookmarklet() {
 function detectarSistemaExameFisico(st, aux, texto, cidCode) {
   const exTipo = String(st?.exameFisicoTipo || aux?.exameFisicoTipo || st?.agilExameFisicoTipo || aux?.agilExameFisicoTipo || '').trim().toLowerCase();
   const outrosSub = String(st?.outrosSubtipo || aux?.outrosSubtipo || st?.areaExameClinico || aux?.areaExameClinico || '').trim().toLowerCase();
-  const exameFisicoLinha1 = (String(texto || '').match(/\(\*\)\s*Exame Físico Geral:?\s*\n\s*([^\n\r]+)/i) || [])[1]?.toLowerCase() || '';
 
-  // 1. Aparelho Osteomuscular e Tecido Conjuntivo (prioridade se escolhido no atendimento)
-  if (exTipo.includes('osteomuscular') || exTipo.includes('conjutivo') || exTipo.includes('conjuntivo') || outrosSub.includes('osteomuscular') || outrosSub.includes('ortop') || exameFisicoLinha1.includes('osteomuscular') || exameFisicoLinha1.includes('conjutivo') || exameFisicoLinha1.includes('conjuntivo')) {
-    return 'aoal';
-  }
-  // 2. Exame Mental
-  if (exTipo === 'exame mental' || (exTipo.includes('mental') && !exTipo.includes('físic')) || outrosSub.includes('mental') || outrosSub.includes('psiqui') || exameFisicoLinha1.startsWith('exame mental')) {
-    return 'em';
-  }
-  // 3. Aparelho Circulatório
-  if (exTipo.includes('circulat') || outrosSub.includes('circulat') || outrosSub.includes('cardio') || exameFisicoLinha1.includes('circulat')) {
-    return 'ac';
-  }
-  // 4. Aparelho Respiratório
-  if (exTipo.includes('respirat') || outrosSub.includes('respirat') || outrosSub.includes('pulmon') || exameFisicoLinha1.includes('respirat')) {
-    return 'ar';
-  }
-  // 5. Tecido celular subcutâneo Pele e Fâneros
-  if (exTipo.includes('pele') || exTipo.includes('fânero') || exTipo.includes('subcut') || exTipo.includes('dermat') || outrosSub.includes('pele') || exameFisicoLinha1.includes('pele') || exameFisicoLinha1.includes('subcut')) {
-    return 'tcspf';
-  }
-  // 6. Aparelho Digestivo
-  if (exTipo.includes('digest') || outrosSub.includes('digest') || outrosSub.includes('gastr') || exameFisicoLinha1.includes('digest')) {
-    return 'ad';
-  }
-  // 7. Aparelho Geniturinário
-  if (exTipo.includes('genit') || outrosSub.includes('genit') || outrosSub.includes('urin') || outrosSub.includes('renal') || exameFisicoLinha1.includes('genit')) {
-    return 'agu';
-  }
-  // 8. Aparelho Hemolinfopoiético
-  if (exTipo.includes('hemolin') || outrosSub.includes('hemolin') || outrosSub.includes('hemat') || exameFisicoLinha1.includes('hemolin')) {
-    return 'ahp';
-  }
-  // 9. Aparelho Endócrino
-  if (exTipo.includes('endocrin') || outrosSub.includes('endocrin') || outrosSub.includes('metabol') || outrosSub.includes('diabet') || exameFisicoLinha1.includes('endocrin')) {
-    return 'ae';
-  }
-  // 10. Sistema Nervoso
-  if (exTipo.includes('nervoso') || outrosSub.includes('nervoso') || outrosSub.includes('neurol') || exameFisicoLinha1.includes('nervoso')) {
-    return 'sn';
-  }
-  // 11. Órgãos dos Sentidos
-  if (exTipo.includes('sentidos') || outrosSub.includes('sentidos') || outrosSub.includes('oftalm') || outrosSub.includes('otol') || exameFisicoLinha1.includes('sentidos')) {
-    return 'os';
-  }
-  // 12. Outros
-  if (exTipo.includes('outro') || outrosSub.includes('outro')) {
+  // 0. Precedência absoluta da escolha do médico: se escolheu "Outros" ou "E outros", respeita estritamente
+  if (exTipo === 'outros' || exTipo === 'e outros' || outrosSub === 'e outros' || outrosSub === 'outros' || exTipo.startsWith('outro')) {
     return 'outro';
   }
+  // Precedência de Exame Mental escolhido pelo médico
+  if (exTipo === 'exame mental' || (exTipo.includes('mental') && !exTipo.includes('físic'))) {
+    return 'em';
+  }
+  // Precedência de Aparelho Osteomuscular escolhido pelo médico
+  if (exTipo.includes('osteomuscular') || exTipo.includes('conjutivo') || exTipo.includes('conjuntivo')) {
+    return 'aoal';
+  }
+
+  // Subtipos selecionados quando a área clínica foi detalhada
+  if (outrosSub.includes('osteomuscular') || outrosSub.includes('ortop')) return 'aoal';
+  if (outrosSub.includes('mental') || outrosSub.includes('psiqui')) return 'em';
+  if (outrosSub.includes('circulat') || outrosSub.includes('cardio')) return 'ac';
+  if (outrosSub.includes('respirat') || outrosSub.includes('pulmon')) return 'ar';
+  if (outrosSub.includes('pele') || outrosSub.includes('fânero') || outrosSub.includes('subcut') || outrosSub.includes('dermat')) return 'tcspf';
+  if (outrosSub.includes('digest') || outrosSub.includes('gastr')) return 'ad';
+  if (outrosSub.includes('genit') || outrosSub.includes('urin') || outrosSub.includes('renal')) return 'agu';
+  if (outrosSub.includes('hemolin') || outrosSub.includes('hemat')) return 'ahp';
+  if (outrosSub.includes('endocrin') || outrosSub.includes('metabol') || outrosSub.includes('diabet')) return 'ae';
+  if (outrosSub.includes('nervoso') || outrosSub.includes('neurol')) return 'sn';
+  if (outrosSub.includes('sentidos') || outrosSub.includes('oftalm') || outrosSub.includes('otol')) return 'os';
+
+  const exameFisicoLinha1 = (String(texto || '').match(/\(\*\)\s*Exame Físico Geral:?\s*\n\s*([^\n\r]+)/i) || [])[1]?.toLowerCase() || '';
+  if (exameFisicoLinha1.includes('osteomuscular') || exameFisicoLinha1.includes('conjutivo') || exameFisicoLinha1.includes('conjuntivo')) return 'aoal';
+  if (exameFisicoLinha1.startsWith('exame mental')) return 'em';
+  if (exameFisicoLinha1.includes('circulat')) return 'ac';
+  if (exameFisicoLinha1.includes('respirat')) return 'ar';
+  if (exameFisicoLinha1.includes('pele') || exameFisicoLinha1.includes('subcut')) return 'tcspf';
+  if (exameFisicoLinha1.includes('digest')) return 'ad';
+  if (exameFisicoLinha1.includes('genit')) return 'agu';
+  if (exameFisicoLinha1.includes('hemolin')) return 'ahp';
+  if (exameFisicoLinha1.includes('endocrin')) return 'ae';
+  if (exameFisicoLinha1.includes('nervoso')) return 'sn';
+  if (exameFisicoLinha1.includes('sentidos')) return 'os';
 
   // Fallback estrito pelo código CID
   const c = String(cidCode || '').toUpperCase().trim();
@@ -9013,29 +9090,8 @@ function copiarLaudoEsislaAtendimento() {
   const ap = sanitizeText(state.aux?.historicoPregresso || v.historicoPregresso || state.aux?.doencaMotivo || v.doencaMotivo || '', 2000);
 
   // 3. Atestado / Relatório / Exames Complementares (Tipo-Data-Resultado) (max 2500)
-  let hda = '';
-  if (state.fichaEsisla) {
-    const m = state.fichaEsisla.match(/Atestado\/Relatório\/Exames Complementares[^:]*:\s*([\s\S]*?)(?=\n\s*(?:Pressão Arterial|Sistólica|$))/i);
-    if (m && m[1].trim()) hda = m[1].trim();
-  }
-  if (!hda) {
-    const crmDoc = state.aux?.crmCro || v.crmCro || '';
-    const diasDoc = state.aux?.diasSolicitados || v.diasSolicitados || '';
-    const dtDoc = formatDate(state.aux?.dataDocumento || v.dataDocumento || today());
-    const cidDoc = state.aux?.cid || v.cid || '';
-    const obsDoc = state.aux?.obsDocumentos || v.obsDocumentos || '';
-    const parts = [];
-    if (crmDoc || diasDoc || cidDoc) {
-      parts.push(`CRM ${crmDoc}, solicita ${diasDoc} dias de afastamento a partir de ${dtDoc}, pelo CID ${cidDoc} - Atestado/Relatório médico apresentado.`);
-    }
-    if (obsDoc) parts.push(obsDoc);
-    if (Array.isArray(state.documentosComplementares) && state.documentosComplementares.length > 0) {
-      const docsStr = state.documentosComplementares.map(d => `${d.tipo || 'Documento'} - ${formatDate(d.data || today())} - ${d.resultado || d.descricao || ''}`).join('; ');
-      parts.push(docsStr);
-    }
-    hda = parts.join('\n');
-  }
-  hda = sanitizeText(hda, 2500);
+  // Diretriz oficial e-SISLA: sempre "Em anexo."
+  let hda = 'Em anexo.';
 
   // 4. Exame Físico Geral / Descrição das Alterações Clínicas e Exames (max 2500)
   // No e-SISLA o campo voMedico.parRlExApres (idExameApres) deve conter exclusivamente os achados do Exame Físico Geral direto
@@ -9125,7 +9181,12 @@ function copiarLaudoEsislaAtendimento() {
     cid2 = sanitizeText(cidsSec[0].codigo || cidsSec[0].cid || '', 5);
     descrCid2 = sanitizeText(cidsSec[0].descricao || cidsSec[0].nome || '', 65);
   }
-  const diasSol = String(state.aux?.diasSolicitados || v.diasSolicitados || '').replace(/\D/g, '').slice(0, 3);
+  let diasSol = String(state.aux?.diasConcedidos || state.aux?.diasSolicitados || v.diasSolicitados || '').replace(/\D/g, '').slice(0, 3);
+  if (parecerVal === 'C') {
+    diasSol = '0';
+  } else if (parecerVal === 'F' && (!diasSol || diasSol === '0')) {
+    diasSol = '1';
+  }
   const dtIniSol = formatDate(state.aux?.dataDocumento || v.dataDocumento || today());
 
   const camposEsisla = {

@@ -1722,12 +1722,11 @@ def test_esisla_remocao_tipo_data_resultado_quesitos_salvamento_e_script_f12_par
     assert len(ctx_contrario["quesitos"]) == 3
     assert [q["resposta"] for q in ctx_contrario["quesitos"]] == ["Sim", "Sim", "Não"]
 
-    # 3. Contratos de Modo Ágil e salvamento de quesitos no formulário de atendimento
-    assert 'id="agilQuesitosContainer"' in ATTENDANCE
+    # 3. Contratos de Modo Ágil e salvamento de quesitos no formulário de atendimento (atuando nos fundos)
+    assert 'id="agilQuesitosContainer" style="display:none' in ATTENDANCE
     assert 'id="agilQuesitosList"' in ATTENDANCE
     assert 'renderAgilQuesitos' in ATTENDANCE
     assert 'ensureDefaultQuesitos' in ATTENDANCE
-    assert 'Harmonizar com Parecer' in ATTENDANCE
 
     # 4. Contratos de Parecer Final e limite estrito de 2 CIDs no Script F12 e JSON e-SISLA
     assert 'setParecerFinal' in GESTAO_ATENDIMENTOS
@@ -1738,6 +1737,100 @@ def test_esisla_remocao_tipo_data_resultado_quesitos_salvamento_e_script_f12_par
     assert 'nmCidPm2' in GESTAO_ATENDIMENTOS
     # Bookmarklet universal também com setParecerFinal
     assert 'setParecerFinal' in ATTENDANCE
+
+
+def test_esisla_sistema_exame_fisico_single_checkbox_e_remocao_alteracoes_clinicas_separadas():
+    """Garante que:
+    1. Apenas o sistema de exame físico selecionado (ex.: Aparelho Osteomuscular) é marcado
+       no e-SISLA via F12 / Bookmarklet, prevenindo a seleção inadvertida de Exame Mental.
+    2. Checkboxes não selecionados são explicitamente desmarcados via setCheckbox(..., false).
+    3. O bloco redundante 'ALTERAÇÕES CLÍNICAS E RELATO DE EXAMES' foi removido da visualização em blocos.
+    4. Achados reais de exames complementares vão para Queixa e Duração, descartando 'Em anexo.'
+    5. O textarea voMedico.parRlExApres (idExameApres) não recebe boilerplate 'Em anexo.'
+    """
+    # 1. Função de detecção determinística e mutuamente exclusiva de sistema de exame físico
+    assert 'function detectarSistemaExameFisico(st, aux, texto, cidCode)' in GESTAO_ATENDIMENTOS
+    assert 'function detectarSistemaExameFisico(st, aux, texto, cidCode)' in ATTENDANCE
+
+    # 2. Remoção do bloco redundante de Alterações Clínicas em renderEsislaBlocos
+    assert 'ALTERAÇÕES CLÍNICAS E RELATO DE EXAMES' not in GESTAO_ATENDIMENTOS
+    assert 'Alterações Clínicas e Relato de Exames' not in GESTAO_ATENDIMENTOS
+
+    # 3. Uncheck explícito de checkboxes falsos no Script F12 e no Bookmarklet Universal
+    assert 'setCheckbox(item.n, item.id, isChecked);' in GESTAO_ATENDIMENTOS
+    assert 'setCheckbox(item.n,item.id,chk);' in ATTENDANCE
+
+    # 4. Integração de relatos de exames em Queixa e Duração
+    assert 'Exames apresentados:' in GESTAO_ATENDIMENTOS
+    assert 'Exames apresentados:' in ATTENDANCE
+
+    # 5. Prevenção de anexar "Em anexo" ao textarea voMedico.parRlExApres
+    assert "exApres.replace(/\\n\\s*Em anexo\\.?\\s*$/gi, '')" in GESTAO_ATENDIMENTOS
+    assert "exApres.replace(/^(?:[\\s\\r\\n]*em\\s+anexo\\.?[" in ATTENDANCE
+
+
+def test_ajustes_atendimento_e_esisla_5_requisitos():
+    """Valida os 5 requisitos solicitados pelo usuário:
+    1. IA para 'Outros' no exame físico: não descreve exame físico, foca em limitações funcionais baseadas no CID quando Alterado.
+    2. IA e-SISLA: Atestados e Exames Complementares preenchido estritamente com 'Em anexo.'
+    3. Dados do Atestado & Prazos no atendimento: oculto por padrão com checkbox 'agilCheckAtestadoAssistente'.
+    4. Dias concedidos nunca em branco se parecer favorável, e automaticamente 0 se parecer contrário.
+    5. Eliminação de duplicação do título do sistema e respeito à escolha de 'Outros' sem sobreposição de CID.
+    """
+    from app import TASK_PROMPTS, _clean_esisla_text
+
+    # Requisito 1: Prompt de justificativa e atendimento Ágil para Outros
+    justif_prompt = TASK_PROMPTS["justificativa"]
+    assert "NÃO DESCREVA O EXAME FÍSICO" in justif_prompt
+    assert "FOCO EXCLUSIVO EM LIMITAÇÕES FUNCIONAIS E LABORAIS COM BASE NO CID" in justif_prompt
+    assert "Limitações funcionais decorrentes do quadro clínico" in ATTENDANCE
+    assert "escolherOutrosResultado" in ATTENDANCE
+    assert "gerarJustificativaAgilIA" in ATTENDANCE
+
+    # Requisito 2: Atestados e Exames Complementares estritamente "Em anexo."
+    esisla_prompt = TASK_PROMPTS["esisla"]
+    assert '“Atestado/Relatório/Exames Complementares”: preencha exclusivamente com o texto sucinto padronizado:\n  "Em anexo."' in esisla_prompt
+    raw_esisla = (
+        "Registro da perícia Médica para Licença\n\n"
+        "(*) Queixa e Duração:\nServidor de 40 anos...\n\n"
+        "Antecedentes Mórbidos:\nNega comorbidades.\n\n"
+        "Atestado/Relatório/Exames Complementares:\n"
+        "CRM 123456, solicita 15 dias de afastamento a partir de 20/09/2026, pelo CID M17.\n\n"
+        "Pressão Arterial\nSistólica (mmHg): 120\nDiastólica (mmHg): 80\nPulso (bpm): 75\n\n"
+        "Altura:\nPeso:\n\n"
+        "(*)Exame Físico Geral\nAparelho Osteomuscular: dor leve.\n\n"
+        "Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:\nNão foram apresentados exames.\n\n"
+        "(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):\nLimitação leve.\n\n"
+        "(*)Parecer Médico\nParecer: FAVORÁVEL\nNº Dias: 15\nData Início: 20/09/2026\nCID 10: M17\nDescrição: Gonartrose\nMédico Perito: Dr. Teste\nCRM: 12345\nDt/Hr Perícia: 25/09/2026 14:00\n\n"
+        "(*)Resposta aos quesitos\n1) Não\n2) Não\n3) Não\n"
+    )
+    cleaned = _clean_esisla_text(raw_esisla)
+    assert "Atestado/Relatório/Exames Complementares:\nEm anexo.\n\n" in cleaned
+    assert "CRM 123456" not in cleaned
+    assert "atestado = 'Em anexo.';" in GESTAO_ATENDIMENTOS
+    assert "let hda = 'Em anexo.';" in ATTENDANCE
+
+    # Requisito 3: Checkbox para ocultar Dados do Atestado do Médico Assistente & Prazos
+    assert 'id="agilCheckAtestadoAssistente"' in ATTENDANCE
+    assert 'id="agilAtestadoAssistenteSubpanel" class="subpanel" style="display:none' in ATTENDANCE
+    assert 'toggleAtestadoAssistente' in ATTENDANCE
+
+    # Requisito 4: Dias concedidos automático (0 se contrário, default 1 / não em branco se favorável)
+    assert 'atualizarDiasConcedidosAutomatico' in ATTENDANCE
+    assert "flPfinal === 'C'" in GESTAO_ATENDIMENTOS
+    assert "dias = '0';" in GESTAO_ATENDIMENTOS
+    assert "parecerVal === 'C'" in ATTENDANCE
+    assert "diasSol = '0';" in ATTENDANCE
+    assert "flPfinal === 'F' && (!dias || dias === '0')" in GESTAO_ATENDIMENTOS
+    assert "parecerVal === 'F' && (!diasSol || diasSol === '0')" in ATTENDANCE
+
+    # Requisito 5: Sem duplicação de título no exame físico e respeito total à opção "Outros"
+    assert "prefixosSistema" in GESTAO_ATENDIMENTOS
+    assert "exameFisicoLimpo.replace(rx, '').trim()" in GESTAO_ATENDIMENTOS
+    assert "exTipo === 'outros' || exTipo === 'e outros' || outrosSub === 'e outros' || outrosSub === 'outros'" in GESTAO_ATENDIMENTOS
+    assert "exTipo === 'outros' || exTipo === 'e outros' || outrosSub === 'e outros' || outrosSub === 'outros'" in ATTENDANCE
+
+
 
 
 

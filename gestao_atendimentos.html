@@ -2397,56 +2397,45 @@ const MAPA_NOMES_ESISLA = {
 function detectarSistemaExameFisico(st, aux, texto, cidCode) {
     const exTipo = String(st?.exameFisicoTipo || aux?.exameFisicoTipo || st?.agilExameFisicoTipo || aux?.agilExameFisicoTipo || '').trim().toLowerCase();
     const outrosSub = String(st?.outrosSubtipo || aux?.outrosSubtipo || st?.areaExameClinico || aux?.areaExameClinico || '').trim().toLowerCase();
-    const exameFisicoLinha1 = (String(texto || '').match(/\(\*\)\s*Exame Físico Geral:?\s*\n\s*([^\n\r]+)/i) || [])[1]?.toLowerCase() || '';
 
-    // 1. Aparelho Osteomuscular e Tecido Conjuntivo (prioridade se escolhido no atendimento)
-    if (exTipo.includes('osteomuscular') || exTipo.includes('conjutivo') || exTipo.includes('conjuntivo') || outrosSub.includes('osteomuscular') || outrosSub.includes('ortop') || exameFisicoLinha1.includes('osteomuscular') || exameFisicoLinha1.includes('conjutivo') || exameFisicoLinha1.includes('conjuntivo')) {
-        return 'aoal';
-    }
-    // 2. Exame Mental
-    if (exTipo === 'exame mental' || (exTipo.includes('mental') && !exTipo.includes('físic')) || outrosSub.includes('mental') || outrosSub.includes('psiqui') || exameFisicoLinha1.startsWith('exame mental')) {
-        return 'em';
-    }
-    // 3. Aparelho Circulatório
-    if (exTipo.includes('circulat') || outrosSub.includes('circulat') || outrosSub.includes('cardio') || exameFisicoLinha1.includes('circulat')) {
-        return 'ac';
-    }
-    // 4. Aparelho Respiratório
-    if (exTipo.includes('respirat') || outrosSub.includes('respirat') || outrosSub.includes('pulmon') || exameFisicoLinha1.includes('respirat')) {
-        return 'ar';
-    }
-    // 5. Tecido celular subcutâneo Pele e Fâneros
-    if (exTipo.includes('pele') || exTipo.includes('fânero') || exTipo.includes('subcut') || exTipo.includes('dermat') || outrosSub.includes('pele') || exameFisicoLinha1.includes('pele') || exameFisicoLinha1.includes('subcut')) {
-        return 'tcspf';
-    }
-    // 6. Aparelho Digestivo
-    if (exTipo.includes('digest') || outrosSub.includes('digest') || outrosSub.includes('gastr') || exameFisicoLinha1.includes('digest')) {
-        return 'ad';
-    }
-    // 7. Aparelho Geniturinário
-    if (exTipo.includes('genit') || outrosSub.includes('genit') || outrosSub.includes('urin') || outrosSub.includes('renal') || exameFisicoLinha1.includes('genit')) {
-        return 'agu';
-    }
-    // 8. Aparelho Hemolinfopoiético
-    if (exTipo.includes('hemolin') || outrosSub.includes('hemolin') || outrosSub.includes('hemat') || exameFisicoLinha1.includes('hemolin')) {
-        return 'ahp';
-    }
-    // 9. Aparelho Endócrino
-    if (exTipo.includes('endocrin') || outrosSub.includes('endocrin') || outrosSub.includes('metabol') || outrosSub.includes('diabet') || exameFisicoLinha1.includes('endocrin')) {
-        return 'ae';
-    }
-    // 10. Sistema Nervoso
-    if (exTipo.includes('nervoso') || outrosSub.includes('nervoso') || outrosSub.includes('neurol') || exameFisicoLinha1.includes('nervoso')) {
-        return 'sn';
-    }
-    // 11. Órgãos dos Sentidos
-    if (exTipo.includes('sentidos') || outrosSub.includes('sentidos') || outrosSub.includes('oftalm') || outrosSub.includes('otol') || exameFisicoLinha1.includes('sentidos')) {
-        return 'os';
-    }
-    // 12. Outros
-    if (exTipo.includes('outro') || outrosSub.includes('outro')) {
+    // 0. Precedência absoluta da escolha do médico: se escolheu "Outros" ou "E outros", respeita estritamente
+    if (exTipo === 'outros' || exTipo === 'e outros' || outrosSub === 'e outros' || outrosSub === 'outros' || exTipo.startsWith('outro')) {
         return 'outro';
     }
+    // Precedência de Exame Mental escolhido pelo médico
+    if (exTipo === 'exame mental' || (exTipo.includes('mental') && !exTipo.includes('físic'))) {
+        return 'em';
+    }
+    // Precedência de Aparelho Osteomuscular escolhido pelo médico
+    if (exTipo.includes('osteomuscular') || exTipo.includes('conjutivo') || exTipo.includes('conjuntivo')) {
+        return 'aoal';
+    }
+
+    // Subtipos selecionados quando a área clínica foi detalhada
+    if (outrosSub.includes('osteomuscular') || outrosSub.includes('ortop')) return 'aoal';
+    if (outrosSub.includes('mental') || outrosSub.includes('psiqui')) return 'em';
+    if (outrosSub.includes('circulat') || outrosSub.includes('cardio')) return 'ac';
+    if (outrosSub.includes('respirat') || outrosSub.includes('pulmon')) return 'ar';
+    if (outrosSub.includes('pele') || outrosSub.includes('fânero') || outrosSub.includes('subcut') || outrosSub.includes('dermat')) return 'tcspf';
+    if (outrosSub.includes('digest') || outrosSub.includes('gastr')) return 'ad';
+    if (outrosSub.includes('genit') || outrosSub.includes('urin') || outrosSub.includes('renal')) return 'agu';
+    if (outrosSub.includes('hemolin') || outrosSub.includes('hemat')) return 'ahp';
+    if (outrosSub.includes('endocrin') || outrosSub.includes('metabol') || outrosSub.includes('diabet')) return 'ae';
+    if (outrosSub.includes('nervoso') || outrosSub.includes('neurol')) return 'sn';
+    if (outrosSub.includes('sentidos') || outrosSub.includes('oftalm') || outrosSub.includes('otol')) return 'os';
+
+    const exameFisicoLinha1 = (String(texto || '').match(/\(\*\)\s*Exame Físico Geral:?\s*\n\s*([^\n\r]+)/i) || [])[1]?.toLowerCase() || '';
+    if (exameFisicoLinha1.includes('osteomuscular') || exameFisicoLinha1.includes('conjutivo') || exameFisicoLinha1.includes('conjuntivo')) return 'aoal';
+    if (exameFisicoLinha1.startsWith('exame mental')) return 'em';
+    if (exameFisicoLinha1.includes('circulat')) return 'ac';
+    if (exameFisicoLinha1.includes('respirat')) return 'ar';
+    if (exameFisicoLinha1.includes('pele') || exameFisicoLinha1.includes('subcut')) return 'tcspf';
+    if (exameFisicoLinha1.includes('digest')) return 'ad';
+    if (exameFisicoLinha1.includes('genit')) return 'agu';
+    if (exameFisicoLinha1.includes('hemolin')) return 'ahp';
+    if (exameFisicoLinha1.includes('endocrin')) return 'ae';
+    if (exameFisicoLinha1.includes('nervoso')) return 'sn';
+    if (exameFisicoLinha1.includes('sentidos')) return 'os';
 
     // Fallback estrito pelo código CID
     const c = String(cidCode || '').toUpperCase().trim();
@@ -2509,6 +2498,8 @@ function renderEsislaBlocos(textoFicha) {
     if (atestado) {
         atestado = atestado.replace(/^\s*\(?\s*Tipo-Data-Resultado\s*\)?\s*:?\s*/i, '').trim();
     }
+    // Diretriz e-SISLA: Atestados e Exames Complementares sempre sucinto como "Em anexo."
+    atestado = 'Em anexo.';
     
     // Sinais Vitais e Biometria
     const paSis = ext(str, 'Sistólica (mmHg)', 'Diastólica') || ext(str, 'Sistólica', 'Diastólica') || st.pressaoSistolica || aux.pressaoSistolica || '';
@@ -2544,7 +2535,25 @@ function renderEsislaBlocos(textoFicha) {
     }
 
     const sistemaEscolhido = detectarSistemaExameFisico(st, aux, str, st.cid || aux.cid);
-    const sistemaNome = MAPA_NOMES_ESISLA[sistemaEscolhido] || 'Aparelho Osteomuscular e Tecido Conjuntivo';
+    const sistemaNome = MAPA_NOMES_ESISLA[sistemaEscolhido] || (sistemaEscolhido === 'outro' ? 'Outros' : 'Aparelho Osteomuscular e Tecido Conjuntivo');
+
+    // Limpar repetição do título/sistema no início do texto do exame físico (evita aparecer o nome do sistema duas vezes)
+    let exameFisicoLimpo = exameFisico;
+    const prefixosSistema = [
+        sistemaNome,
+        'Aparelho Osteomuscular e Tecido Conjuntivo',
+        'Aparelho Osteomuscular e Tecido Conjutivo',
+        'Exame Mental',
+        'Outros',
+        'E outros'
+    ].filter(Boolean);
+    for (const p of prefixosSistema) {
+        const rx = new RegExp('^\\s*' + p.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + '\\s*:\\s*', 'i');
+        if (rx.test(exameFisicoLimpo)) {
+            exameFisicoLimpo = exameFisicoLimpo.replace(rx, '').trim();
+            break;
+        }
+    }
 
     const limitacoes = ext(str, '(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)', '(*)Parecer Médico') 
         || ext(str, '(*)Descrição da(s) Limitação', '(*)Parecer Médico') 
@@ -2564,6 +2573,12 @@ function renderEsislaBlocos(textoFicha) {
     let dias = (parecerBloco.match(/N[ºo°\.]*\s*Dias:\s*([^\n\r]+)/i) || [])[1]?.trim()
         || (parecerFinalBloco.match(/N[ºo°\.]*\s*Dias:\s*([^\n\r]+)/i) || [])[1]?.trim()
         || st.diasSolicitados || aux.diasSolicitados || st.diasConcedidos || aux.diasConcedidos || '';
+    dias = dias ? String(dias).replace(/[^0-9]/g, '') : '';
+    if (parecerTipo.toUpperCase().includes('CONTR')) {
+        dias = '0';
+    } else if (parecerTipo.toUpperCase().includes('FAVOR') && (!dias || dias === '0')) {
+        dias = '1';
+    }
     dias = dias ? String(dias).replace(/[^0-9]/g, '') : '';
 
     let dtIni = (parecerBloco.match(/Data\s*In[íi]cio:\s*([^\n\r]+)/i) || [])[1]?.trim()
@@ -2703,7 +2718,7 @@ function renderEsislaBlocos(textoFicha) {
                     ☑️ Checkbox e-SISLA: ${esc(sistemaNome)}
                 </span>
             </div>` : ''}
-            <div style="font-size:12px;color:#1E293B;line-height:1.6">${escTxt(exameFisico)}</div>
+            <div style="font-size:12px;color:#1E293B;line-height:1.6">${escTxt(exameFisicoLimpo)}</div>
         </div>
 
         <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
@@ -3056,10 +3071,8 @@ function gerarJsonEsisla(textoFicha, enc) {
 
     const cat = ext(texto, '(*) Queixa e Duração', 'Antecedentes Mórbidos') || aux.queixaDuracao || st.queixaDuracao || aux.queixa || st.queixa || '';
     const ap = ext(texto, 'Antecedentes Mórbidos', 'Atestado') || aux.historicoPregresso || st.historicoPregresso || aux.antecedentes || st.antecedentes || '';
-    let hda = ext(texto, 'Atestado/Relatório/Exames Complementares', 'Pressão Arterial') || ext(texto, 'Atestado', 'Pressão Arterial') || aux.examesComplementares || st.examesComplementares || aux.documentosApresentados || st.documentosApresentados || '';
-    if (hda) {
-        hda = hda.replace(/^\s*\(?\s*Tipo-Data-Resultado\s*\)?\s*:?\s*/i, '').trim();
-    }
+    // Diretriz e-SISLA: Atestados e Exames Complementares sempre sucinto como "Em anexo."
+    let hda = 'Em anexo.';
     
     const exameFisicoTexto = ext(texto, '(*)Exame Físico Geral', 'Descrição das Alterações Clínicas')
         || st.exameFisicoDescricao || aux.exameFisicoDescricao || st.agilExameFisicoDescricao || aux.agilExameFisicoDescricao || '';
@@ -3140,17 +3153,23 @@ function gerarJsonEsisla(textoFicha, enc) {
         if (found) descrCid2 = found.descricao || found.nome || '';
     }
 
+    const pText = ext(texto, '(*)Parecer Médico', 'Nº Dias') || ext(texto, '(*)Parecer Médico', '(*)Resposta aos quesitos') || st.parecer || aux.parecer || '';
+    const flPfinal = (pText.toUpperCase().includes('CONTRÁRIO') || texto.toUpperCase().includes('PARECER: CONTRÁRIO')) ? 'C' : 'F';
+
     let dias = ext(texto, 'Nº Dias', 'Data Início') || aux.diasConcedidos || st.diasConcedidos || aux.diasSolicitados || st.diasSolicitados || aux.diasAfastamento || st.diasAfastamento || '';
     dias = dias ? String(dias).replace(/[^0-9]/g, '') : '';
     if (!dias) {
         const m = String(st.diasSolicitados || aux.diasSolicitados || '').match(/\d+/);
         if (m) dias = m[0];
     }
+    if (flPfinal === 'C') {
+        dias = '0';
+    } else if (flPfinal === 'F' && (!dias || dias === '0')) {
+        dias = '1';
+    }
+    dias = dias ? String(dias).replace(/[^0-9]/g, '') : '';
     let dtIni = ext(texto, 'Data Início', 'CID 10') || aux.dataInicio || st.dataInicio || aux.dataDocumento || st.dataDocumento || '';
     dtIni = dtIni.split('\n')[0].trim();
-
-    const pText = ext(texto, '(*)Parecer Médico', 'Nº Dias') || ext(texto, '(*)Parecer Médico', '(*)Resposta aos quesitos') || st.parecer || aux.parecer || '';
-    const flPfinal = (pText.toUpperCase().includes('CONTRÁRIO') || texto.toUpperCase().includes('PARECER: CONTRÁRIO')) ? 'C' : 'F';
 
     function getQuesitoVal(num, busca) {
         const qStr = (ext(texto, busca, '\n') || ext(texto, num + ')', '\n')).toLowerCase();

@@ -908,14 +908,14 @@ PADRÕES TÉCNICOS OFICIAIS (Programa de Melhoria Contínua):
 
 DIRETRIZ OBRIGATÓRIA PARA A OPÇÃO 'OUTROS' (ÁREA CLÍNICA ESPECÍFICA + NORMAL/ALTERADO + CID):
 Quando o tipo de exame físico/mental for "Outros" ou quando for indicada uma área do exame clínico:
-1. Verifique qual área foi selecionada em "Selecione a área do exame clínico:" ({area_exame_clinico}) e o resultado da avaliação ({resultado_avaliacao}: Normal ou Alterado).
-2. Integre e correlacione expressamente a área do exame clínico avaliada e o seu status (Alterado ou Normal) junto ao CID descrito ({cid}) e às atribuições do cargo ({cargo}) na redação da justificativa:
+1. NÃO DESCREVA O EXAME FÍSICO: A justificativa não deve descrever procedimentos, manobras ou detalhes de exame físico (o exame físico já possui campo próprio no prontuário).
+2. FOCO EXCLUSIVO EM LIMITAÇÕES FUNCIONAIS E LABORAIS COM BASE NO CID: A fundamentação deve focar diretamente nas LIMITAÇÕES funcionais e operacionais que o CID aplicado ({cid} — {doenca_motivo}) acarreta para as atribuições do cargo ({cargo}):
    - Se a área for classificada como ALTERADA (ou Parecer Favorável):
-     Estruture obrigatoriamente em 1ª pessoa conectando a área clínica avaliada e o CID ao comprometimento laboral:
-     "Considero a capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol do cargo de {cargo}, em razão de alterações clínicas e limitações na esfera de {area_exame_clinico} relacionadas ao CID {cid}, que comprometem as atividades laborais do servidor." (complemente com os achados específicos descritos, quando houver).
+     Identifique e explicite as limitações práticas funcionais associadas ao CID {cid} ({doenca_motivo}) em relação às tarefas do cargo de {cargo} (por exemplo, limitações para esforço físico, posturas estáticas/dinâmicas, sobrecarga articular/muscular, ritmo de trabalho ou atividades do rol). Estruture obrigatoriamente em 1ª pessoa:
+     "Considero a capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol do cargo de {cargo}, em razão de limitações na esfera de {area_exame_clinico} decorrentes do CID {cid} ({doenca_motivo}), tais como [descrever as limitações funcionais específicas do CID em relação às atividades do cargo, ex.: impedimento temporário para esforços físicos intensos, sobrecarga mecânica ou atividades habituais que demandem higidez plena da área afetada]."
    - Se a área for classificada como NORMAL (ou Parecer Contrário):
-     Estruture obrigatoriamente em 1ª pessoa demonstrando a capacidade preservada diante da ausência de alterações incapacitantes na área clínica avaliada para o CID:
-     "Constato a capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações clínicas incapacitantes no exame de {area_exame_clinico} relacionadas ao CID {cid} para as atribuições rotineiras do cargo atual de {cargo}."
+     Estruture obrigatoriamente em 1ª pessoa constatando a capacidade preservada diante da ausência de limitações laborais decorrentes do CID {cid}:
+     "Constato a capacidade laborativa preservada, considerando que neste ato pericial não se observam limitações funcionais incapacitantes relacionadas ao CID {cid} para as atribuições rotineiras do cargo atual de {cargo}."
 3. Respeite sempre a regra terminológica: NUNCA utilize o termo "Paciente" ou "paciente", utilize SEMPRE "Servidor", "Periciado" ou redija em 1ª pessoa ("constato", "considero", "observo").
 
 NÃO FAÇA:
@@ -1052,9 +1052,9 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
    Se o perito tiver fornecido justificativa própria em justificativa, incorpore harmonicamente suas palavras a esta fundamentação padrão. Não acrescente o texto legal da justificativa final nem qualquer texto fixo que não esteja presente nos dados fornecidos.
 
 OUTROS CAMPOS — TRANSCRIÇÃO FIEL:
-- “Atestado/Relatório/Exames Complementares” padroniza a solicitação assistente no formato oficial:
-  "CRM [crm_cro], solicita [dias_solicitados] dias de afastamento a partir de [data_documento], pelo CID [cid] – Relatório médico em anexo."
-  (Caso não haja relatório médico anexado, indicar conforme dados; se houver outros documentos registrados em documentos_complementares, observacoes_documentos ou atestados adicionais em cids_secundarios, relacione-os também de forma sucinta com Tipo-Data(DD/MM/AAAA)-Resultado/Outros CIDs apresentados).
+- “Atestado/Relatório/Exames Complementares”: preencha exclusivamente com o texto sucinto padronizado:
+  "Em anexo."
+  (Não descreva detalhadamente CRM, datas, CIDs ou relatórios de exames complementares neste campo; registre unicamente "Em anexo.", simplificando a fórmula "solicita [dias_solicitados] dias de afastamento a partir de [data_documento], pelo CID [cid] – Relatório médico em anexo").
 - Pressão Arterial/Sistólica/Diastólica/Pulso/Altura/Peso usam somente valores explicitamente registrados.
 - “(*)Parecer Médico” e “(*) Parecer Final” reproduzem somente os valores já escolhidos:
   - Parecer: FAVORÁVEL ou CONTRÁRIO (obrigatório registrar conforme o parecer escolhido)
@@ -2021,6 +2021,15 @@ def _clean_esisla_text(text: str) -> str:
     # Remover marcador (Tipo-Data-Resultado) para preservar padrão visual limpo
     text = re.sub(r"Atestado/Relat[óo]rio/Exames Complementares\s*\([^\)]*Tipo[^\)]*\):?", "Atestado/Relatório/Exames Complementares:", text, flags=re.IGNORECASE)
     text = re.sub(r"\(\s*Tipo-Data-Resultado\s*\):?\s*", "", text, flags=re.IGNORECASE)
+
+    # Padronização de "Atestado/Relatório/Exames Complementares" para "Em anexo." conforme diretriz do e-SISLA
+    text = re.sub(
+        r"(Atestado/Relat[óo]rio/Exames Complementares:?\s*\n)(?:(?!\n\s*(?:Pressão Arterial|Sistólica|Altura:|Peso:|\(\*\)\s*Exame Físico Geral))[\s\S])*",
+        r"\1Em anexo.\n\n",
+        text,
+        flags=re.IGNORECASE
+    )
+    text = re.sub(r"\n{3,}", "\n\n", text)
 
     return text
 

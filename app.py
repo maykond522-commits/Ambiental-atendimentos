@@ -327,9 +327,22 @@ def _authenticate_request() -> tuple[dict[str, Any] | None, str | None]:
     
     return profile, token
 
+def _role_home_url(profile: dict[str, Any] | None) -> str:
+    if not profile:
+        return "/login.html"
+    role = profile.get("perfil")
+    perms = set(profile.get("permissoes") or [])
+    if role in {"Administrador", "Gestor", "Coordenador", "Revisor", "Consulta"}:
+        return "/gestao"
+    if role == "Médico" and "view" in perms:
+        return "/gestao-medicos.html"
+    return "/app"
+
 def _html_auth_redirect():
-    target = request.full_path if request.full_path and request.full_path != "/" else request.path
-    return redirect("/login.html?reason=required&next=" + urllib.parse.quote(target, safe=""))
+    raw_target = request.full_path if request.full_path and request.full_path not in ("/", "/?") else request.path
+    if raw_target in ("/", "/?"):
+        return redirect("/login.html?reason=required")
+    return redirect("/login.html?reason=required&next=" + urllib.parse.quote(raw_target, safe=""))
 
 _status_cache: dict[str, Any] = {"ts": 0.0, "result": None}
 
@@ -964,7 +977,7 @@ REGRA MANDATÓRIA DE DATAS NO PADRÃO OFICIAL E-SISLA (DD/MM/AAAA):
 - Para datas com horário (Dt/Hr Perícia), use o formato: DD/MM/AAAA HH:MM (ex.: 25/09/2026 14:16).
 - É TERMINANTEMENTE PROIBIDO gerar datas no formato ISO (AAAA-MM-DD, ex.: 2026-09-25) ou formatos contendo zeros como 2026-00-00. Converta sempre e rigorosamente para DD/MM/AAAA.
 
-REDAÇÃO INTELIGENTE DOS CAMPOS NARRATIVOS:
+REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
 
 1. “(*) Queixa e Duração”
    Reescreva e sintetize em parágrafo único, fluido e coeso, integrando os dados clínicos e ocupacionais na ordem padronizada dos 11 itens do Programa de Melhoria Contínua:
@@ -1037,7 +1050,7 @@ REDAÇÃO INTELIGENTE DOS CAMPOS NARRATIVOS:
 
 OUTROS CAMPOS — TRANSCRIÇÃO FIEL:
 - “Atestado/Relatório/Exames Complementares (Tipo-Data-Resultado)” padroniza a solicitação assistente no formato oficial:
-  "CRM [crm_cro], solicita [dias_solicitados] dias de afastamento a partir de [data_documento no formato DD/MM/AAAA], pelo CID [cid] – Relatório médico em anexo."
+  "CRM [crm_cro], solicita [dias_solicitados] dias de afastamento a partir de [data_documento], pelo CID [cid] – Relatório médico em anexo."
   (Caso não haja relatório médico anexado, indicar conforme dados; se houver outros documentos registrados em documentos_complementares, observacoes_documentos ou atestados adicionais em cids_secundarios, relacione-os também de forma sucinta com Tipo-Data(DD/MM/AAAA)-Resultado/Outros CIDs apresentados).
 - Pressão Arterial/Sistólica/Diastólica/Pulso/Altura/Peso usam somente valores explicitamente registrados.
 - “(*)Parecer Médico” e “(*) Parecer Final” reproduzem somente os valores já escolhidos:
@@ -1757,7 +1770,15 @@ def not_found_page():
 
 @app.get("/")
 def home():
-
+    if AUTH_REQUIRED:
+        profile, _token = _authenticate_request()
+        if not profile:
+            return redirect("/login.html?reason=required")
+        if request.query_string:
+            qs = request.query_string.decode("latin-1")
+            if "atendimento=" in qs or "novo=" in qs or "documento=" in qs:
+                return redirect("/app?" + qs)
+        return redirect(_role_home_url(profile))
     response = send_from_directory(BASE_DIR, "ambiental_avaliacao_medica_lts_cid_assistente.html")
     response.headers["Cache-Control"] = "no-store, max-age=0"
     response.headers["Pragma"] = "no-cache"

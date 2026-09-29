@@ -2436,6 +2436,13 @@ main { min-width: 0; }
   }
   $('goAdmin').onclick = () => location.href = '/gestao';
   start();
+  setTimeout(() => {
+    const loader = $('authLoading');
+    if (loader) {
+      loader.remove();
+      if ($('appShell')) $('appShell').hidden = false;
+    }
+  }, 4000);
 })();
 </script>
 </body>

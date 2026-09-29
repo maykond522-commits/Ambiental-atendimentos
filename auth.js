@@ -122,7 +122,8 @@
     const tokenHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token))
       .then(buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join(""))
       .catch(() => "");
-    if (tokenHash && tokenHash === STATE.syncedTokenHash) return { ok: true };
+    const storedHash = STATE.syncedTokenHash || sessionStorage.getItem("ambiental.auth.syncedHash");
+    if (tokenHash && tokenHash === storedHash) return { ok: true };
     if (STATE.syncPromise) return STATE.syncPromise;
     STATE.syncPromise = (async () => {
       try {
@@ -144,8 +145,14 @@
         }
         const data = await res.json().catch(() => null);
         if (res.ok) {
-          if (tokenHash) STATE.syncedTokenHash = tokenHash;
-          if (data?.data) STATE.profile = data.data;
+          if (tokenHash) {
+            STATE.syncedTokenHash = tokenHash;
+            try { sessionStorage.setItem("ambiental.auth.syncedHash", tokenHash); } catch(_) {}
+          }
+          if (data?.data) {
+            STATE.profile = data.data;
+            try { sessionStorage.setItem("ambiental.auth.profile", JSON.stringify({ profile: data.data, tokenHash, ts: Date.now() })); } catch(_) {}
+          }
           return { ok: true, profile: data?.data };
         }
         return {
@@ -165,6 +172,25 @@
 
   async function me() {
     const token = await getAccessToken();
+    const tokenHash = token ? await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token))
+      .then(buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join(""))
+      .catch(() => "") : "";
+
+    // 1. Cache ultrarrápido em sessionStorage para transições instantâneas entre telas (ex: abrir novo atendimento)
+    if (tokenHash) {
+      try {
+        const cached = sessionStorage.getItem("ambiental.auth.profile");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.ts && (Date.now() - parsed.ts < 300000) && (!parsed.tokenHash || parsed.tokenHash === tokenHash)) {
+            STATE.profile = parsed.profile;
+            STATE.syncedTokenHash = tokenHash;
+            return STATE.profile;
+          }
+        }
+      } catch (_) {}
+    }
+
     const headers = { "Accept": "application/json" };
     if (token) headers.Authorization = `Bearer ${token}`;
     const res = await fetch("/api/auth/me", {
@@ -174,10 +200,19 @@
     });
     const data = await res.json().catch(() => null);
     if (!res.ok || !data?.success) {
-      if (res.status === 401) return null;
+      if (res.status === 401) {
+        try { sessionStorage.removeItem("ambiental.auth.profile"); } catch(_) {}
+        return null;
+      }
       throw new Error(data?.error?.message || "Não foi possível validar o usuário.");
     }
     STATE.profile = data.data;
+    if (tokenHash) {
+      try {
+        sessionStorage.setItem("ambiental.auth.profile", JSON.stringify({ profile: STATE.profile, tokenHash, ts: Date.now() }));
+        sessionStorage.setItem("ambiental.auth.syncedHash", tokenHash);
+      } catch(_) {}
+    }
     return STATE.profile;
   }
 
@@ -210,8 +245,12 @@
       location.replace(`/acesso-negado.html?area=${encodeURIComponent(area)}`);
       throw new Error("PERMISSION_DENIED");
     }
-    // Sincroniza o cookie HttpOnly de sessão após confirmar o usuário.
-    await syncServerSession(await getAccessToken());
+    // Sincroniza o cookie HttpOnly de sessão apenas se ainda não estiver sincronizado
+    const token = await getAccessToken();
+    const storedHash = STATE.syncedTokenHash || sessionStorage.getItem("ambiental.auth.syncedHash");
+    if (!storedHash) {
+      await syncServerSession(token);
+    }
     return profile;
   }
 
@@ -265,7 +304,13 @@
     STATE.signingOut = true;
     STATE.syncedTokenHash = null;
     STATE.syncPromise = null;
+    STATE.profile = null;
     try {
+      try {
+        sessionStorage.removeItem("ambiental.auth.profile");
+        sessionStorage.removeItem("ambiental.auth.syncedHash");
+        storage.removeItem("ambiental.auth.session");
+      } catch (_) {}
       await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin", keepalive: true }).catch(() => {});
       if (STATE.client) await STATE.client.auth.signOut({ scope: "local" }).catch(() => {});
       localStorage.removeItem("ambiental_access_token");
@@ -273,7 +318,7 @@
       sessionStorage.removeItem("ambiental_access_token");
       sessionStorage.removeItem("ambiental_user_email");
     } finally {
-      location.replace(redirect);
+      if (redirect) location.replace(redirect);
     }
   }
 

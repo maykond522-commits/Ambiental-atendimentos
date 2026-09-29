@@ -1753,6 +1753,17 @@ body.modal-lock { overscroll-behavior: none; }
 </style>
 </head>
 <body class="admin-shell"><div class="top-sync-bar" id="topSyncBar"></div><div id="authLoading" style="position:fixed;inset:0;background:#F2F6FA;z-index:999999;display:grid;place-items:center;font-family:Inter,system-ui,sans-serif;color:#073F87"><div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #DDE6EF;border-radius:14px;padding:13px 16px;box-shadow:0 12px 35px rgba(10,30,55,.1);font-size:12px;font-weight:800"><img src="/logo.png" alt="" style="width:28px;height:28px;object-fit:contain"><span>Verificando sessão...</span></div></div>
+<script>
+  try {
+    const _cached = sessionStorage.getItem("ambiental.auth.profile");
+    if (_cached) {
+      const _data = JSON.parse(_cached);
+      if (_data && _data.ts && (Date.now() - _data.ts < 300000)) {
+        document.getElementById('authLoading')?.remove();
+      }
+    }
+  } catch(_) {}
+</script>
 
 <div id="dataLoading" class="data-loading" aria-live="polite" aria-busy="true">
   <div class="data-loading-card">
@@ -2054,6 +2065,7 @@ const authReady = AmbientalAuth.requireAuth({area:'gestao'}).then(async profile=
     document.getElementById('authLoading')?.remove();
     throw error;
 });
+setTimeout(() => { document.getElementById('authLoading')?.remove(); }, 2000);
 
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); 
 const arr=v=>Array.isArray(v)?v:[]; 
@@ -2180,8 +2192,8 @@ function field(label,value,full=false){
 }
 function setModal(id,open=true){const el=document.getElementById(id);if(!el)return;el.classList.toggle('open',open);const anyOpen=[...document.querySelectorAll('.modal.open')].length>0;document.documentElement.classList.toggle('modal-lock',anyOpen);document.body.classList.toggle('modal-lock',anyOpen);if(open){requestAnimationFrame(()=>el.querySelector('button,textarea,[tabindex]:not([tabindex="-1"])')?.focus?.());}}
 function closeModal(id){setModal(id,false)}
-function openEval(enc){location.href='/?atendimento='+enc}
-function openDocument(enc){location.href='/?atendimento='+enc+'&documento=1'}
+function openEval(enc){location.href='/app?atendimento='+enc}
+function openDocument(enc){location.href='/app?atendimento='+enc+'&documento=1'}
 function normalizeRecordPayload(r){return r?.payload&&typeof r.payload==='object'?{...r.payload,atendimento:r.atendimento||r.payload.atendimento}:({...r,atendimento:r?.atendimento||r?.payload?.atendimento});}
 function currentRecord(enc){return find(decodeURIComponent(enc));}
 
@@ -2530,9 +2542,9 @@ function gerarJsonEsisla(textoFicha, enc) {
     const camposTextoAudit = [
         { key: 'voMedico.parRlCat', label: 'Queixa e Duração', valor: cat, max: 2000 },
         { key: 'voMedico.parRlAp', label: 'Antecedentes Mórbidos', valor: ap, max: 2000 },
-        { key: 'voMedico.parRlHda', label: 'Atestado / Relatórios / Exames', valor: hda, max: 2000 },
-        { key: 'voMedico.parRlExApres', label: 'Exame Físico / Achados', valor: exApres, max: 2000 },
-        { key: 'voMedico.parRlReqExComp', label: 'Limitações Físicas / Mentais', valor: reqExComp, max: 2000 },
+        { key: 'voMedico.parRlHda', label: 'Atestado / Relatórios / Exames', valor: hda, max: 2500 },
+        { key: 'voMedico.parRlExApres', label: 'Exame Físico / Achados', valor: exApres, max: 2500 },
+        { key: 'voMedico.parRlReqExComp', label: 'Limitações Físicas / Mentais', valor: reqExComp, max: 2500 },
         { key: 'voMedico.parRlComp', label: 'Justificativa Parecer Final', valor: justif, max: 2000 }
     ];
 
@@ -2561,29 +2573,44 @@ function gerarJsonEsisla(textoFicha, enc) {
         ? `Afastamento de ${numDiasInt} dias (≥ 90 dias): Diretriz DPME orienta avaliar encaminhamento para Junta Médica Pericial para Readaptação Funcional.`
         : null;
 
+    const crmDigits = String(crm || '').replace(/\D/g, '').slice(0, 9);
+    let altFormat = altura;
+    if (altFormat) {
+        let s = String(altFormat).trim().replace(/[^\d,\.]/g, '');
+        if (s.includes('.')) s = s.replace('.', ',');
+        else if (!s.includes(',') && s.length >= 3) s = s.slice(0, 1) + ',' + s.slice(1, 3);
+        altFormat = s.slice(0, 4);
+    }
+    const pesoDigits = String(peso || '').replace(/\D/g, '').slice(0, 3);
+
     const camposEsisla = {
         'voMedico.parRlCat': cat,
         'voMedico.parRlAp': ap,
         'voMedico.parRlHda': hda,
-        'voResult.numCrm': crm,
+        'voResult.numCrm': crmDigits,
         'voResult.strNomeMedico': nomeMed,
+        'voMedico.lgPressArterialMax': paSis,
+        'voMedico.lgPressArterialMin': paDia,
+        'voMedico.lgPulsacao': pulso,
+        'voMedico.lgAltura': altFormat,
+        'voMedico.lgPeso': pesoDigits,
         'lgPressArterialMax': paSis,
         'lgPressArterialMin': paDia,
         'lgPulsacao': pulso,
-        'lgAltura': altura,
-        'lgPeso': peso,
-        'voMedico.parEdtcspf': cb['voMedico.parEdtcspf'],
-        'voMedico.parEdAc': cb['voMedico.parEdAc'],
-        'voMedico.parEdAr': cb['voMedico.parEdAr'],
-        'voMedico.parEdAHp': cb['voMedico.parEdAHp'],
-        'voMedico.parEdAd': cb['voMedico.parEdAd'],
-        'voMedico.parEdAgu': cb['voMedico.parEdAgu'],
-        'voMedico.parEdAoal': cb['voMedico.parEdAoal'],
-        'voMedico.parEdAe': cb['voMedico.parEdAe'],
-        'voMedico.parEdSn': cb['voMedico.parEdSn'],
-        'voMedico.parEdOs': cb['voMedico.parEdOs'],
-        'voMedico.parEdEm': cb['voMedico.parEdEm'],
-        'voMedico.parEdOutro': cb['voMedico.parEdOutro'],
+        'lgAltura': altFormat,
+        'lgPeso': pesoDigits,
+        'voMedico.parEdtcspf': cb['voMedico.parEdtcspf'] ? 'X' : '',
+        'voMedico.parEdAc': cb['voMedico.parEdAc'] ? 'X' : '',
+        'voMedico.parEdAr': cb['voMedico.parEdAr'] ? 'X' : '',
+        'voMedico.parEdAHp': cb['voMedico.parEdAHp'] ? 'X' : '',
+        'voMedico.parEdAd': cb['voMedico.parEdAd'] ? 'X' : '',
+        'voMedico.parEdAgu': cb['voMedico.parEdAgu'] ? 'X' : '',
+        'voMedico.parEdAoal': cb['voMedico.parEdAoal'] ? 'X' : '',
+        'voMedico.parEdAe': cb['voMedico.parEdAe'] ? 'X' : '',
+        'voMedico.parEdSn': cb['voMedico.parEdSn'] ? 'X' : '',
+        'voMedico.parEdOs': cb['voMedico.parEdOs'] ? 'X' : '',
+        'voMedico.parEdEm': cb['voMedico.parEdEm'] ? 'X' : '',
+        'voMedico.parEdOutro': cb['voMedico.parEdOutro'] ? 'X' : '',
         'voMedico.parRlExApres': exApres,
         'voMedico.parRlReqExComp': reqExComp,
         'fl_d_prev': fl_d_prev,
@@ -2592,6 +2619,10 @@ function gerarJsonEsisla(textoFicha, enc) {
         'voResult.voParecerFinal.flPfinal': flPfinal,
         'voResult.voParecerFinal.qtDiasPm': dias,
         'voResult.voParecerFinal.dtIniPm': dtIni,
+        'cdCidPm': cid1,
+        'nmCidPm': descrCid1,
+        'cdCid2Pm': cid2,
+        'voResult.voParecerFinal.nmCidPm2': descrCid2,
         'voResult.voParecerFinal.cdCidPm': cid1,
         'voResult.voParecerFinal.nmCidPm': descrCid1,
         'voResult.voParecerFinal.cdCid2Pm': cid2,
@@ -2623,18 +2654,18 @@ function gerarScriptAutoPreenchimentoEsisla(payloadObj) {
     var campos = data.campos_esisla || data || {};
     
     function findDoc() {
-      if (document.querySelector('textarea[name="voMedico.parRlCat"]') || document.getElementById('blocoGeral')) return document;
+      if (document.querySelector('textarea[name="voMedico.parRlCat"]') || document.getElementById('blocoGeral') || document.querySelector('input[name="fl_d_prev"]')) return document;
       for (var i = 0; i < window.frames.length; i++) {
         try {
           var d = window.frames[i].document;
-          if (d && (d.querySelector('textarea[name="voMedico.parRlCat"]') || d.getElementById('blocoGeral'))) return d;
+          if (d && (d.querySelector('textarea[name="voMedico.parRlCat"]') || d.getElementById('blocoGeral') || d.querySelector('input[name="fl_d_prev"]'))) return d;
         } catch(_) {}
       }
       var iframes = document.querySelectorAll('iframe, frame');
       for (var j = 0; j < iframes.length; j++) {
         try {
           var idoc = iframes[j].contentDocument || iframes[j].contentWindow.document;
-          if (idoc && (idoc.querySelector('textarea[name="voMedico.parRlCat"]') || idoc.getElementById('blocoGeral'))) return idoc;
+          if (idoc && (idoc.querySelector('textarea[name="voMedico.parRlCat"]') || idoc.getElementById('blocoGeral') || idoc.querySelector('input[name="fl_d_prev"]'))) return idoc;
         } catch(_) {}
       }
       return document;
@@ -2654,7 +2685,10 @@ function gerarScriptAutoPreenchimentoEsisla(payloadObj) {
     
     function setInput(sel, val) {
       if (val === undefined || val === null || val === '') return;
-      var el = doc.querySelector(sel);
+      var el = (typeof sel === 'string' && sel.startsWith('#')) ? doc.getElementById(sel.slice(1)) : doc.querySelector(sel);
+      if (!el && typeof sel === 'string' && !sel.startsWith('#') && !sel.includes('[')) {
+        el = doc.getElementById(sel) || doc.querySelector('[name="' + sel + '"]');
+      }
       if (el) {
         if (el.hasAttribute('disabled')) el.removeAttribute('disabled');
         el.disabled = false;
@@ -2663,9 +2697,10 @@ function gerarScriptAutoPreenchimentoEsisla(payloadObj) {
       }
     }
     
-    function setRadio(name, val) {
+    function setRadio(name, val, id) {
       if (!val) return;
-      var el = doc.querySelector('input[type="radio"][name="' + name + '"][value="' + val + '"]');
+      var el = id ? doc.getElementById(id) : null;
+      if (!el) el = doc.querySelector('input[type="radio"][name="' + name + '"][value="' + val + '"]');
       if (el) {
         el.checked = true;
         try { el.click(); } catch(_) {}
@@ -2674,12 +2709,15 @@ function gerarScriptAutoPreenchimentoEsisla(payloadObj) {
       }
     }
     
-    function setCheckbox(nameOrId, checked) {
-      var el = doc.querySelector('input[type="checkbox"][name="' + nameOrId + '"]') || doc.getElementById(nameOrId);
+    function setCheckbox(name, id, checked) {
+      var el = id ? doc.getElementById(id) : null;
+      if (!el) el = doc.querySelector('input[type="checkbox"][name="' + name + '"]');
       if (el) {
-        el.checked = !!checked;
-        try { el.click(); } catch(_) {}
-        el.checked = !!checked;
+        var shouldCheck = !!checked && checked !== '0' && checked !== 0;
+        if (el.checked !== shouldCheck) {
+          try { el.click(); } catch(_) { el.checked = shouldCheck; }
+        }
+        el.checked = shouldCheck;
         trigger(el);
       }
     }
@@ -2694,67 +2732,95 @@ function gerarScriptAutoPreenchimentoEsisla(payloadObj) {
       return s;
     }
 
-    // 1. Textareas do Laudo Pericial (limite estrito de 2.000 caracteres do e-SISLA)
+    // 1. Textareas Principais (limites de 2.000 / 2.500 caracteres do e-SISLA)
     setInput('textarea[name="voMedico.parRlCat"]', sanitizeText(campos['voMedico.parRlCat'], 2000));
     setInput('textarea[name="voMedico.parRlAp"]', sanitizeText(campos['voMedico.parRlAp'], 2000));
-    setInput('textarea[name="voMedico.parRlHda"]', sanitizeText(campos['voMedico.parRlHda'], 2000));
+    setInput('textarea[name="voMedico.parRlHda"]', sanitizeText(campos['voMedico.parRlHda'], 2500));
     
-    var exApres = doc.querySelector('textarea[name="voMedico.parRlExApres"]') || doc.getElementById('idExameApres');
-    if (exApres) {
-      exApres.removeAttribute('disabled');
-      exApres.disabled = false;
-    }
-    setInput('textarea[name="voMedico.parRlExApres"]', sanitizeText(campos['voMedico.parRlExApres'], 2000));
-    setInput('textarea[name="voMedico.parRlReqExComp"]', sanitizeText(campos['voMedico.parRlReqExComp'], 2000));
-    setInput('textarea[name="voMedico.parRlComp"]', sanitizeText(campos['voMedico.parRlComp'], 2000));
-    
-    // 2. Médico Assistente
-    setInput('input[name="voResult.numCrm"]', campos['voResult.numCrm']);
-    setInput('#crmMedicoAssistente', campos['voResult.numCrm']);
-    setInput('input[name="voResult.strNomeMedico"]', campos['voResult.strNomeMedico']);
-    
-    // 3. Pressão Arterial e Pulso
-    setInput('input[name="lgPressArterialMax"]', campos['lgPressArterialMax']);
-    setInput('#sistolicaPressao', campos['lgPressArterialMax']);
-    setInput('input[name="lgPressArterialMin"]', campos['lgPressArterialMin']);
-    setInput('#diastolicaPressao', campos['lgPressArterialMin']);
-    setInput('input[name="lgPulsacao"]', campos['lgPulsacao']);
-    setInput('#pulsoPressao', campos['lgPulsacao']);
-    
-    // 4. Biotipo
-    setInput('input[name="lgAltura"]', campos['lgAltura']);
-    setInput('#alturaBiotipo', campos['lgAltura']);
-    setInput('input[name="lgPeso"]', campos['lgPeso']);
-    setInput('#pesoBiotipo', campos['lgPeso']);
-    if (typeof win.calcularIMC === 'function') {
-      try { win.calcularIMC(); } catch(_) {}
-    }
-    
-    // 5. Exame Físico / Mental Checkboxes
+    // 2. Exame Físico Geral (Textarea e Checkboxes)
     var cbs = [
-      'voMedico.parEdtcspf', 'voMedico.parEdAc', 'voMedico.parEdAr',
-      'voMedico.parEdAHp', 'voMedico.parEdAd', 'voMedico.parEdAgu',
-      'voMedico.parEdAoal', 'voMedico.parEdAe', 'voMedico.parEdSn',
-      'voMedico.parEdOs', 'voMedico.parEdEm', 'voMedico.parEdOutro'
+      { n: 'voMedico.parEdtcspf', id: 'idParEdtcspf' },
+      { n: 'voMedico.parEdAc', id: 'idParEdAc' },
+      { n: 'voMedico.parEdAr', id: 'idParEdAr' },
+      { n: 'voMedico.parEdAHp', id: 'idParEdAHp' },
+      { n: 'voMedico.parEdAd', id: 'idParEdAd' },
+      { n: 'voMedico.parEdAgu', id: 'idParEdAgu' },
+      { n: 'voMedico.parEdAoal', id: 'idParEdAoal' },
+      { n: 'voMedico.parEdAe', id: 'idParEdAe' },
+      { n: 'voMedico.parEdSn', id: 'idParEdSn' },
+      { n: 'voMedico.parEdOs', id: 'idParEdOs' },
+      { n: 'voMedico.parEdEm', id: 'idParEdEm' },
+      { n: 'voMedico.parEdOutro', id: 'idParEdOutro' }
     ];
     var temAlgumMarcado = false;
-    cbs.forEach(function(cbName) {
-      if (campos[cbName]) {
-        setCheckbox(cbName, true);
+    cbs.forEach(function(item) {
+      var isChecked = !!(campos[item.n] || campos[item.id]);
+      if (isChecked) {
+        setCheckbox(item.n, item.id, true);
         temAlgumMarcado = true;
       }
     });
     if (temAlgumMarcado && typeof win.exameApresentado === 'function') {
       try { win.exameApresentado(); } catch(_) {}
     }
-    if (exApres && campos['voMedico.parRlExApres']) {
+    
+    var exApres = doc.getElementById('idExameApres') || doc.querySelector('textarea[name="voMedico.parRlExApres"]');
+    if (exApres) {
       exApres.removeAttribute('disabled');
       exApres.disabled = false;
-      exApres.value = sanitizeText(campos['voMedico.parRlExApres'], 2000);
-      trigger(exApres);
+    }
+    setInput('textarea[name="voMedico.parRlExApres"]', sanitizeText(campos['voMedico.parRlExApres'], 2500));
+    setInput('#idExameApres', sanitizeText(campos['voMedico.parRlExApres'], 2500));
+    
+    // 3. Descrição das Limitações
+    setInput('textarea[name="voMedico.parRlReqExComp"]', sanitizeText(campos['voMedico.parRlReqExComp'], 2500));
+    
+    // 4. Médico Assistente (CRM puramente numérico, máx 9)
+    var crmVal = (campos['voResult.numCrm'] || '').toString().replace(/\\D/g, '').slice(0, 9);
+    setInput('input[name="voResult.numCrm"]', crmVal);
+    setInput('#crmMedicoAssistente', crmVal);
+    if (crmVal && typeof win.recuperaNomeMedico === 'function') {
+      try { win.recuperaNomeMedico(crmVal); } catch(_) {}
+    }
+    setInput('input[name="voResult.strNomeMedico"]', sanitizeText(campos['voResult.strNomeMedico'], 60));
+    
+    // 5. Pressão Arterial e Pulso
+    var sis = (campos['voMedico.lgPressArterialMax'] || campos['lgPressArterialMax'] || '').toString().replace(/\\D/g, '').slice(0, 3);
+    var dia = (campos['voMedico.lgPressArterialMin'] || campos['lgPressArterialMin'] || '').toString().replace(/\\D/g, '').slice(0, 3);
+    var pul = (campos['voMedico.lgPulsacao'] || campos['lgPulsacao'] || '').toString().replace(/\\D/g, '').slice(0, 3);
+    setInput('input[name="voMedico.lgPressArterialMax"]', sis);
+    setInput('input[name="lgPressArterialMax"]', sis);
+    setInput('#sistolicaPressao', sis);
+    setInput('input[name="voMedico.lgPressArterialMin"]', dia);
+    setInput('input[name="lgPressArterialMin"]', dia);
+    setInput('#diastolicaPressao', dia);
+    setInput('input[name="voMedico.lgPulsacao"]', pul);
+    setInput('input[name="lgPulsacao"]', pul);
+    setInput('#pulsoPressao', pul);
+    
+    // 6. Biotipo (Altura formatada com vírgula, peso, IMC)
+    var alt = campos['voMedico.lgAltura'] || campos['lgAltura'] || '';
+    if (alt) {
+      alt = String(alt).trim().replace(/[^\\d,\\.]/g, '');
+      if (alt.includes('.')) alt = alt.replace('.', ',');
+      else if (!alt.includes(',') && alt.length >= 3) alt = alt.slice(0, 1) + ',' + alt.slice(1, 3);
+      alt = alt.slice(0, 4);
+    }
+    var peso = (campos['voMedico.lgPeso'] || campos['lgPeso'] || '').toString().replace(/\\D/g, '').slice(0, 3);
+    setInput('input[name="voMedico.lgAltura"]', alt);
+    setInput('input[name="lgAltura"]', alt);
+    setInput('#alturaBiotipo', alt);
+    setInput('input[name="voMedico.lgPeso"]', peso);
+    setInput('input[name="lgPeso"]', peso);
+    setInput('#pesoBiotipo', peso);
+    if (typeof win.TextoIMC === 'function') {
+      try { win.TextoIMC(); } catch(_) {}
+    }
+    if (typeof win.calcularIMC === 'function') {
+      try { win.calcularIMC(); } catch(_) {}
     }
     
-    // 6. Quesitos
+    // 7. Quesitos
     var q1 = campos['fl_d_prev'] || 'N';
     var q2 = campos['fl_limit'] || 'N';
     var q3 = campos['fl_imped'] || 'N';
@@ -2766,55 +2832,82 @@ function gerarScriptAutoPreenchimentoEsisla(payloadObj) {
       console.warn('[e-SISLA Alerta DPME] Incoerência: Parecer CONTRÁRIO com Quesito 3 SIM detectado!');
     }
 
-    setRadio('fl_d_prev', q1);
-    setRadio('fl_limit', q2);
-    setRadio('fl_imped', q3);
-    
-    // 7. Parecer Médico-Pericial
-    setRadio('voResult.voParecerFinal.flPfinal', parecerVal);
-    if (typeof win.escondeCampos === 'function') {
-      try { win.escondeCampos(parecerVal); } catch(_) {}
+    setRadio('fl_d_prev', q1, q1 === 'S' ? 'idFl_d_prevS' : 'idFl_d_prevN');
+    if (typeof win.limpaCamposQuesitos === 'function') { try { win.limpaCamposQuesitos(q1); } catch(_) {} }
+    setRadio('fl_limit', q2, q2 === 'S' ? 'idFl_limitS' : 'idFl_limitN');
+    if (typeof win.limpaCamposQuesitos === 'function') { try { win.limpaCamposQuesitos(q2); } catch(_) {} }
+    setRadio('fl_imped', q3, q3 === 'S' ? 'idFl_impedS' : 'idFl_impedN');
+    if (typeof win.limpaCamposQuesitos === 'function') { try { win.limpaCamposQuesitos(q3); } catch(_) {} }
+
+    // 8. Parecer Médico-Pericial
+    setRadio('voResult.voParecerFinal.flPfinal', parecerVal, parecerVal === 'F' ? 'decPericialF' : 'decPericialC');
+    if (typeof win.mudaSituacao === 'function') { try { win.mudaSituacao(); } catch(_) {} }
+    if (typeof win.escondeCampos === 'function') { try { win.escondeCampos(parecerVal); } catch(_) {} }
+
+    var bFav = doc.getElementById('blocoFavoravel');
+    var bJust = doc.getElementById('blocoJustificativa');
+    if (parecerVal === 'F') {
+      if (bFav) bFav.style.display = 'block';
+      if (bJust && !campos['voMedico.parRlComp']) bJust.style.display = 'none';
+    } else {
+      if (bFav) bFav.style.display = 'none';
+      if (bJust) bJust.style.display = 'block';
     }
-    
-    // 8. Concessão (Dias, Início, CIDs)
-    setInput('input[name="voResult.voParecerFinal.qtDiasPm"]', campos['voResult.voParecerFinal.qtDiasPm']);
-    setInput('input[name="voResult.voParecerFinal.dtIniPm"]', campos['voResult.voParecerFinal.dtIniPm']);
-    
-    var cid1 = campos['voResult.voParecerFinal.cdCidPm'];
-    if (cid1) {
-      var inpCid1 = doc.querySelector('input[name="voResult.voParecerFinal.cdCidPm"]');
-      if (inpCid1) {
-        inpCid1.value = cid1;
-        trigger(inpCid1);
-        if (typeof win.carregaAjaxCid === 'function') {
-          try { win.carregaAjaxCid(inpCid1.name, 'descrCidx'); } catch(_) {}
-        }
-      }
+
+    // 9. Concessão (Dias, Início, CIDs)
+    var diasSol = (campos['voResult.voParecerFinal.qtDiasPm'] || '').toString().replace(/\\D/g, '').slice(0, 3);
+    var dtIniSol = sanitizeText(campos['voResult.voParecerFinal.dtIniPm'], 10);
+    setInput('input[name="voResult.voParecerFinal.qtDiasPm"]', diasSol);
+    setInput('#qtDiasPm', diasSol);
+    setInput('input[name="voResult.voParecerFinal.dtIniPm"]', dtIniSol);
+    if (typeof win.preenchePeriodo2 === 'function') {
+      try { win.preenchePeriodo2(); } catch(_) {}
     }
-    setInput('input[name="voResult.voParecerFinal.nmCidPm"]', campos['voResult.voParecerFinal.nmCidPm']);
-    setInput('#descrCidx', campos['voResult.voParecerFinal.nmCidPm']);
-    
-    var cid2 = campos['voResult.voParecerFinal.cdCid2Pm'];
-    if (cid2) {
-      var inpCid2 = doc.querySelector('input[name="voResult.voParecerFinal.cdCid2Pm"]');
-      if (inpCid2) {
-        inpCid2.value = cid2;
-        trigger(inpCid2);
-        if (typeof win.carregaAjaxCid === 'function') {
-          try { win.carregaAjaxCid(inpCid2.name, 'descrCid2x'); } catch(_) {}
-        }
-      }
+
+    var cid1 = sanitizeText(campos['cdCidPm'] || campos['voResult.voParecerFinal.cdCidPm'], 5);
+    var descrCid1 = sanitizeText(campos['nmCidPm'] || campos['voResult.voParecerFinal.nmCidPm'], 65);
+    setInput('input[name="cdCidPm"]', cid1);
+    setInput('input[name="voResult.voParecerFinal.cdCidPm"]', cid1);
+    setInput('#cdCidPm', cid1);
+    var elNmCid1 = doc.getElementById('nmCidPm') || doc.querySelector('input[name="nmCidPm"]') || doc.querySelector('input[name="voResult.voParecerFinal.nmCidPm"]');
+    if (elNmCid1) {
+      elNmCid1.removeAttribute('disabled');
+      elNmCid1.disabled = false;
+      elNmCid1.value = descrCid1;
+      trigger(elNmCid1);
     }
-    setInput('input[name="voResult.voParecerFinal.nmCid2Pm"]', campos['voResult.voParecerFinal.nmCid2Pm']);
-    setInput('#descrCid2x', campos['voResult.voParecerFinal.nmCid2Pm']);
+    setInput('#descrCidx', descrCid1);
+    if (cid1 && typeof win.carregaAjaxCid === 'function') {
+      try { win.carregaAjaxCid('cdCidPm', 'nmCidPm'); } catch(_) {}
+    }
+
+    var cid2 = sanitizeText(campos['cdCid2Pm'] || campos['voResult.voParecerFinal.cdCid2Pm'], 5);
+    var descrCid2 = sanitizeText(campos['voResult.voParecerFinal.nmCidPm2'] || campos['voResult.voParecerFinal.nmCid2Pm'] || campos['nmCidPm2'], 65);
+    setInput('input[name="cdCid2Pm"]', cid2);
+    setInput('input[name="voResult.voParecerFinal.cdCid2Pm"]', cid2);
+    setInput('#cdCid2Pm', cid2);
+    var elNmCid2 = doc.getElementById('nmCid2Pm') || doc.querySelector('input[name="voResult.voParecerFinal.nmCidPm2"]') || doc.querySelector('input[name="voResult.voParecerFinal.nmCid2Pm"]');
+    if (elNmCid2) {
+      elNmCid2.removeAttribute('disabled');
+      elNmCid2.disabled = false;
+      elNmCid2.value = descrCid2;
+      trigger(elNmCid2);
+    }
+    setInput('#descrCid2x', descrCid2);
+    if (cid2 && typeof win.carregaAjaxCid === 'function') {
+      try { win.carregaAjaxCid('cdCid2Pm', 'nmCid2Pm'); } catch(_) {}
+    }
+
+    // 10. Justificativa Parecer Médico
+    setInput('textarea[name="voMedico.parRlComp"]', sanitizeText(campos['voMedico.parRlComp'], 2000));
     
-    // 9. Rolar até o bloco geral para conferência do perito
+    // 11. Rolar até o bloco geral para conferência do perito
     var bg = doc.getElementById('blocoGeral') || doc.querySelector('fieldset');
     if (bg) {
       bg.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
     
-    // 10. Alerta amigável reforçando que NÃO foi finalizado automaticamente
+    // 12. Alerta amigável
     alert("✅ e-Sisla: Todos os campos do laudo foram preenchidos com sucesso!\\n\\n📋 A perícia NÃO foi finalizada automaticamente para que você possa analisar e conferir todos os campos antes de concluir.");
   } catch(err) {
     alert("❌ Erro ao preencher campos do e-Sisla: " + err.message);
@@ -3691,44 +3784,66 @@ function gerarCodigoBookmarkletEsislaUniversal() {
     var doc=findDoc();var win=doc.defaultView||window;
     var campos=data.campos_esisla||data||{};
     function trigger(el){if(!el)return;try{el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));el.dispatchEvent(new Event('blur',{bubbles:true}));}catch(_){}}
-    function setInput(sel,val){if(val===undefined||val===null||val==='')return;var el=doc.querySelector(sel);if(el){if(el.hasAttribute('disabled'))el.removeAttribute('disabled');el.disabled=false;el.value=val;trigger(el);}}
-    function setRadio(name,val){if(!val)return;var el=doc.querySelector('input[type="radio"][name="'+name+'"][value="'+val+'"]');if(el){el.checked=true;try{el.click();}catch(_){}el.checked=true;trigger(el);}}
-    function setCheckbox(nameOrId,checked){var el=doc.querySelector('input[type="checkbox"][name="'+nameOrId+'"]')||doc.getElementById(nameOrId);if(el){el.checked=!!checked;try{el.click();}catch(_){}el.checked=!!checked;trigger(el);}}
+    function setInput(sel,val){if(val===undefined||val===null||val==='')return;var el=(typeof sel==='string'&&sel.startsWith('#'))?doc.getElementById(sel.slice(1)):doc.querySelector(sel);if(!el&&typeof sel==='string'&&!sel.startsWith('#')&&!sel.includes('[')){el=doc.getElementById(sel)||doc.querySelector('[name="'+sel+'"]');}if(el){if(el.hasAttribute('disabled'))el.removeAttribute('disabled');el.disabled=false;el.value=val;trigger(el);}}
+    function setRadio(name,val,id){if(!val)return;var el=id?doc.getElementById(id):null;if(!el)el=doc.querySelector('input[type="radio"][name="'+name+'"][value="'+val+'"]');if(el){el.checked=true;try{el.click();}catch(_){}el.checked=true;trigger(el);}}
+    function setCheckbox(name,id,checked){var el=id?doc.getElementById(id):null;if(!el)el=doc.querySelector('input[type="checkbox"][name="'+name+'"]');if(el){var sc=!!checked&&checked!=='0'&&checked!==0;if(el.checked!==sc){try{el.click();}catch(_){el.checked=sc;}}el.checked=sc;trigger(el);}}
     setInput('textarea[name="voMedico.parRlCat"]',sanitizeText(campos['voMedico.parRlCat'],2000));
     setInput('textarea[name="voMedico.parRlAp"]',sanitizeText(campos['voMedico.parRlAp'],2000));
-    setInput('textarea[name="voMedico.parRlHda"]',sanitizeText(campos['voMedico.parRlHda'],2000));
-    var exApres=doc.querySelector('textarea[name="voMedico.parRlExApres"]')||doc.getElementById('idExameApres');
-    if(exApres){exApres.removeAttribute('disabled');exApres.disabled=false;}
-    setInput('textarea[name="voMedico.parRlExApres"]',sanitizeText(campos['voMedico.parRlExApres'],2000));
-    setInput('textarea[name="voMedico.parRlReqExComp"]',sanitizeText(campos['voMedico.parRlReqExComp'],2000));
-    setInput('textarea[name="voMedico.parRlComp"]',sanitizeText(campos['voMedico.parRlComp'],2000));
-    setInput('input[name="voResult.numCrm"]',campos['voResult.numCrm']);setInput('#crmMedicoAssistente',campos['voResult.numCrm']);
-    setInput('input[name="voResult.strNomeMedico"]',campos['voResult.strNomeMedico']);
-    setInput('input[name="lgPressArterialMax"]',campos['lgPressArterialMax']);setInput('#sistolicaPressao',campos['lgPressArterialMax']);
-    setInput('input[name="lgPressArterialMin"]',campos['lgPressArterialMin']);setInput('#diastolicaPressao',campos['lgPressArterialMin']);
-    setInput('input[name="lgPulsacao"]',campos['lgPulsacao']);setInput('#pulsoPressao',campos['lgPulsacao']);
-    setInput('input[name="lgAltura"]',campos['lgAltura']);setInput('#alturaBiotipo',campos['lgAltura']);
-    setInput('input[name="lgPeso"]',campos['lgPeso']);setInput('#pesoBiotipo',campos['lgPeso']);
+    setInput('textarea[name="voMedico.parRlHda"]',sanitizeText(campos['voMedico.parRlHda'],2500));
+    var crmVal=(campos['voResult.numCrm']||'').toString().replace(/\\D/g,'').slice(0,9);
+    setInput('input[name="voResult.numCrm"]',crmVal);setInput('#crmMedicoAssistente',crmVal);
+    if(crmVal&&typeof win.recuperaNomeMedico==='function'){try{win.recuperaNomeMedico(crmVal);}catch(_){}}
+    setInput('input[name="voResult.strNomeMedico"]',sanitizeText(campos['voResult.strNomeMedico'],60));
+    var sis=(campos['voMedico.lgPressArterialMax']||campos['lgPressArterialMax']||'').toString().replace(/\\D/g,'').slice(0,3);
+    var dia=(campos['voMedico.lgPressArterialMin']||campos['lgPressArterialMin']||'').toString().replace(/\\D/g,'').slice(0,3);
+    var pul=(campos['voMedico.lgPulsacao']||campos['lgPulsacao']||'').toString().replace(/\\D/g,'').slice(0,3);
+    setInput('input[name="voMedico.lgPressArterialMax"]',sis);setInput('input[name="lgPressArterialMax"]',sis);setInput('#sistolicaPressao',sis);
+    setInput('input[name="voMedico.lgPressArterialMin"]',dia);setInput('input[name="lgPressArterialMin"]',dia);setInput('#diastolicaPressao',dia);
+    setInput('input[name="voMedico.lgPulsacao"]',pul);setInput('input[name="lgPulsacao"]',pul);setInput('#pulsoPressao',pul);
+    var alt=campos['voMedico.lgAltura']||campos['lgAltura']||'';
+    if(alt){alt=String(alt).trim().replace(/[^\\d,\\.]/g,'');if(alt.includes('.'))alt=alt.replace('.',',');else if(!alt.includes(',')&&alt.length>=3)alt=alt.slice(0,1)+','+alt.slice(1,3);alt=alt.slice(0,4);}
+    var peso=(campos['voMedico.lgPeso']||campos['lgPeso']||'').toString().replace(/\\D/g,'').slice(0,3);
+    setInput('input[name="voMedico.lgAltura"]',alt);setInput('input[name="lgAltura"]',alt);setInput('#alturaBiotipo',alt);
+    setInput('input[name="voMedico.lgPeso"]',peso);setInput('input[name="lgPeso"]',peso);setInput('#pesoBiotipo',peso);
+    if(typeof win.TextoIMC==='function'){try{win.TextoIMC();}catch(_){}}
     if(typeof win.calcularIMC==='function'){try{win.calcularIMC();}catch(_){}}
-    var cbs=['voMedico.parEdtcspf','voMedico.parEdAc','voMedico.parEdAr','voMedico.parEdAHp','voMedico.parEdAd','voMedico.parEdAgu','voMedico.parEdAoal','voMedico.parEdAe','voMedico.parEdSn','voMedico.parEdOs','voMedico.parEdEm','voMedico.parEdOutro'];
-    var temAlgum=false;cbs.forEach(function(cbName){if(campos[cbName]){setCheckbox(cbName,true);temAlgum=true;}});
+    var cbs=[{n:'voMedico.parEdtcspf',id:'idParEdtcspf'},{n:'voMedico.parEdAc',id:'idParEdAc'},{n:'voMedico.parEdAr',id:'idParEdAr'},{n:'voMedico.parEdAHp',id:'idParEdAHp'},{n:'voMedico.parEdAd',id:'idParEdAd'},{n:'voMedico.parEdAgu',id:'idParEdAgu'},{n:'voMedico.parEdAoal',id:'idParEdAoal'},{n:'voMedico.parEdAe',id:'idParEdAe'},{n:'voMedico.parEdSn',id:'idParEdSn'},{n:'voMedico.parEdOs',id:'idParEdOs'},{n:'voMedico.parEdEm',id:'idParEdEm'},{n:'voMedico.parEdOutro',id:'idParEdOutro'}];
+    var temAlgum=false;cbs.forEach(function(item){var chk=!!(campos[item.n]||campos[item.id]);if(chk){setCheckbox(item.n,item.id,true);temAlgum=true;}});
     if(temAlgum&&typeof win.exameApresentado==='function'){try{win.exameApresentado();}catch(_){}}
-    if(exApres&&campos['voMedico.parRlExApres']){exApres.removeAttribute('disabled');exApres.disabled=false;exApres.value=sanitizeText(campos['voMedico.parRlExApres'],2000);trigger(exApres);}
+    var exApres=doc.getElementById('idExameApres')||doc.querySelector('textarea[name="voMedico.parRlExApres"]');
+    if(exApres){exApres.removeAttribute('disabled');exApres.disabled=false;}
+    setInput('textarea[name="voMedico.parRlExApres"]',sanitizeText(campos['voMedico.parRlExApres'],2500));setInput('#idExameApres',sanitizeText(campos['voMedico.parRlExApres'],2500));
+    setInput('textarea[name="voMedico.parRlReqExComp"]',sanitizeText(campos['voMedico.parRlReqExComp'],2500));
     var q1=campos['fl_d_prev']||'N';var q2=campos['fl_limit']||'N';var q3=campos['fl_imped']||'N';
+    setRadio('fl_d_prev',q1,q1==='S'?'idFl_d_prevS':'idFl_d_prevN');if(typeof win.limpaCamposQuesitos==='function'){try{win.limpaCamposQuesitos(q1);}catch(_){}}
+    setRadio('fl_limit',q2,q2==='S'?'idFl_limitS':'idFl_limitN');if(typeof win.limpaCamposQuesitos==='function'){try{win.limpaCamposQuesitos(q2);}catch(_){}}
+    setRadio('fl_imped',q3,q3==='S'?'idFl_impedS':'idFl_impedN');if(typeof win.limpaCamposQuesitos==='function'){try{win.limpaCamposQuesitos(q3);}catch(_){}}
     var parecerVal=campos['voResult.voParecerFinal.flPfinal']||'F';
-    setRadio('fl_d_prev',q1);setRadio('fl_limit',q2);setRadio('fl_imped',q3);
-    setRadio('voResult.voParecerFinal.flPfinal',parecerVal);
+    setRadio('voResult.voParecerFinal.flPfinal',parecerVal,parecerVal==='F'?'decPericialF':'decPericialC');
+    if(typeof win.mudaSituacao==='function'){try{win.mudaSituacao();}catch(_){}}
     if(typeof win.escondeCampos==='function'){try{win.escondeCampos(parecerVal);}catch(_){}}
-    setInput('input[name="voResult.voParecerFinal.qtDiasPm"]',campos['voResult.voParecerFinal.qtDiasPm']);
-    setInput('input[name="voResult.voParecerFinal.dtIniPm"]',campos['voResult.voParecerFinal.dtIniPm']);
-    var cid1=campos['voResult.voParecerFinal.cdCidPm'];
-    if(cid1){var inpCid1=doc.querySelector('input[name="voResult.voParecerFinal.cdCidPm"]');if(inpCid1){inpCid1.value=cid1;trigger(inpCid1);if(typeof win.carregaAjaxCid==='function'){try{win.carregaAjaxCid(inpCid1.name,'descrCidx');}catch(_){}}}}
-    setInput('input[name="voResult.voParecerFinal.nmCidPm"]',campos['voResult.voParecerFinal.nmCidPm']);
-    setInput('#descrCidx',campos['voResult.voParecerFinal.nmCidPm']);
-    var cid2=campos['voResult.voParecerFinal.cdCid2Pm'];
-    if(cid2){var inpCid2=doc.querySelector('input[name="voResult.voParecerFinal.cdCid2Pm"]');if(inpCid2){inpCid2.value=cid2;trigger(inpCid2);if(typeof win.carregaAjaxCid==='function'){try{win.carregaAjaxCid(inpCid2.name,'descrCid2x');}catch(_){}}}}
-    setInput('input[name="voResult.voParecerFinal.nmCid2Pm"]',campos['voResult.voParecerFinal.nmCid2Pm']);
-    setInput('#descrCid2x',campos['voResult.voParecerFinal.nmCid2Pm']);
+    var bFav=doc.getElementById('blocoFavoravel');var bJust=doc.getElementById('blocoJustificativa');
+    if(parecerVal==='F'){if(bFav)bFav.style.display='block';if(bJust&&!campos['voMedico.parRlComp'])bJust.style.display='none';}else{if(bFav)bFav.style.display='none';if(bJust)bJust.style.display='block';}
+    var diasSol=(campos['voResult.voParecerFinal.qtDiasPm']||'').toString().replace(/\\D/g,'').slice(0,3);
+    var dtIniSol=sanitizeText(campos['voResult.voParecerFinal.dtIniPm'],10);
+    setInput('input[name="voResult.voParecerFinal.qtDiasPm"]',diasSol);setInput('#qtDiasPm',diasSol);
+    setInput('input[name="voResult.voParecerFinal.dtIniPm"]',dtIniSol);
+    if(typeof win.preenchePeriodo2==='function'){try{win.preenchePeriodo2();}catch(_){}}
+    var cid1=sanitizeText(campos['cdCidPm']||campos['voResult.voParecerFinal.cdCidPm'],5);
+    var descrCid1=sanitizeText(campos['nmCidPm']||campos['voResult.voParecerFinal.nmCidPm'],65);
+    setInput('input[name="cdCidPm"]',cid1);setInput('input[name="voResult.voParecerFinal.cdCidPm"]',cid1);setInput('#cdCidPm',cid1);
+    var elNmCid1=doc.getElementById('nmCidPm')||doc.querySelector('input[name="nmCidPm"]')||doc.querySelector('input[name="voResult.voParecerFinal.nmCidPm"]');
+    if(elNmCid1){elNmCid1.removeAttribute('disabled');elNmCid1.disabled=false;elNmCid1.value=descrCid1;trigger(elNmCid1);}
+    setInput('#descrCidx',descrCid1);
+    if(cid1&&typeof win.carregaAjaxCid==='function'){try{win.carregaAjaxCid('cdCidPm','nmCidPm');}catch(_){}}
+    var cid2=sanitizeText(campos['cdCid2Pm']||campos['voResult.voParecerFinal.cdCid2Pm'],5);
+    var descrCid2=sanitizeText(campos['voResult.voParecerFinal.nmCidPm2']||campos['voResult.voParecerFinal.nmCid2Pm']||campos['nmCidPm2'],65);
+    setInput('input[name="cdCid2Pm"]',cid2);setInput('input[name="voResult.voParecerFinal.cdCid2Pm"]',cid2);setInput('#cdCid2Pm',cid2);
+    var elNmCid2=doc.getElementById('nmCid2Pm')||doc.querySelector('input[name="voResult.voParecerFinal.nmCidPm2"]')||doc.querySelector('input[name="voResult.voParecerFinal.nmCid2Pm"]');
+    if(elNmCid2){elNmCid2.removeAttribute('disabled');elNmCid2.disabled=false;elNmCid2.value=descrCid2;trigger(elNmCid2);}
+    setInput('#descrCid2x',descrCid2);
+    if(cid2&&typeof win.carregaAjaxCid==='function'){try{win.carregaAjaxCid('cdCid2Pm','nmCid2Pm');}catch(_){}}
+    setInput('textarea[name="voMedico.parRlComp"]',sanitizeText(campos['voMedico.parRlComp'],2000));
     var bg=doc.getElementById('blocoGeral')||doc.querySelector('fieldset');if(bg)bg.scrollIntoView({behavior:'smooth',block:'start'});
     mostrarToastEsisla("✅ e-SISLA: Laudo preenchido com sucesso! Confira todos os campos antes de concluir.");
   }

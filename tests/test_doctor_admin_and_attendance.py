@@ -1825,10 +1825,18 @@ def test_ajustes_atendimento_e_esisla_5_requisitos():
     assert "parecerVal === 'F' && (!diasSol || diasSol === '0')" in ATTENDANCE
 
     # Requisito 5: Sem duplicação de título no exame físico e respeito total à opção "Outros"
-    assert "prefixosSistema" in GESTAO_ATENDIMENTOS
-    assert "exameFisicoLimpo.replace(rx, '').trim()" in GESTAO_ATENDIMENTOS
-    assert "exTipo === 'outros' || exTipo === 'e outros' || outrosSub === 'e outros' || outrosSub === 'outros'" in GESTAO_ATENDIMENTOS
-    assert "exTipo === 'outros' || exTipo === 'e outros' || outrosSub === 'e outros' || outrosSub === 'outros'" in ATTENDANCE
+    app_text = (ROOT / "app.py").read_text(encoding="utf-8")
+    gestao_text = (ROOT / "gestao_atendimentos.html").read_text(encoding="utf-8")
+    atd_text = (ROOT / "ambiental_avaliacao_medica_lts_cid_assistente.html").read_text(encoding="utf-8")
+
+    assert "prefixosSistema" in gestao_text
+    assert "exameFisicoLimpo.replace(rx, '').trim()" in gestao_text
+    assert "exTipo === 'outros' || exTipo === 'e outros' || outrosSub === 'e outros' || outrosSub === 'outros'" in gestao_text
+    assert "exTipo === 'outros' || exTipo === 'e outros' || outrosSub === 'e outros' || outrosSub === 'outros'" in atd_text
+    assert "Aparelho E outros:" not in _clean_esisla_text(raw_esisla.replace("Aparelho Osteomuscular: dor leve.", "Aparelho E outros: Bom do estado geral, nutrição adequada."))
+    assert "NUNCA escreva prefixos como \"Aparelho E outros:\"" in app_text
+    assert "exameFisicoLinha1.startsWith('aparelho e outro')" in gestao_text
+    assert "exameFisicoLinha1.startsWith('aparelho e outro')" in atd_text
 
 
 

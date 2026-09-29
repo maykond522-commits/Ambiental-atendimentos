@@ -1013,7 +1013,7 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
      * Identifique expressamente o segmento/sistema avaliado correspondente aos checkboxes oficiais do e-SISLA (ex.: "Aparelho Osteomuscular e Tecido Conjuntivo: [achados]" ou "Exame Mental: [achados]" ou "[Área avaliada]: [achados]"), seguido da descrição clínica pericial dos achados observados.
      * Para patologia Mental / Psiquiátrica (CID F): estruture os achados psíquicos objetivos observados pelo perito: postura e acompanhamento (descrever se veio acompanhado ou desacompanhado, postura na sala de espera e durante o atendimento), orientação temporoespacial, aparência física e cuidados de higiene, fluxo e curso do pensamento, linguagem e diálogo (espontâneo, colaborativo), psicomotricidade, humor e afeto, volição, pragmatismo e presença ou ausência de ideação/delírios relatados.
      * Para patologia Ortopédica / Físico-funcional: estruture os achados físicos objetivos periciais: inspeção dinâmica e marcha, fácies de dor, cicatrizes, trofismo muscular, amplitude de movimento articular ativo e passivo, força muscular (grau 0 a 5), presença de contraturas musculares, sensibilidade e reflexos tendinosos profundos relatados.
-     * Para Outros tipos de exame: integre a área avaliada (area_exame_clinico) e o resultado (resultado_avaliacao: Normal ou Alterado) com os achados clínicos descritos.
+     * Para Outros tipos de exame: integre a área avaliada (area_exame_clinico) e o resultado (resultado_avaliacao: Normal ou Alterado) com os achados clínicos descritos. Quando a opção for "Outros" ou a área for "E outros" / "Outros", NUNCA escreva prefixos como "Aparelho E outros:", "Aparelho outros:", "E outros:" ou "Outros:" no texto. Inicie a redação DIRETAMENTE com a descrição dos achados clínicos objetivos observados.
    - REGRA DE AJUSTE PARA ACHADOS MUITO CURTOS (SOMENTE EM CASOS EXTREMOS):
      Se a anotação do médico em exame_fisico_descricao for excessivamente concisa, telegráfica ou lacônica (ex.: apenas "dor lombar", "tristeza", "sem alterações", "normal", "apenas dor à palpação", "limitação"), a IA DEVE ajustar e estruturar uma descrição clínica pericial formal, completa e técnica no padrão DPME/SP, compatível com o tipo de exame e a especialidade, garantindo a solidez pericial do prontuário. Em atendimentos que já possuam descrição detalhada, preserve estritamente o relato sem invenções.
    - NUNCA descreva exames de imagem ou laboratoriais trazidos pelo servidor neste campo.
@@ -2029,6 +2029,14 @@ def _clean_esisla_text(text: str) -> str:
         text,
         flags=re.IGNORECASE
     )
+    # Remover prefixos indesejados como "Aparelho E outros:", "Aparelho outros:", "E outros:", "Outros:" no início do Exame Físico Geral
+    text = re.sub(
+        r"(\(\*\)\s*Exame Físico Geral:?\s*\n\s*)(?:Aparelho\s+)?(?:E\s+)?Outros\s*:\s*",
+        r"\1",
+        text,
+        flags=re.IGNORECASE
+    )
+
     text = re.sub(r"\n{3,}", "\n\n", text)
 
     return text

@@ -2425,6 +2425,7 @@ function detectarSistemaExameFisico(st, aux, texto, cidCode) {
     if (outrosSub.includes('sentidos') || outrosSub.includes('oftalm') || outrosSub.includes('otol')) return 'os';
 
     const exameFisicoLinha1 = (String(texto || '').match(/\(\*\)\s*Exame Físico Geral:?\s*\n\s*([^\n\r]+)/i) || [])[1]?.toLowerCase() || '';
+    if (exameFisicoLinha1.startsWith('aparelho e outro') || exameFisicoLinha1.startsWith('aparelho outro') || exameFisicoLinha1.startsWith('e outros') || exameFisicoLinha1.includes('outros:')) return 'outro';
     if (exameFisicoLinha1.includes('osteomuscular') || exameFisicoLinha1.includes('conjutivo') || exameFisicoLinha1.includes('conjuntivo')) return 'aoal';
     if (exameFisicoLinha1.startsWith('exame mental')) return 'em';
     if (exameFisicoLinha1.includes('circulat')) return 'ac';
@@ -2436,6 +2437,7 @@ function detectarSistemaExameFisico(st, aux, texto, cidCode) {
     if (exameFisicoLinha1.includes('endocrin')) return 'ae';
     if (exameFisicoLinha1.includes('nervoso')) return 'sn';
     if (exameFisicoLinha1.includes('sentidos')) return 'os';
+    if (exameFisicoLinha1.includes('outro')) return 'outro';
 
     // Fallback estrito pelo código CID
     const c = String(cidCode || '').toUpperCase().trim();
@@ -2539,13 +2541,29 @@ function renderEsislaBlocos(textoFicha) {
 
     // Limpar repetição do título/sistema no início do texto do exame físico (evita aparecer o nome do sistema duas vezes)
     let exameFisicoLimpo = exameFisico;
+    exameFisicoLimpo = exameFisicoLimpo.replace(/^\s*(?:Aparelho\s+)?(?:E\s+)?Outros\s*:\s*/i, '').trim();
     const prefixosSistema = [
         sistemaNome,
         'Aparelho Osteomuscular e Tecido Conjuntivo',
         'Aparelho Osteomuscular e Tecido Conjutivo',
         'Exame Mental',
-        'Outros',
-        'E outros'
+        'Tecido celular subcutâneo Pele e Fâneros',
+        'Tecido celular subcutâneo',
+        'Pele e Fâneros',
+        'Aparelho Circulatório',
+        'Aparelho Respiratório',
+        'Aparelho Digestivo',
+        'Aparelho Geniturinário',
+        'Aparelho Hemolinfopoético',
+        'Aparelho Hemolinfopoiético',
+        'Aparelho Endócrino',
+        'Sistema Nervoso',
+        'Órgãos dos Sentidos',
+        'Exame Físico Geral',
+        'Aparelho E outros',
+        'Aparelho outros',
+        'E outros',
+        'Outros'
     ].filter(Boolean);
     for (const p of prefixosSistema) {
         const rx = new RegExp('^\\s*' + p.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + '\\s*:\\s*', 'i');
@@ -3087,6 +3105,7 @@ function gerarJsonEsisla(textoFicha, enc) {
         exApres = aux.exameFisico || st.exameFisico || '';
     }
     exApres = exApres.replace(/\n\s*Em anexo\.?\s*$/gi, '').trim();
+    exApres = exApres.replace(/^\s*(?:Aparelho\s+)?(?:E\s+)?Outros\s*:\s*/i, '').trim();
 
     // Se houver relatos reais de exames complementares (não boilerplates nem "Em anexo"), integra em queixas conforme solicitado
     const cleanAltJson = String(alteracoesTexto || '').replace(/^(?:em\s+anexo\.?|não\s+foram\s+apresentados[^\n\r]*|nada\s+consta[^\n\r]*|sem\s+exames[^\n\r]*)\s*$/i, '').trim();

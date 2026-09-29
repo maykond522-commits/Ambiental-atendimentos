@@ -9035,6 +9035,7 @@ function detectarSistemaExameFisico(st, aux, texto, cidCode) {
   if (outrosSub.includes('sentidos') || outrosSub.includes('oftalm') || outrosSub.includes('otol')) return 'os';
 
   const exameFisicoLinha1 = (String(texto || '').match(/\(\*\)\s*Exame Físico Geral:?\s*\n\s*([^\n\r]+)/i) || [])[1]?.toLowerCase() || '';
+  if (exameFisicoLinha1.startsWith('aparelho e outro') || exameFisicoLinha1.startsWith('aparelho outro') || exameFisicoLinha1.startsWith('e outros') || exameFisicoLinha1.includes('outros:')) return 'outro';
   if (exameFisicoLinha1.includes('osteomuscular') || exameFisicoLinha1.includes('conjutivo') || exameFisicoLinha1.includes('conjuntivo')) return 'aoal';
   if (exameFisicoLinha1.startsWith('exame mental')) return 'em';
   if (exameFisicoLinha1.includes('circulat')) return 'ac';
@@ -9046,6 +9047,7 @@ function detectarSistemaExameFisico(st, aux, texto, cidCode) {
   if (exameFisicoLinha1.includes('endocrin')) return 'ae';
   if (exameFisicoLinha1.includes('nervoso')) return 'sn';
   if (exameFisicoLinha1.includes('sentidos')) return 'os';
+  if (exameFisicoLinha1.includes('outro')) return 'outro';
 
   // Fallback estrito pelo código CID
   const c = String(cidCode || '').toUpperCase().trim();
@@ -9107,8 +9109,9 @@ function copiarLaudoEsislaAtendimento() {
   if (!exApres) {
     exApres = (state.exameFisicoDescricao || v.exameFisicoDescricao || '').trim();
   }
-  // Remove "Em anexo" boilerplate
+  // Remove "Em anexo" boilerplate e prefixos indesejados como "Aparelho E outros:"
   exApres = exApres.replace(/^(?:[\s\r\n]*em\s+anexo\.?[\s\r\n]*)+$/gi, '').trim();
+  exApres = exApres.replace(/^\s*(?:Aparelho\s+)?(?:E\s+)?Outros\s*:\s*/i, '').trim();
   exApres = sanitizeText(exApres, 2500);
 
   // 5. Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) (max 2500)

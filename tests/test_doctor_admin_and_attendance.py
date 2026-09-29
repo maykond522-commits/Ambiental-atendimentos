@@ -1577,44 +1577,37 @@ def test_esisla_prompt_dates_and_distinct_exam_fields():
 
 def test_detail_modal_versao_txt_and_toggle_edit():
     """
-    Valida a exibição primária da Ficha Clínica na Gestão em Versão TXT (padrão oficial e-SISLA),
-    com bloqueio por padrão para visualização protegida e liberação de edição mediante clique em Editar:
-    1. detailModal contém detailTxtContainer com textarea detailTxtEditor protegido (readonly e locked por padrão).
-    2. Botão de alternância e liberação de edição (btnDetailEdit com toggleDetailEdit).
-    3. Botões de salvar alterações (btnDetailSaveTxt e btnDetailSaveBottom com salvarDetailTxt).
-    4. Seletor de modo de visualização (btnModeTxt e btnModeCards com setDetailViewMode).
-    5. Funções JavaScript de apoio: construirFichaClinicaTxt, setDetailViewMode, setDetailEditMode,
-       toggleDetailEdit, salvarDetailTxt, gerarPdfDoDetail, copyScriptFromDetail, copiarTextoDetail, baixarTxtDetail.
-    6. Na função view(enc), ativa por padrão a versão TXT em modo somente leitura (setDetailEditMode(false) e setDetailViewMode('txt')).
+    Valida a exibição:
+    1. detailModal (Prontuário geral / 'Abrir ficha') permanece estritamente na versão em blocos (detailBody com detail(full)).
+    2. esislaModal ('Gerar ficha eSisla'):
+       - Ao gerar, devolve primariamente na versão em blocos estruturados (esislaBlocosContainer via renderEsislaBlocos).
+       - Ao clicar em Editar (esislaToggleEditBtn), libera a versão TXT para edição (esislaText com readonly removido).
+       - Permite alternar entre Blocos e TXT via botões e re-renderiza blocos atualizados após edição.
     """
-    # 1. Elementos HTML do detailModal
-    assert 'id="detailTxtContainer"' in GESTAO_ATENDIMENTOS
-    assert 'id="detailTxtEditor"' in GESTAO_ATENDIMENTOS
-    assert 'class="esisla-text locked"' in GESTAO_ATENDIMENTOS
-    assert 'id="btnDetailEdit"' in GESTAO_ATENDIMENTOS
-    assert 'toggleDetailEdit()' in GESTAO_ATENDIMENTOS
-    assert 'id="btnDetailSaveTxt"' in GESTAO_ATENDIMENTOS
-    assert 'id="btnDetailSaveBottom"' in GESTAO_ATENDIMENTOS
-    assert 'salvarDetailTxt()' in GESTAO_ATENDIMENTOS
-    assert 'id="btnModeTxt"' in GESTAO_ATENDIMENTOS
-    assert 'id="btnModeCards"' in GESTAO_ATENDIMENTOS
-    assert 'id="detailLockBadge"' in GESTAO_ATENDIMENTOS
-    assert 'id="detailTxtStats"' in GESTAO_ATENDIMENTOS
+    # 1. detailModal estritamente em blocos (conforme solicitação do usuário)
+    assert 'id="detailModal"' in GESTAO_ATENDIMENTOS
+    assert 'id="detailBody"' in GESTAO_ATENDIMENTOS
+    assert 'if(body)body.innerHTML=detail(full);' in GESTAO_ATENDIMENTOS
+    assert 'id="detailTxtContainer"' not in GESTAO_ATENDIMENTOS
 
-    # 2. Funções JavaScript no script da Gestão
-    assert 'function setDetailViewMode(' in GESTAO_ATENDIMENTOS
-    assert 'function setDetailEditMode(' in GESTAO_ATENDIMENTOS
-    assert 'function toggleDetailEdit(' in GESTAO_ATENDIMENTOS
-    assert 'function construirFichaClinicaTxt(' in GESTAO_ATENDIMENTOS
-    assert 'async function salvarDetailTxt(' in GESTAO_ATENDIMENTOS
-    assert 'function gerarPdfDoDetail(' in GESTAO_ATENDIMENTOS
-    assert 'async function copyScriptFromDetail(' in GESTAO_ATENDIMENTOS
-    assert 'async function copiarTextoDetail(' in GESTAO_ATENDIMENTOS
-    assert 'function baixarTxtDetail(' in GESTAO_ATENDIMENTOS
+    # 2. esislaModal com exibição em blocos e liberação da versão TXT na edição
+    assert 'id="esislaModal"' in GESTAO_ATENDIMENTOS
+    assert 'id="esislaBlocosContainer"' in GESTAO_ATENDIMENTOS
+    assert 'id="esislaText"' in GESTAO_ATENDIMENTOS
+    assert 'id="btnEsislaBlocos"' in GESTAO_ATENDIMENTOS
+    assert 'id="btnEsislaTxt"' in GESTAO_ATENDIMENTOS
+    assert 'id="esislaToggleEditBtn"' in GESTAO_ATENDIMENTOS
+    assert 'toggleEditEsisla()' in GESTAO_ATENDIMENTOS
 
-    # 3. view(enc) abre a Versão TXT bloqueada por padrão
-    assert "setDetailViewMode('txt')" in GESTAO_ATENDIMENTOS
-    assert "setDetailEditMode(false)" in GESTAO_ATENDIMENTOS
+    # 3. Funções JavaScript na Gestão
+    assert 'function renderEsislaBlocos(' in GESTAO_ATENDIMENTOS
+    assert 'function setEsislaViewMode(' in GESTAO_ATENDIMENTOS
+    assert 'function setEsislaEditable(' in GESTAO_ATENDIMENTOS
+    assert 'function toggleEditEsisla(' in GESTAO_ATENDIMENTOS
+
+    # 4. Ao gerar, devolve em blocos por padrão
+    assert "renderEsislaBlocos(data.ficha_esisla);" in GESTAO_ATENDIMENTOS
+    assert "setEsislaViewMode('blocos');" in GESTAO_ATENDIMENTOS
 
 
 

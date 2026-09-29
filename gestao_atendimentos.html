@@ -1972,64 +1972,7 @@ body.modal-lock { overscroll-behavior: none; }
 <div class="admin-view" id="view-busca"><div class="view-header"><div><div class="view-kicker">Consulta operacional</div><h2>Buscar atendimento</h2><p>Localize por número, paciente, CPF, médico, CID, unidade, status ou período e abra o registro completo.</p></div><span class="view-count" id="searchViewCount">— resultados</span></div>
 <section class="panel anchor-target" id="atendimentos"><div class="search-toolbar"><div class="search-toolbar-left"><span class="search-toolbar-title">Localizar atendimento</span><span class="filter-count" id="resultCount">— resultados</span></div><button class="search-reset-btn" type="button" onclick="clearFilters()" title="Limpar todos os filtros"><span class="reset-icon">↺</span> <span>Redefinir busca</span></button></div><div class="tabs"><button class="tab active" data-tab="all" onclick="setTab('all')">Todos</button><button class="tab" data-tab="draft" onclick="setTab('draft')">Rascunhos</button><button class="tab" data-tab="review" onclick="setTab('review')">Em revisão</button><button class="tab" data-tab="done" onclick="setTab('done')">Finalizados</button><button class="tab" data-tab="archived" onclick="setTab('archived')">Arquivados</button></div><div class="filters"><input class="input" id="search" placeholder="Buscar por paciente, CPF, médico, CID ou conteúdo..." oninput="refresh()" autocomplete="off"><select class="select" id="filter"><option value="all">Todos os status</option><option value="RASCUNHO">Rascunho</option><option value="EM_REVISÃO">Em revisão</option><option value="REABERTO">Reaberto</option><option value="FINALIZADO">Finalizado</option><option value="ARQUIVADO">Arquivado</option></select><input class="input" id="medico" placeholder="Médico" oninput="refresh()"><input class="input" id="cid" placeholder="CID" oninput="refresh()"><input class="input" id="unidade" placeholder="Unidade" oninput="refresh()"><input class="input" id="periodoInicio" type="date" title="Data inicial" aria-label="Data inicial"><input class="input" id="periodoFim" type="date" title="Data final" aria-label="Data final"><select class="select" id="sort" onchange="refresh()"><option value="updated">Última atualização</option><option value="date">Data do atendimento</option><option value="patient">Paciente (A–Z)</option></select></div><div class="bulk-actions-toolbar" id="bulkActionsToolbar" style="display:none;"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:13px;font-weight:800;color:#991B1B"><span id="selectedCountBadge">0</span> atendimento(s) selecionado(s)</span><span style="font-size:11.5px;color:#7F1D1D">(Apenas administradores podem excluir permanentemente do banco)</span></div><div style="display:flex;align-items:center;gap:8px"><button type="button" class="btn btn-danger" id="btnBatchDeleteAdmin" onclick="confirmBatchDeleteAdmin()" style="font-weight:700;padding:6px 14px;font-size:12px">🗑️ Excluir Selecionados do Banco</button><button type="button" class="btn btn-outline" onclick="clearSelectedRows()" style="padding:6px 12px;font-size:12px;background:#fff">Desmarcar todos</button></div></div><table><thead><tr><th class="admin-th-select"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAllRows(this.checked)" title="Selecionar todos os atendimentos exibidos" style="cursor:pointer;width:16px;height:16px"></th><th>Paciente</th><th>Data</th><th>Profissional</th><th>Dados</th><th>Status</th><th>Atualizado</th><th></th></tr></thead><tbody id="tbody"></tbody></table><div class="empty" id="empty" style="display:none">Nenhum atendimento encontrado para os filtros atuais.</div></section>
 <div class="notice">Fonte principal da Gestão: <strong>PostgreSQL/backend</strong>. O LocalStorage permanece como contingência local para rascunhos e recuperação no próprio navegador.</div></div></main></div>
-<div class="modal" id="detailModal">
-  <div class="dialog detail-modal-dialog">
-    <div class="dialog-head">
-      <div style="min-width:0">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <strong id="detailTitle">Atendimento</strong>
-          <div class="detail-mode-toggle" title="Alternar formato de visualização">
-            <button type="button" class="btn-toggle-mode active" id="btnModeTxt" onclick="setDetailViewMode('txt')">📄 Versão TXT</button>
-            <button type="button" class="btn-toggle-mode" id="btnModeCards" onclick="setDetailViewMode('cards')">🗂️ Blocos</button>
-          </div>
-        </div>
-        <span id="detailSub"></span>
-      </div>
-      <div class="esisla-toolbar">
-        <button type="button" class="btn btn-outline" id="btnDetailEdit" onclick="toggleDetailEdit()" title="Liberar ou bloquear a edição manual do texto">✏️ Editar</button>
-        <button type="button" class="btn btn-detail-save" id="btnDetailSaveTxt" onclick="salvarDetailTxt()" style="display:none" title="Salvar alterações no banco de dados">💾 Salvar</button>
-        <button class="btn btn-outline" id="comprovanteDetailBtn" onclick="abrirComprovanteDoDetail()" style="font-weight:700">📄 Declaração</button>
-        <button type="button" class="btn btn-outline" id="btnDetailPdf" onclick="gerarPdfDoDetail()" style="color:#0F3254;font-weight:700" title="Imprimir ou gerar arquivo PDF">📄 PDF</button>
-        <button type="button" class="btn btn-outline" id="btnDetailScriptF12" onclick="copyScriptFromDetail()" style="color:#0D542B;font-weight:700" title="Copiar script com o laudo para preencher no e-Sisla (F12)">⚡ Script F12</button>
-        <button class="btn btn-esisla" id="generateEsislaBtn">Gerar ficha eSisla</button>
-        <button class="btn" onclick="closeModal('detailModal')">Fechar</button>
-      </div>
-    </div>
-    
-    <!-- Container da Versão TXT (Padrão e Editável sob demanda) -->
-    <div id="detailTxtContainer" class="detail-txt-wrap">
-      <div class="detail-txt-subbar">
-        <div class="detail-txt-subbar-left">
-          <span class="esisla-lock-chip mode-locked" id="detailLockBadge" style="font-size:11px;font-weight:700;padding:4px 9px;border-radius:6px;border:1px solid #CBD5E1;display:inline-flex;align-items:center;gap:5px">
-            🔒 Protegido contra edição
-          </span>
-          <span class="esisla-stats-chip" id="detailTxtStats">0 caracteres · 0 linhas</span>
-          <span id="detailSaveIndicator" style="font-size:11px;font-weight:700;color:#059669;display:none">✓ Alterações salvas</span>
-        </div>
-        <div class="detail-txt-subbar-right">
-          <button type="button" class="btn-copy-mini" onclick="copiarTextoDetail()" title="Copiar texto completo para a área de transferência">📋 Copiar TXT</button>
-          <button type="button" class="btn-copy-mini" onclick="baixarTxtDetail()" title="Baixar arquivo de texto (.txt)">📥 Baixar (.txt)</button>
-          <button type="button" class="btn-copy-mini" id="btnRestaurarOriginalTxt" onclick="restaurarTxtOriginalDetail()" style="display:none;color:#DC2626" title="Descartar edições e restaurar texto original">↺ Restaurar</button>
-        </div>
-      </div>
-      <textarea id="detailTxtEditor" class="esisla-text locked" readonly spellcheck="false" placeholder="Carregando versão TXT do prontuário..." oninput="onDetailTxtInput()"></textarea>
-    </div>
-
-    <!-- Container dos Blocos / Cartões (Preserva detailBody para compatibilidade) -->
-    <div id="detailBody" class="detail" style="display:none"></div>
-
-    <div class="dialog-foot" style="display:flex;justify-content:space-between;align-items:center">
-      <div style="display:flex;align-items:center;gap:8px">
-        <button type="button" class="btn btn-detail-save" id="btnDetailSaveBottom" onclick="salvarDetailTxt()" style="display:none;padding:7px 16px;font-size:12px">💾 Salvar Alterações</button>
-        <span id="detailEditTip" style="font-size:11px;color:#64748B">Visualização protegida. Clique em <strong>✏️ Editar</strong> no topo para liberar a edição manual.</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <button class="btn" id="openEvalBtn">Abrir atendimento</button>
-        <button class="btn" id="historyBtn">Histórico</button>
-      </div>
-    </div>
-  </div>
-</div>
+<div class="modal" id="detailModal"><div class="dialog detail-modal-dialog"><div class="dialog-head"><div><strong id="detailTitle">Atendimento</strong><span id="detailSub"></span></div><div class="esisla-toolbar"><button class="btn btn-outline" id="comprovanteDetailBtn" onclick="abrirComprovanteDoDetail()" style="font-weight:700">📄 Declaração</button><button class="btn btn-esisla" id="generateEsislaBtn">Gerar ficha eSisla</button><button class="btn" onclick="closeModal('detailModal')">Fechar</button></div></div><div id="detailBody" class="detail"></div><div class="dialog-foot"><button class="btn" id="openEvalBtn">Abrir atendimento</button><button class="btn" id="historyBtn">Histórico</button></div></div></div>
 <div class="modal" id="esislaModal">
   <div class="dialog esisla-dialog-window" style="width:min(940px,100%)">
     
@@ -2081,14 +2024,17 @@ body.modal-lock { overscroll-behavior: none; }
       <div class="esisla-editor-container">
         <div class="esisla-editor-header">
           <div class="esisla-editor-left">
-            <span>📄 Formato de Exportação (TXT / JSON)</span>
+            <div class="detail-mode-toggle" id="esislaModeToggle" style="margin-left:0">
+              <button type="button" class="btn-toggle-mode active" id="btnEsislaBlocos" onclick="setEsislaViewMode('blocos')">🗂️ Versão em Blocos</button>
+              <button type="button" class="btn-toggle-mode" id="btnEsislaTxt" onclick="setEsislaViewMode('txt')">📄 Versão TXT</button>
+            </div>
             <span class="esisla-stats-chip" id="esislaStatsChip">0 caracteres · 0 linhas</span>
             <span class="esisla-lock-chip" id="esislaLockChip" style="font-size:10px;font-weight:700;padding:3px 7px;border-radius:6px;background:#F1F5F9;color:#475569;border:1px solid #CBD5E1;display:inline-flex;align-items:center;gap:4px">
-              🔒 Protegido contra edição
+              🔒 Visualização em Blocos
             </span>
           </div>
           <div style="display:flex;align-items:center;gap:6px">
-            <button class="btn-copy-mini" id="esislaToggleEditBtn" type="button" onclick="toggleEditEsisla()" title="Clique para liberar ou bloquear a edição manual do texto">
+            <button class="btn-copy-mini" id="esislaToggleEditBtn" type="button" onclick="toggleEditEsisla()" title="Clique para liberar a edição manual em TXT ou voltar para blocos">
               ✏️ Editar
             </button>
             <button class="btn-copy-mini" type="button" onclick="generateEsislaPDF()" style="color:#0F3254;font-weight:700" title="Gerar e salvar ou imprimir arquivo PDF desta ficha e-Sisla">
@@ -2099,7 +2045,8 @@ body.modal-lock { overscroll-behavior: none; }
             </button>
           </div>
         </div>
-        <textarea id="esislaText" class="esisla-text locked" readonly spellcheck="false" aria-label="Ficha eSisla gerada" placeholder="Aguardando geração da ficha..."></textarea>
+        <div id="esislaBlocosContainer" style="padding:16px;background:#F8FAFC;overflow-y:auto;flex:1 1 auto;max-height:560px;display:flex;flex-direction:column;gap:12px"></div>
+        <textarea id="esislaText" class="esisla-text locked" readonly spellcheck="false" aria-label="Ficha eSisla gerada" placeholder="Aguardando geração da ficha..." style="display:none" oninput="onEsislaTextInput()"></textarea>
       </div>
     </div>
 
@@ -2318,583 +2265,6 @@ document.addEventListener('keydown',e=>{if(e.key==='/'&&document.activeElement?.
 let latestStats=null;function pct(n,d){return d?Math.round((Number(n||0)/Number(d||0))*100):0}function setBar(id,value,total,valId){const width=total?Math.max(0,Math.min(100,(Number(value||0)/Number(total))*100)):0;const el=document.getElementById(id);if(el)el.style.width=width+'%';const v=document.getElementById(valId);if(v)v.textContent=Number(value||0)}function renderStats(s){latestStats=s||{};document.getElementById('statTotal').textContent=s.total??0;document.getElementById('statDraft').textContent=s.rascunhos??0;document.getElementById('statReview').textContent=s.revisao??0;document.getElementById('statDone').textContent=s.finalizados??0;document.getElementById('statArchived').textContent=s.arquivados??0;document.getElementById('statPending').textContent=s.pendentes??0;document.getElementById('statRecent').textContent=s.atualizados_recentes??0;document.getElementById('dashTotal').textContent=s.total??0;document.getElementById('dashRecent').textContent=(s.atualizados_recentes??0)+' atualizados recentemente';document.getElementById('dashDone').textContent=s.finalizados??0;document.getElementById('dashDoneRate').textContent=pct(s.finalizados,s.total)+'% do total';document.getElementById('dashFav').textContent=s.favoraveis??0;document.getElementById('dashFavRate').textContent=pct(s.favoraveis,s.total)+'% dos registros';document.getElementById('dashContra').textContent=s.contrarios??0;document.getElementById('dashContraRate').textContent=pct(s.contrarios,s.total)+'% dos registros';document.getElementById('dashPending').textContent=s.pendentes??0;document.getElementById('dashComplete').textContent=(s.completude_media??0)+'%';document.getElementById('dashAlerts').textContent=s.alertas??0;document.getElementById('dashDoctors').textContent=s.medicos_ativos_na_gestao??0;setBar('barFav',s.favoraveis,s.total,'barFavVal');setBar('barContra',s.contrarios,s.total,'barContraVal');setBar('barUndefined',s.pareceres_nao_definidos,s.total,'barUndefinedVal');setBar('barDone',s.finalizados,s.total,'barDoneVal');setBar('barReview',s.revisao,s.total,'barReviewVal');setBar('barDraft',s.rascunhos,s.total,'barDraftVal');const body=document.getElementById('doctorDashboardBody');const rows=Array.isArray(s.por_medico)?s.por_medico:[];body.innerHTML=rows.length?rows.map(d=>`<tr><td>${esc(d.medico)}<div class="doctor-rate">${pct(d.finalizados,d.total)}% finalizados</div></td><td class="doctor-num">${d.total||0}</td><td class="doctor-num">${d.finalizados||0}</td><td class="doctor-num">${d.favoraveis||0}</td><td class="doctor-num">${d.contrarios||0}</td><td class="doctor-num">${pct(d.finalizados,d.total)}%</td></tr>`).join(''):'<tr><td colspan="6" style="text-align:center;color:#8A99AC;padding:18px">Nenhum atendimento disponível no escopo atual.</td></tr>'}
 function row(r){const v=values(r),st=statusOf(r),cls=st==='FINALIZADO'?'done':st==='EM_REVISÃO'?'review':st==='REABERTO'?'reopened':st==='ARQUIVADO'?'archived':'';const id=v.atd||r.atendimento||r.id||'';const isSelected=selectedAtdIds.has(String(id));const adminMode=isAdmin();let more='';if(st==='RASCUNHO')more+=`<button onclick="openEval('${encodeURIComponent(v.atd)}')">Continuar</button><button onclick="openReason('archive','${encodeURIComponent(v.atd)}')">Arquivar</button>`;if(st==='EM_REVISÃO'||st==='REABERTO')more+=`<button onclick="openEval('${encodeURIComponent(v.atd)}')">Continuar</button><button onclick="openReason('archive','${encodeURIComponent(v.atd)}')">Arquivar</button>`;if(st==='FINALIZADO')more+=`<button onclick="openReason('reopen','${encodeURIComponent(v.atd)}')">Reabrir</button><button onclick="openDocument('${encodeURIComponent(v.atd)}')">Visualizar documento</button><button onclick="openReason('archive','${encodeURIComponent(v.atd)}')">Arquivar</button>`;if(st==='ARQUIVADO')more+=`<button onclick="openReason('restore','${encodeURIComponent(v.atd)}')">Restaurar</button>`;if(adminMode)more+=`<button onclick="confirmSingleDeleteAdmin('${encodeURIComponent(id)}')" style="color:#DC2626;font-weight:700">🗑️ Excluir do Banco</button>`;const selectTd=`<td class="admin-td-select"><input type="checkbox" class="row-select-checkbox" data-id="${esc(id)}" onchange="toggleRowSelect('${esc(id)}', this.checked)" ${isSelected?'checked':''} style="cursor:pointer;width:16px;height:16px" title="Selecionar para exclusão"></td>`;return`<tr>${selectTd}<td class="col-patient"><span class="main-id">${esc(v.patient||'Paciente não informado')}</span>${v.cpf?`<span class="sub">CPF: ${esc(v.cpf)}</span>`:''}<span class="sub sub-clamp" title="${esc(v.doenca||'Avaliação médico-pericial')}">${esc(v.doenca||'Avaliação médico-pericial')}</span></td><td><strong>${esc(date(v.date))}</strong>${v.time?`<span class="sub">${esc(v.time)} · horário de início</span>`:'<span class="sub">Horário não informado</span>'}</td><td><span class="main-name">${esc(v.doctor||'Médico não informado')}</span>${v.crm?`<span class="sub">CRM/CRO: ${esc(v.crm)}</span>`:''}</td><td><b>${esc(v.cargo&&v.cargo!=='—'?v.cargo:'Cargo não informado')}</b><span class="sub">${v.unidade?`Unidade: ${esc(v.unidade)} · `:''}CID: ${esc(v.cid||'—')} · ${esc(v.idade||'—')} anos</span>${v.dias?`<span class="sub">Dias solicitados: ${esc(v.dias)}</span>`:''}</td><td><span class="badge ${cls}"><span class="dot"></span>${esc(stateLabel[st]||st)}</span></td><td><strong>${esc(dt(v.updated))}</strong></td><td><div class="row-actions"><button class="row-btn-open" type="button" onclick="view('${encodeURIComponent(v.atd)}')" title="Visualizar ficha completa do atendimento"><span>Abrir ficha</span><span class="row-btn-arrow">→</span></button><details class="more"><summary class="row-btn-more" title="Mais opções para este atendimento"><span>Mais</span><span class="more-caret">▾</span></summary><div class="more-menu">${more}<button onclick="openHistory('${encodeURIComponent(v.atd)}')">Ver histórico</button></div></details></div></td></tr>`}
 function find(id){return serverItems.find(x=>String(x.atendimento)===id)}
-
-let currentDetailViewMode = 'txt';
-
-function setDetailViewMode(mode) {
-    currentDetailViewMode = mode;
-    const txtContainer = document.getElementById('detailTxtContainer');
-    const cardsContainer = document.getElementById('detailBody');
-    const btnTxt = document.getElementById('btnModeTxt');
-    const btnCards = document.getElementById('btnModeCards');
-    const editBtn = document.getElementById('btnDetailEdit');
-    const editTip = document.getElementById('detailEditTip');
-
-    if (mode === 'cards') {
-        if (txtContainer) txtContainer.style.display = 'none';
-        if (cardsContainer) cardsContainer.style.display = 'block';
-        if (btnTxt) btnTxt.classList.remove('active');
-        if (btnCards) btnCards.classList.add('active');
-        if (editBtn) editBtn.style.display = 'none';
-        const saveTop = document.getElementById('btnDetailSaveTxt');
-        const saveBot = document.getElementById('btnDetailSaveBottom');
-        if (saveTop) saveTop.style.display = 'none';
-        if (saveBot) saveBot.style.display = 'none';
-        if (editTip) editTip.innerHTML = 'Visualização em blocos/cartões estruturados.';
-    } else {
-        if (txtContainer) txtContainer.style.display = 'flex';
-        if (cardsContainer) cardsContainer.style.display = 'none';
-        if (btnTxt) btnTxt.classList.add('active');
-        if (btnCards) btnCards.classList.remove('active');
-        if (editBtn) editBtn.style.display = 'inline-flex';
-        const isEditing = !document.getElementById('detailTxtEditor')?.hasAttribute('readonly');
-        if (editTip) {
-            editTip.innerHTML = isEditing 
-                ? 'Modo de edição ativo. Altere o texto e clique em <strong>💾 Salvar</strong>.'
-                : 'Visualização protegida. Clique em <strong>✏️ Editar</strong> no topo para liberar a edição manual.';
-        }
-    }
-}
-
-function setDetailEditMode(editable) {
-    const el = document.getElementById('detailTxtEditor');
-    const btn = document.getElementById('btnDetailEdit');
-    const badge = document.getElementById('detailLockBadge');
-    const saveTop = document.getElementById('btnDetailSaveTxt');
-    const saveBottom = document.getElementById('btnDetailSaveBottom');
-    const editTip = document.getElementById('detailEditTip');
-    if (!el) return;
-
-    if (editable) {
-        el.removeAttribute('readonly');
-        el.classList.remove('locked');
-        el.focus();
-        if (btn) {
-            btn.innerHTML = '🔒 Bloquear edição';
-            btn.classList.add('btn-editing-active');
-        }
-        if (badge) {
-            badge.innerHTML = '✏️ Edição liberada';
-            badge.className = 'esisla-lock-chip mode-unlocked';
-        }
-        if (saveTop) saveTop.style.display = 'inline-flex';
-        if (saveBottom) saveBottom.style.display = 'inline-flex';
-        if (editTip) editTip.innerHTML = 'Modo de edição ativo. Altere o texto e clique em <strong>💾 Salvar</strong>.';
-    } else {
-        el.setAttribute('readonly', 'true');
-        el.classList.add('locked');
-        if (btn) {
-            btn.innerHTML = '✏️ Editar';
-            btn.classList.remove('btn-editing-active');
-        }
-        if (badge) {
-            badge.innerHTML = '🔒 Protegido contra edição';
-            badge.className = 'esisla-lock-chip mode-locked';
-        }
-        if (saveTop) saveTop.style.display = 'none';
-        if (saveBottom) saveBottom.style.display = 'none';
-        if (editTip) editTip.innerHTML = 'Visualização protegida. Clique em <strong>✏️ Editar</strong> no topo para liberar a edição manual.';
-    }
-}
-
-function toggleDetailEdit() {
-    const el = document.getElementById('detailTxtEditor');
-    if (!el) return;
-    const isReadOnly = el.hasAttribute('readonly');
-    setDetailEditMode(isReadOnly);
-}
-
-function updateDetailTxtStats(text) {
-    const chip = document.getElementById('detailTxtStats');
-    if (!chip) return;
-    const str = String(text || '');
-    const chars = str.length;
-    const lines = str ? str.split('\n').length : 0;
-    chip.textContent = `${chars.toLocaleString('pt-BR')} caracteres · ${lines} linhas`;
-}
-
-function onDetailTxtInput() {
-    const ed = document.getElementById('detailTxtEditor');
-    if (!ed) return;
-    updateDetailTxtStats(ed.value);
-    const restBtn = document.getElementById('btnRestaurarOriginalTxt');
-    if (restBtn) {
-        restBtn.style.display = (window.detailTxtOriginalValue !== undefined && ed.value !== window.detailTxtOriginalValue) ? 'inline-flex' : 'none';
-    }
-}
-
-function restaurarTxtOriginalDetail() {
-    if (window.detailTxtOriginalValue !== undefined) {
-        if (confirm('Deseja descartar as alterações e restaurar o texto anterior?')) {
-            const ed = document.getElementById('detailTxtEditor');
-            if (ed) {
-                ed.value = window.detailTxtOriginalValue;
-                updateDetailTxtStats(ed.value);
-            }
-            const restBtn = document.getElementById('btnRestaurarOriginalTxt');
-            if (restBtn) restBtn.style.display = 'none';
-        }
-    }
-}
-
-async function copiarTextoDetail() {
-    const text = document.getElementById('detailTxtEditor')?.value || '';
-    if (!text) return;
-    try {
-        await navigator.clipboard.writeText(text);
-    } catch {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        ta.style.position = 'fixed';
-        ta.style.left = '-9999px';
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        ta.remove();
-    }
-    if (window.AmbientalUtils?.toast) {
-        AmbientalUtils.toast('Texto da ficha clínica copiado para a área de transferência!');
-    } else {
-        alert('Texto da ficha clínica copiado para a área de transferência!');
-    }
-}
-
-function baixarTxtDetail() {
-    const text = document.getElementById('detailTxtEditor')?.value || '';
-    if (!text) return;
-    const v = window.currentDetailFull ? values(window.currentDetailFull) : {};
-    const id = (v.atd || 'atendimento').replace(/[^a-zA-Z0-9_\-]/g, '_');
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Ficha-Clinica-${id}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    if (window.AmbientalUtils?.toast) {
-        AmbientalUtils.toast('Download da ficha clínica (.txt) iniciado com sucesso!');
-    }
-}
-
-async function copyScriptFromDetail() {
-    const text = document.getElementById('detailTxtEditor')?.value || '';
-    if (!text) return;
-    const jsonObj = gerarJsonEsisla(text, window.currentDetailFull || window.currentDetailEnc);
-    const scriptCode = gerarScriptAutoPreenchimentoEsisla(jsonObj);
-    try {
-        await navigator.clipboard.writeText(scriptCode);
-    } catch {
-        const ta = document.createElement('textarea');
-        ta.value = scriptCode;
-        ta.style.position = 'fixed';
-        ta.style.left = '-9999px';
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        ta.remove();
-    }
-    if (window.AmbientalUtils?.toast) {
-        AmbientalUtils.toast('Script copiado! Abra o e-Sisla, tecle F12, vá na aba Console e aperte Ctrl+V.');
-    } else {
-        alert('Script copiado! Abra o e-Sisla, tecle F12, vá na aba Console e aperte Ctrl+V.');
-    }
-}
-
-function gerarPdfDoDetail() {
-    const text = document.getElementById('detailTxtEditor')?.value || '';
-    if (!text.trim()) {
-        alert("Nenhum conteúdo na ficha para imprimir ou salvar em PDF.");
-        return;
-    }
-    const full = window.currentDetailFull;
-    const v = full ? values(full) : {};
-    const patient = v.patient || 'Servidor/Periciado';
-    const cpf = v.cpf || '';
-    const cargo = v.cargo || '';
-    const dateStr = v.date ? date(v.date) : new Date().toLocaleDateString('pt-BR');
-    const medico = v.doctor || '';
-    const crm = v.crm || '';
-    const atdId = v.atd || (full ? full.atendimento : '') || '';
-
-    const win = window.open('', '_blank', 'width=900,height=800');
-    if (!win) {
-        alert("Pop-up bloqueado pelo navegador. Permita pop-ups para gerar o PDF.");
-        return;
-    }
-
-    const escapeHtml = str => String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const formattedText = escapeHtml(text);
-
-    const html = `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8">
-  <title>Prontuário Médico-Pericial - ${escapeHtml(patient)}</title>
-  <style>
-    @page { size: A4; margin: 18mm 15mm 18mm 15mm; }
-    * { box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      font-size: 11pt;
-      line-height: 1.5;
-      color: #1e293b;
-      margin: 0;
-      padding: 24px;
-      background: #fff;
-    }
-    .header {
-      border-bottom: 2px solid #0F3254;
-      padding-bottom: 12px;
-      margin-bottom: 18px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-    .header-titles h1 {
-      font-size: 15pt;
-      font-weight: 800;
-      color: #0F3254;
-      margin: 0 0 4px 0;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .header-titles h2 {
-      font-size: 11pt;
-      font-weight: 600;
-      color: #334155;
-      margin: 0;
-    }
-    .meta-box {
-      background: #F8FAFC;
-      border: 1px solid #CBD5E1;
-      border-radius: 6px;
-      padding: 10px 14px;
-      margin-bottom: 20px;
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 8px 16px;
-      font-size: 10pt;
-    }
-    .meta-item strong { color: #475569; }
-    .content-box {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
-      font-size: 10pt;
-      line-height: 1.6;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      padding: 18px;
-      background: #FAFAFA;
-      border: 1px solid #E2E8F0;
-      border-radius: 6px;
-      margin-bottom: 24px;
-    }
-    .footer {
-      border-top: 1px solid #E2E8F0;
-      padding-top: 12px;
-      display: flex;
-      justify-content: space-between;
-      font-size: 8.5pt;
-      color: #64748B;
-    }
-    .no-print {
-      margin-bottom: 18px;
-      display: flex;
-      gap: 10px;
-    }
-    .btn-print {
-      background: #0F3254;
-      color: #fff;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    @media print {
-      .no-print { display: none !important; }
-      body { padding: 0 !important; }
-      .content-box { border: none !important; padding: 0 !important; background: transparent !important; }
-    }
-  </style>
-</head>
-<body>
-  <div class="no-print">
-    <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Salvar em PDF</button>
-    <button class="btn-print" style="background:#64748B" onclick="window.close()">Fechar</button>
-  </div>
-  <div class="header">
-    <div class="header-titles">
-      <h1>Prontuário Médico-Pericial</h1>
-      <h2>Padrão Oficial DPME / e-SISLA</h2>
-    </div>
-    <div style="text-align: right; font-size: 9.5pt; color: #475569;">
-      <strong>Atendimento:</strong> ${escapeHtml(atdId)}<br>
-      <strong>Data da Emissão:</strong> ${escapeHtml(new Date().toLocaleString('pt-BR'))}
-    </div>
-  </div>
-  <div class="meta-box">
-    <div class="meta-item"><strong>Servidor/Periciado:</strong> ${escapeHtml(patient)}</div>
-    <div class="meta-item"><strong>CPF:</strong> ${escapeHtml(cpf || 'Não informado')}</div>
-    <div class="meta-item"><strong>Cargo:</strong> ${escapeHtml(cargo || 'Não informado')}</div>
-    <div class="meta-item"><strong>Data do Atendimento:</strong> ${escapeHtml(dateStr)}</div>
-    <div class="meta-item" style="grid-column: 1 / -1;"><strong>Médico Perito Responsável:</strong> ${escapeHtml(medico)} ${crm ? `(CRM: ${escapeHtml(crm)})` : ''}</div>
-  </div>
-  <div class="content-box">${formattedText}</div>
-  <div class="footer">
-    <span>Documento gerado pelo Sistema Ambiental - Gestão Pericial</span>
-    <span>Em conformidade com as diretrizes do DPME / SP</span>
-  </div>
-  <script>
-    window.addEventListener('load', function() {
-      setTimeout(function() { window.print(); }, 400);
-    });
-  <\/script>
-</body>
-</html>`;
-    win.document.open();
-    win.document.write(html);
-    win.document.close();
-}
-
-async function salvarDetailTxt() {
-    const text = document.getElementById('detailTxtEditor')?.value;
-    if (text === undefined || text === null) return;
-    if (!window.currentDetailFull) return;
-    
-    const full = window.currentDetailFull;
-    const id = decodeURIComponent(window.currentDetailEnc || full.atendimento || full.id);
-    const btnTop = document.getElementById('btnDetailSaveTxt');
-    const btnBot = document.getElementById('btnDetailSaveBottom');
-    const ind = document.getElementById('detailSaveIndicator');
-    
-    if (btnTop) { btnTop.disabled = true; btnTop.textContent = 'Salvando...'; }
-    if (btnBot) { btnBot.disabled = true; btnBot.textContent = 'Salvando...'; }
-
-    try {
-        full.ficha_esisla = text;
-        if (full.payload && typeof full.payload === 'object') {
-            full.payload.ficha_esisla = text;
-            if (full.payload.aux) full.payload.aux.ficha_esisla = text;
-        }
-        if (full.aux && typeof full.aux === 'object') {
-            full.aux.ficha_esisla = text;
-        }
-
-        const payload = normalizeRecordPayload(full);
-        payload.ficha_esisla = text;
-        if (!payload.aux) payload.aux = {};
-        payload.aux.ficha_esisla = text;
-
-        if (full.__source === 'server' || !full.__source) {
-            const token = accessToken || await AmbientalAuth.getAccessToken();
-            const res = await AmbientalAuth.authFetch('/api/atendimentos/' + encodeURIComponent(id), {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json().catch(() => null);
-            if (!res.ok || !data?.success) {
-                throw new Error(data?.error?.message || data?.detail || 'Falha ao salvar ficha no servidor.');
-            }
-        }
-
-        // Salvar no LocalStorage como contingência
-        try {
-            const raw = localStorage.getItem(REGISTRY_KEY);
-            const reg = raw ? JSON.parse(raw) : {};
-            if (reg && typeof reg === 'object' && reg[id]) {
-                reg[id].ficha_esisla = text;
-                if (reg[id].payload) reg[id].payload.ficha_esisla = text;
-                if (reg[id].aux) reg[id].aux.ficha_esisla = text;
-                localStorage.setItem(REGISTRY_KEY, JSON.stringify(reg));
-            }
-        } catch (_) {}
-
-        window.detailTxtOriginalValue = text;
-        const restBtn = document.getElementById('btnRestaurarOriginalTxt');
-        if (restBtn) restBtn.style.display = 'none';
-
-        setDetailEditMode(false);
-
-        if (ind) {
-            ind.style.display = 'inline-block';
-            setTimeout(() => { if (ind) ind.style.display = 'none'; }, 3000);
-        }
-
-        if (window.AmbientalUtils?.toast) {
-            AmbientalUtils.toast('Ficha clínica salva com sucesso!');
-        } else {
-            alert('Ficha clínica salva com sucesso!');
-        }
-
-        const itemIdx = serverItems.findIndex(x => String(x.atendimento) === id || String(x.id) === id);
-        if (itemIdx >= 0) {
-            serverItems[itemIdx].ficha_esisla = text;
-            if (serverItems[itemIdx].payload) serverItems[itemIdx].payload.ficha_esisla = text;
-        }
-    } catch (err) {
-        alert('Erro ao salvar: ' + (err.message || err));
-    } finally {
-        if (btnTop) { btnTop.disabled = false; btnTop.textContent = '💾 Salvar'; }
-        if (btnBot) { btnBot.disabled = false; btnBot.textContent = '💾 Salvar Alterações'; }
-    }
-}
-
-function construirFichaClinicaTxt(r) {
-    if (!r) return '';
-    const st = (r.payload && typeof r.payload === 'object') ? r.payload : r;
-    const aux = st.aux || r.aux || {};
-
-    if (st.ficha_esisla && typeof st.ficha_esisla === 'string' && st.ficha_esisla.trim().length > 20) {
-        return st.ficha_esisla.trim();
-    }
-    if (r.ficha_esisla && typeof r.ficha_esisla === 'string' && r.ficha_esisla.trim().length > 20) {
-        return r.ficha_esisla.trim();
-    }
-    if (aux.ficha_esisla && typeof aux.ficha_esisla === 'string' && aux.ficha_esisla.trim().length > 20) {
-        return aux.ficha_esisla.trim();
-    }
-
-    function fData(d) {
-        if (!d) return '';
-        const s = String(d).trim();
-        const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-        if (isoMatch) return `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]}`;
-        const brMatch = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
-        if (brMatch) return brMatch[0];
-        return s;
-    }
-
-    // 1. Queixa e Duração
-    let queixa = st.queixaDuracao || aux.queixaDuracao || r.queixaDuracao || aux.queixa || '';
-    if (!queixa) {
-        const parts = [];
-        const idade = aux.idade || st.idade;
-        const cargo = aux.cargo || st.cargo;
-        const tempo = aux.tempoCargo || aux.tempoFuncao || st.tempoFuncao;
-        const unTempo = aux.unidadeTempo || 'anos';
-        let idCargo = '';
-        if (idade) idCargo += `Servidor de ${idade} anos`;
-        if (cargo && cargo !== '—') idCargo += (idCargo ? `, ` : `Servidor no cargo de `) + cargo;
-        if (tempo) idCargo += ` há ${tempo} ${unTempo}`;
-        if (idCargo) parts.push(idCargo + '.');
-        if (aux.doencaMotivo) parts.push(`Queixa de ${aux.doencaMotivo}.`);
-        if (aux.sintomasLimitacao) parts.push(`Sintomas: ${aux.sintomasLimitacao}.`);
-        queixa = parts.join(' ');
-    }
-
-    // 2. Antecedentes Mórbidos
-    const hist = aux.historicoPregresso || st.historicoPregresso || r.historicoPregresso || aux.antecedentes || st.antecedentes || '';
-
-    // 3. Atestado/Relatório/Exames Complementares (Tipo-Data-Resultado)
-    let atestado = '';
-    const docs = Array.isArray(st.documentosComplementares) ? st.documentosComplementares : (Array.isArray(r.documentosComplementares) ? r.documentosComplementares : []);
-    const docsStr = docs.filter(x => x?.tipo || x?.data || x?.resultado).map(x => `${x.tipo || 'Documento'} (${fData(x.data) || 's/ data'}): ${x.resultado || ''}`).join('; ');
-    const crmAssist = aux.crmAssistente || aux.crm || st.crmAssistente || '';
-    const diasSol = aux.diasSolicitados || st.diasSolicitados || '';
-    const dtDoc = fData(aux.dataDocumento || st.dataDocumento || aux.dataInicio || st.dataInicio);
-    const cidCod = aux.cid || st.cid || '';
-    if (crmAssist || diasSol || dtDoc || cidCod) {
-        atestado = `CRM ${crmAssist || 'não informado'}, solicita ${diasSol ? diasSol + ' dias' : 'afastamento'} a partir de ${dtDoc || 'data do atendimento'}, pelo CID ${cidCod || 'não informado'}.`;
-        if (docsStr) atestado += ` Relatórios/Exames: ${docsStr}`;
-    } else if (docsStr) {
-        atestado = docsStr;
-    }
-
-    // Pressão e Sinais
-    const paSis = aux.pressaoSistolica || st.pressaoSistolica || aux.paSistolica || '';
-    const paDia = aux.pressaoDiastolica || st.pressaoDiastolica || aux.paDiastolica || '';
-    const pulso = aux.pulso || st.pulso || '';
-    const altura = aux.altura || st.altura || aux.biotipoAltura || '';
-    const peso = aux.peso || st.peso || aux.biotipoPeso || '';
-
-    // Exame Físico Geral
-    const exameFisico = st.exameFisicoTipo ? `${st.exameFisicoTipo}: ${st.alteracoesClinicasExames || aux.exameFisicoDescricao || ''}` : (st.alteracoesClinicasExames || aux.exameFisicoDescricao || '');
-
-    // Descrição das Alterações Clínicas e Relato dos Exames Complementares
-    const altClinicas = aux.alteracoesClinicas || st.alteracoesClinicas || docsStr || 'Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial.';
-
-    // Limitação
-    const limitacao = st.descLimitacao || aux.descLimitacao || r.descLimitacao || aux.limitacaoFuncional || '';
-
-    // Parecer Médico
-    const diasConc = aux.diasConcedidos || st.diasConcedidos || aux.diasAfastamento || st.diasAfastamento || diasSol || '';
-    const dtIni = fData(aux.dataInicio || st.dataInicio || aux.dataDocumento || st.dataAtd || aux.dataAtendimento || r.data);
-    const medico = aux.medicoResponsavel || r.medico || st.medico || '';
-    const crm = aux.crmResponsavel || aux.crm || '';
-    let dtHrPericia = '';
-    if (aux.dataAtd || aux.dataAtendimento || r.data) {
-        dtHrPericia = fData(aux.dataAtd || aux.dataAtendimento || r.data);
-        if (aux.horaAtd || aux.horaAtendimento) dtHrPericia += ` ${aux.horaAtd || aux.horaAtendimento}`;
-    }
-
-    // Quesitos
-    const qs = Array.isArray(st.quesitos) ? st.quesitos : (Array.isArray(r.quesitos) ? r.quesitos : []);
-    const q1 = qs[0]?.resposta || 'Não';
-    const q2 = qs[1]?.resposta || 'Não';
-    const q3 = qs[2]?.resposta || 'Não';
-
-    // Justificativa
-    const justif = aux.justificativa || st.justificativa || r.justificativa || '';
-
-    // Parecer Final
-    const parecer = st.parecer || r.parecer || 'FAVORÁVEL';
-
-    return `Registro da perícia Médica para Licença
-
-(*) Queixa e Duração:
-${queixa}
-
-Antecedentes Mórbidos:
-${hist}
-
-Atestado/Relatório/Exames Complementares (Tipo-Data-Resultado):
-${atestado}
-
-Pressão Arterial
-Sistólica (mmHg): ${paSis}
-Diastólica (mmHg): ${paDia}
-Pulso (bpm): ${pulso}
-
-Altura: ${altura}
-Peso: ${peso}
-
-(*)Exame Físico Geral
-${exameFisico}
-
-Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:
-${altClinicas}
-
-(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):
-${limitacao}
-
-(*)Parecer Médico
-Nº Dias: ${diasConc}
-Data Início: ${dtIni}
-CID 10: ${cidCod}
-Descrição: ${aux.doencaMotivo || st.doencaMotivo || ''}
-Médico Perito: ${medico}
-CRM: ${crm}
-Dt/Hr Perícia: ${dtHrPericia}
-
-(*)Resposta aos quesitos
-1) Há doença(s) ou sequela(s) de doença(s) prévia(s)? ${q1}
-2) A(s) doença(s) ou sequela(s) de doença(s) prévia(s) gera(m) limitação(ões) para periciando(a)? ${q2}
-3) A(s) limitação(ões) impede(m) o(a) periciando(a) de exercer alguma atividade do rol? ${q3}
-
-(*)Justificativa Parecer Médico
-${justif}
-
-(*) Parecer Final
-${parecer}`;
-}
-
 async function view(enc){
     const id=decodeURIComponent(enc),r=find(id);
     if(!r)return;
@@ -2902,15 +2272,9 @@ async function view(enc){
     const title=document.getElementById('detailTitle');
     const sub=document.getElementById('detailSub');
     const body=document.getElementById('detailBody');
-    const txtEd=document.getElementById('detailTxtEditor');
     if(title)title.textContent=values(r).patient||'Paciente não informado';
     if(sub)sub.textContent='Preparando ficha…';
     if(body)body.innerHTML=`<div class="detail-open-skeleton"><div class="detail-open-skeleton-card"><div class="detail-open-loader"></div><strong>Carregando ficha</strong><span>Consultando os dados completos deste atendimento…</span></div></div>`;
-    
-    setDetailEditMode(false);
-    setDetailViewMode('txt');
-    if(txtEd) { txtEd.value = 'Carregando versão TXT do prontuário…'; updateDetailTxtStats(''); }
-
     setModal('detailModal',true);
     await new Promise(resolve=>setTimeout(resolve,360));
     let full=r;
@@ -2925,17 +2289,6 @@ async function view(enc){
         if(title)title.textContent=v.patient||'Paciente não informado';
         if(sub)sub.textContent=`${stateLabel[statusOf(full)]||statusOf(full)} · ${v.atd||'identificação interna'} · atualizado em ${dt(full.atualizado_em||v.updated)}`;
         if(body)body.innerHTML=detail(full);
-        
-        // Carrega versão TXT no editor (bloqueado por padrão para visualização segura)
-        const txt = construirFichaClinicaTxt(full);
-        if(txtEd) {
-            txtEd.value = txt;
-            window.detailTxtOriginalValue = txt;
-            updateDetailTxtStats(txt);
-        }
-        setDetailEditMode(false);
-        setDetailViewMode('txt');
-
         window.currentDetailFull=full;
         window.currentDetailEnc=enc;
         document.getElementById('openEvalBtn').onclick=()=>openEval(enc);
@@ -2945,7 +2298,6 @@ async function view(enc){
         if(compBtn)compBtn.onclick=()=>abrirModalComprovanteGestao(full);
     }catch(e){
         if(body)body.innerHTML=`<div class="history-empty"><strong>Não foi possível carregar a ficha.</strong><div style="margin-top:6px">${esc(e.message||'Tente novamente.')}</div></div>`;
-        if(txtEd) txtEd.value = `Erro ao carregar prontuário: ${e.message || 'Tente novamente.'}`;
     }
 }
 
@@ -3007,16 +2359,11 @@ async function generateEsisla(enc, forceRefresh = false){
         setStage(3,'Revisando resultado','Conferindo a resposta antes de exibir...',82);
         let data={}; try{data=await response.json()}catch{}
         if(!response.ok||!data?.ficha_esisla) throw new Error(data?.detail||data?.error?.detail||data?.error?.message||'Não foi possível gerar a ficha eSisla.');
-        target.value=data.ficha_esisla;
-        setEsislaEditable(false);
-        sub.textContent='Atendimento '+id+' · '+(data?.meta?.cached?'resultado em cache':'gerado agora');
+        target.value = data.ficha_esisla;
+        renderEsislaBlocos(data.ficha_esisla);
+        setEsislaViewMode('blocos');
+        sub.textContent = 'Atendimento ' + id + ' · ' + (data?.meta?.cached ? 'resultado em cache' : 'gerado agora');
         updateEsislaStats(data.ficha_esisla);
-        const detailEd = document.getElementById('detailTxtEditor');
-        if (detailEd) {
-            detailEd.value = data.ficha_esisla;
-            window.detailTxtOriginalValue = data.ficha_esisla;
-            updateDetailTxtStats(data.ficha_esisla);
-        }
         if (window.currentDetailFull) {
             window.currentDetailFull.ficha_esisla = data.ficha_esisla;
         }
@@ -3026,6 +2373,248 @@ async function generateEsisla(enc, forceRefresh = false){
         setModal('esislaModal',true);
     }catch(e){if(overlay){overlay.classList.remove('show');overlay.setAttribute('aria-busy','false');}alert(e.message||'Falha ao gerar a ficha eSisla.');}
     finally{if(btn){btn.disabled=false;btn.textContent=old||'Gerar ficha eSisla';}if(regen)regen.disabled=false;}
+}
+
+function renderEsislaBlocos(textoFicha) {
+    const container = document.getElementById('esislaBlocosContainer');
+    if (!container) return;
+    const str = String(textoFicha || '');
+    if (!str.trim()) {
+        container.innerHTML = '<div style="padding:28px;text-align:center;color:#64748B;font-size:13px">Nenhum dado gerado para exibição em blocos.</div>';
+        return;
+    }
+
+    function ext(t, i, f) {
+        if (!t) return '';
+        const si = i.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        const sf = f ? f.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') : '';
+        const rx = new RegExp(si + '\\s*([\\s\\S]*?)\\s*(?=' + sf + '|$)', 'i');
+        const m = t.match(rx);
+        return m ? m[1].trim() : '';
+    }
+
+    const queixa = ext(str, '(*) Queixa e Duração:', 'Antecedentes Mórbidos:');
+    const antecedentes = ext(str, 'Antecedentes Mórbidos:', 'Atestado/Relatório/Exames');
+    const atestado = ext(str, 'Atestado/Relatório/Exames Complementares (Tipo-Data-Resultado):', 'Pressão Arterial');
+    
+    // Sinais Vitais
+    const paSis = ext(str, 'Sistólica (mmHg):', 'Diastólica');
+    const paDia = ext(str, 'Diastólica (mmHg):', 'Pulso');
+    const pulso = ext(str, 'Pulso (bpm):', 'Altura');
+    const altura = ext(str, 'Altura:', 'Peso');
+    const peso = ext(str, 'Peso:', '(*)Exame');
+
+    const exameFisico = ext(str, '(*)Exame Físico Geral:', 'Descrição das Alterações Clínicas');
+    const alteracoes = ext(str, 'Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:', '(*)Descrição da(s) Limitação');
+    const limitacoes = ext(str, '(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):', '(*)Parecer Médico');
+    
+    // Parecer
+    const parecerBloco = ext(str, '(*)Parecer Médico:', '(*)Resposta aos quesitos');
+    const parecerTipo = (parecerBloco.match(/Parecer:\s*([^\n\r]+)/i) || [])[1]?.trim() || (parecerBloco.toUpperCase().includes('CONTRÁRIO') ? 'CONTRÁRIO' : (parecerBloco.toUpperCase().includes('FAVORÁVEL') ? 'FAVORÁVEL' : ''));
+    const dias = (parecerBloco.match(/N[ºo°]\s*Dias:\s*([^\n\r]+)/i) || [])[1]?.trim() || '';
+    const dtIni = (parecerBloco.match(/Data\s*In[íi]cio:\s*([^\n\r]+)/i) || [])[1]?.trim() || '';
+    const cid = (parecerBloco.match(/CID\s*10:\s*([^\n\r]+)/i) || [])[1]?.trim() || '';
+    const cidDesc = (parecerBloco.match(/Descri[çc][ãa]o:\s*([^\n\r]+)/i) || [])[1]?.trim() || '';
+    const medPerito = (parecerBloco.match(/M[ée]dico\s*Perito:\s*([^\n\r]+)/i) || [])[1]?.trim() || '';
+    const crmPerito = (parecerBloco.match(/CRM:\s*([^\n\r]+)/i) || [])[1]?.trim() || '';
+
+    // Quesitos
+    const q1 = ext(str, '1) Há doença(s)', '\n') || ext(str, '1)', '\n');
+    const q2 = ext(str, '2) A(s) doença(s)', '\n') || ext(str, '2)', '\n');
+    const q3 = ext(str, '3) A(s) limitação(ões)', '\n') || ext(str, '3)', '\n');
+
+    let justif = ext(str, '(*)Justificativa Parecer Médico:', '(*) Parecer Final');
+    if (!justif) justif = ext(str, '(*) Justificativa Parecer Final', 'FIM_INEXISTENTE');
+    if (!justif) justif = ext(str, '(*)Justificativa Parecer Médico:', 'FIM_INEXISTENTE');
+
+    function escTxt(v) {
+        if (!v) return '<span style="color:#94A3B8;font-style:italic">Não informado</span>';
+        return esc(v).replace(/\n/g, '<br>');
+    }
+
+    function formatQuesito(label, txt) {
+        const t = (txt || '').toLowerCase();
+        const isSim = t.includes('sim');
+        const isNao = t.includes('não') || t.includes('nao');
+        const badge = isSim ? '<span class="ans sim" style="font-size:10.5px;padding:2px 8px;border-radius:4px;background:#DEF7EC;color:#03543F;font-weight:700">SIM</span>' :
+                      isNao ? '<span class="ans nao" style="font-size:10.5px;padding:2px 8px;border-radius:4px;background:#FDE8E8;color:#9B1C1C;font-weight:700">NÃO</span>' :
+                      '<span style="font-size:10.5px;color:#64748B">—</span>';
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:7px;margin-bottom:6px">
+            <span style="font-size:11.5px;color:#334155;font-weight:600">${label}</span>
+            <div>${badge}</div>
+        </div>`;
+    }
+
+    const isFav = parecerTipo.toUpperCase().includes('FAVORÁVEL');
+    const isContra = parecerTipo.toUpperCase().includes('CONTRÁRIO');
+    const parecerBadge = isFav 
+        ? '<span style="display:inline-block;padding:3px 10px;border-radius:6px;background:#DEF7EC;color:#03543F;font-weight:800;font-size:11.5px">FAVORÁVEL</span>' 
+        : (isContra ? '<span style="display:inline-block;padding:3px 10px;border-radius:6px;background:#FDE8E8;color:#9B1C1C;font-weight:800;font-size:11.5px">CONTRÁRIO</span>' 
+                    : escTxt(parecerTipo));
+
+    container.innerHTML = `
+        <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+                <span style="font-size:13px">🗣️</span>
+                <span style="font-weight:800;font-size:11.5px;color:#1E3A8A;text-transform:uppercase;letter-spacing:.03em">Queixa e Duração</span>
+            </div>
+            <div style="font-size:12px;color:#1E293B;line-height:1.6">${escTxt(queixa)}</div>
+        </div>
+
+        <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+                <span style="font-size:13px">📜</span>
+                <span style="font-weight:800;font-size:11.5px;color:#1E3A8A;text-transform:uppercase;letter-spacing:.03em">Antecedentes Mórbidos</span>
+            </div>
+            <div style="font-size:12px;color:#1E293B;line-height:1.6">${escTxt(antecedentes)}</div>
+        </div>
+
+        <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+                <span style="font-size:13px">📑</span>
+                <span style="font-weight:800;font-size:11.5px;color:#1E3A8A;text-transform:uppercase;letter-spacing:.03em">Atestados e Exames Complementares</span>
+            </div>
+            <div style="font-size:12px;color:#1E293B;line-height:1.6">${escTxt(atestado)}</div>
+        </div>
+
+        <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+                <span style="font-size:13px">💓</span>
+                <span style="font-weight:800;font-size:11.5px;color:#1E3A8A;text-transform:uppercase;letter-spacing:.03em">Sinais Vitais e Biometria</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px">
+                <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
+                    <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">Pressão Sistólica</span>
+                    <strong style="font-size:13px;color:#0F172A">${paSis ? paSis + ' mmHg' : '<span style="color:#94A3B8;font-weight:normal">Não inf.</span>'}</strong>
+                </div>
+                <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
+                    <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">Pressão Diastólica</span>
+                    <strong style="font-size:13px;color:#0F172A">${paDia ? paDia + ' mmHg' : '<span style="color:#94A3B8;font-weight:normal">Não inf.</span>'}</strong>
+                </div>
+                <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
+                    <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">Pulso</span>
+                    <strong style="font-size:13px;color:#0F172A">${pulso ? pulso + ' bpm' : '<span style="color:#94A3B8;font-weight:normal">Não inf.</span>'}</strong>
+                </div>
+                <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
+                    <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">Altura</span>
+                    <strong style="font-size:13px;color:#0F172A">${altura ? altura + ' m' : '<span style="color:#94A3B8;font-weight:normal">Não inf.</span>'}</strong>
+                </div>
+                <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
+                    <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">Peso</span>
+                    <strong style="font-size:13px;color:#0F172A">${peso ? peso + ' kg' : '<span style="color:#94A3B8;font-weight:normal">Não inf.</span>'}</strong>
+                </div>
+            </div>
+        </div>
+
+        <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+                <span style="font-size:13px">🩺</span>
+                <span style="font-weight:800;font-size:11.5px;color:#1E3A8A;text-transform:uppercase;letter-spacing:.03em">Exame Físico Geral</span>
+            </div>
+            <div style="font-size:12px;color:#1E293B;line-height:1.6">${escTxt(exameFisico)}</div>
+        </div>
+
+        <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+                <span style="font-size:13px">🔍</span>
+                <span style="font-weight:800;font-size:11.5px;color:#1E3A8A;text-transform:uppercase;letter-spacing:.03em">Alterações Clínicas e Relato de Exames</span>
+            </div>
+            <div style="font-size:12px;color:#1E293B;line-height:1.6">${escTxt(alteracoes)}</div>
+        </div>
+
+        <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+                <span style="font-size:13px">⚠️</span>
+                <span style="font-weight:800;font-size:11.5px;color:#1E3A8A;text-transform:uppercase;letter-spacing:.03em">Limitações Físicas e Mentais</span>
+            </div>
+            <div style="font-size:12px;color:#1E293B;line-height:1.6">${escTxt(limitacoes)}</div>
+        </div>
+
+        <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+                <span style="font-size:13px">⚖️</span>
+                <span style="font-weight:800;font-size:11.5px;color:#1E3A8A;text-transform:uppercase;letter-spacing:.03em">Parecer Médico Pericial</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:10px;margin-bottom:10px">
+                <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
+                    <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">Parecer Final</span>
+                    <div style="margin-top:3px">${parecerBadge}</div>
+                </div>
+                <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
+                    <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">Dias Concedidos</span>
+                    <strong style="font-size:13px;color:#0F172A">${dias ? dias + ' dia(s)' : '<span style="color:#94A3B8;font-weight:normal">0</span>'}</strong>
+                </div>
+                <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
+                    <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">Data de Início</span>
+                    <strong style="font-size:13px;color:#0F172A">${escTxt(dtIni)}</strong>
+                </div>
+                <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
+                    <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">CID 10 Principal</span>
+                    <strong style="font-size:13px;color:#0F172A">${escTxt(cid)} ${cidDesc ? '<small style="font-size:11px;font-weight:normal;color:#475569">(' + esc(cidDesc) + ')</small>' : ''}</strong>
+                </div>
+                ${medPerito ? `
+                <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
+                    <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">Médico Perito / CRM</span>
+                    <strong style="font-size:12px;color:#0F172A">${esc(medPerito)} ${crmPerito ? '· CRM: ' + esc(crmPerito) : ''}</strong>
+                </div>` : ''}
+            </div>
+        </div>
+
+        <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+                <span style="font-size:13px">❓</span>
+                <span style="font-weight:800;font-size:11.5px;color:#1E3A8A;text-transform:uppercase;letter-spacing:.03em">Resposta aos Quesitos Oficiais</span>
+            </div>
+            ${formatQuesito('1) Há doença(s) ou sequela(s)?', q1)}
+            ${formatQuesito('2) A(s) doença(s) ou sequela(s) determina(m) limitação?', q2)}
+            ${formatQuesito('3) A(s) limitação(ões) impede(m) o exercício das funções?', q3)}
+        </div>
+
+        <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+                <span style="font-size:13px">📝</span>
+                <span style="font-weight:800;font-size:11.5px;color:#1E3A8A;text-transform:uppercase;letter-spacing:.03em">Justificativa do Parecer Médico</span>
+            </div>
+            <div style="font-size:12px;color:#1E293B;line-height:1.6">${escTxt(justif)}</div>
+        </div>
+    `;
+}
+
+function setEsislaViewMode(mode, unlockEdit = false) {
+    window.currentEsislaViewMode = mode;
+    const blocosContainer = document.getElementById('esislaBlocosContainer');
+    const textEl = document.getElementById('esislaText');
+    const btnBlocos = document.getElementById('btnEsislaBlocos');
+    const btnTxt = document.getElementById('btnEsislaTxt');
+    const chip = document.getElementById('esislaLockChip');
+    const btnEdit = document.getElementById('esislaToggleEditBtn');
+
+    if (mode === 'blocos') {
+        if (blocosContainer) blocosContainer.style.display = 'flex';
+        if (textEl) textEl.style.display = 'none';
+        if (btnBlocos) btnBlocos.classList.add('active');
+        if (btnTxt) btnTxt.classList.remove('active');
+        if (textEl) renderEsislaBlocos(textEl.value);
+        setEsislaEditable(false);
+        if (chip) {
+            chip.innerHTML = '🗂️ Visualização em Blocos';
+            chip.style.background = '#F1F5F9';
+            chip.style.color = '#475569';
+            chip.style.borderColor = '#CBD5E1';
+        }
+        if (btnEdit) {
+            btnEdit.innerHTML = '✏️ Editar';
+            btnEdit.style.background = '#FFFFFF';
+            btnEdit.style.borderColor = '#CFDBE7';
+            btnEdit.style.color = 'var(--blue)';
+        }
+    } else { // 'txt'
+        if (blocosContainer) blocosContainer.style.display = 'none';
+        if (textEl) textEl.style.display = 'block';
+        if (btnBlocos) btnBlocos.classList.remove('active');
+        if (btnTxt) btnTxt.classList.add('active');
+        setEsislaEditable(unlockEdit);
+    }
 }
 
 function setEsislaEditable(editable) {
@@ -3038,13 +2627,13 @@ function setEsislaEditable(editable) {
         el.classList.remove('locked');
         el.focus();
         if (btn) {
-            btn.innerHTML = '🔒 Bloquear edição';
+            btn.innerHTML = '🗂️ Ver em Blocos';
             btn.style.background = '#FEF3C7';
             btn.style.borderColor = '#F59E0B';
             btn.style.color = '#92400E';
         }
         if (chip) {
-            chip.innerHTML = '✏️ Edição liberada';
+            chip.innerHTML = '✏️ Edição TXT liberada';
             chip.style.background = '#FEF3C7';
             chip.style.color = '#92400E';
             chip.style.borderColor = '#F59E0B';
@@ -3059,7 +2648,11 @@ function setEsislaEditable(editable) {
             btn.style.color = 'var(--blue)';
         }
         if (chip) {
-            chip.innerHTML = '🔒 Protegido contra edição';
+            if (window.currentEsislaViewMode === 'blocos') {
+                chip.innerHTML = '🗂️ Visualização em Blocos';
+            } else {
+                chip.innerHTML = '🔒 TXT protegido';
+            }
             chip.style.background = '#F1F5F9';
             chip.style.color = '#475569';
             chip.style.borderColor = '#CBD5E1';
@@ -3069,9 +2662,26 @@ function setEsislaEditable(editable) {
 
 function toggleEditEsisla() {
     const el = document.getElementById('esislaText');
+    const isBlocos = window.currentEsislaViewMode === 'blocos' || (el && el.style.display === 'none');
+    if (isBlocos) {
+        // Liberar a versão TXT para edição direta
+        setEsislaViewMode('txt', true);
+    } else {
+        const isReadOnly = el.hasAttribute('readonly');
+        if (isReadOnly) {
+            setEsislaEditable(true);
+        } else {
+            // Salva / atualiza e volta para a visualização em blocos
+            renderEsislaBlocos(el.value);
+            setEsislaViewMode('blocos');
+        }
+    }
+}
+
+function onEsislaTextInput() {
+    const el = document.getElementById('esislaText');
     if (!el) return;
-    const isReadOnly = el.hasAttribute('readonly');
-    setEsislaEditable(isReadOnly);
+    updateEsislaStats(el.value);
 }
 
 function updateEsislaStats(text){

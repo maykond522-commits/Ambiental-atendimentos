@@ -2398,31 +2398,40 @@ function detectarSistemaExameFisico(st, aux, texto, cidCode) {
     const exTipo = String(st?.exameFisicoTipo || aux?.exameFisicoTipo || st?.agilExameFisicoTipo || aux?.agilExameFisicoTipo || '').trim().toLowerCase();
     const outrosSub = String(st?.outrosSubtipo || aux?.outrosSubtipo || st?.areaExameClinico || aux?.areaExameClinico || '').trim().toLowerCase();
 
-    // 0. Precedência absoluta da escolha do médico: se escolheu "Outros" ou "E outros", respeita estritamente
-    if (exTipo === 'outros' || exTipo === 'e outros' || outrosSub === 'e outros' || outrosSub === 'outros' || exTipo.startsWith('outro')) {
-        return 'outro';
-    }
-    // Precedência de Exame Mental escolhido pelo médico
-    if (exTipo === 'exame mental' || (exTipo.includes('mental') && !exTipo.includes('físic'))) {
-        return 'em';
-    }
-    // Precedência de Aparelho Osteomuscular escolhido pelo médico
-    if (exTipo.includes('osteomuscular') || exTipo.includes('conjutivo') || exTipo.includes('conjuntivo')) {
-        return 'aoal';
-    }
-
-    // Subtipos selecionados quando a área clínica foi detalhada
+    // 1. Subtipos selecionados quando a opção "Outros" foi detalhada pelo médico (chips das 12 áreas clínicas)
     if (outrosSub.includes('osteomuscular') || outrosSub.includes('ortop')) return 'aoal';
     if (outrosSub.includes('mental') || outrosSub.includes('psiqui')) return 'em';
     if (outrosSub.includes('circulat') || outrosSub.includes('cardio')) return 'ac';
     if (outrosSub.includes('respirat') || outrosSub.includes('pulmon')) return 'ar';
-    if (outrosSub.includes('pele') || outrosSub.includes('fânero') || outrosSub.includes('subcut') || outrosSub.includes('dermat')) return 'tcspf';
+    if (outrosSub.includes('pele') || outrosSub.includes('fânero') || outrosSub.includes('fanero') || outrosSub.includes('subcut') || outrosSub.includes('dermat')) return 'tcspf';
     if (outrosSub.includes('digest') || outrosSub.includes('gastr')) return 'ad';
     if (outrosSub.includes('genit') || outrosSub.includes('urin') || outrosSub.includes('renal')) return 'agu';
     if (outrosSub.includes('hemolin') || outrosSub.includes('hemat')) return 'ahp';
     if (outrosSub.includes('endocrin') || outrosSub.includes('metabol') || outrosSub.includes('diabet')) return 'ae';
     if (outrosSub.includes('nervoso') || outrosSub.includes('neurol')) return 'sn';
     if (outrosSub.includes('sentidos') || outrosSub.includes('oftalm') || outrosSub.includes('otol')) return 'os';
+    if (outrosSub === 'e outros' || outrosSub === 'outros' || outrosSub.includes('geral')) return 'outro';
+
+    // 2. Precedência da seleção principal do médico em "Tipo de exame físico / mental"
+    if (exTipo === 'exame mental' || (exTipo.includes('mental') && !exTipo.includes('físic'))) {
+        return 'em';
+    }
+    if (exTipo.includes('osteomuscular') || exTipo.includes('conjutivo') || exTipo.includes('conjuntivo')) {
+        return 'aoal';
+    }
+    if (exTipo === 'outros' || exTipo === 'e outros' || outrosSub === 'e outros' || outrosSub === 'outros' || exTipo.startsWith('outro')) {
+        return 'outro';
+    }
+    // Caso exTipo seja diretamente um dos sistemas específicos (ex: formulário estendido)
+    if (exTipo.includes('circulat') || exTipo.includes('cardio')) return 'ac';
+    if (exTipo.includes('respirat') || exTipo.includes('pulmon')) return 'ar';
+    if (exTipo.includes('pele') || exTipo.includes('fânero') || exTipo.includes('fanero') || exTipo.includes('subcut') || exTipo.includes('dermat')) return 'tcspf';
+    if (exTipo.includes('digest') || exTipo.includes('gastr')) return 'ad';
+    if (exTipo.includes('genit') || exTipo.includes('urin') || exTipo.includes('renal')) return 'agu';
+    if (exTipo.includes('hemolin') || exTipo.includes('hemat')) return 'ahp';
+    if (exTipo.includes('endocrin') || exTipo.includes('metabol') || exTipo.includes('diabet')) return 'ae';
+    if (exTipo.includes('nervoso') || exTipo.includes('neurol')) return 'sn';
+    if (exTipo.includes('sentidos') || exTipo.includes('oftalm') || exTipo.includes('otol')) return 'os';
 
     const exameFisicoLinha1 = (String(texto || '').match(/\(\*\)\s*Exame Físico Geral:?\s*\n\s*([^\n\r]+)/i) || [])[1]?.toLowerCase() || '';
     if (exameFisicoLinha1.startsWith('aparelho e outro') || exameFisicoLinha1.startsWith('aparelho outro') || exameFisicoLinha1.startsWith('e outros') || exameFisicoLinha1.includes('outros:')) return 'outro';

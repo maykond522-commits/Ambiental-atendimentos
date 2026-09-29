@@ -1839,6 +1839,44 @@ def test_ajustes_atendimento_e_esisla_5_requisitos():
     assert "exameFisicoLinha1.startsWith('aparelho e outro')" in atd_text
 
 
+def test_correspondencia_exata_sistemas_exame_fisico_esisla():
+    """Garante que a seleção em 'Tipo de exame físico / mental' e os subtipos de 'Outros'
+    mapeiam exatamente para os 12 sistemas oficiais do e-SISLA:
+    - Aparelho Osteomuscular e Tecido Conjuntivo (aoal)
+    - Exame Mental (em)
+    - Aparelho Circulatório (ac)
+    - Aparelho Respiratório (ar)
+    - Tecido celular subcutâneo Pele e Fâneros (tcspf)
+    - Aparelho Digestivo (ad)
+    - Aparelho Geniturinário (agu)
+    - Aparelho Hemolinfopoiético (ahp)
+    - Aparelho Endócrino (ae)
+    - Sistema Nervoso (sn)
+    - Órgãos dos Sentidos (os)
+    - Outros (outro)
+    """
+    gestao = (ROOT / "gestao_atendimentos.html").read_text(encoding="utf-8")
+    atd = (ROOT / "ambiental_avaliacao_medica_lts_cid_assistente.html").read_text(encoding="utf-8")
+
+    for code in [gestao, atd]:
+        # Precedência dos chips detalhados sob "Outros"
+        assert "outrosSub.includes('circulat') || outrosSub.includes('cardio')) return 'ac'" in code
+        assert "outrosSub.includes('respirat') || outrosSub.includes('pulmon')) return 'ar'" in code
+        assert "outrosSub.includes('pele') || outrosSub.includes('fânero')" in code
+        assert "outrosSub.includes('digest') || outrosSub.includes('gastr')) return 'ad'" in code
+        assert "outrosSub.includes('genit') || outrosSub.includes('urin')" in code
+        assert "outrosSub.includes('hemolin') || outrosSub.includes('hemat')) return 'ahp'" in code
+        assert "outrosSub.includes('endocrin') || outrosSub.includes('metabol')" in code
+        assert "outrosSub.includes('nervoso') || outrosSub.includes('neurol')) return 'sn'" in code
+        assert "outrosSub.includes('sentidos') || outrosSub.includes('oftalm')" in code
+        assert "outrosSub === 'e outros' || outrosSub === 'outros'" in code
+
+        # Precedência das opções principais
+        assert "exTipo.includes('osteomuscular')" in code
+        assert "exTipo === 'exame mental'" in code
+
+
+
 
 
 

@@ -1730,7 +1730,10 @@ def test_esisla_remocao_tipo_data_resultado_quesitos_salvamento_e_script_f12_par
     assert [q["resposta"] for q in ctx_favoravel["quesitos"]] == ["Sim", "Sim", "Sim"]
     ctx_contrario = _minimal_ai_context({"parecer": "Contrário", "quesitos": []})
     assert len(ctx_contrario["quesitos"]) == 3
-    assert [q["resposta"] for q in ctx_contrario["quesitos"]] == ["Sim", "Sim", "Não"]
+    assert [q["resposta"] for q in ctx_contrario["quesitos"]] == ["Sim", "Não", "Não"]
+    ctx_contrario_readap = _minimal_ai_context({"parecer": "Contrário", "readaptado": True, "quesitos": []})
+    assert len(ctx_contrario_readap["quesitos"]) == 3
+    assert [q["resposta"] for q in ctx_contrario_readap["quesitos"]] == ["Sim", "Sim", "Não"]
 
     # 3. Contratos de Modo Ágil e salvamento de quesitos no formulário de atendimento (atuando nos fundos)
     assert 'id="agilQuesitosContainer" style="display:none' in ATTENDANCE
@@ -2028,6 +2031,109 @@ Pulso (bpm): 72
     assert "Nega diabetes e cirurgias prévias." in extracted
     assert not extracted.startswith("Hipertenso desde os 29 anos. Vem com\n")
     assert extracted != "Hipertenso desde os 29 anos. Vem com"
+
+
+def test_esisla_gender_agreement_antecedentes_cid_secundario_and_limitacoes(monkeypatch):
+    from app import app, EsislaResult, _minimal_ai_context, _clean_esisla_text, TASK_PROMPTS
+
+    # 1. Gênero (Homem = servidor/periciado; Mulher = servidora/periciada; Dúvida = servidor)
+    ctx_homem = _minimal_ai_context({"sexo": "M"})
+    assert ctx_homem["termo_genero"] == "servidor"
+    assert ctx_homem["sexo"] == "Masculino"
+
+    ctx_mulher = _minimal_ai_context({"sexo": "F"})
+    assert ctx_mulher["termo_genero"] == "servidora"
+    assert ctx_mulher["sexo"] == "Feminino"
+
+    ctx_duvida = _minimal_ai_context({})
+    assert ctx_duvida["termo_genero"] == "servidor"
+
+    prompt = TASK_PROMPTS["esisla"]
+    assert "Se for homem (sexo masculino): utilize SEMPRE \"Servidor\" ou \"Periciado\"" in prompt
+    assert "Se for mulher (sexo feminino): utilize SEMPRE \"Servidora\" ou \"Periciada\"" in prompt
+    assert "Em caso de dúvida ou não especificado: utilize o termo padrão masculino \"Servidor\" ou \"Periciado\"" in prompt
+
+    # 2. Antecedentes Mórbidos: remoção de dias de atestado mantendo histórico pregresso da patologia
+    prompt_ant = prompt
+    assert "NUNCA mencione dias de atestado, afastamento ou concessões (\"Vem com atestado de X dias...\", \"atestado de...\", \"com atestado de...\") nesta seção de Antecedentes Mórbidos." in prompt_ant
+    assert "Antecedentes Mórbidos destinam-se EXCLUSIVAMENTE ao histórico pregresso clínico da patologia" in prompt_ant
+
+    raw_ant_com_dias = (
+        "Registro da perícia Médica para Licença\n\n"
+        "(*) Queixa e Duração:\nServidor de 38 anos...\n\n"
+        "Antecedentes Mórbidos:\nHipertenso desde os 29 anos. Vem com atestado de 7 dias por hipertensão arterial.\n\n"
+        "Atestado/Relatório/Exames Complementares:\nEm anexo.\n\n"
+        "Pressão Arterial\nSistólica (mmHg): 120\nDiastólica (mmHg): 80\nPulso (bpm): 80\n\n"
+        "Altura: 1.75\nPeso: 80\n\n"
+        "(*)Exame Físico Geral\nAparelho Circulatório: Normocárdico.\n\n"
+        "Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:\nNão foram apresentados exames complementares.\n\n"
+        "(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):\nApresenta limitações...\n\n"
+        "(*)Parecer Médico\nParecer: CONTRÁRIO\nNº Dias: 0\nData Início: 29/09/2026\nCID 10: I10\nDescrição: Hipertensão arterial essencial\nCID 10 Secundário: Descrição Secundária:\nMédico Perito: WANIA SANCHES PICASSO\nCRM: 79775\nDt/Hr Perícia: 29/09/2026 14:00\n\n"
+        "(*)Resposta aos quesitos\n1) Sim\n2) Sim\n3) Não\n\n"
+        "(*)Justificativa Parecer Médico\nCapacidade preservada.\n\n"
+        "(*) Parecer Final\nNº Dias: 0\nData Início: 29/09/2026\nCID 10: I10\nDescrição: Hipertensão arterial essencial\nDiretor DPME:\nData P.F.:"
+    )
+
+    cleaned = _clean_esisla_text(raw_ant_com_dias)
+    assert "Vem com atestado de 7 dias" not in cleaned
+    assert "Hipertenso desde os 29 anos." in cleaned
+    assert "CID 10 Secundário:\nDescrição Secundária:\n" in cleaned
+
+    # 3. Post-processing em /api/ai/esisla: Parecer CONTRÁRIO, Limitações e CID Secundário limpo
+    monkeypatch.setattr("app._authenticate_request", lambda: ({"id": "1", "email": "admin@ambiental.com", "nome": "Admin", "perfil": "Administrador"}, "token123"))
+    monkeypatch.setattr("app._generate_cached", lambda *args, **kwargs: (EsislaResult(ficha_esisla=raw_ant_com_dias), False, "hash123"))
+
+    client = app.test_client()
+    res = client.post("/api/ai/esisla", json={
+        "atendimento": "999888",
+        "sexo": "M",
+        "cargo": "Investigador de Polícia",
+        "readaptado": False,
+        "parecer": "Contrário",
+        "cid": "I10",
+        "doenca_motivo": "Vem com atestado de 7 dias por hipertensão arterial",
+        "exame_fisico_tipo": "Aparelho Circulatório",
+        "exame_fisico_descricao": "PA 120x80 mmHg, bulhas rítmicas normofonéticas sem sopros",
+        "medico": "WANIA SANCHES PICASSO",
+        "crm_responsavel": "79775"
+    })
+    assert res.status_code == 200
+    res_data = res.get_json()
+    f_res = res_data["ficha_esisla"]
+
+    # Verifica fórmula obrigatória para parecer CONTRÁRIO
+    assert "Do ponto de vista médico não se observa limitações físicas ou mentais funcionais incapacitantes para as atribuições do cargo de Investigador de Polícia, constantes no rol de atividades." in f_res
+
+    # Verifica limpeza de CID secundário vazio para não gerar lixo nem "Médico Perito"
+    assert "CID 10 Secundário: Descrição Secundária:" not in f_res
+    assert "CID 10 Secundário:" in f_res
+    assert "Descrição Secundária:" in f_res
+    assert "Descrição: Hipertensão arterial" in f_res
+
+    # Verifica quesitos para parecer CONTRÁRIO não readaptado: 1) Sim, 2) Não, 3) Não
+    assert "1) Sim" in f_res
+    assert "2) Não" in f_res
+    assert "3) Não" in f_res
+
+    # Verifica preservação estrita do exame físico do atendimento
+    assert "Aparelho Circulatório: PA 120x80 mmHg, bulhas rítmicas normofonéticas sem sopros" in f_res
+
+    # 4. Caso readaptado com Parecer CONTRÁRIO: Quesito 2 deve ser Sim
+    ctx_contr_readap = _minimal_ai_context({"parecer": "Contrário", "readaptado": True, "quesitos": []})
+    assert [q["resposta"] for q in ctx_contr_readap["quesitos"]] == ["Sim", "Sim", "Não"]
+
+    # 5. Caso com CID Secundário real
+    res_sec = client.post("/api/ai/esisla", json={
+        "atendimento": "999889",
+        "parecer": "Favorável",
+        "cid": "I10",
+        "cids_secundarios": [{"cid": "I15.0", "descricao": "Hipertensão renovascular"}]
+    })
+    assert res_sec.status_code == 200
+    f_sec_res = res_sec.get_json()["ficha_esisla"]
+    assert "CID 10 Secundário: I15.0" in f_sec_res
+    assert "Descrição Secundária: Hipertensão renovascular" in f_sec_res
+
 
 
 

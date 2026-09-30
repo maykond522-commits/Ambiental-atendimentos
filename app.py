@@ -971,6 +971,10 @@ REGRA CENTRAL — ZERO INFORMAÇÃO NOVA:
 - Se não houver dado para um campo, deixe o conteúdo do campo vazio. DEIXE O VALOR EM BRANCO quando não houver informação.
 - NUNCA use colchetes como marcadores de preenchimento no texto final da ficha gerada.
 - REGRA TERMINOLÓGICA OBRIGATÓRIA: NUNCA utilize o termo "Paciente" ou "paciente". Utilize SEMPRE "Servidor" ou "Periciado" (ou "servidor" / "periciado", ex.: "Servidor de X anos...", "ao servidor", "o periciado"). O termo "Paciente" é terminantemente proibido em qualquer parte da ficha.
+  - CONCORDÂNCIA DE GÊNERO:
+    * Se for homem (sexo masculino): utilize SEMPRE "Servidor" ou "Periciado" (ex.: "Servidor de 38 anos...", "ao servidor", "o periciado").
+    * Se for mulher (sexo feminino): utilize SEMPRE "Servidora" ou "Periciada" (ex.: "Servidora de 38 anos...", "à servidora", "a periciada").
+    * Em caso de dúvida ou não especificado: utilize o termo padrão masculino "Servidor" ou "Periciado".
 
 REGRA MANDATÓRIA DE DATAS NO PADRÃO OFICIAL E-SISLA (DD/MM/AAAA):
 - TODAS as datas mencionadas em QUALQUER parte da ficha e-SISLA (inclusive em Data Início, Dt/Hr Perícia, Data P.F., datas de atestados, relatórios e exames complementares) DEVEM OBRIGATORIAMENTE SER FORMATADAS NO PADRÃO BRASILEIRO OFICIAL: DD/MM/AAAA (ex.: 25/09/2026).
@@ -981,7 +985,7 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
 
 1. “(*) Queixa e Duração”
    Reescreva e sintetize em parágrafo único, fluido e coeso, integrando os dados clínicos e ocupacionais na ordem padronizada do Programa de Melhoria Contínua:
-   (1) Idade ("Servidor de X anos" ou "Periciado de X anos"),
+   (1) Idade ("Servidor de X anos" ou "Periciado de X anos", respeitando o gênero: homem = "Servidor de X anos" / "Periciado de X anos", mulher = "Servidora de X anos" / "Periciada de X anos"; em caso de dúvida, utilize "Servidor de X anos"),
    (2) Cargo e (3) Tempo de cargo ("[cargo] há X anos/meses"),
    (4) Readaptação funcional e atividades atribuídas (se readaptado, indicar atividades exercidas; se não, constar "não readaptado"),
    (5) Doença motivadora informada ("com queixa de ..."),
@@ -1004,12 +1008,16 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
    (4) Histórico de neoplasias e tratamentos associados.
    Fontes a integrar: antecedentes, historico_pregresso, outras_doencas, condicoes.
    ATENÇÃO: O conteúdo registrado em antecedentes / historico_pregresso ("Histórico pregresso" no questionário) DEVE OBRIGATORIAMENTE ser integrado e considerado nesta seção de Antecedentes Mórbidos.
+   REGRA OBRIGATÓRIA DE EXCLUSÃO DE ATESTADO NOS ANTECEDENTES MÓRBIDOS:
+   NUNCA mencione dias de atestado, afastamento ou concessões ("Vem com atestado de X dias...", "atestado de...", "com atestado de...") nesta seção de Antecedentes Mórbidos.
+   Antecedentes Mórbidos destinam-se EXCLUSIVAMENTE ao histórico pregresso clínico da patologia (ex.: "Hipertenso desde os 29 anos, em tratamento medicamentoso. Nega cirurgias prévias ou hábitos tóxicos."). Informações sobre atestados e afastamentos pertencem exclusivamente aos campos documentais e parecer.
    Exemplo de referência oficial DPME:
    "Hipertenso e diabético há 5 anos, em tratamento medicamentoso. Apendicectomia há 10 anos. Nega tabagismo, etilismo ou uso de substâncias ilícitas. Nega histórico de neoplasias."
    Consolide somente outras_doencas, condicoes, antecedentes e historico_pregresso. Pode eliminar repetição e organizar o conteúdo quando isso melhora a leitura, mas não introduza condições, diagnósticos ou tratamentos não registrados.
 
 3. “(*)Exame Físico Geral”
    ESTE CAMPO É EXCLUSIVO PARA O EXAME FÍSICO / MENTAL DIRETO REALIZADO PELO MÉDICO PERITO NO ATO PERICIAL:
+   - A IA NÃO DEVE GERAR NEM CRIAR EXAME FÍSICO NOVO. Preencha exclusivamente com o que foi registrado no momento do atendimento pelo médico perito (exame_fisico_descricao e exame_fisico_tipo). NUNCA invente exames de aparelhos não registrados (como Aparelho Respiratório, etc.).
    - Integre obrigatoriamente o Tipo de exame físico / mental (exame_fisico_tipo, area_exame_clinico, outros_subtipo) com o que consta em "(*)Exame Físico Geral — achados observados" (exame_fisico_descricao):
      * Identifique expressamente o segmento/sistema avaliado correspondente aos checkboxes oficiais do e-SISLA (ex.: "Aparelho Osteomuscular e Tecido Conjuntivo: [achados]" ou "Exame Mental: [achados]" ou "[Área avaliada]: [achados]"), seguido da descrição clínica pericial dos achados observados.
      * Para patologia Mental / Psiquiátrica (CID F): estruture os achados psíquicos objetivos observados pelo perito: postura e acompanhamento (descrever se veio acompanhado ou desacompanhado, postura na sala de espera e durante o atendimento), orientação temporoespacial, aparência física e cuidados de higiene, fluxo e curso do pensamento, linguagem e diálogo (espontâneo, colaborativo), psicomotricidade, humor e afeto, volição, pragmatismo e presença ou ausência de ideação/delírios relatados.
@@ -1031,12 +1039,17 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
 
 5. “(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)”
    Relacione expressamente as limitações físicas ou mentais com as atividades do ROL do servidor (cargo), reunindo desc_limitacao, limitacao_funcional, limitacao_rol, atividades_comprometidas, sintomas_limitacoes e obs_limitacoes:
-   - Se Parecer FAVORÁVEL (ou capacidade laborativa temporariamente prejudicada): adote a fórmula padrão oficial:
+   - Se Parecer CONTRÁRIO (capacidade preservada): adote OBRIGATORIAMENTE a fórmula padrão oficial:
+     "Do ponto de vista médico não se observa limitações físicas ou mentais funcionais incapacitantes para as atribuições do cargo de [cargo], constantes no rol de atividades."
+   - Se Parecer FAVORÁVEL (ou capacidade laborativa temporariamente prejudicada): adote a fórmula padrão oficial e adeque com inteligência pericial as limitações ao CID principal e às funções do cargo:
      "Apresenta limitações [físicas/mentais] funcionais temporárias para [atividades/limitações registradas], atividades estas constantes no Rol de Atividades do cargo de [cargo]."
+     Diretrizes clínicas de inteligência pericial por grupo de CID:
+     * Cardiovasculares / Hipertensão (CID I, ex.: I10, I15): limitações temporárias para esforços físicos intensos, estresse emocional agudo e situações de urgência/emergência que demandem higidez cardiovascular plena.
+     * Osteomusculares / Ortopédicos (CID M, ex.: M54, M75): limitações temporárias para carregamento de peso, ortostatismo prolongado, movimentos repetitivos ou posturas forçadas.
+     * Psiquiátricos / Saúde Mental (CID F, ex.: F32, F41): limitações temporárias para tomada de decisões sob pressão, gestão de conflitos/crises e jornadas extenuantes (e porte de arma em carreiras policiais).
+     * Respiratórios (CID J): limitações temporárias para esforços aeróbicos intensos e exposição a poluentes, poeiras ou irritantes.
+     * Demais patologias: limitações temporárias para esforços físicos intensos e atividades habituais que demandem higidez plena da área afetada.
      (Exemplo de referência oficial: "Apresenta limitações físicas funcionais temporárias para ortostatismo prolongado, caminhadas e subir/descer escadas, atividades estas constantes no Rol de Atividades do cargo de professor.")
-   - Se Parecer CONTRÁRIO (capacidade preservada): adote a fórmula padrão oficial:
-     "Do ponto de vista médico não se observa limitações [físicas/mentais] funcionais incapacitantes para as atribuições do cargo de [cargo], constantes no rol de atividades."
-     (Exemplo de referência oficial: "Do ponto de vista médico não se observa limitações físicas funcionais incapacitantes para as atribuições do cargo de professor, constantes no rol de atividades.")
    - É permitido reduzir repetição e formar uma redação única, mas “Sim” sozinho não autoriza criar uma limitação específica.
 
 6. “(*)Justificativa Parecer Médico”
@@ -1063,8 +1076,8 @@ OUTROS CAMPOS — TRANSCRIÇÃO FIEL:
   - Data Início: data no padrão oficial DD/MM/AAAA
   - CID 10: código CID principal informado
   - Descrição: motivo/diagnóstico informado
-  - CID 10 Secundário: se houver CIDs secundários/adicionais apresentados, registre obrigatoriamente nesta linha o código do CID secundário
-  - Descrição Secundária: diagnóstico/descrição do CID secundário (se houver)
+  - CID 10 Secundário: se houver CIDs secundários/adicionais apresentados nos dados do atendimento, registre obrigatoriamente nesta linha o código do CID secundário. Se NÃO houver CID secundário, deixe a linha em branco após os dois pontos ("CID 10 Secundário:").
+  - Descrição Secundária: diagnóstico/descrição do CID secundário (se houver). Se não houver, deixe a linha em branco ("Descrição Secundária:"). NUNCA junte os títulos na mesma linha nem preencha com "Médico Perito".
   - Médico Perito: médico responsável pelo atendimento
   - CRM: CRM do médico perito responsável
   - Dt/Hr Perícia: data e hora no padrão oficial DD/MM/AAAA HH:MM
@@ -1540,9 +1553,10 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
     raw_q = payload.get("quesitos") or a.get("quesitos") or []
     par_up = str(payload.get("parecer") or a.get("parecer") or "").upper()
     is_contr = "CONTR" in par_up
+    is_readap_ctx = str(payload.get("readaptado") if "readaptado" in payload else a.get("readaptado", "")).strip().lower() in ("sim", "s", "true", "1")
     fixed_q_defs = [
         (1, "Há doença(s) ou sequela(s) de doença(s) prévia(s)?", "Sim"),
-        (2, "A(s) doença(s) ou sequela(s) de doença(s) prévia(s) gera(m) limitação(ões) para periciando(a)?", "Sim"),
+        (2, "A(s) doença(s) ou sequela(s) de doença(s) prévia(s) gera(m) limitação(ões) para periciando(a)?", "Sim" if (not is_contr or is_readap_ctx) else "Não"),
         (3, "A(s) limitação(ões) impede(m) o(a) periciando(a) de exercer alguma atividade do rol?", "Não" if is_contr else "Sim"),
     ]
     norm_quesitos = []
@@ -1558,8 +1572,26 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
             ans = qdefault
         norm_quesitos.append({"id": qid, "pergunta": qpergunta, "resposta": ans})
 
+    raw_sexo = str(
+        payload.get("sexo")
+        or payload.get("genero")
+        or payload.get("pacienteSexo")
+        or a.get("sexo")
+        or a.get("genero")
+        or a.get("pacienteSexo")
+        or ""
+    ).strip().upper()
+    if raw_sexo.startswith("F") or raw_sexo == "MULHER":
+        termo_genero = "servidora"
+        sexo_norm = "Feminino"
+    else:
+        termo_genero = "servidor"
+        sexo_norm = "Masculino" if (raw_sexo.startswith("M") or raw_sexo == "HOMEM") else ""
+
     return {
         "atendimento": payload.get("atendimento"),
+        "sexo": sexo_norm or raw_sexo,
+        "termo_genero": termo_genero,
         "data_atendimento": _format_date_br(payload.get("data_atendimento") or a.get("dataAtd")),
         "hora_atendimento": payload.get("hora_atendimento") or a.get("horaAtd"),
         "medico": payload.get("medico") or payload.get("medicoResponsavel"),
@@ -2032,6 +2064,18 @@ def _clean_esisla_text(text: str) -> str:
         b_clean = _clean_queixa_duracao_text(b_queixa)
         text = text[:m_queixa.start()] + h1 + b_clean + h2 + text[m_queixa.end():]
 
+    # Limpeza e remoção de menções a dias de atestado em Antecedentes Mórbidos
+    m_ant = re.search(r"(\nAntecedentes Mórbidos:?\s*\n)(.*?)(\n\s*Atestado/Relat[óo]rio)", text, re.DOTALL | re.IGNORECASE)
+    if m_ant:
+        h1, b_ant, h2 = m_ant.groups()
+        b_clean = re.sub(r"[\s\.\,]*\b(?:[Vv]em\s+com\s+atestado|[Aa]testado)\s+de\s+\d+\s+dias[^\.\n\r]*[\.\,]?", ".", b_ant)
+        b_clean = re.sub(r"\.{2,}", ".", b_clean).strip()
+        text = text[:m_ant.start()] + h1 + b_clean + "\n\n" + h2 + text[m_ant.end():]
+
+    # Separar campos que o modelo possa ter agrupado na mesma linha (ex: CID 10 Secundário: Descrição Secundária:)
+    text = re.sub(r"CID\s*(?:10)?\s*Secund[áa]rio:[ \t]*Descri[çc][ãa]o\s*Secund[áa]ria:[ \t]*(?:M[ée]dico\s*Perito|CRM|[^\n\r]*)?", "CID 10 Secundário:\nDescrição Secundária:\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"Descri[çc][ãa]o\s*Secund[áa]ria:[ \t]+(?:M[ée]dico\s*Perito|CRM:)[^\n\r]*", "Descrição Secundária:\n", text, flags=re.IGNORECASE)
+
     # Ajuste e conversão de todas as datas ISO ou com zeros (ex.: 2026-00-00, 2026-09-25) para padrão oficial e-SISLA (DD/MM/AAAA)
     def _iso_to_br(m):
         ano, mes, dia = m.group(1), m.group(2), m.group(3)
@@ -2110,6 +2154,8 @@ def api_ai_esisla():
                 ficha_text = re.sub(r"(\(\*\)\s*Exame Físico Geral)", alt_block + r"\1", ficha_text, count=1)
 
             par_val = str(payload.get("parecer") or "").strip().upper()
+            is_contra = "CONTR" in par_val
+            is_readap = str(payload.get("readaptado") or "").strip().lower() in ("sim", "s", "true", "1")
             if par_val:
                 if re.search(r"^Parecer:\s*$", ficha_text, re.MULTILINE):
                     ficha_text = re.sub(r"^Parecer:\s*$", f"Parecer: {par_val}", ficha_text, flags=re.MULTILINE)
@@ -2130,7 +2176,14 @@ def api_ai_esisla():
                 ficha_text = re.sub(r"^(CID\s*(?:10)?:\s*)$", f"CID 10: {cid_val}", ficha_text, flags=re.MULTILINE)
             desc_val = str(payload.get("doenca_motivo") or "").strip()
             if desc_val:
-                ficha_text = re.sub(r"^(Descri[çc][ãa]o:\s*)$", f"Descrição: {desc_val}", ficha_text, flags=re.MULTILINE)
+                clean_desc_val = re.sub(r"^[Vv]em\s+com\s+atestado\s+de\s+\d+\s+dias\s*(?:por|de|devido\s+a)?\s*", "", desc_val, flags=re.I)
+                clean_desc_val = re.sub(r"^[Aa]testado\s+de\s+\d+\s+dias\s*(?:por|de|devido\s+a)?\s*", "", clean_desc_val, flags=re.I)
+                clean_desc_val = clean_desc_val.rstrip(".").strip()
+                if clean_desc_val:
+                    clean_desc_val = clean_desc_val[0].upper() + clean_desc_val[1:]
+                else:
+                    clean_desc_val = desc_val
+                ficha_text = re.sub(r"^(Descri[çc][ãa]o:\s*)$", f"Descrição: {clean_desc_val}", ficha_text, flags=re.MULTILINE)
 
             # Inserir CID Secundário se houver no payload
             cids_sec = payload.get("cids_secundarios") or []
@@ -2152,6 +2205,9 @@ def api_ai_esisla():
                     ficha_text = re.sub(r"(Descri[çc][ãa]o:[^\n\r]*\n)", r"\1" + sec_insert, ficha_text, count=1)
                 if cid_sec_desc:
                     ficha_text = re.sub(r"^(Descri[çc][ãa]o\s*Secund[áa]ria:\s*)$", f"Descrição Secundária: {cid_sec_desc}", ficha_text, flags=re.MULTILINE | re.IGNORECASE)
+            else:
+                ficha_text = re.sub(r"^CID[ \t]*(?:10)?[ \t]*Secund[áa]rio:[ \t]*(?:Descri[çc][ãa]o[ \t]*Secund[áa]ria|M[ée]dico[ \t]*Perito|CRM|[^\r\n]*)$", "CID 10 Secundário:", ficha_text, flags=re.MULTILINE | re.IGNORECASE)
+                ficha_text = re.sub(r"^Descri[çc][ãa]o[ \t]*Secund[áa]ria:[ \t]*(?:M[ée]dico[ \t]*Perito|CRM|[^\r\n]*)$", "Descrição Secundária:", ficha_text, flags=re.MULTILINE | re.IGNORECASE)
 
             med_val = str(payload.get("medico") or "").strip()
             if med_val:
@@ -2171,24 +2227,35 @@ def api_ai_esisla():
                         just_val = f"Capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações incapacitantes para as atribuições rotineiras do cargo atual de {cargo_nome}."
                 ficha_text = ficha_text[:justif_empty_match.start(1)] + justif_empty_match.group(1) + just_val + "\n\n" + ficha_text[justif_empty_match.start(2):]
 
-            ef_empty_match = re.search(r"(\(\*\)\s*Exame Físico Geral:?\s*\n\s*)(Descrição das Alterações Clínicas)", ficha_text, re.IGNORECASE)
-            if ef_empty_match:
-                ef_achados = str(payload.get("exame_fisico_descricao") or "").strip()
-                ef_tipo = str(payload.get("exame_fisico_tipo") or "").strip()
-                ef_text = ef_achados
-                if ef_tipo and not ef_text.lower().startswith(ef_tipo.lower()):
-                    ef_text = f"{ef_tipo}: {ef_text}" if ef_text else f"{ef_tipo}: Exame físico/mental sem alterações descompensadas descritas."
-                elif not ef_text:
-                    ef_text = "Sem alterações incapacitantes observadas no ato pericial."
-                ficha_text = ficha_text[:ef_empty_match.start(1)] + ef_empty_match.group(1) + ef_text + "\n\n" + ficha_text[ef_empty_match.start(2):]
+            # Exame Físico Geral: priorizar estritamente os achados registrados no atendimento pelo médico perito
+            ef_achados = str(payload.get("exame_fisico_descricao") or "").strip()
+            ef_tipo = str(payload.get("exame_fisico_tipo") or "").strip()
+            ef_match = re.search(r"(\(\*\)\s*Exame Físico Geral:?\s*\n\s*)(.*?)(\n\s*Descrição das Alterações Clínicas)", ficha_text, re.DOTALL | re.IGNORECASE)
+            if ef_match:
+                if ef_achados:
+                    ef_text = ef_achados
+                    if ef_tipo and not ef_text.lower().startswith(ef_tipo.lower()) and ef_tipo.lower() not in ("outros", "e outros"):
+                        ef_text = f"{ef_tipo}: {ef_text}"
+                    ficha_text = ficha_text[:ef_match.start(2)] + ef_text + ficha_text[ef_match.end(2):]
+                elif not ef_match.group(2).strip():
+                    ef_text = f"{ef_tipo}: Exame físico/mental sem alterações descompensadas descritas." if ef_tipo else "Sem alterações incapacitantes observadas no ato pericial."
+                    ficha_text = ficha_text[:ef_match.start(2)] + ef_text + ficha_text[ef_match.end(2):]
+
+            # Limitações Físicas e Mentais: se parecer CONTRÁRIO, registrar ausência de limitações incapacitantes
+            if is_contra:
+                cargo_nome = payload.get("cargo") or "servidor"
+                lim_contra = f"Do ponto de vista médico não se observa limitações físicas ou mentais funcionais incapacitantes para as atribuições do cargo de {cargo_nome}, constantes no rol de atividades."
+                m_lim = re.search(r"(\(\*\)\s*Descri[çc][ãa]o\s*da\(s\)\s*Limita[çc][ãa]o[^\n\r]*\n\s*)(.*?)(\n\s*\(\*\)\s*Parecer\s*M[ée]dico)", ficha_text, re.DOTALL | re.IGNORECASE)
+                if m_lim:
+                    cur_lim = m_lim.group(2).strip()
+                    if not cur_lim or "não se observa" not in cur_lim.lower() and "nao se observa" not in cur_lim.lower():
+                        ficha_text = ficha_text[:m_lim.start(2)] + lim_contra + ficha_text[m_lim.end(2):]
 
             # Remove qualquer resquício de (Tipo-Data-Resultado)
             ficha_text = re.sub(r"Atestado/Relat[óo]rio/Exames Complementares\s*\([^\)]*Tipo[^\)]*\):?", "Atestado/Relatório/Exames Complementares:", ficha_text, flags=re.IGNORECASE)
             ficha_text = re.sub(r"\(\s*Tipo-Data-Resultado\s*\):?\s*", "", ficha_text, flags=re.IGNORECASE)
 
             # Garantir preenchimento dos 3 quesitos oficiais conforme regra pericial
-            is_readap = str(payload.get("readaptado") or "").strip().lower() in ("sim", "s")
-            is_contra = "CONTR" in par_val
             if is_contra:
                 q1_ans = "Sim"
                 q2_ans = "Sim" if is_readap else "Não"
@@ -2201,9 +2268,10 @@ def api_ai_esisla():
             q_section = re.search(r"(\(\*\)\s*Resposta aos quesitos.*?)(\(\*\)\s*Justificativa|\Z)", ficha_text, re.DOTALL | re.IGNORECASE)
             if q_section:
                 q_block = q_section.group(1)
-                q_block = re.sub(r"(1\)[^\n\r]+?)(?:\s+(?:Sim|Não|Nao))?(\s*[\r\n]|$)", r"\1 " + q1_ans + r"\2", q_block, count=1, flags=re.IGNORECASE)
-                q_block = re.sub(r"(2\)[^\n\r]+?)(?:\s+(?:Sim|Não|Nao))?(\s*[\r\n]|$)", r"\1 " + q2_ans + r"\2", q_block, count=1, flags=re.IGNORECASE)
-                q_block = re.sub(r"(3\)[^\n\r]+?)(?:\s+(?:Sim|Não|Nao))?(\s*[\r\n]|$)", r"\1 " + q3_ans + r"\2", q_block, count=1, flags=re.IGNORECASE)
+                for q_num, q_ans in [("1", q1_ans), ("2", q2_ans), ("3", q3_ans)]:
+                    q_rx = re.compile(rf"^({q_num}[ \t]*[\)\.\-](?:[^\r\n\?]*\?)?)[ \t]*(?:Sim|Não|Nao)?[ \t]*$", re.MULTILINE | re.IGNORECASE)
+                    if q_rx.search(q_block):
+                        q_block = q_rx.sub(rf"\1 {q_ans}", q_block, count=1)
                 ficha_text = ficha_text[:q_section.start(1)] + q_block + ficha_text[q_section.end(1):]
 
             result = EsislaResult(ficha_esisla=ficha_text)

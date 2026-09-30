@@ -9035,6 +9035,21 @@ function detectarSistemaExameFisico(st, aux, texto, cidCode) {
   if (exTipo.includes('nervoso') || exTipo.includes('neurol')) return 'sn';
   if (exTipo.includes('sentidos') || exTipo.includes('oftalm') || exTipo.includes('otol')) return 'os';
 
+  // 3. Precedência pelo código CID do atendimento (mais confiável que texto de IA livre)
+  const c = String(cidCode || '').toUpperCase().trim();
+  if (c.startsWith('M')) return 'aoal';
+  if (c.startsWith('F')) return 'em';
+  if (c.startsWith('I')) return 'ac';
+  if (c.startsWith('J')) return 'ar';
+  if (c.startsWith('L')) return 'tcspf';
+  if (c.startsWith('K')) return 'ad';
+  if (c.startsWith('N')) return 'agu';
+  if (c.startsWith('D')) return 'ahp';
+  if (c.startsWith('E')) return 'ae';
+  if (c.startsWith('G')) return 'sn';
+  if (c.startsWith('H')) return 'os';
+
+  // 4. Fallback pelo cabeçalho gerado no texto
   const exameFisicoLinha1 = (String(texto || '').match(/\(\*\)\s*Exame Físico Geral:?\s*\n\s*([^\n\r]+)/i) || [])[1]?.toLowerCase() || '';
   if (exameFisicoLinha1.startsWith('aparelho e outro') || exameFisicoLinha1.startsWith('aparelho outro') || exameFisicoLinha1.startsWith('e outros') || exameFisicoLinha1.includes('outros:')) return 'outro';
   if (exameFisicoLinha1.includes('osteomuscular') || exameFisicoLinha1.includes('conjutivo') || exameFisicoLinha1.includes('conjuntivo')) return 'aoal';
@@ -9049,20 +9064,6 @@ function detectarSistemaExameFisico(st, aux, texto, cidCode) {
   if (exameFisicoLinha1.includes('nervoso')) return 'sn';
   if (exameFisicoLinha1.includes('sentidos')) return 'os';
   if (exameFisicoLinha1.includes('outro')) return 'outro';
-
-  // Fallback estrito pelo código CID
-  const c = String(cidCode || '').toUpperCase().trim();
-  if (c.startsWith('M')) return 'aoal';
-  if (c.startsWith('F')) return 'em';
-  if (c.startsWith('I')) return 'ac';
-  if (c.startsWith('J')) return 'ar';
-  if (c.startsWith('L')) return 'tcspf';
-  if (c.startsWith('K')) return 'ad';
-  if (c.startsWith('N')) return 'agu';
-  if (c.startsWith('D')) return 'ahp';
-  if (c.startsWith('E')) return 'ae';
-  if (c.startsWith('G')) return 'sn';
-  if (c.startsWith('H')) return 'os';
 
   return 'aoal';
 }

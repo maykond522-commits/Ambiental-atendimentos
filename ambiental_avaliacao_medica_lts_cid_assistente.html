@@ -7304,15 +7304,17 @@ function gerarNarrativaAtestadoMelhoriaContinua(st, v) {
 function gerarNarrativaLimitacoesMelhoriaContinua(st, v) {
   v = v || {};
   st = st || state;
+  const cargo = st.cargo || v.cargo || "servidor";
   const isMental = st.exameFisicoTipo === "Exame Mental";
   const isOsteo = st.exameFisicoTipo === "Aparelho Osteomuscular e Tecido Conjutivo";
   const isFav = (st.parecer === "FAVORÁVEL" || st.parecer === "Favorável");
   
   if (isMental) {
     if (isFav) {
-      return "Comprometimento psíquico de habilidades necessárias ao desempenho de tarefas que demandem liderança, interatividade social, concentração, autodomínio e disciplina para as atividades do rol do cargo.";
+      const ativ = st.atividadesComprometidas || v.atividadesComprometidas || "desempenho de tarefas que demandem liderança, interatividade social, concentração, autodomínio e disciplina";
+      return `Apresenta limitações mentais funcionais temporárias para ${ativ}, atividades estas constantes no Rol de Atividades do cargo de ${cargo}.`;
     } else {
-      return "Não se identificam alterações psicopatológicas ou prejuízos de habilidades executivas essenciais.";
+      return `Do ponto de vista médico não se observa limitações mentais funcionais incapacitantes para as atribuições do cargo de ${cargo}, constantes no rol de atividades.`;
     }
   } else if (isOsteo) {
     if (isFav) {
@@ -7320,16 +7322,18 @@ function gerarNarrativaLimitacoesMelhoriaContinua(st, v) {
       const alteradas = Object.keys(regMap).filter(k => regMap[k] === "Alterado" && DADOS_OSTEOMUSCULAR[k]);
       const grupos = (typeof agruparRegioesAlteradas === "function") ? agruparRegioesAlteradas(alteradas) : [];
       const nomes = grupos.length ? grupos.map(g => g.label).join(", ") : "segmento osteomuscular avaliado";
-      return `Do ponto de vista médico-pericial, foram observadas limitações físicas funcionais e incapacitantes relacionadas a ${nomes} para realizar tarefas com sobrecarga articular, movimentos repetitivos ou posturas desfavoráveis para as atribuições do rol do cargo.`;
+      const ativ = st.atividadesComprometidas || v.atividadesComprometidas || `tarefas com sobrecarga articular (${nomes}), movimentos repetitivos ou posturas forçadas`;
+      return `Apresenta limitações físicas funcionais temporárias para ${ativ}, atividades estas constantes no Rol de Atividades do cargo de ${cargo}.`;
     } else {
-      return "Do ponto de vista médico não se observa limitações físicas funcionais incapacitantes relacionadas ao aparelho osteomuscular.";
+      return `Do ponto de vista médico não se observa limitações físicas funcionais incapacitantes para as atribuições do cargo de ${cargo}, constantes no rol de atividades.`;
     }
   }
   
   if (isFav) {
-    return st.descLimitacao || st.aux?.descLimitacao || "Foram observadas limitações funcionais incapacitantes para as atividades rotineiras do cargo no período pleiteado.";
+    const ativ = st.atividadesComprometidas || v.atividadesComprometidas || st.descLimitacao || "as atividades habituais";
+    return `Apresenta limitações físicas funcionais temporárias para ${ativ}, atividades estas constantes no Rol de Atividades do cargo de ${cargo}.`;
   } else {
-    return "Não se identificam limitações funcionais em níveis que possam ser considerados incapacitantes no momento do exame pericial.";
+    return `Do ponto de vista médico não se observa limitações físicas ou mentais funcionais incapacitantes para as atribuições do cargo de ${cargo}, constantes no rol de atividades.`;
   }
 }
 
@@ -7346,23 +7350,27 @@ function gerarNarrativaJustificativaMelhoriaContinua(st, v) {
   }
   
   if (isFav) {
+    const ativ = st.atividadesComprometidas || v.atividadesComprometidas || "";
     if (isMental) {
-      return "Capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol, em razão de limitações na esfera psicoemocional que comprometem a interatividade com grupos, manutenção da concentração e autocontrole de sentimentos em situações laborais conflituosas, referente ao período pleiteado.";
+      const descAtiv = ativ || "interatividade com grupos, manutenção da concentração e autocontrole em situações de conflito";
+      return `Capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol, em razão de limitações na esfera psicoemocional que compromete para ${descAtiv}.`;
     } else if (isOsteo) {
       const regMap = st.osteomuscularRegioes || {};
       const alteradas = Object.keys(regMap).filter(k => regMap[k] === "Alterado" && DADOS_OSTEOMUSCULAR[k]);
       const lim = (typeof formatarLimitacoesOsteo === "function") ? formatarLimitacoesOsteo(alteradas.map(k => DADOS_OSTEOMUSCULAR[k]?.limitacao).filter(Boolean)) : "";
-      return `Capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol, em razão de limitações de ordem osteomuscular (${lim || "comprometimento funcional osteoarticular"}), referente ao período pleiteado.`;
+      const descAtiv = ativ || lim || "atividades com sobrecarga biomecânica ou esforço repetitivo";
+      return `Capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol, em razão de limitações na esfera osteomuscular que compromete para ${descAtiv}.`;
     } else {
-      return "Capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol e as limitações funcionais identificadas no exame pericial, referente ao período pleiteado.";
+      const descAtiv = ativ || "as atividades habituais do cargo";
+      return `Capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol, em razão de limitações clínicas que compromete para ${descAtiv}.`;
     }
   } else {
     if (isMental) {
-      return "Capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações psicopatológicas ou limitações da esfera mental incapacitantes para as atribuições rotineiras do cargo atual.";
+      return "Capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações de ordem psíquica incapacitantes para as atribuições rotineiras do cargo atual.";
     } else if (isOsteo) {
       return "Capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações de ordem osteomuscular incapacitantes para as atribuições rotineiras do cargo atual.";
     } else {
-      return "Capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações clínicas incapacitantes para as atribuições rotineiras do cargo atual.";
+      return "Capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações incapacitantes para as atribuições rotineiras do cargo atual.";
     }
   }
 }

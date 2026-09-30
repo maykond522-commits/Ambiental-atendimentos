@@ -891,7 +891,7 @@ REGRAS OBRIGATÓRIAS:
 TASK_PROMPTS = {
     "justificativa": """
 TAREFA: GERAR SUGESTÃO DE JUSTIFICATIVA FINAL DO LAUDO PERICIAL.
-Atue como apoio de redação técnico-pericial em Medicina do Trabalho, com linguagem compatível com um médico especialista em saúde ocupacional.
+Atue como apoio de redação técnico-pericial sênior em Medicina do Trabalho, com linguagem compatível com um médico especialista em perícias médicas e saúde ocupacional.
 Produza UMA justificativa individualizada, objetiva, fundamentada e diretamente vinculada aos fatos registrados no atendimento. OBRIGATORIAMENTE escreva em PRIMEIRA PESSOA do singular (ex.: "constato", "observo", "verifico", "considero").
 
 OBJETIVO DA REDAÇÃO:
@@ -902,9 +902,19 @@ OBJETIVO DA REDAÇÃO:
 - evitar frases genéricas, fórmulas vazias e repetição mecânica dos campos.
 
 PADRÕES TÉCNICOS OFICIAIS (Programa de Melhoria Contínua):
-- Se Parecer FAVORÁVEL: Estruture em 1ª pessoa alinhado à diretriz oficial: "Considero a capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol, em razão de limitações na esfera [psicoemocional/osteomuscular] que compromete para [atividades comprometidas]." Se houver redução de dias em relação ao atestado assistente: "Concedo [X] dias de afastamento a contar da data de início dos sintomas, tempo este considerado suficiente para restabelecimento da capacidade laborativa para a função periciada."
-- Se Parecer CONTRÁRIO: Estruture em 1ª pessoa alinhado à diretriz oficial: "Constato a capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações de ordem [osteomuscular/psíquica] incapacitantes para as atribuições rotineiras do cargo atual."
-- Pareceres contrários administrativos: Se retroação de guia > 3 dias sem internação: "Guia com mais de 3 dias de retroação, não havendo comprovação de internamento hospitalar ou impedimento absoluto do servidor para emissão da guia." Se sobreposição de períodos: "Período solicitado já contemplado em licença anteriormente concedida, caracterizando sobreposição de períodos."
+- Se Parecer FAVORÁVEL: Estruture obrigatoriamente a classificação da capacidade laborativa em 1ª pessoa alinhado à diretriz oficial:
+  "Considero a capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol, em razão de limitações na esfera [psicoemocional/osteomuscular] que compromete para [atividades comprometidas informadas], referente ao período pleiteado."
+  * Se houver redução de dias em relação ao atestado assistente:
+    "Concedo [X] dias de afastamento a contar da data de início dos sintomas, tempo este considerado suficiente para restabelecimento da capacidade laborativa para a função periciada."
+  * Se houver perfil de cronicidade/incapacidade definitiva para a função habitual:
+    Indique formalmente o direcionamento pericial para readaptação funcional.
+- Se Parecer CONTRÁRIO: Estruture obrigatoriamente em 1ª pessoa alinhado à diretriz oficial:
+  "Constato a capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações de ordem [osteomuscular/psíquica] incapacitantes para as atribuições rotineiras do cargo atual."
+- Pareceres contrários administrativos por erros de finalização DPME:
+  * Retroação de guia (> 3 dias): Quando o intervalo da data de expedição da guia e a data do atestado ultrapassar 3 dias sem comprovação de internamento hospitalar:
+    "Guia com mais de 3 dias de retroação, não havendo comprovação de internamento hospitalar ou impedimento absoluto do servidor para emissão da guia."
+  * Sobreposição de períodos: Quando é gerado afastamento na vigência de outro anterior:
+    "Período solicitado já contemplado em licença anteriormente concedida, caracterizando sobreposição de períodos."
 
 DIRETRIZ OBRIGATÓRIA PARA A OPÇÃO 'OUTROS' (ÁREA CLÍNICA ESPECÍFICA + NORMAL/ALTERADO + CID):
 Quando o tipo de exame físico/mental for "Outros" ou quando for indicada uma área do exame clínico:
@@ -949,12 +959,97 @@ DADOS-CHAVE DO ATENDIMENTO:
 - Parecer selecionado: {parecer}
 - Quesitos respondidos: {quesitos}
 """.strip(),
-    "revisao": "TAREFA: REVISÃO DETERMINÍSTICA ASSISTIDA DO ATENDIMENTO.",
-    "coerencia": "TAREFA: ANÁLISE EXCLUSIVA DE COERÊNCIA.",
-    "resumo": "TAREFA: RESUMO EXECUTIVO DO ATENDIMENTO.",
-    "documento": "TAREFA: GERAR O RELATÓRIO FINAL DO ATENDIMENTO.",
-    "revisao_texto": "TAREFA: REVISAR TEXTO INFORMADO PELO PROFISSIONAL.",
-    "preenchimento": "TAREFA: SUGERIR PREENCHIMENTO ASSISTIDO.",
+    "revisao": """
+TAREFA: REVISÃO DETERMINÍSTICA E TÉCNICA ASSISTIDA DO ATENDIMENTO MÉDICO-PERICIAL.
+Atue como médico perito revisor sênior em Medicina do Trabalho e Perícias Médicas Oficiais (padrão DPME - Programa de Melhoria Contínua).
+Realize uma auditoria técnica completa dos dados do atendimento:
+1. Verifique a completude das informações clínicas essenciais: queixa, tempo de cargo, dados da patologia, tratamentos em curso com doses em mg/dia e exames complementares.
+2. Identifique inconsistências entre o CID principal, os achados clínicos do exame físico/mental e as limitações declaradas em relação ao Rol de Atividades do cargo.
+3. Avalie a conformidade da capacidade laborativa declarada, das respostas aos 3 quesitos oficiais e do parecer final (Favorável ou Contrário).
+4. Verifique a existência de eventuais erros administrativos DPME: retroação de guia superior a 3 dias ou sobreposição de períodos de licença.
+5. Sinalize com precisão lacunas ou incongruências que demandem atenção ou revisão pelo médico perito responsável, sem fazer julgamentos finais automáticos.
+""".strip(),
+    "coerencia": """
+TAREFA: ANÁLISE EXCLUSIVA DE COERÊNCIA TÉCNICO-PERICIAL DO ATENDIMENTO.
+Atue como médico perito auditor sênior em Perícias Médicas Oficiais e Saúde Ocupacional.
+Avalie com rigor técnico a coerência entre todos os elementos registrados no prontuário pericial:
+1. Coerência clínico-ocupacional entre Queixa e Duração, CID registrado e Exame Físico / Mental direto.
+2. Coerência funcional entre os achados objetivos observados no exame pericial e as limitações funcionais descritas para o Rol de Atividades do cargo.
+3. Coerência lógica entre a Capacidade Laborativa declarada, as respostas aos 3 Quesitos oficiais e a Justificativa do Parecer.
+4. Identificação de divergências documentais entre relatórios assistentes, laudos de exames complementares e a data de início da incapacidade.
+Aponte de forma técnica, pontual e fundamentada qualquer divergência identificada, sugerindo a harmonização clínica pericial necessária.
+""".strip(),
+    "resumo": """
+TAREFA: RESUMO EXECUTIVO DO ATENDIMENTO MÉDICO-PERICIAL.
+Atue como médico perito sênior. Elabore um resumo executivo objetivo, de alta densidade técnica e sem redundâncias:
+1. Perfil Clínico-Ocupacional: idade, gênero (Servidor/Servidora), cargo, tempo de exercício na função, situação de readaptação e queixa motivadora.
+2. Achados Objetivos e Propedêutica: síntese dos achados relevantes no exame físico/mental pericial e laudos de exames complementares com datas.
+3. Repercussão Laboral: limitações funcionais diretas para as atribuições do rol do cargo.
+4. Conclusão Pericial: capacidade laborativa estabelecida, parecer emitido e período de afastamento concedido.
+NUNCA utilize o termo "Paciente" (use "Servidor", "Servidora" ou "Periciado").
+""".strip(),
+    "documento": """
+TAREFA: GERAR O RELATÓRIO TÉCNICO-PERICIAL FINAL DO ATENDIMENTO.
+Atue como médico perito sênior em Medicina do Trabalho e Perícias Médicas Oficiais, redigindo um laudo médico pericial de excelência técnica estritamente aderente ao padrão oficial DPME (Programa de Melhoria Contínua).
+
+DIRETRIZES DA REDAÇÃO TÉCNICO-PERICIAL:
+1. IDENTIFICAÇÃO E HISTÓRICO: registre idade (com estrita concordância de gênero: "Servidor" para homem, "Servidora" para mulher), cargo, tempo na função, readaptação funcional, queixa motivadora, frequência de consultas, sintomas, limitações funcionais relatadas, medicamentos com dosagens diárias em mg/dia e histórico de trocas (especialmente CID F), e terapias não medicamentosas. Omitir menções a início de tratamento por data. NUNCA utilize o termo "Paciente".
+2. ANTECEDENTES MÓRBIDOS: sintetize comorbidades crônicas e tratamentos, cirurgias prévias e tempo decorrido, hábitos tóxicos/substâncias e neoplasias. Se não houver antecedentes registrados, preencha com "Nega.". NUNCA mencione dias de atestado nesta seção.
+3. EXAME FÍSICO / MENTAL: descreva minuciosamente os achados objetivos periciais observados (marcha, ADM, força 0-5, trofismo, reflexos; ou postura, orientação, afeto, fluxo de pensamento, volição e ausência de ideação/delírios para exame mental).
+4. EXAMES COMPLEMENTARES: relacione laudos de imagem e laboratoriais com datas no padrão DD/MM/AAAA e conclusões. Se ausentes, registre que não foram apresentados exames complementares de imagem ou laboratoriais no ato pericial.
+5. LIMITAÇÕES E JUSTIFICATIVA DO PARECER: em primeira pessoa ("constato", "observo", "considero"), correlacione as limitações funcionais com o Rol de Atividades do cargo, fundamentando tecnicamente a capacidade laborativa e o parecer pericial conforme as fórmulas oficiais DPME.
+""".strip(),
+    "revisao_texto": """
+TAREFA: REVISAR E APERFEIÇOAR TEXTO MÉDICO-PERICIAL INFORMADO PELO PROFISSIONAL.
+Atue como médico perito revisor sênior em Perícias Médicas Oficiais (DPME - Programa de Melhoria Contínua).
+Aperfeiçoe a redação técnica do texto submetido, elevando-o ao mais alto nível de clareza técnico-pericial e estrita conformidade com as diretrizes periciais:
+1. PRESERVAÇÃO INTEGRAL DE FATOS: mantenha rigorosamente todos os dados fáticos, diagnósticos, CIDs, medicações, dosagens e conclusões do médico. É proibido inventar dados ou alterar termos técnicos específicos.
+2. REGRA TERMINOLÓGICA: NUNCA use o termo "Paciente" ou "paciente". Utilize "Servidor" / "Periciado" (ou "Servidora" / "Periciada" se feminino).
+3. FORMATAÇÃO OFICIAL DE DATAS: converta todas as datas mencionadas para o formato brasileiro oficial DD/MM/AAAA.
+4. DOSAGENS MÉDICAS: assegure dosagens sempre expressas em mg/dia e terminologia farmacológica precisa.
+5. CONCISÃO E ELEGÂNCIA PERICIAL: elimine termos redundantes, preserve o tom pericial sóbrio e assegure a redação em primeira pessoa quando for fundamentação de parecer.
+""".strip(),
+    "preenchimento": """
+TAREFA: SUGERIR PREENCHIMENTO ASSISTIDO DOS CAMPOS NARRATIVOS DO ATENDIMENTO PERICIAL.
+Atue como médico perito sênior em Medicina do Trabalho e Perícias Médicas Oficiais (padrão oficial DPME - Programa de Melhoria Contínua).
+Seu objetivo é sugerir a redação técnica para os campos clínicos com base exclusivamente nos fatos fornecidos no contexto do atendimento, sem inventar informações.
+
+DIRETRIZES TÉCNICAS SENIOR POR CAMPO:
+
+1. queixa_e_duracao:
+   Estruture em parágrafo único fluido e coeso seguindo a ordem de excelência pericial:
+   (1) Idade ("Servidor de X anos" ou "Periciado de X anos", com concordância estrita de gênero: homem = "Servidor de X anos" / "Periciado de X anos", mulher = "Servidora de X anos" / "Periciada de X anos"),
+   (2) Cargo e (3) Tempo no cargo ("[cargo] há X anos/meses"),
+   (4) Readaptação funcional ("readaptado para [atividades]" ou "não readaptado"),
+   (5) Doença motivadora informada ("com queixa de ..."),
+   (6) Frequência das consultas ("com consultas a cada ..."),
+   (7) Sintomas e limitações laborais relatadas ("Queixa-se de ... com dificuldade para ..."),
+   (8) Medicações em curso com (9) dosagens diárias em mg/dia e histórico de trocas de dosagem (especialmente para patologias psiquiátricas / CID F),
+   (10) Terapias não medicamentosas ("Realiza psicoterapia semanal" / "Realiza fisioterapia ...").
+   REGRA MANDATÓRIA: JAMAIS mencione início de tratamento por data (ex.: "Refere início do tratamento em [data]"). NUNCA utilize o termo "Paciente".
+
+2. antecedentes_morbidos:
+   Consolide os 4 eixos periciais padronizados:
+   (1) Doenças crônicas de base e tratamentos, (2) Cirurgias prévias e tempo decorrido, (3) Hábitos e substâncias (tabagismo, etilismo, substâncias ilícitas), (4) Neoplasias e tratamentos oncológicos.
+   Se não houver antecedentes registrados nos dados, preencha OBRIGATORIAMENTE com: "Nega." (ou "Nega").
+   REGRA MANDATÓRIA: NUNCA mencione dias de atestado ou licenças nesta seção.
+
+3. exame_fisico_mental:
+   Estruture objetivamente os achados clínicos observados pelo perito:
+   - Para exame físico/ortopédico: marcha, fácies de dor, cicatrizes, trofismo, ADM ativo/passivo, força muscular (grau 0 a 5), contraturas, sensibilidade e reflexos.
+   - Para exame mental (CID F): postura/acompanhamento, orientação, cuidados de higiene, pensamento (fluxo e curso), linguagem, psicomotricidade, humor/afeto, volição e ausência de ideação/delírios.
+   - Para outros exames: inicie diretamente pelos achados clínicos sem prefixos redundantes.
+
+4. alteracoes_clinicas_exames:
+   Relato exclusivo dos exames complementares de imagem ou laboratoriais apresentados (Tipo, Data no formato DD/MM/AAAA e Conclusão do Laudo).
+   Se não houver exames apresentados, preencha: "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial."
+
+5. quesitos_sugeridos:
+   Sugira respostas estritamente consistentes com o parecer:
+   - Parecer Favorável: 1) Sim, 2) Sim, 3) Sim.
+   - Parecer Contrário com servidor readaptado: 1) Sim, 2) Sim, 3) Não.
+   - Parecer Contrário com servidor não readaptado: 1) Sim, 2) Não, 3) Não.
+""".strip(),
     "esisla": """
 TAREFA: GERAR UMA FICHA E-SISLA A PARTIR DOS DADOS REGISTRADOS NO QUESTIONÁRIO DO ATENDIMENTO.
 
@@ -1043,8 +1138,15 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
    - PRESERVAÇÃO RIGOROSA DE LIMITAÇÕES JÁ PREENCHIDAS: Se o campo desc_limitacao (ou limitacao_funcional / sintomas_limitacoes) já contiver texto preenchido pelo médico perito no atendimento (inclusive limitações osteomusculares específicas de regiões ou psicossociais/emocionais), PRESERVE E PRIORIZE ESTRITAMENTE o texto já registrado pelo profissional, integrando com o Rol de Atividades do cargo. NÃO substitua nem altere limitações já preenchidas por fórmulas genéricas.
    - Se Parecer CONTRÁRIO (capacidade preservada): adote OBRIGATORIAMENTE a fórmula padrão oficial:
      "Do ponto de vista médico não se observa limitações físicas ou mentais funcionais incapacitantes para as atribuições do cargo de [cargo], constantes no rol de atividades."
+     * Para patologia estritamente Física: "Do ponto de vista médico não se observa limitações físicas funcionais incapacitantes para as atribuições do cargo de [cargo], constantes no rol de atividades."
+     * Para patologia estritamente Mental: "Do ponto de vista médico não se observa limitações mentais funcionais incapacitantes para as atribuições do cargo de [cargo], constantes no rol de atividades."
    - Se Parecer FAVORÁVEL (ou capacidade laborativa temporariamente prejudicada): adote a fórmula padrão oficial e adeque com inteligência pericial as limitações ao CID principal e às funções do cargo:
-     "Apresenta limitações [físicas/mentais] funcionais temporárias para [atividades/limitações registradas], atividades estas constantes no Rol de Atividades do cargo de [cargo]."
+     * Para patologia Física / Osteomuscular:
+       "Apresenta limitações físicas funcionais temporárias para [atividades/limitações registradas], atividades estas constantes no Rol de Atividades do cargo de [cargo]."
+     * Para patologia Mental / Psiquiátrica (CID F):
+       "Apresenta limitações mentais funcionais temporárias para [atividades/limitações registradas], atividades estas constantes no Rol de Atividades do cargo de [cargo]."
+     * Fórmula padrão genérica:
+       "Apresenta limitações [físicas/mentais] funcionais temporárias para [atividades/limitações registradas], atividades estas constantes no Rol de Atividades do cargo de [cargo]."
      Diretrizes clínicas de inteligência pericial por grupo de CID:
      * Cardiovasculares / Hipertensão (CID I, ex.: I10, I15): limitações temporárias para esforços físicos intensos, estresse emocional agudo e situações de urgência/emergência que demandem higidez cardiovascular plena.
      * Osteomusculares / Ortopédicos (CID M, ex.: M54, M75): limitações temporárias para carregamento de peso, ortostatismo prolongado, movimentos repetitivos ou posturas forçadas.
@@ -1058,8 +1160,10 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
    Apresente OBRIGATORIAMENTE a conclusão pericial fundamentada conforme o padrão do Programa de Melhoria Contínua (NUNCA DEIXE ESTE CAMPO VAZIO quando houver parecer e dados do atendimento):
    - Se Parecer FAVORÁVEL:
      "Capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol, em razão de limitações na esfera [psicoemocional/osteomuscular] que compromete para [atividades comprometidas informadas]."
-     Caso haja redução de dias em relação ao atestado assistente:
-     "Concedido [X] dias de afastamento a contar da data de início dos sintomas, tempo este considerado suficiente para restabelecimento da capacidade laborativa para a função periciada."
+     * Caso haja redução de dias em relação ao atestado assistente:
+       "Concedido [X] dias de afastamento a contar da data de início dos sintomas, tempo este considerado suficiente para restabelecimento da capacidade laborativa para a função periciada."
+     * Caso haja cronicidade ou perfil de incapacidade definitiva para a função habitual:
+       Indique formalmente o direcionamento pericial para readaptação funcional.
    - Se Parecer CONTRÁRIO:
      "Capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações de ordem [osteomuscular/psíquica] incapacitantes para as atribuições rotineiras do cargo atual."
      Caso o parecer contrário decorra de regras periciais específicas informadas:

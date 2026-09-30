@@ -4299,6 +4299,17 @@ $("exameFisicoTipo")?.addEventListener("change",e=>setExamType(e.target.value));
 $("alteracoesClinicasExames")?.addEventListener("input",e=>setExamDescription(e.target.value));
 $("dataAtd").value=today(); $("horaAtd").value=timeNow();
 
+function isArtifactAttendanceDate(val, atdDate) {
+  if (!val) return false;
+  const s = String(val).trim();
+  if (!s) return false;
+  const atd = String(atdDate || $("dataAtd")?.value || today()).trim();
+  const atdBr = typeof formatDate === "function" ? formatDate(atd) : "";
+  const todayStr = typeof today === "function" ? today() : "";
+  const todayBr = typeof formatDate === "function" ? formatDate(todayStr) : "";
+  return s === atd || (atdBr && s === atdBr) || (todayStr && s === todayStr) || (todayBr && s === todayBr);
+}
+
 let __isSyncingState = false;
 function syncState(){
   if (__isSyncingState) return;
@@ -4310,8 +4321,7 @@ function syncState(){
     const prevAux = state.aux || {};
     const getVal = (id, fallback) => {
       const el = $(id);
-      const val = el ? el.value : "";
-      if (val && val.trim() !== "") return val;
+      if (el) return el.value;
       return fallback !== undefined ? fallback : "";
     };
 
@@ -4356,7 +4366,17 @@ function syncState(){
       atividadesReadaptado:getVal("atividadesReadaptado", prevAux.atividadesReadaptado),
       queixaDuracao:$("queixaDuracao")?$("queixaDuracao").value:(state.queixaDuracao||prevAux.queixaDuracao||""),
       doencaMotivo:getVal("doencaMotivo", prevAux.doencaMotivo),
-      inicioTratamento:getVal("inicioTratamento", prevAux.inicioTratamento),
+      inicioTratamento:(() => {
+        let val = (typeof currentAttendanceMode !== "undefined" && currentAttendanceMode === "agil" && $("agilInicioTratamento"))
+          ? $("agilInicioTratamento").value
+          : getVal("inicioTratamento", prevAux.inicioTratamento);
+        if (isArtifactAttendanceDate(val, prevAux.dataAtd || $("dataAtd")?.value)) {
+          val = "";
+          if ($("agilInicioTratamento")) $("agilInicioTratamento").value = "";
+          if ($("inicioTratamento")) $("inicioTratamento").value = "";
+        }
+        return val;
+      })(),
       freqConsultas:getVal("freqConsultas", prevAux.freqConsultas),
       sintomasLimitacao:getVal("sintomasLimitacao", prevAux.sintomasLimitacao),
       dataAlteracaoMed:getVal("dataAlteracaoMed", prevAux.dataAlteracaoMed),
@@ -5365,6 +5385,26 @@ function newEmptyState(){
   state.exameMentalResultado = "";
   state.osteomuscularRegioes = {};
   state.osteomuscularResultado = "";
+
+  const resetDomIds = [
+    "agilInicioTratamento", "inicioTratamento",
+    "agilFreqConsultas", "freqConsultas",
+    "agilDoencaMotivo", "doencaMotivo",
+    "agilSintomasLimitacao", "sintomasLimitacao",
+    "agilHistoricoPregresso", "historicoPregresso",
+    "agilAtividadesReadaptado", "atividadesReadaptado",
+    "agilDataAlteracaoMed", "dataAlteracaoMed",
+    "agilObsAlteracaoMed", "obsAlteracaoMed",
+    "agilObsTerapias", "obsTerapias",
+    "agilCrmCro", "crmCro",
+    "agilDataDocumento", "dataDocumento",
+    "agilDiasSolicitados", "diasSolicitados",
+    "agilDescLimitacao", "descLimitacao",
+    "agilJustificativa", "justificativa",
+    "agilExameFisicoDescricao", "exameFisicoDescricao",
+    "alteracoesClinicasExames"
+  ];
+  resetDomIds.forEach(id => { const el = $(id); if (el) el.value = ""; });
   
   applyFinalizedLock();
   
@@ -6353,7 +6393,14 @@ function syncExtendedToAgil() {
   // Bloco 02 — Queixa e Duração & Antecedentes
   const doenca = state.aux.doencaMotivo || state.doencaMotivo || $("doencaMotivo")?.value || "";
   setVal("agilDoencaMotivo", doenca);
-  setVal("agilInicioTratamento", state.aux.inicioTratamento || state.inicioTratamento || $("inicioTratamento")?.value || "");
+  let rawInicio = state.aux.inicioTratamento || state.inicioTratamento || $("inicioTratamento")?.value || "";
+  if (isArtifactAttendanceDate(rawInicio, state.aux.dataAtd || $("dataAtd")?.value)) {
+    rawInicio = "";
+    state.aux.inicioTratamento = "";
+    state.inicioTratamento = "";
+    if ($("inicioTratamento")) $("inicioTratamento").value = "";
+  }
+  setVal("agilInicioTratamento", rawInicio);
   setVal("agilFreqConsultas", state.aux.freqConsultas || state.freqConsultas || $("freqConsultas")?.value || "");
   setVal("agilSintomasLimitacao", state.aux.sintomasLimitacao || state.sintomasLimitacao || $("sintomasLimitacao")?.value || "");
 
@@ -7329,7 +7376,7 @@ function gerarNarrativaQueixaMelhoriaContinua(st, v) {
   // 3. Doença e acompanhamento
   if (doenca) {
     let trat = `Relata acompanhamento clínico motivado por ${doenca}`;
-    if (inicioTrat) {
+    if (inicioTrat && !isArtifactAttendanceDate(inicioTrat, aux.dataAtd || st.aux?.dataAtd || $("dataAtd")?.value)) {
       const s = String(inicioTrat).trim();
       if (/^\d{4}$/.test(s)) {
         trat += `, sendo que iniciou-se seu tratamento em ${s}`;
@@ -7624,8 +7671,9 @@ function ensureAgileBackgroundDefaults() {
     if ($("agilCid")) $("agilCid").value = cidVal;
   }
   
-  if (!state.aux.inicioTratamento) {
+  if (!state.aux.inicioTratamento || isArtifactAttendanceDate(state.aux.inicioTratamento, state.aux.dataAtd || $("dataAtd")?.value)) {
     state.aux.inicioTratamento = "";
+    state.inicioTratamento = "";
     if ($("inicioTratamento")) $("inicioTratamento").value = "";
     if ($("agilInicioTratamento")) $("agilInicioTratamento").value = "";
   }
@@ -9651,9 +9699,23 @@ function detectarSistemaExameFisico(st, aux, texto, cidCode) {
   return 'outro';
 }
 
-function cleanQueixaDuracao(text) {
+function cleanQueixaDuracao(text, atdDate) {
   if (!text) return '';
   let t = String(text);
+  const atd = String(atdDate || state?.aux?.dataAtd || $("dataAtd")?.value || today()).trim();
+  const atdBr = typeof formatDate === "function" ? formatDate(atd) : "";
+  const todayStr = typeof today === "function" ? today() : "";
+  const todayBr = typeof formatDate === "function" ? formatDate(todayStr) : "";
+
+  // If there's an artifact start date matching attendance date or today, remove it
+  [atdBr, atd, todayBr, todayStr].filter(Boolean).forEach(dt => {
+    const escaped = dt.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const rxArtifact = new RegExp(`,?\\s*sendo\\s+que\\s+iniciou-se\\s+seu\\s+tratamento\\s+em\\s+` + escaped, 'gi');
+    t = t.replace(rxArtifact, '');
+    const rxArtifact2 = new RegExp(`,?\\s*iniciou-se\\s+seu\\s+tratamento\\s+em\\s+` + escaped, 'gi');
+    t = t.replace(rxArtifact2, '');
+  });
+
   const intro = /(?:[Rr]efere\s+in[íi]cio\s+d[eo]\s+tratamento\s+(?:em|no\s+dia|desde|a\s+partir\s+de|h[áa])\s+[^,.;\n]+)/;
   const introDirect = /(?:[Ii]n[íi]cio\s+d[eo]\s+tratamento\s+(?:em|no\s+dia|desde|a\s+partir\s+de)\s+[^,.;\n]+)/;
   [intro, introDirect].forEach(rx => {
@@ -9689,7 +9751,7 @@ function copiarLaudoEsislaAtendimento() {
   if (!queixaTexto || queixaTexto.length < 80 || queixaTexto === state.aux?.doencaMotivo) {
     queixaTexto = (typeof gerarNarrativaQueixaMelhoriaContinua === "function") ? gerarNarrativaQueixaMelhoriaContinua(state, v) : queixaTexto;
   }
-  let cat = sanitizeText(cleanQueixaDuracao(queixaTexto), 2000);
+  let cat = sanitizeText(cleanQueixaDuracao(queixaTexto, state.aux?.dataAtd || v.dataAtendimento), 2000);
 
   // Se houver relatos reais de exames complementares (não boilerplates nem "Em anexo"), integra em queixas conforme solicitado
   const altRaw = String(state.alteracoesClinicasExames || v.alteracoesClinicasExames || '').trim();

@@ -1708,11 +1708,27 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
         termo_genero = "servidor"
         sexo_norm = "Masculino" if (raw_sexo.startswith("M") or raw_sexo == "HOMEM") else ""
 
+    raw_data_atd = str(payload.get("data_atendimento") or a.get("dataAtd") or "").strip()
+    fmt_data_atd = _format_date_br(raw_data_atd) if raw_data_atd else ""
+    today_iso = datetime.now().strftime("%Y-%m-%d")
+    today_br = _format_date_br(today_iso)
+
+    raw_ini_trat = str(payload.get("inicio_tratamento") or a.get("inicioTratamento") or "").strip()
+    if raw_ini_trat:
+        fmt_ini = _format_date_br(raw_ini_trat)
+        # Discard if it matches attendance date or today (legacy auto-fill artifact)
+        if (
+            (raw_data_atd and (raw_ini_trat == raw_data_atd or fmt_ini == fmt_data_atd))
+            or raw_ini_trat == today_iso
+            or fmt_ini == today_br
+        ):
+            raw_ini_trat = ""
+
     return {
         "atendimento": payload.get("atendimento"),
         "sexo": sexo_norm or raw_sexo,
         "termo_genero": termo_genero,
-        "data_atendimento": _format_date_br(payload.get("data_atendimento") or a.get("dataAtd")),
+        "data_atendimento": fmt_data_atd,
         "hora_atendimento": payload.get("hora_atendimento") or a.get("horaAtd"),
         "medico": payload.get("medico") or payload.get("medicoResponsavel"),
         "crm_responsavel": payload.get("crm_responsavel") or a.get("crmResponsavel"),
@@ -1726,7 +1742,7 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
         "cid": payload.get("cid") or a.get("cid"),
         "doenca_motivo": payload.get("doenca_motivo") or a.get("doencaMotivo"),
         "queixa_duracao": payload.get("queixa_duracao") or payload.get("queixaDuracao") or a.get("queixaDuracao"),
-        "inicio_tratamento": payload.get("inicio_tratamento") or a.get("inicioTratamento"),
+        "inicio_tratamento": raw_ini_trat,
         "frequencia_consultas": payload.get("frequencia_consultas") or a.get("freqConsultas"),
         "sintomas_limitacoes": payload.get("sintomas_limitacoes") or a.get("sintomasLimitacao"),
         "medicamentos": payload.get("medicamentos") or payload.get("medications") or [],

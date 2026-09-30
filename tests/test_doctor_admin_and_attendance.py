@@ -1033,15 +1033,52 @@ def test_inicio_tratamento_year_support():
     from app import _minimal_ai_context
     ctx = _minimal_ai_context({
         "atendimento": "ATD-2026-0001",
+        "data_atendimento": "2026-09-29",
         "inicio_tratamento": "2020"
     })
     assert ctx["inicio_tratamento"] == "2020"
 
     ctx_aux = _minimal_ai_context({
         "atendimento": "ATD-2026-0002",
+        "data_atendimento": "2026-09-29",
         "aux": {"inicioTratamento": "2019"}
     })
     assert ctx_aux["inicio_tratamento"] == "2019"
+
+    # 4. Backend _minimal_ai_context filters out artifact dates matching attendance date or today
+    ctx_same_iso = _minimal_ai_context({
+        "atendimento": "ATD-2026-0003",
+        "data_atendimento": "2026-09-29",
+        "inicio_tratamento": "2026-09-29"
+    })
+    assert ctx_same_iso["inicio_tratamento"] == ""
+
+    ctx_same_br = _minimal_ai_context({
+        "atendimento": "ATD-2026-0004",
+        "data_atendimento": "2026-09-29",
+        "inicio_tratamento": "29/09/2026"
+    })
+    assert ctx_same_br["inicio_tratamento"] == ""
+
+    from datetime import datetime
+    today_iso = datetime.now().strftime("%Y-%m-%d")
+    ctx_today = _minimal_ai_context({
+        "atendimento": "ATD-2026-0005",
+        "inicio_tratamento": today_iso
+    })
+    assert ctx_today["inicio_tratamento"] == ""
+
+    # 5. Distinct prior date is preserved
+    ctx_prior = _minimal_ai_context({
+        "atendimento": "ATD-2026-0006",
+        "data_atendimento": "2026-09-29",
+        "inicio_tratamento": "2024-05-15"
+    })
+    assert ctx_prior["inicio_tratamento"] == "2024-05-15"
+
+    # 6. Client-side sanitization and artifact guards in HTML
+    assert "function isArtifactAttendanceDate(" in ATTENDANCE
+    assert "resetDomIds" in ATTENDANCE
 
 
 def test_secondary_cid_feature_and_ai_prompt_integration():

@@ -1,0 +1,55 @@
+{
+  "manifest_version": 3,
+  "name": "Ambiental ⚡ e-SISLA AutoFill",
+  "version": "1.0.0",
+  "description": "Preenchimento automático, inteligente e seguro de laudos médicos periciais no portal e-SISLA diretamente do sistema Ambiental.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icons/icon48.png",
+    "default_title": "Ambiental ⚡ e-SISLA AutoFill"
+  },
+  "permissions": [
+    "storage",
+    "activeTab",
+    "clipboardRead"
+  ],
+  "host_permissions": [
+    "*://*.sp.gov.br/*",
+    "*://*.prodesp.sp.gov.br/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "*://*.vercel.app/*",
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.sp.gov.br/*",
+        "*://*.prodesp.sp.gov.br/*",
+        "*://*/*sisla*",
+        "*://*/*SISLA*"
+      ],
+      "js": ["content_esisla.js"],
+      "css": ["content_esisla.css"],
+      "all_frames": true,
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "http://localhost/*",
+        "http://127.0.0.1/*",
+        "*://*.vercel.app/*"
+      ],
+      "js": ["content_ambiental.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

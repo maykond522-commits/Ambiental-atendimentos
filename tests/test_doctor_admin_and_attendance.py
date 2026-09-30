@@ -2135,6 +2135,31 @@ def test_esisla_gender_agreement_antecedentes_cid_secundario_and_limitacoes(monk
     assert "Descrição Secundária: Hipertensão renovascular" in f_sec_res
 
 
+def test_download_extensao_esisla():
+    import zipfile, io, json
+    from app import app
+    client = app.test_client()
+    res = client.get("/api/extensao-esisla/download")
+    assert res.status_code == 200
+    assert res.content_type == "application/zip"
+    assert "attachment" in res.headers.get("Content-Disposition", "")
+    assert "extensao_esisla.zip" in res.headers.get("Content-Disposition", "")
+
+    zf = zipfile.ZipFile(io.BytesIO(res.data))
+    names = zf.namelist()
+    assert any("manifest.json" in n for n in names)
+    assert any("content_esisla.js" in n for n in names)
+    assert any("content_ambiental.js" in n for n in names)
+    assert any("popup.html" in n for n in names)
+
+    # Verifica integridade do manifest.json dentro do zip
+    manifest_bytes = [zf.read(n) for n in names if n.endswith("manifest.json")][0]
+    manifest_data = json.loads(manifest_bytes.decode("utf-8"))
+    assert manifest_data["manifest_version"] == 3
+    assert "Ambiental" in manifest_data["name"]
+
+
+
 
 
 

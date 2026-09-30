@@ -2158,6 +2158,9 @@ body.modal-lock { overscroll-behavior: none; }
             <button class="btn-copy-mini" type="button" onclick="generateEsislaPDF()" style="color:#0F3254;font-weight:700" title="Gerar e salvar ou imprimir arquivo PDF desta ficha e-Sisla">
               📄 Gerar PDF
             </button>
+            <button class="btn-copy-mini" type="button" onclick="abrirModalExtensaoEsisla()" style="color:#0369A1;font-weight:800" title="Instalar ou usar a Extensão Web do e-SISLA">
+              🚀 Extensão
+            </button>
             <button class="btn-copy-mini" type="button" onclick="copyEsislaScript()" style="color:#0D542B;font-weight:700" title="Copiar script com o JSON para preencher no Console do e-Sisla (F12)">
               ⚡ Script F12
             </button>
@@ -2175,6 +2178,7 @@ body.modal-lock { overscroll-behavior: none; }
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <button class="btn btn-outline" type="button" onclick="generateEsislaPDF()" style="color:#0F3254;font-weight:700">📄 Gerar PDF</button>
+        <button class="btn btn-outline" type="button" onclick="abrirModalExtensaoEsisla()" style="border-color:#0284C7;color:#0369A1;font-weight:800;display:inline-flex;align-items:center;gap:6px" title="Preenchimento automático direto no e-SISLA via Extensão Web"><span style="font-size:15px">🚀</span> Extensão e-SISLA</button>
         <button class="btn btn-outline" type="button" onclick="abrirModalBookmarkletEsisla()" style="border-color:#10B981;color:#047857;font-weight:700" title="Preencha o e-SISLA sem abrir o console F12 com 1 clique">⭐ Botão dos Favoritos (sem F12)</button>
         <button class="btn btn-esisla btn-copy-hero" id="copyEsislaBtn" onclick="copyEsislaScript()">⚡ Script F12</button>
       </div>
@@ -2294,6 +2298,79 @@ body.modal-lock { overscroll-behavior: none; }
       <button type="button" class="btn btn-outline" onclick="copiarCodigoBookmarkletEsisla()" style="font-weight:700;color:#065F46;border-color:#A7F3D0">
         📋 Copiar Código do Favorito
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: INSTALAÇÃO DA EXTENSÃO WEB E-SISLA (AUTOFILL DIRETO) -->
+<div class="modal" id="extensaoModal">
+  <div class="dialog" style="width:min(720px,100%)">
+    <div class="dialog-head" style="background:#F0F9FF;border-bottom:1px solid #BAE6FD">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:26px">🚀</span>
+        <div>
+          <strong style="font-size:16px;color:#0369A1">Extensão Web e-SISLA AutoFill (Oficial)</strong>
+          <span style="display:block;font-size:11px;color:#0284C7;margin-top:2px">Preenchimento automático direto no portal e-SISLA via Google Chrome ou Microsoft Edge</span>
+        </div>
+      </div>
+      <button class="btn" onclick="closeModal('extensaoModal')">Fechar</button>
+    </div>
+    <div class="dialog-body" style="padding:22px;display:flex;flex-direction:column;gap:16px">
+      <!-- Status da Extensão -->
+      <div id="extensaoStatusBanner" style="border:1.5px solid #BAE6FD;border-radius:12px;padding:14px 16px;background:#F0F9FF">
+        <div style="display:flex;align-items:center;gap:10px;color:#0369A1">
+          <span style="font-size:22px">⚡</span>
+          <div>
+            <strong style="display:block;font-size:13.5px">Instalação Simples em 1 Minuto</strong>
+            <span style="font-size:11.5px">Insere o botão flutuante inteligente diretamente na tela do e-SISLA sem precisar do Console F12.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ações Principais de Download e Localização -->
+      <div style="background:linear-gradient(135deg, #EFF6FF, #DBEAFE);border:1.5px solid #93C5FD;border-radius:14px;padding:16px;display:flex;align-items:center;justify-content:space-between;gap:14px">
+        <div>
+          <strong style="color:#1E40AF;font-size:13px;display:block">Pacote da Extensão Pronto para Uso</strong>
+          <span style="font-size:11.5px;color:#1E3A8A;display:block;margin-top:2px">Baixe o arquivo compactado ou use a pasta <code>extensao_esisla</code> já presente no projeto.</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          <a href="/api/extensao-esisla/download" download="extensao_esisla.zip" class="btn btn-primary" style="background:#0284C7;border-color:#0284C7;font-weight:700;display:inline-flex;align-items:center;gap:6px;text-decoration:none;padding:8px 14px;font-size:12px">
+            📥 Baixar Extensão (.zip)
+          </a>
+        </div>
+      </div>
+
+      <!-- Passo a Passo -->
+      <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;padding:16px">
+        <strong style="color:#0F3254;font-size:13px;display:block;margin-bottom:12px">Passo a passo rápido para instalar no seu navegador:</strong>
+        <div style="display:flex;flex-direction:column;gap:12px;font-size:12.5px;color:#334155">
+          <div style="display:flex;align-items:flex-start;gap:10px">
+            <span style="width:22px;height:22px;border-radius:50%;background:#0284C7;color:#fff;display:grid;place-items:center;font-size:11px;font-weight:800;flex-shrink:0">1</span>
+            <div>Abra a aba de extensões digitando <code>chrome://extensions</code> no Google Chrome ou <code>edge://extensions</code> no Microsoft Edge.</div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:10px">
+            <span style="width:22px;height:22px;border-radius:50%;background:#0284C7;color:#fff;display:grid;place-items:center;font-size:11px;font-weight:800;flex-shrink:0">2</span>
+            <div>No canto superior direito da tela de extensões, <strong>ative a chave "Modo do desenvolvedor"</strong>.</div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:10px">
+            <span style="width:22px;height:22px;border-radius:50%;background:#0284C7;color:#fff;display:grid;place-items:center;font-size:11px;font-weight:800;flex-shrink:0">3</span>
+            <div>Clique no botão <strong>"Carregar sem compactação"</strong> (ou <em>Load unpacked</em>) e selecione a pasta <strong><code>extensao_esisla</code></strong> (se baixou o .zip, extraia os arquivos antes de selecionar a pasta).</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Como Funciona -->
+      <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:12px;padding:14px 16px">
+        <strong style="color:#166534;font-size:12.5px;display:flex;align-items:center;gap:6px">
+          <span>✨</span> Como Funciona a Mágica:
+        </strong>
+        <p style="margin:6px 0 0 0;font-size:12px;color:#14532D;line-height:1.5">
+          Toda vez que você visualizar ou copiar um laudo aqui no Ambiental, a extensão carrega os dados automaticamente. Na aba do e-SISLA, um botão verde flutuante <strong>⚡ Preencher</strong> surge no canto da tela. Um clique preenche Queixas, Antecedentes, Exame Físico, Quesitos, Parecer, Dias e CIDs!
+        </p>
+      </div>
+    </div>
+    <div class="dialog-foot" style="display:flex;justify-content:flex-end">
+      <button type="button" class="btn" onclick="closeModal('extensaoModal')">Fechar</button>
     </div>
   </div>
 </div>
@@ -3624,9 +3701,12 @@ function gerarJsonEsisla(textoFicha, enc) {
 
     const sub = document.getElementById('esislaSub')?.textContent || '';
     const id = (sub.match(/Atendimento\s+([^·]+)/i) || [])[1]?.trim() || enc?.id || st.atendimento || 'SEM_PROTOCOLO';
+    const nomeServidor = enc?.paciente || st.paciente || aux.nomePaciente || '';
 
-    return {
+    const payloadResult = {
         protocolo: id,
+        servidor: nomeServidor,
+        paciente: nomeServidor,
         ...camposEsisla,
         campos_esisla: camposEsisla,
         campos_excedidos: camposExcedidos,
@@ -3636,6 +3716,13 @@ function gerarJsonEsisla(textoFicha, enc) {
         justificativa: justif,
         timestamp: new Date().toISOString()
     };
+
+    try {
+        localStorage.setItem('ambiental_esisla_current_payload', JSON.stringify(payloadResult));
+        window.postMessage({ type: 'AMBIENTAL_ESISLA_PAYLOAD', payload: payloadResult }, '*');
+    } catch(_) {}
+
+    return payloadResult;
 }
 
 function gerarScriptAutoPreenchimentoEsisla(payloadObj) {
@@ -3980,6 +4067,10 @@ async function copyEsislaJson(){
     const jsonObj = gerarJsonEsisla(text, window.currentEsislaEnc);
     const prettyJson = JSON.stringify(jsonObj, null, 2);
     try {
+        localStorage.setItem('ambiental_esisla_current_payload', prettyJson);
+        window.postMessage({ type: 'AMBIENTAL_ESISLA_PAYLOAD', payload: jsonObj }, '*');
+    } catch(_) {}
+    try {
         await navigator.clipboard.writeText(prettyJson);
     } catch {
         const ta = document.createElement('textarea');
@@ -3992,9 +4083,9 @@ async function copyEsislaJson(){
         ta.remove();
     }
     if (window.AmbientalUtils?.toast) {
-        AmbientalUtils.toast('Ficha em formato JSON copiada! Na aba do e-SISLA, basta clicar no favorito "⚡ Preencher e-SISLA".');
+        AmbientalUtils.toast('⚡ Ficha sincronizada com a Extensão e-SISLA! Na aba do e-SISLA, clique no botão flutuante para preencher.');
     } else {
-        alert('Ficha copiada! Na aba do e-SISLA, basta clicar no favorito "⚡ Preencher e-SISLA".');
+        alert('⚡ Ficha sincronizada com a Extensão e-SISLA! Na aba do e-SISLA, clique no botão flutuante para preencher.');
     }
 }
 
@@ -5145,6 +5236,39 @@ function gerarCodigoBookmarkletEsislaUniversal() {
   }
 })();`;
   return 'javascript:' + encodeURIComponent(scriptBody.replace(/\s+/g, ' '));
+}
+
+function abrirModalExtensaoEsisla() {
+  const isInstalled = document.documentElement.getAttribute('data-ambiental-extension') === 'active' || !!window.__AMBIENTAL_ESISLA_EXTENSION_ACTIVE__;
+  const statusEl = document.getElementById('extensaoStatusBanner');
+  if (statusEl) {
+    if (isInstalled) {
+      statusEl.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;color:#15803D">
+          <span style="font-size:22px">🟢</span>
+          <div>
+            <strong style="display:block;font-size:13.5px">Extensão Ativa e Conectada ao Navegador!</strong>
+            <span style="font-size:11.5px">Os dados do laudo deste paciente já estão sincronizados e prontos para o e-SISLA.</span>
+          </div>
+        </div>
+      `;
+      statusEl.style.background = '#F0FDF4';
+      statusEl.style.borderColor = '#86EFAC';
+    } else {
+      statusEl.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;color:#0369A1">
+          <span style="font-size:22px">⚡</span>
+          <div>
+            <strong style="display:block;font-size:13.5px">Instalação Simples em 1 Minuto</strong>
+            <span style="font-size:11.5px">Insere o botão flutuante inteligente diretamente na tela do e-SISLA sem precisar do Console F12.</span>
+          </div>
+        </div>
+      `;
+      statusEl.style.background = '#F0F9FF';
+      statusEl.style.borderColor = '#BAE6FD';
+    }
+  }
+  setModal('extensaoModal', true);
 }
 
 function abrirModalBookmarkletEsisla() {

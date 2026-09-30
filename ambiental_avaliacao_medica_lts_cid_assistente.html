@@ -9263,8 +9263,13 @@ function copiarLaudoEsislaAtendimento() {
   };
 
   const jsonStr = JSON.stringify(payload, null, 2);
+  try {
+    localStorage.setItem('ambiental_esisla_current_payload', jsonStr);
+    window.postMessage({ type: 'AMBIENTAL_ESISLA_PAYLOAD', payload: payload }, '*');
+  } catch(_) {}
+
   navigator.clipboard.writeText(jsonStr).then(() => {
-    toast("📋 Dados do Laudo copiados para o e-SISLA! Na aba do e-SISLA, basta clicar no favorito '⚡ Preencher e-SISLA'.");
+    toast("⚡ Dados do Laudo sincronizados com a Extensão e-SISLA! Na aba do e-SISLA, basta clicar em '⚡ Preencher'.");
   }).catch(() => {
     const ta = document.createElement("textarea");
     ta.value = jsonStr;
@@ -9272,7 +9277,7 @@ function copiarLaudoEsislaAtendimento() {
     ta.select();
     document.execCommand("copy");
     ta.remove();
-    toast("📋 Dados copiados! Na aba do e-SISLA, clique no favorito '⚡ Preencher e-SISLA'.");
+    toast("⚡ Dados do Laudo sincronizados com a Extensão e-SISLA! Na aba do e-SISLA, basta clicar em '⚡ Preencher'.");
   });
 }
 

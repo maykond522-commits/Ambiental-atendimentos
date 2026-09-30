@@ -23,7 +23,7 @@ from typing import Any, Literal
 from services.atendimento_service import pagination as service_pagination, list_filters as service_list_filters, build_where
 from services.observability import install as install_observability, metrics_snapshot, current_request_id
 
-from flask import Flask, jsonify, request, send_from_directory, g, make_response, redirect
+from flask import Flask, jsonify, request, send_from_directory, g, make_response, redirect, send_file
 from dotenv import load_dotenv
 from flask_cors import CORS
 from pydantic import BaseModel, Field, ValidationError, ConfigDict
@@ -617,7 +617,7 @@ def request_security_context():
     path = request.path
 
     # Endpoints públicos e TODAS as rotas de autenticação (evita o bloqueio prematuro)
-    if path in {"/login.html", "/reset-password.html", "/acesso-negado.html", "/404.html", "/health"} or path.startswith("/api/auth/") or path in {"/ready", "/metrics"}:
+    if path in {"/login.html", "/reset-password.html", "/acesso-negado.html", "/404.html", "/health", "/api/extensao-esisla/download"} or path.startswith("/api/auth/") or path in {"/ready", "/metrics"}:
         return
 
     if path in PROTECTED_HTML_PATHS:
@@ -3661,6 +3661,29 @@ def app_html():
     response.headers["Cache-Control"] = "no-store, max-age=0"
     response.headers["Pragma"] = "no-cache"
     return response
+
+@app.get("/api/extensao-esisla/download")
+def download_extensao_esisla():
+    import zipfile
+    ext_dir = os.path.join(BASE_DIR, "extensao_esisla")
+    if not os.path.isdir(ext_dir):
+        return jsonify({"error": "Diretório da extensão não encontrado"}), 404
+    
+    memory_file = BytesIO()
+    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for root, dirs, files in os.walk(ext_dir):
+            for file in files:
+                file_path = os.path.join(root, file)
+                rel_path = os.path.relpath(file_path, ext_dir)
+                zf.write(file_path, os.path.join("extensao_esisla", rel_path))
+    
+    memory_file.seek(0)
+    return send_file(
+        memory_file,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name="extensao_esisla.zip"
+    )
 
 if __name__ == "__main__":
     import sys

@@ -2736,9 +2736,14 @@ function cleanQueixaDuracao(text) {
         t = t.replace(new RegExp('^\\s*' + rx.source + '[\\.,]?\\s*', 'gi'), '');
         t = t.replace(new RegExp('\\b' + rx.source, 'gi'), '');
     });
+    t = t.replace(/\(\s*n[ãa]o\s+readaptad([oa])\s*\)/gi, "não readaptad$1");
+    t = t.replace(/,\s*[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b/gi, ", não readaptad$1, Investigador");
+    t = t.replace(/,\s*[Il],\s*nvestigador\b/gi, ", Investigador");
+    t = t.replace(/\b[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b/gi, "não readaptad$1, Investigador");
+    t = t.replace(/,\s*[Il],\s*(?=(?:não\s+readaptad[oa]|investigador|[a-zà-ú]))/gi, ", ");
     t = t.replace(/\s{2,}/g, ' ');
     t = t.replace(/\.\s*\./g, '.');
-    t = t.replace(/,\s*,/g, ',');
+    t = t.replace(/,\s*,+/g, ',');
     t = t.replace(/\s*,\s*\./g, '.');
     t = t.replace(/\.\s*,/g, '.');
     t = t.replace(/\.\s*([a-zà-ú])/gi, (m, c) => '. ' + c.toUpperCase());
@@ -2759,11 +2764,12 @@ function cleanAntecedentesMorbidos(text) {
     t = t.replace(/\s{2,}/g, ' ');
     t = t.trim();
     if (t === '.' || !t) return '';
-    if (t !== "Nega" && t !== "Nega.") {
-        const low = t.toLowerCase();
-        if (!low.includes("nega demais") && !low.includes("cirurgias") && !low.includes("neoplasias") && !low.includes("nega antecedentes")) {
-            t = t.replace(/[\s\.\,;]+$/, '') + ". Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias.";
-        }
+    if (t === "Nega" || t === "Nega." || /^nega\.?$/i.test(t)) {
+        return "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas.";
+    }
+    const low = t.toLowerCase();
+    if (!low.includes("nega demais") && !low.includes("cirurgias") && !low.includes("neoplasias") && !low.includes("nega antecedentes")) {
+        t = t.replace(/[\s\.\,;]+$/, '') + ". Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias.";
     }
     return t;
 }

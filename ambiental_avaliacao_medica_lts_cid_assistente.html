@@ -7428,19 +7428,20 @@ function gerarNarrativaQueixaMelhoriaContinua(st, v) {
   const isFem = sexo === "f" || sexo === "feminino";
   let ident = isFem ? "Servidora" : "Servidor";
   if (idade) ident += ` de ${idade} anos`;
+  
+  // 2. Readaptação: logo após a idade e sem parênteses: "não readaptado" / "não readaptada"
+  if (readap) {
+    ident += `, em readaptação funcional${ativReadap ? ` (atividades: ${ativReadap})` : ""}`;
+  } else {
+    ident += `, ${isFem ? 'não readaptada' : 'não readaptado'}`;
+  }
+
   if (cargo) {
     if (tempoCargo) {
       ident += `, ${cargo} há ${tempoCargo} ${unidadeTempo.toLowerCase()}`;
     } else {
       ident += `, ocupante do cargo de ${cargo}`;
     }
-  }
-  
-  // 2. Readaptação: se readaptado, relata atividades; se não, (Não readaptado)
-  if (readap) {
-    ident += `, em readaptação funcional${ativReadap ? ` (atividades: ${ativReadap})` : ""}`;
-  } else {
-    ident += `, ${isFem ? '(Não readaptada)' : '(Não readaptado)'}`;
   }
 
   // 3. Doença, início do tratamento e consultas
@@ -7543,9 +7544,10 @@ function gerarNarrativaAntecedentesMelhoriaContinua(st, v) {
   const conds = (st.conditions || v.condicoes || []).filter(c => c && (c.nome || c.doenca));
   
   const fraseComplemento = "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias.";
+  const fraseNegaCompleta = "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas.";
 
   // Se já tiver uma redação do médico ou histórico, limpa menção a atestados e complementa com negação de cirurgias e neoplasias
-  if (rawHist && rawHist !== "Nega" && rawHist !== "Nega.") {
+  if (rawHist && rawHist !== "Nega" && rawHist !== "Nega." && !/^nega\.?$/i.test(rawHist.trim())) {
     let t = rawHist.replace(/[\s\.\,]*\b(?:[Vv]em\s+com\s+atestado|[Aa]testado)\s+de\s+\d+\s+dias[^\.\n\r]*[\.\,]?/gi, "").trim();
     if (!t.endsWith(".")) t += ".";
     if (!t.toLowerCase().includes("nega demais") && !t.toLowerCase().includes("cirurgias") && !t.toLowerCase().includes("neoplasias") && !t.toLowerCase().includes("nega antecedentes")) {
@@ -7559,7 +7561,7 @@ function gerarNarrativaAntecedentesMelhoriaContinua(st, v) {
     return `Informa histórico de comorbidades: ${condsStr}. ${fraseComplemento}`;
   }
   
-  return rawHist || "Nega.";
+  return fraseNegaCompleta;
 }
 
 function gerarNarrativaAtestadoMelhoriaContinua(st, v) {
@@ -9899,9 +9901,14 @@ function cleanQueixaDuracao(text, atdDate) {
     t = t.replace(new RegExp('^\\s*' + rx.source + '[\\.,]?\\s*', 'gi'), '');
     t = t.replace(new RegExp('\\b' + rx.source, 'gi'), '');
   });
+  t = t.replace(/\(\s*n[ãa]o\s+readaptad([oa])\s*\)/gi, "não readaptad$1");
+  t = t.replace(/,\s*[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b/gi, ", não readaptad$1, Investigador");
+  t = t.replace(/,\s*[Il],\s*nvestigador\b/gi, ", Investigador");
+  t = t.replace(/\b[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b/gi, "não readaptad$1, Investigador");
+  t = t.replace(/,\s*[Il],\s*(?=(?:não\s+readaptad[oa]|investigador|[a-zà-ú]))/gi, ", ");
   t = t.replace(/\s{2,}/g, ' ');
   t = t.replace(/\.\s*\./g, '.');
-  t = t.replace(/,\s*,/g, ',');
+  t = t.replace(/,\s*,+/g, ',');
   t = t.replace(/\s*,\s*\./g, '.');
   t = t.replace(/\.\s*,/g, '.');
   t = t.replace(/\.\s*([a-zà-ú])/gi, (m, c) => '. ' + c.toUpperCase());
@@ -9937,7 +9944,10 @@ function copiarLaudoEsislaAtendimento() {
 
   // 2. Antecedentes Mórbidos (max 2000)
   const apVal = (state.aux?.historicoPregresso || v.historicoPregresso || $("agilHistoricoPregresso")?.value || '').trim();
-  const apFinal = (apVal && apVal !== 'Nega' && apVal.length > 30) ? apVal : ((typeof gerarNarrativaAntecedentesMelhoriaContinua === "function") ? gerarNarrativaAntecedentesMelhoriaContinua(state, v) : (apVal || 'Nega'));
+  const fraseNegaCompleta = "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas.";
+  const apFinal = (apVal && !/^nega\.?$/i.test(apVal) && apVal.length > 30)
+    ? ((typeof gerarNarrativaAntecedentesMelhoriaContinua === "function") ? gerarNarrativaAntecedentesMelhoriaContinua(state, v) : apVal)
+    : ((typeof gerarNarrativaAntecedentesMelhoriaContinua === "function") ? gerarNarrativaAntecedentesMelhoriaContinua(state, v) : fraseNegaCompleta);
   const ap = sanitizeText(apFinal, 2000);
 
   // 3. Atestado / Relatório / Exames Complementares (Tipo-Data-Resultado) (max 2500)

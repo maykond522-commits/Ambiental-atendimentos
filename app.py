@@ -59,7 +59,7 @@ else:
     # Em produção, a aplicação deve receber CORS_ORIGINS explicitamente.
     ALLOWED_ORIGINS = []
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
-ESISLA_PROMPT_VERSION = "esisla-v10-antecedentes-nega-limitacoes-preservadas"
+ESISLA_PROMPT_VERSION = "esisla-v11-readaptado-sem-parenteses-antecedentes-robusto"
 GEMINI_FALLBACK_MODELS = [
     m.strip() for m in os.getenv("GEMINI_FALLBACK_MODELS", "gemini-3.5-flash-lite,gemini-3.5-flash").split(",")
     if m.strip() and m.strip() != GEMINI_MODEL
@@ -1081,8 +1081,8 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
 1. “(*) Queixa e Duração”
    Reescreva e sintetize em parágrafo único, fluido e coeso, integrando os dados clínicos e ocupacionais na ordem padronizada do Programa de Melhoria Contínua:
    (1) Idade ("Servidor de X anos" ou "Periciado de X anos", respeitando o gênero: homem = "Servidor de X anos" / "Periciado de X anos", mulher = "Servidora de X anos" / "Periciada de X anos"; em caso de dúvida, utilize "Servidor de X anos"),
-   (2) Cargo e (3) Tempo de cargo ("[cargo] há X anos/meses"),
-   (4) Readaptação funcional (se o servidor for readaptado, indicar expressamente as atividades exercidas; se NÃO for readaptado ou em branco, registrar expressamente "(Não readaptado)" ou "(Não readaptada)"),
+   (2) Readaptação funcional (se o servidor NÃO for readaptado ou em branco, registrar logo após a idade "não readaptado" ou "não readaptada", SEM parênteses, ex.: "Servidor de 38 anos, não readaptado, Investigador de Polícia há 29 anos..." ou "Servidor de 38 anos, não readaptado Investigador de Polícia há 29 anos..."; se for readaptado, indicar expressamente as atividades exercidas),
+   (3) Cargo e (4) Tempo de cargo ("[cargo] há X anos/meses"),
    (5) Doença motivadora informada ("com queixa de ..."),
    (6) Início do tratamento: se informado ano (ex: 2025), registre obrigatoriamente "desde [ano]" (ou "iniciou-se seu tratamento em [ano]"); se informada data completa (DD/MM/AAAA), preserve a data exata informada ("desde [DD/MM/AAAA]"). NUNCA invente a data de hoje nem diga que o tratamento se iniciou hoje se a data não foi informada como data de início.
    (7) Frequência das consultas: formule com naturalidade e correção gramatical (ex.: "realizando consultas mensalmente", "realizando consultas quinzenalmente", "com consultas a cada 15 dias", "com consultas a cada 2 meses"). NUNCA gere formulações incorretas como "a cada quinzenal".
@@ -1095,11 +1095,11 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
    "Servidor de 40 anos, professor há 10 anos, com queixa de depressão desde 2020, realizando consultas quinzenalmente. Queixa-se de tristeza, desânimo, choro fácil e insônia, com dificuldade para planejar aulas e manter a atenção. Em uso de Sertralina 100 mg/dia e Clonazepam 2 mg/dia, sem trocas recentes de medicação. Realiza psicoterapia semanal."
    Exemplos de referência oficial do sistema:
    Exemplo 1 (Ortopédico completo):
-   "Servidor de 21 anos, Adm há 22 anos, (Não readaptado), com queixa de artrose avançada no joelho direito com lesão crônica no menisco desde 2025, realizando consultas mensalmente. Queixa-se de dor constante que queima e pontua. Em uso de Tramadol 50 mg/ se (tiver) dor intensa até 8/8h e Dipirona 1 g/ se (tiver) dor até 6/6h. (Não relatou troca de alteração de dosagem da medicação.) Realiza fisioterapia três vezes por semana (e não realiza psicoterapia)."
+   "Servidor de 21 anos, não readaptado, Adm há 22 anos, com queixa de artrose avançada no joelho direito com lesão crônica no menisco desde 2025, realizando consultas mensalmente. Queixa-se de dor constante que queima e pontua. Em uso de Tramadol 50 mg/ se (tiver) dor intensa até 8/8h e Dipirona 1 g/ se (tiver) dor até 6/6h. (Não relatou troca de alteração de dosagem da medicação.) Realiza fisioterapia três vezes por semana (e não realiza psicoterapia)."
    Exemplo 2 (Mental / Psiquiátrico com negação de medicações e terapias):
-   "Servidora de 49 anos, ocupante do cargo de Professora de Matemática, vinculada ao Estado desde 1992, (Não readaptada), lotada na Secretaria da Escola. Relata que, há aproximadamente três anos, recebeu diagnóstico de transtorno depressivo, desencadeado por conflitos interpessoais no ambiente de trabalho, com agravamento progressivo dos sintomas nos últimos meses. Refere episódios de choro espontâneo, irritabilidade/agressividade, compulsão alimentar, fobia social, taquicardia, desânimo para sair de casa, tristeza persistente, insônia, pesadelos, angústia e isolamento social. Informa dificuldade para realizar atividades rotineiras e afazeres domésticos. Informa histórico de internação em hospital psiquiátrico há 1 ano e 6 meses, com alta há 1 ano. Nega ideação suicida no momento. (Não relatou troca de alteração de dosagem da medicação.) Não alegou fazer fisioterapia e psicoterapia, negou uso de medicações."
+   "Servidora de 49 anos, não readaptada, Professora de Matemática, vinculada ao Estado desde 1992, lotada na Secretaria da Escola. Relata que, há aproximadamente três anos, recebeu diagnóstico de transtorno depressivo, desencadeado por conflitos interpessoais no ambiente de trabalho, com agravamento progressivo dos sintomas nos últimos meses. Refere episódios de choro espontâneo, irritabilidade/agressividade, compulsão alimentar, fobia social, taquicardia, desânimo para sair de casa, tristeza persistente, insônia, pesadelos, angústia e isolamento social. Informa dificuldade para realizar atividades rotineiras e afazeres domésticos. Informa histórico de internação em hospital psiquiátrico há 1 ano e 6 meses, com alta há 1 ano. Nega ideação suicida no momento. (Não relatou troca de alteração de dosagem da medicação.) Não alegou fazer fisioterapia e psicoterapia, negou uso de medicações."
    Exemplo 3 (Medicação sem dosagem informada):
-   "Servidor de 38 anos, Agente Administrativo há 8 anos, (Não readaptado), com queixa de dor lombar crônica desde 2024, realizando consultas bimestralmente. Queixa-se de dores com irradiação para membros inferiores. Em uso de Tramadol 50 mg/ a cada 8 horas e Dipirona 1g/, não informado sua dosagem. (Não relatou troca de alteração de dosagem da medicação.) Realiza fisioterapia duas vezes por semana (e não realiza psicoterapia)."
+   "Servidor de 38 anos, não readaptado, Agente Administrativo há 8 anos, com queixa de dor lombar crônica desde 2024, realizando consultas bimestralmente. Queixa-se de dores com irradiação para membros inferiores. Em uso de Tramadol 50 mg/ a cada 8 horas e Dipirona 1g/, não informado sua dosagem. (Não relatou troca de alteração de dosagem da medicação.) Realiza fisioterapia duas vezes por semana (e não realiza psicoterapia)."
 
 2. “Antecedentes Mórbidos”
    Consolide de forma sintética, clara e técnica os dados de outras_doencas, condicoes, antecedentes e historico_pregresso, cobrindo os 4 itens padronizados:
@@ -1116,7 +1116,7 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
    - Se houver histórico relatado (pelo médico ou histórico de lesões/comorbidades): conclua obrigatoriamente a narrativa com: "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
      Exemplo de referência oficial do sistema:
      "Refere histórico relacionado a Artrose avançada no joelho direito com lesão crônica no menisco e entorse feia nesse mesmo joelho há cerca de 5 anos. Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
-   - REGRA MANDATÓRIA QUANDO EM BRANCO / NÃO INFORMADO: Se não houver histórico pregresso ou se os dados de antecedentes / historico_pregresso estiverem em branco ou vazios, PREENCHA OBRIGATORIAMENTE COM: "Nega." (ou "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas.").
+   - REGRA MANDATÓRIA QUANDO EM BRANCO / NÃO INFORMADO / NEGA: Se não houver histórico pregresso ou se o médico registrar "nega" ou deixar em branco, PREENCHA OBRIGATORIAMENTE COM A FRASE ROBUSTA PADRÃO: "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas."
 
 3. “(*)Exame Físico Geral”
    ESTE CAMPO É EXCLUSIVO PARA O EXAME FÍSICO / MENTAL DIRETO REALIZADO PELO MÉDICO PERITO NO ATO PERICIAL:
@@ -1214,7 +1214,7 @@ REGRA DE DESDUPLICAÇÃO E AUTO-ANÁLISE DE CONSISTÊNCIA:
    - Altura e Peso: ajuste valores anômalos para o padrão pericial (ex.: altura "175" sem ponto -> "1.75"; peso sem vírgula como "750" -> "75").
    - Início do tratamento: se colocado ano (ex: 2020), coloque "iniciou-se seu tratamento em 2020"; preserve a data exata se fornecida; nunca suponha que iniciou hoje.
    - Frequência de consultas: se colocado "Quinzenal", converta para "realiza consultas quinzenalmente"; se "15 dias", "com consultas a cada 15 dias"; nunca use "a cada quinzenal".
-   - Readaptação: se o servidor NÃO for readaptado, não coloque nada sobre readaptação na ficha.
+   - Readaptação: se o servidor NÃO for readaptado, registre "não readaptado" ou "não readaptada" logo após a idade, sem parênteses (ex.: "Servidor de 38 anos, não readaptado, [cargo] há X anos...").
 
 FORMATO DE SAÍDA — PRESERVE EXATAMENTE A ORDEM E OS TÍTULOS:
 Registro da perícia Médica para Licença
@@ -2258,6 +2258,13 @@ def _clean_queixa_duracao_text(text: str) -> str:
     if not text:
         return text
     t = str(text)
+    # Remove parênteses de "(Não readaptado)" / "(Não readaptada)"
+    t = re.sub(r"\(\s*n[ãa]o\s+readaptad([oa])\s*\)", r"não readaptad\1", t, flags=re.IGNORECASE)
+    # Limpa artefato de truncamento/corte acidental como ", I, (Não readaptado)nvestigador", ", I, não readaptado nvestigador" ou ", l, "
+    t = re.sub(r",\s*[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b", r", não readaptad\1, Investigador", t, flags=re.IGNORECASE)
+    t = re.sub(r",\s*[Il],\s*nvestigador\b", r", Investigador", t, flags=re.IGNORECASE)
+    t = re.sub(r"\b[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b", r"não readaptad\1, Investigador", t, flags=re.IGNORECASE)
+    t = re.sub(r",\s*[Il],\s*(?=(?:não\s+readaptad[oa]|investigador|[a-zà-ú]))", r", ", t, flags=re.IGNORECASE)
     intro = r"[Rr]efere\s+in[íi]cio\s+d[eo]\s+tratamento\s+(?:em|no\s+dia|desde|a\s+partir\s+de|h[áa])\s+[^,.;\n]+"
     t = re.sub(r"[\.\;]\s*" + intro + r"[\.\;]", ".", t)
     t = re.sub(r"[\.\;]\s*" + intro + r",\s*", ". ", t)
@@ -2274,7 +2281,7 @@ def _clean_queixa_duracao_text(text: str) -> str:
     t = re.sub(r"\b" + intro_direct, "", t)
     t = re.sub(r"\s{2,}", " ", t)
     t = re.sub(r"\.\s*\.", ".", t)
-    t = re.sub(r",\s*,", ",", t)
+    t = re.sub(r",\s*,+", ",", t)
     t = re.sub(r"\s*,\s*\.", ".", t)
     t = re.sub(r"\.\s*,", ".", t)
     t = re.sub(r"\.\s*([a-zà-ú])", lambda m: ". " + m.group(1).upper(), t)
@@ -2515,25 +2522,26 @@ def api_ai_esisla():
                 alt_block = f"Altura: {alt_val}\nPeso: {peso_val}\n\n" if (alt_val or peso_val) else "Altura:\nPeso:\n\n"
                 ficha_text = re.sub(r"(\(\*\)\s*Exame Físico Geral)", alt_block + r"\1", ficha_text, count=1)
 
-            # Antecedentes Mórbidos: priorizar o que o médico informou no atendimento (Modo Ágil); se vazio, 'Nega.'
+            # Antecedentes Mórbidos: priorizar o que o médico informou no atendimento (Modo Ágil); se vazio ou nega, preenche frase robusta
             ant_val = str(payload.get("historico_pregresso") or payload.get("antecedentes") or "").strip()
             m_ant = re.search(r"(\nAntecedentes Mórbidos:?\s*\n)(.*?)(\n\s*Atestado/Relat[óo]rio)", ficha_text, re.DOTALL | re.IGNORECASE)
+            frase_nega_completa = "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas."
             if m_ant:
                 cur_ant = m_ant.group(2).strip()
                 if ant_val and ant_val.lower() not in ("nega", "nega.", "não refere", "nao refere", "-", "sem antecedentes"):
                     clean_ant = re.sub(r"[\s\.\,]*\b(?:[Vv]em\s+com\s+atestado|[Aa]testado)\s+de\s+\d+\s+dias[^\.\n\r]*[\.\,]?", ".", ant_val)
                     clean_ant = re.sub(r"\.{2,}", ".", clean_ant).strip()
                     clean_ant = re.sub(r"^[\s\.\,]+", "", clean_ant).strip()
-                    if not clean_ant or clean_ant == ".":
-                        clean_ant = "Nega."
+                    if not clean_ant or clean_ant == "." or clean_ant.lower() in ("nega", "nega."):
+                        clean_ant = frase_nega_completa
                     else:
                         if not clean_ant.endswith("."):
                             clean_ant += "."
                         if "nega demais" not in clean_ant.lower() and "cirurgias" not in clean_ant.lower() and "neoplasias" not in clean_ant.lower() and "nega antecedentes" not in clean_ant.lower():
                             clean_ant += " Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
                     ficha_text = ficha_text[:m_ant.start(2)] + clean_ant + ficha_text[m_ant.end(2):]
-                elif not cur_ant or cur_ant == "." or cur_ant.lower() in ("nega", "nega."):
-                    ficha_text = ficha_text[:m_ant.start(2)] + "Nega." + ficha_text[m_ant.end(2):]
+                elif not cur_ant or cur_ant == "." or cur_ant.lower() in ("nega", "nega.", "não refere", "nao refere", "-", "sem antecedentes"):
+                    ficha_text = ficha_text[:m_ant.start(2)] + frase_nega_completa + ficha_text[m_ant.end(2):]
                 elif cur_ant and cur_ant.lower() not in ("nega", "nega."):
                     if "nega demais" not in cur_ant.lower() and "cirurgias" not in cur_ant.lower() and "neoplasias" not in cur_ant.lower() and "nega antecedentes" not in cur_ant.lower():
                         c_ant = cur_ant.rstrip(".,; ") + ". Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
@@ -2670,18 +2678,26 @@ def api_ai_esisla():
                         fallback_txt = "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial."
                         ficha_text = ficha_text[:m_alt_sec.start(2)] + fallback_txt + ficha_text[m_alt_sec.end(2):]
 
-            # Readaptação: se o servidor NÃO for readaptado, assegura inclusão explícita de (Não readaptado) se ausente
+            # Readaptação: se o servidor NÃO for readaptado, assegura formatação sem parênteses e inclusão explícita
             if not is_readap:
+                ficha_text = re.sub(r"\(\s*n[ãa]o\s+readaptad([oa])\s*\)", r"não readaptad\1", ficha_text, flags=re.IGNORECASE)
+                ficha_text = re.sub(r",\s*[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b", r", não readaptad\1, Investigador", ficha_text, flags=re.IGNORECASE)
+                ficha_text = re.sub(r",\s*[Il],\s*nvestigador\b", r", Investigador", ficha_text, flags=re.IGNORECASE)
+                ficha_text = re.sub(r"\b[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b", r"não readaptad\1, Investigador", ficha_text, flags=re.IGNORECASE)
+                ficha_text = re.sub(r",\s*[Il],\s*(?=(?:não\s+readaptad[oa]|investigador|[a-zà-ú]))", r", ", ficha_text, flags=re.IGNORECASE)
+
                 if not re.search(r"n[ãa]o\s+readaptad[oa]", ficha_text, flags=re.IGNORECASE):
-                    termo_nr = "(Não readaptada)" if "servidora" in ficha_text.lower() else "(Não readaptado)"
-                    # Inserir após a identificação/cargo na Queixa e Duração
+                    termo_nr = "não readaptada" if "servidora" in ficha_text.lower() else "não readaptado"
+                    # Inserir logo após a identificação/idade: "Servidor(a) de X anos"
                     ficha_text = re.sub(
-                        r"(\(\*\)\s*Queixa e Dura[çc][ãa]o:?\s*\n\s*Servidor[^\n\r,]+,\s*[^,\n\r]+?(?:há\s+[^\n\r,]+)?)",
-                        rf"\1, {termo_nr}",
+                        r"(\(\*\)\s*Queixa e Dura[çc][ãa]o:?\s*\n\s*Servidor[^\n\r,]*?(?:de\s+\d+\s+anos)?)\s*(?:,\s*)?",
+                        rf"\1, {termo_nr}, ",
                         ficha_text,
                         count=1,
                         flags=re.IGNORECASE
                     )
+                ficha_text = re.sub(r"\s+,", ",", ficha_text)
+                ficha_text = re.sub(r",\s*,+", ",", ficha_text)
 
             # Correção de frequência de consultas para português natural
             ficha_text = re.sub(r"\bcom\s+consultas\s+a\s+cada\s+quinzenal(?:mente)?\b", "realiza consultas quinzenalmente", ficha_text, flags=re.IGNORECASE)

@@ -1020,13 +1020,13 @@ DIRETRIZES TÉCNICAS SENIOR POR CAMPO:
    Estruture em parágrafo único fluido e coeso seguindo a ordem de excelência pericial:
    (1) Idade ("Servidor de X anos" ou "Periciado de X anos", com concordância estrita de gênero: homem = "Servidor de X anos" / "Periciado de X anos", mulher = "Servidora de X anos" / "Periciada de X anos"),
    (2) Cargo e (3) Tempo no cargo ("[cargo] há X anos/meses"),
-   (4) Readaptação funcional ("readaptado para [atividades]" ou "não readaptado"),
+   (4) Readaptação funcional (se o servidor for readaptado, indicar atividades exercidas; se NÃO for readaptado, NÃO mencione readaptação funcional na ficha, omita qualquer menção a não readaptação),
    (5) Doença motivadora informada ("com queixa de ..."),
-   (6) Frequência das consultas ("com consultas a cada ..."),
+   (6) Início do tratamento e frequência das consultas (se apenas ano, "iniciou-se seu tratamento em [ano]"; se data, preserve; consultas com formulação natural "realiza consultas quinzenalmente" ou "com consultas a cada 15 dias", nunca "a cada quinzenal"),
    (7) Sintomas e limitações laborais relatadas ("Queixa-se de ... com dificuldade para ..."),
    (8) Medicações em curso com (9) dosagens diárias em mg/dia e histórico de trocas de dosagem (especialmente para patologias psiquiátricas / CID F),
    (10) Terapias não medicamentosas ("Realiza psicoterapia semanal" / "Realiza fisioterapia ...").
-   REGRA MANDATÓRIA: JAMAIS mencione início de tratamento por data (ex.: "Refere início do tratamento em [data]"). NUNCA utilize o termo "Paciente".
+   REGRA MANDATÓRIA: NUNCA invente que o tratamento iniciou-se hoje se não informado. NUNCA utilize o termo "Paciente".
 
 2. antecedentes_morbidos:
    Consolide os 4 eixos periciais padronizados:
@@ -1082,17 +1082,17 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
    Reescreva e sintetize em parágrafo único, fluido e coeso, integrando os dados clínicos e ocupacionais na ordem padronizada do Programa de Melhoria Contínua:
    (1) Idade ("Servidor de X anos" ou "Periciado de X anos", respeitando o gênero: homem = "Servidor de X anos" / "Periciado de X anos", mulher = "Servidora de X anos" / "Periciada de X anos"; em caso de dúvida, utilize "Servidor de X anos"),
    (2) Cargo e (3) Tempo de cargo ("[cargo] há X anos/meses"),
-   (4) Readaptação funcional e atividades atribuídas (se readaptado, indicar atividades exercidas; se não, constar "não readaptado"),
+   (4) Readaptação funcional (se o servidor for readaptado, indicar atividades exercidas; se NÃO for readaptado, NÃO mencione readaptação funcional na ficha, omita qualquer menção a não readaptação),
    (5) Doença motivadora informada ("com queixa de ..."),
-   (6) Frequência das consultas ("com consultas a cada ..."),
-   (7) Sintomas e limitações laborais relatadas ("Queixa-se de ... com dificuldade para ..."),
-   (8) Medicações em curso,
-   (9) Dosagens sempre em mg/dia e histórico de trocas de medicações (obrigatório detalhar dosagem diária em mg/dia e histórico de trocas/alterações de dosagem para patologias com CID F / psiquiátricas, ex.: "Em uso de Sertralina 100 mg/dia e Clonazepam 2 mg/dia, sem trocas recentes de medicação"),
-   (10) Terapias não medicamentosas ("Realiza psicoterapia semanal" / "Realiza fisioterapia ...").
-   REGRA OBRIGATÓRIA DE EXCLUSÃO: NUNCA mencione "Refere início do tratamento em [data]" nem inclua frases sobre início de tratamento por data (ex.: "Refere início do tratamento em 29/09/2026") na Queixa e Duração, independentemente da data. Omitir sempre qualquer menção de início de tratamento com data.
-   Fontes a integrar: idade, cargo, tempo_funcao, unidade_tempo, readaptado, atividades_readaptado, doenca_motivo, queixa_duracao, frequencia_consultas, sintomas_limitacoes, medicamentos, alteracao_dosagem, data_alteracao_med, obs_alteracao_med, psicoterapia, fisioterapia, obs_terapias.
+   (6) Início do tratamento: se informado apenas o ano (ex: 2020), registre obrigatoriamente "iniciou-se seu tratamento em [ano]"; se informada a data completa (DD/MM/AAAA), preserve a data exata informada ("iniciou-se seu tratamento em [DD/MM/AAAA]"). NUNCA invente a data de hoje nem diga que o tratamento se iniciou hoje se a data não foi informada como data de início.
+   (7) Frequência das consultas: formule com naturalidade e correção gramatical (ex.: "realiza consultas quinzenalmente", "realiza consultas mensalmente", "com consultas a cada 15 dias", "com consultas a cada 2 meses"). NUNCA gere formulações incorretas como "a cada quinzenal".
+   (8) Sintomas e limitações laborais relatadas ("Queixa-se de ... com dificuldade para ..."),
+   (9) Medicações em curso,
+   (10) Dosagens sempre em mg/dia e histórico de trocas de medicações (obrigatório detalhar dosagem diária em mg/dia e histórico de trocas/alterações de dosagem para patologias com CID F / psiquiátricas, ex.: "Em uso de Sertralina 100 mg/dia e Clonazepam 2 mg/dia, sem trocas recentes de medicação"),
+   (11) Terapias não medicamentosas ("Realiza psicoterapia semanal" / "Realiza fisioterapia ...").
+   Fontes a integrar: idade, cargo, tempo_funcao, unidade_tempo, readaptado, atividades_readaptado, doenca_motivo, queixa_duracao, inicio_tratamento, frequencia_consultas, sintomas_limitacoes, medicamentos, alteracao_dosagem, data_alteracao_med, obs_alteracao_med, psicoterapia, fisioterapia, obs_terapias.
    Exemplo de referência oficial DPME:
-   "Servidor de 40 anos, professor há 10 anos, não readaptado, com queixa de depressão desde 2020, com consultas a cada 2 meses. Queixa-se de tristeza, desânimo, choro fácil e insônia, com dificuldade para planejar aulas e manter a atenção. Em uso de Sertralina 100 mg/dia e Clonazepam 2 mg/dia, sem trocas recentes de medicação. Realiza psicoterapia semanal."
+   "Servidor de 40 anos, professor há 10 anos, com queixa de depressão desde 2020, realizando consultas quinzenalmente. Queixa-se de tristeza, desânimo, choro fácil e insônia, com dificuldade para planejar aulas e manter a atenção. Em uso de Sertralina 100 mg/dia e Clonazepam 2 mg/dia, sem trocas recentes de medicação. Realiza psicoterapia semanal."
    Apenas inclua elementos presentes nos dados registrados, conectando-os de forma natural. Não invente dados não registrados nem acrescente diagnóstico ou interpretação que não esteja escrita nos dados.
 
 2. “Antecedentes Mórbidos”
@@ -1113,6 +1113,7 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
 
 3. “(*)Exame Físico Geral”
    ESTE CAMPO É EXCLUSIVO PARA O EXAME FÍSICO / MENTAL DIRETO REALIZADO PELO MÉDICO PERITO NO ATO PERICIAL:
+   - PRESERVAÇÃO INTEGRAL: Tudo o que for registrado pelo médico perito no momento do atendimento em "(*)Exame Físico Geral — achados observados" (exame_fisico_descricao) DEVE SER MANTIDO E PRESERVADO INTEGRALMENTE. Não altere os termos nem descarte achados do médico.
    - A IA NÃO DEVE GERAR NEM CRIAR EXAME FÍSICO NOVO. Preencha exclusivamente com o que foi registrado no momento do atendimento pelo médico perito (exame_fisico_descricao e exame_fisico_tipo). NUNCA invente exames de aparelhos não registrados (como Aparelho Respiratório, etc.).
    - Integre obrigatoriamente o Tipo de exame físico / mental (exame_fisico_tipo, area_exame_clinico, outros_subtipo) com o que consta em "(*)Exame Físico Geral — achados observados" (exame_fisico_descricao):
      * Identifique expressamente o segmento/sistema avaliado correspondente aos checkboxes oficiais do e-SISLA (ex.: "Aparelho Osteomuscular e Tecido Conjuntivo: [achados]" ou "Exame Mental: [achados]" ou "[Área avaliada]: [achados]"), seguido da descrição clínica pericial dos achados observados.
@@ -1158,6 +1159,7 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
 
 6. “(*)Justificativa Parecer Médico”
    Apresente OBRIGATORIAMENTE a conclusão pericial fundamentada conforme o padrão do Programa de Melhoria Contínua (NUNCA DEIXE ESTE CAMPO VAZIO quando houver parecer e dados do atendimento):
+   - PRESERVAÇÃO INTEGRAL: Se o médico perito preencheu o campo de justificativa no momento do atendimento, preserve estritamente o seu texto, mantendo a redação registrada pelo perito.
    - Se Parecer FAVORÁVEL:
      "Capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol, em razão de limitações na esfera [psicoemocional/osteomuscular] que compromete para [atividades comprometidas informadas]."
      * Caso haja redução de dias em relação ao atestado assistente:
@@ -1201,6 +1203,18 @@ ESTILO DA REDAÇÃO:
 - Não use linguagem que revele geração automática, IA ou assistência computacional. Não use expressões meta como “IA”, “inteligência artificial”, “sugestão”, “modelo”, “assistente”, “gerado” ou equivalentes no texto da ficha.
 - Não escreva “não informado”, “não consta”, “sem dados” ou equivalentes dentro dos campos; deixe o conteúdo vazio.
 - Não use fórmulas de normalidade como “em bom estado geral”, “sem alterações”, “afebril”, “normocárdico”, “lúcido” ou semelhantes quando isso não estiver expressamente registrado.
+
+REGRA DE DESDUPLICAÇÃO E AUTO-ANÁLISE DE CONSISTÊNCIA:
+1. DESDUPLICAÇÃO ESTRITA ENTRE SEÇÕES:
+   - Se um mesmo relato ou achado foi transcrito em mais de um campo (por exemplo, Exame Físico copiado em Alterações Clínicas ou Justificativa), deixe escrito SOMENTE no campo de sua origem clínica legítima.
+   - O campo "(*)Exame Físico Geral" é exclusivo do exame direto do perito. O campo "Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:" é exclusivo dos laudos e exames de imagem trazidos. NUNCA duplique conteúdo entre eles.
+2. AUTO-ANÁLISE E CONSISTÊNCIA CLÍNICA/GRAMATICAL (SANITY CHECK):
+   - Faça uma auto-análise para sanar erros gramaticais e de português, garantindo fluidez e correção vernacular.
+   - Pressão Arterial: se anotada como "12/8", "12x8" ou sistólica "12" e diastólica "8", converta para a escala padrão em mmHg ("Sistólica: 120", "Diastólica: 80").
+   - Altura e Peso: ajuste valores anômalos para o padrão pericial (ex.: altura "175" sem ponto -> "1.75"; peso sem vírgula como "750" -> "75").
+   - Início do tratamento: se colocado ano (ex: 2020), coloque "iniciou-se seu tratamento em 2020"; preserve a data exata se fornecida; nunca suponha que iniciou hoje.
+   - Frequência de consultas: se colocado "Quinzenal", converta para "realiza consultas quinzenalmente"; se "15 dias", "com consultas a cada 15 dias"; nunca use "a cada quinzenal".
+   - Readaptação: se o servidor NÃO for readaptado, não coloque nada sobre readaptação na ficha.
 
 FORMATO DE SAÍDA — PRESERVE EXATAMENTE A ORDEM E OS TÍTULOS:
 Registro da perícia Médica para Licença
@@ -2233,6 +2247,43 @@ def _clean_esisla_text(text: str) -> str:
             fallback_exames = "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial."
             text = text[:m_dup.start()] + h1 + b1 + h2 + fallback_exames + "\n\n" + h3 + text[m_dup.end():]
 
+    # Correção gramatical automática de frequência de consultas ("a cada quinzenal" -> "quinzenalmente")
+    text = re.sub(r"\bcom\s+consultas\s+a\s+cada\s+quinzenal(?:mente)?\b", "realiza consultas quinzenalmente", text, flags=re.IGNORECASE)
+    text = re.sub(r"\ba\s+cada\s+quinzenal\b", "quinzenalmente", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bcom\s+consultas\s+a\s+cada\s+mensal(?:mente)?\b", "realiza consultas mensalmente", text, flags=re.IGNORECASE)
+    text = re.sub(r"\ba\s+cada\s+mensal\b", "mensalmente", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bcom\s+consultas\s+a\s+cada\s+semanal(?:mente)?\b", "realiza consultas semanalmente", text, flags=re.IGNORECASE)
+    text = re.sub(r"\ba\s+cada\s+semanal\b", "semanalmente", text, flags=re.IGNORECASE)
+
+    # Sanity checks para PA se digitada como 12 ou 13 em Sistólica / 8 ou 9 em Diastólica
+    def _fix_pa_sist(m):
+        prefix = m.group(1)
+        val = int(m.group(2))
+        if 8 <= val <= 25:
+            val = val * 10
+        return f"{prefix}{val}"
+    text = re.sub(r"^(Sist[óo]lica[ \t]*\(mmHg\):[ \t]*)(\d{1,2})$", _fix_pa_sist, text, flags=re.MULTILINE | re.IGNORECASE)
+
+    def _fix_pa_diast(m):
+        prefix = m.group(1)
+        val = int(m.group(2))
+        if 4 <= val <= 15:
+            val = val * 10
+        return f"{prefix}{val}"
+    text = re.sub(r"^(Diast[óo]lica[ \t]*\(mmHg\):[ \t]*)(\d{1,2})$", _fix_pa_diast, text, flags=re.MULTILINE | re.IGNORECASE)
+
+    def _fix_altura(m):
+        prefix = m.group(1)
+        raw_num = m.group(2).replace(",", ".")
+        try:
+            val = float(raw_num)
+            if 100 <= val <= 250:
+                return f"{prefix}{val / 100.0:.2f}"
+        except ValueError:
+            pass
+        return m.group(0)
+    text = re.sub(r"^(Altura:[ \t]*)(\d{3})$", _fix_altura, text, flags=re.MULTILINE)
+
     # Normalização canônica do cabeçalho de exames complementares / alterações clínicas
     text = re.sub(
         r"(?:\r?\n|^)\s*Descri[çc][ãa]o\s+das\s+Altera[çc][õo]es\s+(?:Cl[íi]nicas|M[ée]dicas)[^\n\r:]*:?",
@@ -2294,16 +2345,32 @@ def api_ai_esisla():
             pulso_val = str(payload.get("pulso") or "").strip()
 
             if alt_val:
+                try:
+                    f_alt = float(alt_val.replace(",", ".").strip())
+                    if 100 <= f_alt <= 250:
+                        alt_val = f"{f_alt / 100.0:.2f}"
+                except ValueError:
+                    pass
                 if re.search(r"^Altura:[ \t]*[^\r\n]*$", ficha_text, re.MULTILINE):
                     ficha_text = re.sub(r"^(Altura:[ \t]*)[^\r\n]*$", f"Altura: {alt_val}", ficha_text, flags=re.MULTILINE)
 
             if peso_val:
+                try:
+                    f_peso = float(peso_val.replace(",", ".").strip())
+                    if 300 <= f_peso <= 2500:
+                        f_peso = f_peso / 10.0
+                        peso_val = f"{f_peso:.1f}" if f_peso % 1 != 0 else str(int(f_peso))
+                except ValueError:
+                    pass
                 if re.search(r"^Peso:[ \t]*[^\r\n]*$", ficha_text, re.MULTILINE):
                     ficha_text = re.sub(r"^(Peso:[ \t]*)[^\r\n]*$", f"Peso: {peso_val}", ficha_text, flags=re.MULTILINE)
 
             if pa_sist:
                 pa_sist_digits = re.sub(r"\D", "", pa_sist)[:3]
                 if pa_sist_digits:
+                    val_s = int(pa_sist_digits)
+                    if 8 <= val_s <= 25:
+                        pa_sist_digits = str(val_s * 10)
                     if re.search(r"^Sist[óo]lica[ \t]*\(mmHg\):[ \t]*[^\r\n]*$", ficha_text, re.MULTILINE | re.IGNORECASE):
                         ficha_text = re.sub(r"^(Sist[óo]lica[ \t]*\(mmHg\):[ \t]*)[^\r\n]*$", f"Sistólica (mmHg): {pa_sist_digits}", ficha_text, flags=re.MULTILINE | re.IGNORECASE)
                     pa_sist = pa_sist_digits
@@ -2311,6 +2378,9 @@ def api_ai_esisla():
             if pa_diast:
                 pa_diast_digits = re.sub(r"\D", "", pa_diast)[:3]
                 if pa_diast_digits:
+                    val_d = int(pa_diast_digits)
+                    if 4 <= val_d <= 15:
+                        pa_diast_digits = str(val_d * 10)
                     if re.search(r"^Diast[óo]lica[ \t]*\(mmHg\):[ \t]*[^\r\n]*$", ficha_text, re.MULTILINE | re.IGNORECASE):
                         ficha_text = re.sub(r"^(Diast[óo]lica[ \t]*\(mmHg\):[ \t]*)[^\r\n]*$", f"Diastólica (mmHg): {pa_diast_digits}", ficha_text, flags=re.MULTILINE | re.IGNORECASE)
                     pa_diast = pa_diast_digits
@@ -2433,16 +2503,19 @@ def api_ai_esisla():
                 elif "Dt/Hr Perícia:" not in ficha_text:
                     ficha_text = re.sub(r"(CRM:[^\n\r]*\n)", r"\1Dt/Hr Perícia: " + dthr_str + "\n", ficha_text, count=1)
 
-            justif_empty_match = re.search(r"(\(\*\)\s*Justificativa Parecer Médico:?\s*\n\s*)(\(\*\)\s*Parecer Final)", ficha_text, re.IGNORECASE)
-            if justif_empty_match:
-                just_val = str(payload.get("justificativa") or "").strip()
-                if not just_val:
+            # Justificativa do Parecer Médico: preservar estritamente se o médico tiver digitado no atendimento
+            just_val = str(payload.get("justificativa") or payload.get("agilJustificativa") or "").strip()
+            m_just = re.search(r"(\(\*\)\s*Justificativa Parecer M[ée]dico:?\s*\n\s*)(.*?)(\n\s*\(\*\)\s*Parecer Final)", ficha_text, re.DOTALL | re.IGNORECASE)
+            if m_just:
+                if just_val:
+                    ficha_text = ficha_text[:m_just.start(2)] + just_val + ficha_text[m_just.end(2):]
+                elif not m_just.group(2).strip():
                     cargo_nome = payload.get("cargo") or "servidor"
                     if par_val.startswith("FAV"):
                         just_val = f"Capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol do cargo de {cargo_nome}, em razão dos sintomas e limitações registradas no ato pericial."
                     else:
                         just_val = f"Capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações incapacitantes para as atribuições rotineiras do cargo atual de {cargo_nome}."
-                ficha_text = ficha_text[:justif_empty_match.start(1)] + justif_empty_match.group(1) + just_val + "\n\n" + ficha_text[justif_empty_match.start(2):]
+                    ficha_text = ficha_text[:m_just.start(2)] + just_val + ficha_text[m_just.end(2):]
 
             # Exame Físico Geral: priorizar estritamente os achados registrados no atendimento pelo médico perito
             ef_achados = str(payload.get("exame_fisico_descricao") or "").strip()
@@ -2469,6 +2542,33 @@ def api_ai_esisla():
                 elif not cur_alt or "não foram apresentados" in cur_alt.lower() or "nao foram apresentados" in cur_alt.lower():
                     fallback_txt = "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial."
                     ficha_text = ficha_text[:m_alt.start(2)] + fallback_txt + ficha_text[m_alt.end(2):]
+
+            # Desduplicação: se exame_fisico_descricao ou achados clínicos diretos foram duplicados em Alterações Clínicas / Exames Complementares
+            m_ef_sec = re.search(r"(\(\*\)\s*Exame Físico Geral:?\s*\n\s*)(.*?)(\n\s*Descrição das Alterações (?:Clínicas|Médicas))", ficha_text, re.DOTALL | re.IGNORECASE)
+            m_alt_sec = re.search(r"(\nDescrição das Alterações (?:Clínicas|Médicas) encontradas e Relato dos Exames Complementares:?\s*\n)(.*?)(\n\s*\(\*\)\s*Descrição da\(s\)\s*Limitação)", ficha_text, re.DOTALL | re.IGNORECASE)
+            if m_ef_sec and m_alt_sec:
+                ef_body = m_ef_sec.group(2).strip()
+                alt_body = m_alt_sec.group(2).strip()
+                if ef_body and alt_body:
+                    ef_n = re.sub(r"\s+", " ", ef_body.lower())
+                    alt_n = re.sub(r"\s+", " ", alt_body.lower())
+                    if ef_n == alt_n or (len(alt_n) >= 20 and alt_n in ef_n) or (len(ef_n) >= 20 and ef_n in alt_n):
+                        fallback_txt = "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial."
+                        ficha_text = ficha_text[:m_alt_sec.start(2)] + fallback_txt + ficha_text[m_alt_sec.end(2):]
+
+            # Omitir menção a readaptação se o servidor NÃO for readaptado
+            if not is_readap:
+                ficha_text = re.sub(r",\s*n[ãa]o\s+readaptad[oa]\b", "", ficha_text, flags=re.IGNORECASE)
+                ficha_text = re.sub(r"\bn[ãa]o\s+readaptad[oa],\s*", "", ficha_text, flags=re.IGNORECASE)
+                ficha_text = re.sub(r"\s*N[ãa]o\s+se\s+encontra\s+em\s+readapta[çc][ãa]o\s+funcional\.?\s*", " ", ficha_text, flags=re.IGNORECASE)
+
+            # Correção de frequência de consultas para português natural
+            ficha_text = re.sub(r"\bcom\s+consultas\s+a\s+cada\s+quinzenal(?:mente)?\b", "realiza consultas quinzenalmente", ficha_text, flags=re.IGNORECASE)
+            ficha_text = re.sub(r"\ba\s+cada\s+quinzenal\b", "quinzenalmente", ficha_text, flags=re.IGNORECASE)
+            ficha_text = re.sub(r"\bcom\s+consultas\s+a\s+cada\s+mensal(?:mente)?\b", "realiza consultas mensalmente", ficha_text, flags=re.IGNORECASE)
+            ficha_text = re.sub(r"\ba\s+cada\s+mensal\b", "mensalmente", ficha_text, flags=re.IGNORECASE)
+            ficha_text = re.sub(r"\bcom\s+consultas\s+a\s+cada\s+semanal(?:mente)?\b", "realiza consultas semanalmente", ficha_text, flags=re.IGNORECASE)
+            ficha_text = re.sub(r"\ba\s+cada\s+semanal\b", "semanalmente", ficha_text, flags=re.IGNORECASE)
 
             # Limitações Físicas e Mentais: se parecer CONTRÁRIO, registrar ausência de limitações incapacitantes
             if is_contra:

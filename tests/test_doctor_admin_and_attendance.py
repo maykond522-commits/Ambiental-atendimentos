@@ -2576,3 +2576,166 @@ def test_html_scripts_syntax_balance_no_unexpected_tokens():
         scripts = re.findall(r'<script(?:\s+[^>]*)?>(.*?)</script>', content, re.DOTALL | re.IGNORECASE)
         for idx, s in enumerate(scripts):
             check_brackets(s, f"{name} script {idx}")
+
+
+def test_requisitos_atendimento_antecedentes_inicio_freq_meds_esisla(monkeypatch):
+    """Valida todos os 10 requisitos periciais solicitados:
+    1. Botão 'Padronizar Narrativa' completamente removido.
+    2. 'Nega antecedentes.' preenche frase padrão e doença motivadora autopreenche antecedentes.
+    3. 'Quando começou o tratamento?' não inventa data de hoje; suporta ano 'iniciou-se seu tratamento em 2020' e datas DD/MM/AAAA.
+    4. 'Com que frequência realiza consultas?' evita 'a cada quinzenal' e formata 'realiza consultas quinzenalmente' e 'a cada 15 dias'.
+    5. Medicações com datalist de sugestões e chips ampliados (HAS, Diabetes, Mental, Ortopedia).
+    6. CRM/CRO do médico assistente padronizado como 'Em anexo'.
+    7. Ficha e-SISLA: se periciado não for readaptado, omite menção a não readaptação.
+    8. Preservação estrita do Exame Físico Geral e da Justificativa digitada no atendimento.
+    9. Desduplicação: achados clínicos repetidos em alterações/exames complementares ficam apenas no Exame Físico.
+    10. Sanity check: PA 12/8 -> 120/80 mmHg, Altura 175 -> 1.75 m, Peso 750 -> 75 kg.
+    """
+    from app import app, EsislaResult, _clean_esisla_text, TASK_PROMPTS
+
+    atd_content = (ROOT / "ambiental_avaliacao_medica_lts_cid_assistente.html").read_text(encoding="utf-8")
+
+    # 1. Botão Padronizar Narrativa removido
+    assert "Padronizar Narrativa" not in atd_content
+
+    # 2. Botão Nega antecedentes e autopreenchimento
+    assert 'onclick="negarAntecedentes()"' in atd_content
+    assert "Nega antecedentes." in atd_content
+    assert "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas." in atd_content
+    assert "Refere histórico relacionado a" in atd_content
+
+    # 3. Tratamento e Frequência no frontend
+    assert "iniciou-se seu tratamento em" in atd_content
+    assert "realiza consultas quinzenalmente" in atd_content
+    assert "com consultas a cada" in atd_content
+    assert "Não se encontra em readaptação funcional." not in atd_content
+
+    # 5. Datalist e Chips de Medicações
+    assert 'id="medSuggestionsList"' in atd_content
+    assert 'list="medSuggestionsList"' in atd_content
+    assert "Losartana Potássica" in atd_content
+    assert "Metformina" in atd_content
+    assert "Ibuprofeno" in atd_content
+    assert "Saúde Mental" in atd_content
+
+    # 6. CRM/CRO do médico assistente padrão "Em anexo"
+    assert 'id="agilCrmCro" value="Em anexo"' in atd_content
+    assert 'id="crmCro" value="Em anexo"' in atd_content
+
+    # 4 & 10. Limpeza e Sanity checks em _clean_esisla_text
+    raw_texto = (
+        "Registro da perícia Médica para Licença\n\n"
+        "(*) Queixa e Duração:\n"
+        "Servidor de 45 anos, com queixa de lombalgia, com consultas a cada quinzenal.\n\n"
+        "Antecedentes Mórbidos:\nNega.\n\n"
+        "Atestado/Relatório/Exames Complementares:\nEm anexo.\n\n"
+        "Pressão Arterial\n"
+        "Sistólica (mmHg): 12\n"
+        "Diastólica (mmHg): 8\n"
+        "Pulso (bpm): 72\n\n"
+        "Altura: 175\n"
+        "Peso: 75\n\n"
+        "(*)Exame Físico Geral\n"
+        "Dor à palpação de musculatura paravertebral lombar com limitação de flexão.\n\n"
+        "Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:\n"
+        "Dor à palpação de musculatura paravertebral lombar com limitação de flexão.\n\n"
+        "(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):\n"
+        "Limitação para esforços físicos.\n\n"
+        "(*)Parecer Médico\n"
+        "Parecer: FAVORÁVEL\n"
+        "Nº Dias: 5\n"
+        "Data Início: 30/09/2026\n"
+        "CID 10: M54.5\n"
+        "Descrição: Lombalgia\n"
+        "Médico Perito: Dr. Perito\n"
+        "CRM: 12345\n\n"
+        "(*)Resposta aos quesitos\n1) Sim\n2) Sim\n3) Sim\n\n"
+        "(*)Justificativa Parecer Médico\n"
+        "Capacidade laborativa temporariamente prejudicada.\n\n"
+        "(*) Parecer Final\nNº Dias: 5\nData Início: 30/09/2026\nCID 10: M54.5\nDescrição: Lombalgia\nDiretor DPME:\nData P.F.:"
+    )
+    limpo = _clean_esisla_text(raw_texto)
+    assert "a cada quinzenal" not in limpo
+    assert "realiza consultas quinzenalmente" in limpo
+    assert "Sistólica (mmHg): 120" in limpo
+    assert "Diastólica (mmHg): 80" in limpo
+    assert "Altura: 1.75" in limpo
+    # Desduplicação: texto idêntico de exame físico removido de alterações clínicas
+    assert "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial." in limpo
+
+    # 7, 8 & 9. Teste de api_ai_esisla com dados e Justificativa personalizada
+    raw_gemini_template = (
+        "Registro da perícia Médica para Licença\n\n"
+        "(*) Queixa e Duração:\nServidor de 35 anos, analista há 5 anos, não readaptado, com queixa de ansiedade desde 2021, com consultas a cada quinzenal. Queixa-se de insônia. Em uso de Sertralina 50 mg/dia.\n\n"
+        "Antecedentes Mórbidos:\nNega.\n\n"
+        "Atestado/Relatório/Exames Complementares:\nEm anexo.\n\n"
+        "(*)Exame Físico Geral\n"
+        "Exame Mental: Orientado no tempo e espaço, humor deprimido e afeto congruente.\n\n"
+        "Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:\n"
+        "Exame Mental: Orientado no tempo e espaço, humor deprimido e afeto congruente.\n\n"
+        "(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):\n"
+        "Limitação para atendimento ao público.\n\n"
+        "(*)Parecer Médico\n"
+        "Parecer: FAVORÁVEL\n"
+        "Nº Dias: 10\n"
+        "Data Início: 30/09/2026\n"
+        "CID 10: F41.2\n"
+        "Descrição: Transtorno misto ansioso e depressivo\n"
+        "Médico Perito: Dr. Perito\n"
+        "CRM: 12345\n\n"
+        "(*)Resposta aos quesitos\n1) Sim\n2) Sim\n3) Sim\n\n"
+        "(*)Justificativa Parecer Médico\nJustificativa gerada pelo modelo.\n\n"
+        "(*) Parecer Final\nNº Dias: 10\nData Início: 30/09/2026\nCID 10: F41.2\nDescrição: Transtorno misto ansioso e depressivo\nDiretor DPME:\nData P.F.:"
+    )
+
+    monkeypatch.setattr("app._authenticate_request", lambda: ({"id": "1", "email": "admin@ambiental.com", "nome": "Admin", "perfil": "Administrador"}, "token123"))
+    monkeypatch.setattr("app._generate_cached", lambda *args, **kwargs: (EsislaResult(ficha_esisla=raw_gemini_template), False, "hash123"))
+
+    client = app.test_client()
+    payload = {
+        "atendimento": "999001",
+        "data_atendimento": "30/09/2026",
+        "hora_atendimento": "09:30",
+        "pressao_sistolica": "13",   # digitado 13 -> deve converter para 130
+        "pressao_diastolica": "8",    # digitado 8 -> deve converter para 80
+        "pulso": "78",
+        "altura": "180",              # digitado 180 -> deve converter para 1.80
+        "peso": "800",                # digitado 800 -> deve converter para 80
+        "readaptado": False,          # não readaptado -> deve ser omitido
+        "exame_fisico_tipo": "Exame Mental",
+        "exame_fisico_descricao": "Orientado no tempo e espaço, humor deprimido, discurso coerente sem alterações do curso do pensamento.",
+        "alteracoes_clinicas_exames": "",
+        "justificativa": "Parecer favorável justificado em razão da descompensação aguda do quadro afetivo, concedidos 10 dias para ajuste terapêutico.",
+        "parecer": "FAVORÁVEL",
+        "cargo": "Analista Sociocultural",
+        "cid": "F41.2",
+        "medico": "Dr. Perito",
+        "crm_responsavel": "12345"
+    }
+
+    res = client.post("/api/ai/esisla", json=payload)
+    assert res.status_code == 200
+    ficha = res.get_json()["ficha_esisla"]
+
+    # 7. Servidor não readaptado: NÃO deve constar "não readaptado"
+    assert "não readaptado" not in ficha.lower()
+    assert "nao readaptado" not in ficha.lower()
+
+    # 4. Frequência corrigida
+    assert "a cada quinzenal" not in ficha
+    assert "realiza consultas quinzenalmente" in ficha
+
+    # 8. Preservação estrita da justificativa do médico
+    assert "Parecer favorável justificado em razão da descompensação aguda do quadro afetivo, concedidos 10 dias para ajuste terapêutico." in ficha
+
+    # 8. Preservação estrita do Exame Físico
+    assert "Orientado no tempo e espaço, humor deprimido, discurso coerente sem alterações do curso do pensamento." in ficha
+
+    # 9. Desduplicação: alterações clínicas recebe o fallback padrão
+    assert "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial." in ficha
+
+    # 10. Sanity checks aplicados
+    assert "Sistólica (mmHg): 130" in ficha
+    assert "Diastólica (mmHg): 80" in ficha
+    assert "Altura: 1.80" in ficha
+    assert "Peso: 80" in ficha

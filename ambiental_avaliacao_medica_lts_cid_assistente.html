@@ -1920,11 +1920,6 @@ body:not(.mode-agil-active) #containerModoAgil {
             <h3><span>📋</span> 02 — Queixa e Duração &amp; Antecedentes</h3>
             <p>Queixa principal que motivou o afastamento, medicações, terapias e antecedentes.</p>
           </div>
-          <div>
-            <button type="button" class="btn btn-outline" style="font-size:11.5px;padding:4px 10px;font-weight:700;color:#1D4ED8;background:#EFF6FF;border-color:#BFDBFE;display:inline-flex;align-items:center;gap:6px" onclick="aplicarSintesePericialMelhoriaContinua(true); toast('Narrativa pericial padronizada montada com sucesso!')" title="Gera o parágrafo completo de queixa e antecedentes no padrão do Programa de Melhoria Contínua">
-              <span>✨</span> Padronizar Narrativa
-            </button>
-          </div>
         </div>
         <div class="agil-card-body">
           <div class="form-grid">
@@ -1936,7 +1931,12 @@ body:not(.mode-agil-active) #containerModoAgil {
                 </button>
               </div>
               <textarea class="textarea" id="agilDoencaMotivo" style="min-height:74px" placeholder="Descreva a doença e o motivo do afastamento..." oninput="onAgilDoencaMotivoInput(this.value)"></textarea>
-              <div class="help">O que for respondido aqui preenche automaticamente o Histórico Pregresso abaixo.</div>
+              <div class="help" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+                <span>O que for respondido aqui preenche automaticamente os antecedentes mórbidos abaixo.</span>
+                <button type="button" class="btn btn-outline" style="font-size:11.5px;padding:3px 9px;font-weight:600;color:#047857;background:#ECFDF5;border-color:#A7F3D0;display:inline-flex;align-items:center;gap:5px" onclick="negarAntecedentes()" title="Clique para preencher: Nega antecedentes mórbidos relevantes...">
+                  <span>🛡️</span> Nega antecedentes.
+                </button>
+              </div>
             </div>
             <div class="field col-6">
               <label>Quando começou o tratamento?</label>
@@ -1967,23 +1967,103 @@ body:not(.mode-agil-active) #containerModoAgil {
             </div>
             <div class="add-row" style="margin-top:8px"><button class="btn-add" type="button" onclick="addMedication()">+ Adicionar medicamento</button></div>
 
-            <!-- Chips de Inserção Rápida de Medicações Frequentes -->
-            <div style="margin-top:12px;padding:10px 12px;background:#F8FAFC;border:1px dashed #CBD5E1;border-radius:10px">
-              <div style="font-size:11.5px;font-weight:700;color:#334155;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+            <!-- Datalist Autocomplete para Prescrições Frequentes -->
+            <datalist id="medSuggestionsList">
+              <option value="Sertralina"></option>
+              <option value="Escitalopram"></option>
+              <option value="Fluoxetina"></option>
+              <option value="Venlafaxina"></option>
+              <option value="Duloxetina"></option>
+              <option value="Desvenlafaxina"></option>
+              <option value="Amitriptilina"></option>
+              <option value="Clonazepam"></option>
+              <option value="Diazepam"></option>
+              <option value="Zolpidem"></option>
+              <option value="Quetiapina"></option>
+              <option value="Risperidona"></option>
+              <option value="Carbonato de Lítio"></option>
+              <option value="Losartana Potássica"></option>
+              <option value="Enalapril"></option>
+              <option value="Captopril"></option>
+              <option value="Hidroclorotiazida"></option>
+              <option value="Amlodipino"></option>
+              <option value="Atenolol"></option>
+              <option value="Valsartana"></option>
+              <option value="Metformina"></option>
+              <option value="Glibenclamida"></option>
+              <option value="Dapagliflozina"></option>
+              <option value="Insulina NPH"></option>
+              <option value="Insulina Regular"></option>
+              <option value="Ciclobenzaprina"></option>
+              <option value="Pregabalina"></option>
+              <option value="Gabapentina"></option>
+              <option value="Dipirona"></option>
+              <option value="Paracetamol"></option>
+              <option value="Ibuprofeno"></option>
+              <option value="Cetoprofeno"></option>
+              <option value="Tramadol"></option>
+              <option value="Prednisona"></option>
+              <option value="Omeprazol"></option>
+              <option value="Sinvastatina"></option>
+            </datalist>
+
+            <!-- Chips de Inserção Rápida de Medicações Frequentes por Patologia -->
+            <div style="margin-top:12px;padding:12px;background:#F8FAFC;border:1px dashed #CBD5E1;border-radius:10px">
+              <div style="font-size:11.5px;font-weight:700;color:#334155;margin-bottom:8px;display:flex;align-items:center;gap:6px">
                 <span>⚡</span> <span>Prescrições Frequentes (1 clique adiciona com dosagem em mg/dia formatada):</span>
               </div>
-              <div style="display:flex;flex-wrap:wrap;gap:6px">
-                <button type="button" class="chip-sm" onclick="adicionarMedRapida('Sertralina', '50 mg', '1x/dia pela manhã', 'Dose diária: 50 mg/dia')">+ Sertralina 50mg</button>
-                <button type="button" class="chip-sm" onclick="adicionarMedRapida('Sertralina', '100 mg', '1x/dia pela manhã', 'Dose diária: 100 mg/dia')">+ Sertralina 100mg</button>
-                <button type="button" class="chip-sm" onclick="adicionarMedRapida('Escitalopram', '10 mg', '1x/dia pela manhã', 'Dose diária: 10 mg/dia')">+ Escitalopram 10mg</button>
-                <button type="button" class="chip-sm" onclick="adicionarMedRapida('Escitalopram', '20 mg', '1x/dia pela manhã', 'Dose diária: 20 mg/dia')">+ Escitalopram 20mg</button>
-                <button type="button" class="chip-sm" onclick="adicionarMedRapida('Clonazepam', '2 mg', '1x/dia à noite', 'Dose diária: 2 mg/dia')">+ Clonazepam 2mg</button>
-                <button type="button" class="chip-sm" onclick="adicionarMedRapida('Fluoxetina', '20 mg', '1x/dia pela manhã', 'Dose diária: 20 mg/dia')">+ Fluoxetina 20mg</button>
-                <button type="button" class="chip-sm" onclick="adicionarMedRapida('Venlafaxina', '75 mg', '1x/dia pela manhã', 'Dose diária: 75 mg/dia')">+ Venlafaxina 75mg</button>
-                <button type="button" class="chip-sm" onclick="adicionarMedRapida('Zolpidem', '10 mg', '1x/dia ao deitar', 'Dose diária: 10 mg/dia')">+ Zolpidem 10mg</button>
-                <button type="button" class="chip-sm" onclick="adicionarMedRapida('Ciclobenzaprina', '10 mg', '1x/dia à noite', 'Dose diária: 10 mg/dia')">+ Ciclobenzaprina 10mg</button>
-                <button type="button" class="chip-sm" onclick="adicionarMedRapida('Pregabalina', '75 mg', '2x/dia (12/12h)', 'Dose diária: 150 mg/dia')">+ Pregabalina 75mg 12/12h</button>
-                <button type="button" class="chip-sm" onclick="adicionarMedRapida('Dipirona', '1 g', 'se dor até 6/6h', 'Uso sintomático s/n')">+ Dipirona 1g</button>
+              
+              <!-- Saúde Mental -->
+              <div style="margin-bottom:6px">
+                <span style="font-size:10.5px;font-weight:700;color:#6366F1;text-transform:uppercase;letter-spacing:0.5px">🧠 Saúde Mental:</span>
+                <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:3px">
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Sertralina', '50 mg', '1x/dia pela manhã', 'Dose diária: 50 mg/dia')">+ Sertralina 50mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Sertralina', '100 mg', '1x/dia pela manhã', 'Dose diária: 100 mg/dia')">+ Sertralina 100mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Escitalopram', '10 mg', '1x/dia pela manhã', 'Dose diária: 10 mg/dia')">+ Escitalopram 10mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Escitalopram', '20 mg', '1x/dia pela manhã', 'Dose diária: 20 mg/dia')">+ Escitalopram 20mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Clonazepam', '2 mg', '1x/dia à noite', 'Dose diária: 2 mg/dia')">+ Clonazepam 2mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Fluoxetina', '20 mg', '1x/dia pela manhã', 'Dose diária: 20 mg/dia')">+ Fluoxetina 20mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Venlafaxina', '75 mg', '1x/dia pela manhã', 'Dose diária: 75 mg/dia')">+ Venlafaxina 75mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Duloxetina', '30 mg', '1x/dia pela manhã', 'Dose diária: 30 mg/dia')">+ Duloxetina 30mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Quetiapina', '25 mg', '1x/dia à noite', 'Dose diária: 25 mg/dia')">+ Quetiapina 25mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Zolpidem', '10 mg', '1x/dia ao deitar', 'Dose diária: 10 mg/dia')">+ Zolpidem 10mg</button>
+                </div>
+              </div>
+
+              <!-- Hipertensão & Cardiovascular -->
+              <div style="margin-bottom:6px">
+                <span style="font-size:10.5px;font-weight:700;color:#DC2626;text-transform:uppercase;letter-spacing:0.5px">❤️ Hipertensão / Cardiovascular:</span>
+                <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:3px">
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Losartana Potássica', '50 mg', '1x/dia', 'Dose diária: 50 mg/dia')">+ Losartana 50mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Enalapril', '20 mg', '1x/dia', 'Dose diária: 20 mg/dia')">+ Enalapril 20mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Hidroclorotiazida', '25 mg', '1x/dia pela manhã', 'Dose diária: 25 mg/dia')">+ Hidroclorotiazida 25mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Amlodipino', '5 mg', '1x/dia', 'Dose diária: 5 mg/dia')">+ Amlodipino 5mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Atenolol', '50 mg', '1x/dia', 'Dose diária: 50 mg/dia')">+ Atenolol 50mg</button>
+                </div>
+              </div>
+
+              <!-- Diabetes & Metabólica -->
+              <div style="margin-bottom:6px">
+                <span style="font-size:10.5px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:0.5px">🩸 Diabetes &amp; Metabólica:</span>
+                <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:3px">
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Metformina', '850 mg', '2x/dia após refeições', 'Dose diária: 1700 mg/dia')">+ Metformina 850mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Glibenclamida', '5 mg', '1x/dia antes do café', 'Dose diária: 5 mg/dia')">+ Glibenclamida 5mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Dapagliflozina', '10 mg', '1x/dia', 'Dose diária: 10 mg/dia')">+ Dapagliflozina 10mg</button>
+                </div>
+              </div>
+
+              <!-- Ortopedia, Dor & Anti-inflamatórios -->
+              <div>
+                <span style="font-size:10.5px;font-weight:700;color:#D97706;text-transform:uppercase;letter-spacing:0.5px">🦴 Ortopedia / Dor:</span>
+                <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:3px">
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Ciclobenzaprina', '10 mg', '1x/dia à noite', 'Dose diária: 10 mg/dia')">+ Ciclobenzaprina 10mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Pregabalina', '75 mg', '2x/dia (12/12h)', 'Dose diária: 150 mg/dia')">+ Pregabalina 75mg 12/12h</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Dipirona', '1 g', 'se dor até 6/6h', 'Uso sintomático s/n')">+ Dipirona 1g</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Paracetamol', '750 mg', 'se dor até 6/6h', 'Uso sintomático s/n')">+ Paracetamol 750mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Ibuprofeno', '600 mg', 'a cada 8h após refeição', 'Dose diária: 1800 mg/dia')">+ Ibuprofeno 600mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Tramadol', '50 mg', 'se dor intensa até 8/8h', 'Uso sob demanda')">+ Tramadol 50mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Prednisona', '20 mg', '1x/dia pela manhã', 'Uso anti-inflamatório')">+ Prednisona 20mg</button>
+                </div>
               </div>
             </div>
 
@@ -2021,9 +2101,19 @@ body:not(.mode-agil-active) #containerModoAgil {
 
           <!-- Subpainel Antecedentes mórbidos & Outras Doenças -->
           <div class="subpanel" style="margin-top:16px">
-            <h4 style="margin-bottom:8px">Antecedentes mórbidos</h4>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <h4 style="margin:0">Antecedentes mórbidos</h4>
+              <button type="button" class="btn btn-outline" style="font-size:11.5px;padding:3px 9px;font-weight:600;color:#047857;background:#ECFDF5;border-color:#A7F3D0;display:inline-flex;align-items:center;gap:5px" onclick="negarAntecedentes()" title="Clique para preencher: Nega antecedentes mórbidos relevantes...">
+                <span>🛡️</span> Nega antecedentes.
+              </button>
+            </div>
             <div class="subpanel" style="margin-top:8px;margin-bottom:14px">
-              <h4 style="margin-bottom:6px">Histórico pregresso</h4>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <h4 style="margin:0">Histórico pregresso</h4>
+                <button type="button" class="btn btn-outline" style="font-size:11px;padding:2px 8px;font-weight:600;color:#047857;background:#ECFDF5;border-color:#A7F3D0;display:inline-flex;align-items:center;gap:4px" onclick="negarAntecedentes()" title="Preencher negação padrão">
+                  <span>🛡️</span> Nega antecedentes.
+                </button>
+              </div>
               <p class="help" style="margin-top:0;margin-bottom:8px">Use este espaço para registrar ou consultar informações relevantes do histórico pregresso.</p>
               <textarea class="textarea" id="agilHistoricoPregresso" style="min-height:74px" placeholder="Registre ou revise informações do histórico pregresso..." oninput="syncAgilField('historicoPregresso', this.value)"></textarea>
             </div>
@@ -2088,7 +2178,7 @@ body:not(.mode-agil-active) #containerModoAgil {
                 <div class="form-grid">
                   <div class="field col-4">
                     <label>CRM/CRO do médico assistente</label>
-                    <input class="input" id="agilCrmCro" placeholder="Ex: CRM/SP 123456" oninput="syncAgilField('crmCro', this.value)">
+                    <input class="input" id="agilCrmCro" value="Em anexo" placeholder="Ex: CRM/SP 123456" oninput="syncAgilField('crmCro', this.value)">
                   </div>
                   <div class="field col-4">
                     <label>Data do atestado/relatório</label>
@@ -2782,7 +2872,12 @@ body:not(.mode-agil-active) #containerModoAgil {
       <div class="section-body">
         <div class="notice warning"><strong>Importante:</strong> não deixar em branco. Perguntar sobre outras doenças em tratamento e consultar o histórico pregresso.</div>
         <div class="subpanel" style="margin-bottom:16px">
-          <h4>Histórico pregresso</h4>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <h4 style="margin:0">Histórico pregresso</h4>
+            <button type="button" class="btn btn-outline" style="font-size:11px;padding:2px 8px;font-weight:600;color:#047857;background:#ECFDF5;border-color:#A7F3D0;display:inline-flex;align-items:center;gap:4px" onclick="negarAntecedentes()" title="Preencher negação padrão">
+              <span>🛡️</span> Nega antecedentes.
+            </button>
+          </div>
           <p class="help" style="margin-top:0;margin-bottom:10px">Use este espaço para registrar ou consultar informações relevantes do histórico pregresso.</p>
           <textarea class="textarea" id="historicoPregresso" placeholder="Registre informações do histórico pregresso, quando necessário."></textarea>
           <div class="add-row"><button class="btn btn-outline" type="button" onclick="openHistory()">Consultar Histórico Pregresso</button></div>
@@ -2807,7 +2902,7 @@ body:not(.mode-agil-active) #containerModoAgil {
       <div class="section-head"><h2>04 — Atestado / Relatório / Exames</h2><p>Dados do documento apresentado pelo médico assistente.</p></div>
       <div class="section-body">
         <div class="form-grid">
-          <div class="field col-6"><label>CRM ou CRO do médico assistente</label><input class="input" id="crmCro"><small class="help">Campo diferente do CRM/CRO do médico responsável, quando informado separadamente.</small></div>
+          <div class="field col-6"><label>CRM ou CRO do médico assistente</label><input class="input" id="crmCro" value="Em anexo"><small class="help">Campo diferente do CRM/CRO do médico responsável, quando informado separadamente.</small></div>
           <div class="field col-6">
   <label class="required">CID da doença referida pelo médico assistente</label>
   <div class="cid-wrap">
@@ -4639,7 +4734,7 @@ function renderMedications(){
     if(!state.medications.length){box.innerHTML='<div class="empty">Nenhuma medicação adicionada.</div>';return;}
     box.innerHTML=state.medications.map((m,i)=>`
       <div class="med-row">
-        <input class="input small-input field-span" placeholder="Medicamento" value="${esc(m.medicamento)}" oninput="editMedication(${i},'medicamento',this.value)">
+        <input class="input small-input field-span" list="medSuggestionsList" placeholder="Medicamento" value="${esc(m.medicamento)}" oninput="editMedication(${i},'medicamento',this.value)">
         <input class="input small-input" placeholder="Dosagem" value="${esc(m.dosagem)}" oninput="editMedication(${i},'dosagem',this.value)">
         <input class="input small-input" placeholder="Frequência" value="${esc(m.frequencia)}" oninput="editMedication(${i},'frequencia',this.value)">
         <input class="input small-input field-span" placeholder="Observação" value="${esc(m.observacao)}" oninput="editMedication(${i},'observacao',this.value)">
@@ -6656,6 +6751,20 @@ function onAgilDoencaMotivoInput(val) {
   state.aux.doencaMotivo = val;
   state.doencaMotivo = val;
   if ($("doencaMotivo")) $("doencaMotivo").value = val;
+
+  // Autopreencher antecedentes mórbidos logo abaixo se não houver texto manual personalizado
+  const curHist = (state.aux.historicoPregresso || state.historicoPregresso || $("agilHistoricoPregresso")?.value || "").trim();
+  if (!curHist || curHist === "Nega" || curHist === "Nega." || curHist.startsWith("Refere histórico relacionado a")) {
+    const v = (val || "").trim();
+    if (v) {
+      const autoText = `Refere histórico relacionado a ${v}. Nega cirurgias prévias relevantes, neoplasias ou hábitos tabágicos e etilistas.`;
+      state.aux.historicoPregresso = autoText;
+      state.historicoPregresso = autoText;
+      if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = autoText;
+      if ($("historicoPregresso")) $("historicoPregresso").value = autoText;
+    }
+  }
+
   if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
   autoSave();
 }
@@ -7212,18 +7321,50 @@ function gerarNarrativaQueixaMelhoriaContinua(st, v) {
   ident += ".";
   partes.push(ident);
   
-  // 2. Readaptação
+  // 2. Readaptação (se não for readaptado, não colocar na ficha)
   if (readap) {
     partes.push(`Encontra-se atualmente em readaptação funcional${ativReadap ? `, desempenhando as seguintes atividades: ${ativReadap}.` : "."}`);
-  } else {
-    partes.push("Não se encontra em readaptação funcional.");
   }
-  
+
   // 3. Doença e acompanhamento
   if (doenca) {
     let trat = `Relata acompanhamento clínico motivado por ${doenca}`;
-    if (inicioTrat) trat += `, com início do tratamento em ${inicioTrat}`;
-    if (freqCons) trat += `, comparecendo a consultas de periodicidade ${freqCons}`;
+    if (inicioTrat) {
+      const s = String(inicioTrat).trim();
+      if (/^\d{4}$/.test(s)) {
+        trat += `, sendo que iniciou-se seu tratamento em ${s}`;
+      } else if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+        const p = s.split("-");
+        trat += `, sendo que iniciou-se seu tratamento em ${p[2]}/${p[1]}/${p[0]}`;
+      } else {
+        trat += `, sendo que iniciou-se seu tratamento em ${s}`;
+      }
+    }
+    if (freqCons) {
+      const f = String(freqCons).trim();
+      const fLow = f.toLowerCase();
+      if (fLow === "quinzenal") {
+        trat += `, realiza consultas quinzenalmente`;
+      } else if (fLow === "mensal") {
+        trat += `, realiza consultas mensalmente`;
+      } else if (fLow === "semanal") {
+        trat += `, realiza consultas semanalmente`;
+      } else if (fLow === "bimestral") {
+        trat += `, realiza consultas bimestralmente`;
+      } else if (fLow === "trimestral") {
+        trat += `, realiza consultas trimestralmente`;
+      } else if (fLow === "semestral") {
+        trat += `, realiza consultas semestralmente`;
+      } else if (fLow === "anual") {
+        trat += `, realiza consultas anualmente`;
+      } else if (/^\d+\s*dias?$/i.test(fLow)) {
+        trat += `, com consultas a cada ${fLow}`;
+      } else if (fLow.startsWith("a cada")) {
+        trat += `, com consultas ${fLow}`;
+      } else {
+        trat += `, comparecendo a consultas de periodicidade ${f}`;
+      }
+    }
     trat += ".";
     partes.push(trat);
   }
@@ -7878,6 +8019,20 @@ function adicionarMedRapida(med, dose, freq, obs) {
   });
   toast(`Medicamento ${med} (${dose}) adicionado.`);
   atualizarProgressoAgil();
+}
+
+function negarAntecedentes() {
+  const frase = "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas.";
+  if (!state.aux) state.aux = {};
+  state.aux.historicoPregresso = frase;
+  state.historicoPregresso = frase;
+  if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = frase;
+  if ($("historicoPregresso")) $("historicoPregresso").value = frase;
+  if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
+  if (typeof autoSave === "function") autoSave();
+  if (typeof toast === "function") {
+    toast("Antecedentes preenchidos: Nega antecedentes mórbidos relevantes.");
+  }
 }
 
 /* =========================================================

@@ -2475,3 +2475,104 @@ def test_api_ai_esisla_vitals_dthr_antecedentes_and_limitacoes_preservation(monk
     ficha_sem_ant = res_sem_ant.get_json()["ficha_esisla"]
     assert re.search(r"Antecedentes Mórbidos:\s*Nega\.", ficha_sem_ant) is not None
 
+
+def test_html_scripts_syntax_balance_no_unexpected_tokens():
+    """Garante que nenhum script JavaScript em gestao_atendimentos.html ou no assistente
+    possua parênteses/chaves desbalanceados ou erros de sintaxe (como 'Unexpected token ;').
+    """
+    def check_brackets(code, filename):
+        stack = []
+        i = 0
+        in_str = None
+        in_re = False
+        in_line_comment = False
+        in_block_comment = False
+        line_no = 1
+        col_no = 0
+        
+        while i < len(code):
+            ch = code[i]
+            col_no += 1
+            if ch == '\n':
+                line_no += 1
+                col_no = 0
+                if in_line_comment:
+                    in_line_comment = False
+                i += 1
+                continue
+            if in_line_comment:
+                i += 1
+                continue
+            if in_block_comment:
+                if ch == '*' and i + 1 < len(code) and code[i+1] == '/':
+                    in_block_comment = False
+                    i += 2
+                    continue
+                i += 1
+                continue
+            if in_str:
+                if ch == '\\':
+                    i += 2
+                    continue
+                elif ch == in_str:
+                    in_str = None
+                i += 1
+                continue
+            if in_re:
+                if ch == '\\':
+                    i += 2
+                    continue
+                elif ch == '[':
+                    while i < len(code) and code[i] != ']':
+                        if code[i] == '\\':
+                            i += 2
+                        else:
+                            i += 1
+                elif ch == '/':
+                    in_re = False
+                i += 1
+                continue
+            if ch == '/' and i + 1 < len(code):
+                if code[i+1] == '/':
+                    in_line_comment = True
+                    i += 2
+                    continue
+                elif code[i+1] == '*':
+                    in_block_comment = True
+                    i += 2
+                    continue
+            if ch in ('"', "'", '`'):
+                in_str = ch
+                i += 1
+                continue
+            if ch == '/' and i + 1 < len(code) and code[i+1] not in ('/', '*'):
+                prev = code[:i].rstrip()
+                if not prev or prev[-1] in '(=,:[!&|?{};~^' or prev.endswith('return'):
+                    in_re = True
+                    i += 1
+                    continue
+            if ch in '([{':
+                stack.append((ch, line_no, col_no))
+            elif ch in ')]}':
+                assert stack, f"{filename}:{line_no}:{col_no}: Unmatched closing {ch}"
+                opener, o_line, o_col = stack.pop()
+                assert (opener, ch) in [('(', ')'), ('[', ']'), ('{', '}')], (
+                    f"{filename}:{line_no}:{col_no}: Mismatched {opener} (from line {o_line}:{o_col}) and {ch}"
+                )
+            i += 1
+        assert not stack, f"{filename}: Unclosed {len(stack)} tokens, first: {stack[0]}"
+
+    gestao_content = (ROOT / "gestao_atendimentos.html").read_text(encoding="utf-8")
+    atd_content = (ROOT / "ambiental_avaliacao_medica_lts_cid_assistente.html").read_text(encoding="utf-8")
+
+    # Verifica que não há abertura dupla de parênteses que gere 'Unexpected token ;'
+    assert "const exameFisicoTexto = ((String" not in gestao_content
+    assert "const exameFisicoTexto = ((String" not in atd_content
+    assert "const exameFisicoTexto = (String" in gestao_content
+    assert "const exameFisicoTexto = (String" in atd_content
+
+    # Valida todos os blocos <script> de ambos os arquivos
+    for name, content in [("gestao_atendimentos.html", gestao_content), ("assistente.html", atd_content)]:
+        scripts = re.findall(r'<script(?:\s+[^>]*)?>(.*?)</script>', content, re.DOTALL | re.IGNORECASE)
+        for idx, s in enumerate(scripts):
+            check_brackets(s, f"{name} script {idx}")

@@ -9129,7 +9129,7 @@ function detectarSistemaExameFisico(st, aux, texto, cidCode) {
   if (exTipo.includes('sentidos') || exTipo.includes('oftalm') || exTipo.includes('otol')) return 'os';
 
   // 3. Verificação pelo conteúdo do texto clínico registrado (exame físico padrão / achados)
-  const exameFisicoTexto = ((String(texto || '').match(/\(\*\)\s*Exame Físico Geral:?\s*\n\s*([\s\S]*?)(?=\n\s*(?:Descrição das Alterações|Descri[çc][ãa]o das Altera[çc][õo]es|\(\*\)Descrição da\(s\) Limitação|\(\*\)Parecer Médico|Limitação|$))/i) || [])[1] || exDesc || '';
+  const exameFisicoTexto = (String(texto || '').match(/\(\*\)\s*Exame Físico Geral:?\s*\n\s*([\s\S]*?)(?=\n\s*(?:Descrição das Alterações|Descri[çc][ãa]o das Altera[çc][õo]es|\(\*\)Descrição da\(s\) Limitação|\(\*\)Parecer Médico|Limitação|$))/i) || [])[1] || exDesc || '';
   const efLower = exameFisicoTexto.toLowerCase();
   const exameFisicoLinha1 = (String(texto || '').match(/\(\*\)\s*Exame Físico Geral:?\s*\n\s*([^\n\r]+)/i) || [])[1]?.toLowerCase() || '';
   if (exameFisicoLinha1.startsWith('aparelho e outro') || exameFisicoLinha1.startsWith('aparelho outro') || exameFisicoLinha1.startsWith('e outros') || exameFisicoLinha1.includes('outros:') || efLower.includes('bom do estado geral') || efLower.includes('exame físico geral')) {

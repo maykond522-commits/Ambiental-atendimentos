@@ -2229,13 +2229,249 @@ def test_ajustes_senior_antecedentes_nega_checkboxes_outros_limitacoes_e_header(
     assert "PRESERVAÇÃO RIGOROSA DE LIMITAÇÕES JÁ PREENCHIDAS" in app_text
 
 
+def test_isolamento_estrito_exame_fisico_alteracoes_e_limitacoes():
+    """Garante que o Exame Físico Geral não vaze conteúdos de seções subsequentes
+    (Alterações Clínicas/Médicas, Limitações, Parecer, Quesitos, Parecer Final),
+    e que a função ext não caia no fallback de final de arquivo ($) indevidamente.
+    """
+    from app import _clean_esisla_text
+
+    atd = (ROOT / "ambiental_avaliacao_medica_lts_cid_assistente.html").read_text(encoding="utf-8")
+    gestao = (ROOT / "gestao_atendimentos.html").read_text(encoding="utf-8")
+    app_text = (ROOT / "app.py").read_text(encoding="utf-8")
+
+    # 1. Normalização canônica no app.py de "Alterações Médicas" para "Alterações Clínicas..."
+    sample_medicas = (
+        "Registro da perícia Médica para Licença\n\n"
+        "(*)Exame Físico Geral\n"
+        "Bom estado geral. Normodinâmico.\n\n"
+        "Descrição das Alterações Médicas e Relato dos Exames Complementares:\n"
+        "Não foram apresentados exames complementares.\n\n"
+        "(*)Descrição da(s) Limitação:\n"
+        "Limitação leve.\n\n"
+        "(*)Parecer Médico\nParecer: FAVORÁVEL\nNº Dias: 5\n"
+    )
+    cleaned = _clean_esisla_text(sample_medicas)
+    assert "Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:" in cleaned
+    assert "(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):" in cleaned
+
+    # 2. Em gestao_atendimentos.html, ext usa lookahead estrito sem fallback |$ quando sf existe
+    assert "const lookahead = sf ? '(?=' + sf + ')' : '(?=$)';" in gestao
+    assert "headersFimExameFisico" in gestao
+    assert "headersFimAlteracoes" in gestao
+    assert "headersFimLimitacoes" in gestao
+
+    # 3. Card dedicado de Alterações Clínicas e Exames no gestao_atendimentos.html
+    assert "Alterações Clínicas e Exames Complementares" in gestao
+
+    # 4. Em ambiental_avaliacao_medica_lts_cid_assistente.html, regex de exApres aceita variações de Alterações
+    assert "(?:Descrição das Alterações|Descri[çc][ãa]o das Altera[çc][õo]es|\\(\\*\\)Descrição da\\(s\\) Limitação|\\(\\*\\)Parecer Médico|Limitação|$)" in atd
+
+    # 5. Validação com o texto real do usuário: Exame Físico isolado sem vazamento
+    raw_user_sample = (
+        "Registro da perícia Médica para Licença\n\n"
+        "(*)Exame Físico Geral\n"
+        "Bom do estado geral, nutrição adequada, sem alterações na coloração e hidratação de mucosas.\n"
+        "EXAME FÍSICO DO AP. CARDIOVASCULAR: Precórdio normodinâmico.\n\n"
+        "Descrição das Alterações Médicas e Relato dos Exames Complementares:\n"
+        "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial.\n\n"
+        "(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):\n"
+        "Limitações funcionais decorrentes do quadro clínico (I10 - Hipertensão essencial (primária)).\n\n"
+        "(*)Parecer Médico\nParecer: FAVORÁVEL\nNº Dias: 7\nData Início: 29/09/2026\nCID 10: I10\n"
+        "Descrição: Vem com atestado de 7 dias por hipertensão arterial.\n"
+        "Médico Perito: WANIA SANCHES PICASSO - CRM: 79775\nCRM: 79775\nDt/Hr Perícia: 29/09/2026 07:55\n\n"
+        "(*)Resposta aos quesitos\n1) Sim\n2) Sim\n3) Sim\n\n"
+        "(*)Justificativa Parecer Médico\nConsidero a capacidade laborativa parcial.\n\n"
+        "(*) Parecer Final\nNº Dias: 7\nData Início: 29/09/2026\nCID 10: I10\nDiretor DPME:\nData P.F.:"
+    )
+
+    clean_user = _clean_esisla_text(raw_user_sample)
+
+    # Extração de Exame Físico delimitado estritamente por Descrição das Alterações
+    m_ef = re.search(
+        r"(\(\*\)\s*Exame Físico Geral:?\s*\n\s*)([\s\S]*?)(?=\n\s*Descrição das Alterações)",
+        clean_user,
+        re.IGNORECASE
+    )
+    assert m_ef is not None
+    ef_text = m_ef.group(2).strip()
+    assert "Bom do estado geral" in ef_text
+    assert "Precórdio normodinâmico" in ef_text
+    # Nenhuma seção posterior deve vazar para o Exame Físico Geral
+    assert "Descrição das Alterações" not in ef_text
+    assert "Não foram apresentados exames" not in ef_text
+    assert "Limitações funcionais" not in ef_text
+    assert "Parecer: FAVORÁVEL" not in ef_text
+    assert "WANIA SANCHES PICASSO" not in ef_text
+    assert "Resposta aos quesitos" not in ef_text
+    assert "Data P.F." not in ef_text
 
 
+def test_detectar_sistema_exame_fisico_outros_geral_e_cid_cardiovascular():
+    """Garante que tanto no gestao_atendimentos.html quanto no assistente o exame físico geral
+    e o texto de 'Bom do estado geral' sempre mapeiem para 'outro' (voMedico.parEdOutro),
+    mesmo que o CID seja I10 (cardiovascular) e contenha menção ao aparelho cardiovascular no texto.
+    """
+    gestao = GESTAO_ATENDIMENTOS
+    atd = ATTENDANCE
+
+    # Ambos os arquivos devem conter a verificação de texto 'bom do estado geral' retornando 'outro'
+    assert "efLower.includes('bom do estado geral')" in gestao
+    assert "efLower.includes('bom do estado geral')" in atd
+
+    # A verificação de conteúdo clínico deve anteceder a verificação cega por CID
+    idx_gestao_text = gestao.find("efLower.includes('bom do estado geral')")
+    idx_gestao_cid = gestao.find("const c = String(cidCode || '').toUpperCase().trim();")
+    assert idx_gestao_text != -1 and idx_gestao_cid != -1
+    assert idx_gestao_text < idx_gestao_cid, "Em gestao_atendimentos.html o texto do exame deve ter precedência sobre o CID"
+
+    idx_atd_text = atd.find("efLower.includes('bom do estado geral')")
+    idx_atd_cid = atd.find("const c = String(cidCode || '').toUpperCase().trim();")
+    assert idx_atd_text != -1 and idx_atd_cid != -1
+    assert idx_atd_text < idx_atd_cid, "No assistente o texto do exame deve ter precedência sobre o CID"
+
+    # Ambos os arquivos devem mapear subtipo geral / e outros para 'outro'
+    assert "outrosSub.includes('geral') || outrosSub === 'e outros' || outrosSub === 'outros'" in gestao
+    assert "outrosSub.includes('geral') || outrosSub === 'e outros' || outrosSub === 'outros'" in atd
+
+    # Emulação do algoritmo em Python reproduzindo o caso reportado pelo usuário
+    def py_detectar(st, aux, texto, cid_code):
+        ex_tipo = str(st.get("exameFisicoTipo") or aux.get("exameFisicoTipo") or "").strip().lower()
+        outros_sub = str(st.get("outrosSubtipo") or aux.get("outrosSubtipo") or "").strip().lower()
+        
+        if "geral" in outros_sub or outros_sub in ("e outros", "outros"):
+            return "outro"
+        if "geral" in ex_tipo or ex_tipo in ("outros", "e outros") or ex_tipo.startswith("outro"):
+            return "outro"
+            
+        m = re.search(r"\(\*\)\s*Exame Físico Geral:?\s*\n\s*([\s\S]*?)(?=\n\s*(?:Descrição das Alterações|\(\*\)Descrição da\(s\) Limitação|\(\*\)Parecer Médico|$))", texto, re.IGNORECASE)
+        ef_texto = m.group(1).lower() if m else ""
+        m_l1 = re.search(r"\(\*\)\s*Exame Físico Geral:?\s*\n\s*([^\n\r]+)", texto, re.IGNORECASE)
+        l1 = m_l1.group(1).lower() if m_l1 else ""
+        
+        if l1.startswith("aparelho e outro") or l1.startswith("e outros") or "bom do estado geral" in ef_texto or "exame físico geral" in ef_texto:
+            return "outro"
+        if ("circulat" in l1 or "circulat" in ef_texto) and "bom do estado geral" not in ef_texto:
+            return "ac"
+            
+        c = str(cid_code or "").upper().strip()
+        if c.startswith("I"):
+            return "ac"
+        return "outro"
+
+    texto_real = (
+        "(*)Exame Físico Geral\n"
+        "Bom do estado geral, nutrição adequada, sem alterações na coloração e hidratação de mucosas.\n"
+        "EXAME FÍSICO DO AP.RESPIRATÓRIO: Eupnéico, sem esforço respiratório.\n"
+        "EXAME FÍSICO DO AP. CARDIOVASCULAR: Precórdio normodinâmico. RCR 2T c/ BNF.\n\n"
+        "Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:\n"
+        "Não foram apresentados exames complementares no ato pericial.\n"
+    )
+
+    # Caso 1: Médico salvou em Modo Ágil com CID I10 e texto padrão do Exame Físico Geral
+    assert py_detectar({}, {}, texto_real, "I10") == "outro"
+
+    # Caso 2: Médico selecionou Tipo "Outros" e Subtipo "Geral"
+    assert py_detectar({"exameFisicoTipo": "Outros", "outrosSubtipo": "Geral"}, {}, texto_real, "I10") == "outro"
+
+    # Caso 3: Médico realmente avaliou apenas Aparelho Circulatório sem Exame Geral
+    texto_cardio_puro = (
+        "(*)Exame Físico Geral\n"
+        "Aparelho Circulatório: Precórdio normodinâmico. RCR 2T c/ BNF sem sopros.\n\n"
+        "Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:\n"
+        "Não foram apresentados exames complementares.\n"
+    )
+    assert py_detectar({"exameFisicoTipo": "Aparelho Circulatório"}, {}, texto_cardio_puro, "I10") == "ac"
 
 
+def test_api_ai_esisla_vitals_dthr_antecedentes_and_limitacoes_preservation(monkeypatch):
+    """Testa preservação completa dos sinais vitais, data/hora perícia, antecedentes mórbidos
+    sem menção a dias de atestado, exames complementares de fallback, e ausência de prefixos duplicados.
+    """
+    from app import app, EsislaResult
 
+    raw_gemini_template = (
+        "Registro da perícia Médica para Licença\n\n"
+        "(*) Queixa e Duração:\nServidor apresenta queixas clínicas.\n\n"
+        "Antecedentes Mórbidos:\n\n"
+        "Atestado/Relatório/Exames Complementares:\nEm anexo.\n\n"
+        "(*)Exame Físico Geral\n"
+        "Exame Físico Geral: \n\n"
+        "Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:\n\n"
+        "(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):\n\n"
+        "(*)Parecer Médico\n"
+        "Parecer: FAVORÁVEL\n"
+        "Nº Dias: 7\n"
+        "Data Início: 29/09/2026\n"
+        "CID 10: I10\n"
+        "Descrição: Hipertensão arterial\n"
+        "Médico Perito: WANIA SANCHES PICASSO\n"
+        "CRM: 79775\n\n"
+        "(*)Resposta aos quesitos\n1) Sim\n2) Sim\n3) Sim\n\n"
+        "(*)Justificativa Parecer Médico\nCapacidade temporariamente prejudicada.\n\n"
+        "(*) Parecer Final\nNº Dias: 7\nData Início: 29/09/2026\nCID 10: I10\nDescrição: Hipertensão arterial\nDiretor DPME:\nData P.F.:"
+    )
 
+    monkeypatch.setattr("app._authenticate_request", lambda: ({"id": "1", "email": "admin@ambiental.com", "nome": "Admin", "perfil": "Administrador"}, "token123"))
+    monkeypatch.setattr("app._generate_cached", lambda *args, **kwargs: (EsislaResult(ficha_esisla=raw_gemini_template), False, "hash123"))
 
+    client = app.test_client()
 
+    # Cenário 1: Médico com todos os campos preenchidos
+    payload_completo = {
+        "atendimento": "777888",
+        "data_atendimento": "29/09/2026",
+        "hora_atendimento": "07:55",
+        "pressao_sistolica": "130",
+        "pressao_diastolica": "85",
+        "pulso": "76",
+        "altura": "1.70",
+        "peso": "82",
+        "historico_pregresso": "Hipertensa há 6 anos, faz uso de hidroclorotiazida. Vem com atestado de 7 dias.",
+        "alteracoes_clinicas_exames": "",
+        "exame_fisico_tipo": "Outros",
+        "exame_fisico_descricao": "Exame Físico Geral: Bom do estado geral, corada, hidratada.",
+        "desc_limitacao": "Limitação para esforços físicos intensos e levantamento de peso excessivo",
+        "parecer": "FAVORÁVEL",
+        "cargo": "Professor de Educação Básica",
+        "cid": "I10",
+        "medico": "WANIA SANCHES PICASSO",
+        "crm_responsavel": "79775"
+    }
 
+    res = client.post("/api/ai/esisla", json=payload_completo)
+    assert res.status_code == 200
+    ficha = res.get_json()["ficha_esisla"]
+
+    # 1. Sinais Vitais e medidas
+    assert "Sistólica (mmHg): 130" in ficha
+    assert "Diastólica (mmHg): 85" in ficha
+    assert "Pulso (bpm): 76" in ficha
+    assert "Altura: 1.70" in ficha
+    assert "Peso: 82" in ficha
+
+    # 2. Data/Hora da perícia formatada
+    assert "Dt/Hr Perícia: 29/09/2026 07:55" in ficha
+
+    # 3. Antecedentes Mórbidos limpos de menções a atestado
+    assert "Hipertensa há 6 anos, faz uso de hidroclorotiazida." in ficha
+    assert "Vem com atestado de 7 dias" not in ficha
+
+    # 4. Fallback de exames complementares
+    assert "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial." in ficha
+
+    # 5. Sem prefixo duplicado no Exame Físico
+    assert "Exame Físico Geral: Exame Físico Geral:" not in ficha
+    assert "Bom do estado geral, corada, hidratada." in ficha
+
+    # 6. Preservação de limitações com rol de atividades integrado
+    assert "Limitação para esforços físicos intensos e levantamento de peso excessivo, atividades estas constantes no Rol de Atividades do cargo de Professor de Educação Básica." in ficha
+
+    # Cenário 2: Histórico pregresso vazio deve resultar em 'Nega.'
+    payload_sem_ant = dict(payload_completo)
+    payload_sem_ant["historico_pregresso"] = ""
+    res_sem_ant = client.post("/api/ai/esisla", json=payload_sem_ant)
+    assert res_sem_ant.status_code == 200
+    ficha_sem_ant = res_sem_ant.get_json()["ficha_esisla"]
+    assert re.search(r"Antecedentes Mórbidos:\s*Nega\.", ficha_sem_ant) is not None
 

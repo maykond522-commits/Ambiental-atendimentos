@@ -1786,6 +1786,10 @@ def _load_authoritative_ai_payload(raw: dict[str, Any]) -> dict[str, Any]:
         return payload
     merged = dict(stored)
     merged["atendimento"] = row.get("numero") or stored.get("atendimento") or atendimento
+    stored_aux = stored.get("aux") if isinstance(stored.get("aux"), dict) else {}
+    for ak, av in stored_aux.items():
+        if ak not in merged and av not in (None, "", [], {}):
+            merged[ak] = av
     # Preserva seleções ativas / não salvas enviadas no payload da requisição
     for k, v in payload.items():
         if v not in (None, "", [], {}):
@@ -1793,6 +1797,10 @@ def _load_authoritative_ai_payload(raw: dict[str, Any]) -> dict[str, Any]:
                 merged[k] = {**merged[k], **v}
             else:
                 merged[k] = v
+    merged_aux = merged.get("aux") if isinstance(merged.get("aux"), dict) else {}
+    for ak, av in merged_aux.items():
+        if ak not in merged and av not in (None, "", [], {}):
+            merged[ak] = av
     return merged
 
 def _generate(instruction: str) -> AIResult:
@@ -2109,7 +2117,7 @@ def _clean_esisla_text(text: str) -> str:
 
     # Desacoplamento de segurança: se "Exame Físico Geral" e "Descrição das Alterações Clínicas... e Relato dos Exames Complementares" vierem idênticos
     pattern = re.compile(
-        r"(\(\*\)\s*Exame Físico Geral:?\s*\n)(.*?)(\n\s*Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:?\s*\n)(.*?)(\n\s*\(\*\)\s*Descrição da\(s\) Limitação)",
+        r"(\(\*\)\s*Exame Físico Geral:?\s*\n)(.*?)(\n\s*Descrição das Alterações (?:Clínicas|Médicas) encontradas e Relato dos Exames Complementares:?\s*\n)(.*?)(\n\s*\(\*\)\s*Descrição da\(s\)\s*Limitação)",
         re.DOTALL | re.IGNORECASE
     )
     m_dup = pattern.search(text)
@@ -2120,6 +2128,22 @@ def _clean_esisla_text(text: str) -> str:
         if b1_strip and b2_strip and (b1_strip == b2_strip or (len(b1_strip) >= 15 and b2_strip.startswith(b1_strip))):
             fallback_exames = "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial."
             text = text[:m_dup.start()] + h1 + b1 + h2 + fallback_exames + "\n\n" + h3 + text[m_dup.end():]
+
+    # Normalização canônica do cabeçalho de exames complementares / alterações clínicas
+    text = re.sub(
+        r"(?:\r?\n|^)\s*Descri[çc][ãa]o\s+das\s+Altera[çc][õo]es\s+(?:Cl[íi]nicas|M[ée]dicas)[^\n\r:]*:?",
+        "\n\nDescrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:",
+        text,
+        flags=re.IGNORECASE
+    )
+
+    # Normalização canônica do cabeçalho de limitações físicas e mentais
+    text = re.sub(
+        r"(?:\r?\n|^)\s*\(\s*\*\s*\)\s*Descri[çc][ãa]o\s+da\(s\)\s+Limita[çc][ãa]o[^\n\r:]*:?",
+        "\n\n(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):",
+        text,
+        flags=re.IGNORECASE
+    )
 
     # Remover marcador (Tipo-Data-Resultado) para preservar padrão visual limpo
     text = re.sub(r"Atestado/Relat[óo]rio/Exames Complementares\s*\([^\)]*Tipo[^\)]*\):?", "Atestado/Relatório/Exames Complementares:", text, flags=re.IGNORECASE)
@@ -2158,41 +2182,96 @@ def api_ai_esisla():
             instruction = _task_instruction("esisla", payload)
             result, cached, _ = _generate_cached("esisla", payload, instruction, EsislaResult, force_refresh=force)
             ficha_text = _clean_esisla_text(result.ficha_esisla)
+            # Vitals e Biometria
             alt_val = str(payload.get("altura") or "").strip()
             peso_val = str(payload.get("peso") or "").strip()
+            pa_sist = str(payload.get("pressao_sistolica") or "").strip()
+            pa_diast = str(payload.get("pressao_diastolica") or "").strip()
+            pulso_val = str(payload.get("pulso") or "").strip()
 
             if alt_val:
-                if re.search(r"^Altura:\s*$", ficha_text, re.MULTILINE):
-                    ficha_text = re.sub(r"^Altura:\s*$", f"Altura: {alt_val}", ficha_text, flags=re.MULTILINE)
+                if re.search(r"^Altura:[ \t]*[^\r\n]*$", ficha_text, re.MULTILINE):
+                    ficha_text = re.sub(r"^(Altura:[ \t]*)[^\r\n]*$", f"Altura: {alt_val}", ficha_text, flags=re.MULTILINE)
+
             if peso_val:
-                if re.search(r"^Peso:\s*$", ficha_text, re.MULTILINE):
-                    ficha_text = re.sub(r"^Peso:\s*$", f"Peso: {peso_val}", ficha_text, flags=re.MULTILINE)
+                if re.search(r"^Peso:[ \t]*[^\r\n]*$", ficha_text, re.MULTILINE):
+                    ficha_text = re.sub(r"^(Peso:[ \t]*)[^\r\n]*$", f"Peso: {peso_val}", ficha_text, flags=re.MULTILINE)
+
+            if pa_sist:
+                pa_sist_digits = re.sub(r"\D", "", pa_sist)[:3]
+                if pa_sist_digits:
+                    if re.search(r"^Sist[óo]lica[ \t]*\(mmHg\):[ \t]*[^\r\n]*$", ficha_text, re.MULTILINE | re.IGNORECASE):
+                        ficha_text = re.sub(r"^(Sist[óo]lica[ \t]*\(mmHg\):[ \t]*)[^\r\n]*$", f"Sistólica (mmHg): {pa_sist_digits}", ficha_text, flags=re.MULTILINE | re.IGNORECASE)
+                    pa_sist = pa_sist_digits
+
+            if pa_diast:
+                pa_diast_digits = re.sub(r"\D", "", pa_diast)[:3]
+                if pa_diast_digits:
+                    if re.search(r"^Diast[óo]lica[ \t]*\(mmHg\):[ \t]*[^\r\n]*$", ficha_text, re.MULTILINE | re.IGNORECASE):
+                        ficha_text = re.sub(r"^(Diast[óo]lica[ \t]*\(mmHg\):[ \t]*)[^\r\n]*$", f"Diastólica (mmHg): {pa_diast_digits}", ficha_text, flags=re.MULTILINE | re.IGNORECASE)
+                    pa_diast = pa_diast_digits
+
+            if pulso_val:
+                pulso_digits = re.sub(r"\D", "", pulso_val)[:3]
+                if pulso_digits:
+                    if re.search(r"^Pulso[ \t]*\(bpm\):[ \t]*[^\r\n]*$", ficha_text, re.MULTILINE | re.IGNORECASE):
+                        ficha_text = re.sub(r"^(Pulso[ \t]*\(bpm\):[ \t]*)[^\r\n]*$", f"Pulso (bpm): {pulso_digits}", ficha_text, flags=re.MULTILINE | re.IGNORECASE)
+                    pulso_val = pulso_digits
+
+            if "Sistólica" not in ficha_text and "Diastólica" not in ficha_text:
+                pa_block = (
+                    f"Pressão Arterial\n"
+                    f"Sistólica (mmHg): {pa_sist}\n"
+                    f"Diastólica (mmHg): {pa_diast}\n"
+                    f"Pulso (bpm): {pulso_val}\n\n"
+                )
+                if "Altura:" in ficha_text:
+                    ficha_text = re.sub(r"(Altura:)", pa_block + r"\1", ficha_text, count=1)
+                else:
+                    ficha_text = re.sub(r"(\(\*\)\s*Exame Físico Geral)", pa_block + r"\1", ficha_text, count=1)
 
             if "Altura:" not in ficha_text and "Peso:" not in ficha_text:
                 alt_block = f"Altura: {alt_val}\nPeso: {peso_val}\n\n" if (alt_val or peso_val) else "Altura:\nPeso:\n\n"
                 ficha_text = re.sub(r"(\(\*\)\s*Exame Físico Geral)", alt_block + r"\1", ficha_text, count=1)
 
+            # Antecedentes Mórbidos: priorizar o que o médico informou no atendimento (Modo Ágil); se vazio, 'Nega.'
+            ant_val = str(payload.get("historico_pregresso") or payload.get("antecedentes") or "").strip()
+            m_ant = re.search(r"(\nAntecedentes Mórbidos:?\s*\n)(.*?)(\n\s*Atestado/Relat[óo]rio)", ficha_text, re.DOTALL | re.IGNORECASE)
+            if m_ant:
+                cur_ant = m_ant.group(2).strip()
+                if ant_val and ant_val.lower() not in ("nega", "nega.", "não refere", "nao refere", "-", "sem antecedentes"):
+                    clean_ant = re.sub(r"[\s\.\,]*\b(?:[Vv]em\s+com\s+atestado|[Aa]testado)\s+de\s+\d+\s+dias[^\.\n\r]*[\.\,]?", ".", ant_val)
+                    clean_ant = re.sub(r"\.{2,}", ".", clean_ant).strip()
+                    clean_ant = re.sub(r"^[\s\.\,]+", "", clean_ant).strip()
+                    if not clean_ant or clean_ant == ".":
+                        clean_ant = "Nega."
+                    elif not clean_ant.endswith("."):
+                        clean_ant += "."
+                    ficha_text = ficha_text[:m_ant.start(2)] + clean_ant + ficha_text[m_ant.end(2):]
+                elif not cur_ant or cur_ant == "." or cur_ant.lower() in ("nega", "nega."):
+                    ficha_text = ficha_text[:m_ant.start(2)] + "Nega." + ficha_text[m_ant.end(2):]
+
             par_val = str(payload.get("parecer") or "").strip().upper()
             is_contra = "CONTR" in par_val
             is_readap = str(payload.get("readaptado") or "").strip().lower() in ("sim", "s", "true", "1")
             if par_val:
-                if re.search(r"^Parecer:\s*$", ficha_text, re.MULTILINE):
-                    ficha_text = re.sub(r"^Parecer:\s*$", f"Parecer: {par_val}", ficha_text, flags=re.MULTILINE)
+                if re.search(r"^Parecer:[ \t]*[^\r\n]*$", ficha_text, re.MULTILINE):
+                    ficha_text = re.sub(r"^(Parecer:[ \t]*)[^\r\n]*$", f"Parecer: {par_val}", ficha_text, flags=re.MULTILINE)
                 elif "Parecer:" not in ficha_text:
                     ficha_text = re.sub(r"(\(\*\)\s*Parecer Médico:?\s*\n)", r"\1Parecer: " + par_val + "\n", ficha_text, count=1)
 
             dias_val = str(payload.get("dias_solicitados") or "").strip()
             if dias_val:
-                ficha_text = re.sub(r"^(N[ºo°\.]*\s*Dias:\s*)$", f"Nº Dias: {dias_val}", ficha_text, flags=re.MULTILINE)
+                ficha_text = re.sub(r"^(N[ºo°\.]*[ \t]*Dias:[ \t]*)[^\r\n]*$", f"Nº Dias: {dias_val}", ficha_text, flags=re.MULTILINE)
 
             data_ini = str(payload.get("data_documento") or "").strip()
             if data_ini:
                 data_ini_br = _format_date_br(data_ini)
-                ficha_text = re.sub(r"^(Data\s*In[íi]cio:\s*)$", f"Data Início: {data_ini_br}", ficha_text, flags=re.MULTILINE)
+                ficha_text = re.sub(r"^(Data[ \t]*In[íi]cio:[ \t]*)[^\r\n]*$", f"Data Início: {data_ini_br}", ficha_text, flags=re.MULTILINE)
 
             cid_val = str(payload.get("cid") or "").strip()
             if cid_val:
-                ficha_text = re.sub(r"^(CID\s*(?:10)?:\s*)$", f"CID 10: {cid_val}", ficha_text, flags=re.MULTILINE)
+                ficha_text = re.sub(r"^(CID[ \t]*(?:10)?:[ \t]*)[^\r\n]*$", f"CID 10: {cid_val}", ficha_text, flags=re.MULTILINE)
             desc_val = str(payload.get("doenca_motivo") or "").strip()
             if desc_val:
                 clean_desc_val = re.sub(r"^[Vv]em\s+com\s+atestado\s+de\s+\d+\s+dias\s*(?:por|de|devido\s+a)?\s*", "", desc_val, flags=re.I)
@@ -2202,7 +2281,7 @@ def api_ai_esisla():
                     clean_desc_val = clean_desc_val[0].upper() + clean_desc_val[1:]
                 else:
                     clean_desc_val = desc_val
-                ficha_text = re.sub(r"^(Descri[çc][ãa]o:\s*)$", f"Descrição: {clean_desc_val}", ficha_text, flags=re.MULTILINE)
+                ficha_text = re.sub(r"^(Descri[çc][ãa]o:[ \t]*)[^\r\n]*$", f"Descrição: {clean_desc_val}", ficha_text, flags=re.MULTILINE)
 
             # Inserir CID Secundário se houver no payload
             cids_sec = payload.get("cids_secundarios") or []
@@ -2217,23 +2296,38 @@ def api_ai_esisla():
                     cid_sec_code = first_sec.strip()
 
             if cid_sec_code:
-                if re.search(r"^CID\s*(?:10)?\s*Secund[áa]rio:\s*$", ficha_text, re.MULTILINE | re.IGNORECASE):
-                    ficha_text = re.sub(r"^(CID\s*(?:10)?\s*Secund[áa]rio:\s*)$", f"CID 10 Secundário: {cid_sec_code}", ficha_text, flags=re.MULTILINE | re.IGNORECASE)
+                if re.search(r"^CID[ \t]*(?:10)?[ \t]*Secund[áa]rio:[ \t]*$", ficha_text, re.MULTILINE | re.IGNORECASE):
+                    ficha_text = re.sub(r"^(CID[ \t]*(?:10)?[ \t]*Secund[áa]rio:[ \t]*)[^\r\n]*$", f"CID 10 Secundário: {cid_sec_code}", ficha_text, flags=re.MULTILINE | re.IGNORECASE)
                 elif "CID 10 Secundário:" not in ficha_text:
                     sec_insert = f"CID 10 Secundário: {cid_sec_code}\nDescrição Secundária: {cid_sec_desc}\n"
                     ficha_text = re.sub(r"(Descri[çc][ãa]o:[^\n\r]*\n)", r"\1" + sec_insert, ficha_text, count=1)
+                else:
+                    ficha_text = re.sub(r"^(CID[ \t]*(?:10)?[ \t]*Secund[áa]rio:[ \t]*)[^\r\n]*$", f"CID 10 Secundário: {cid_sec_code}", ficha_text, flags=re.MULTILINE | re.IGNORECASE)
                 if cid_sec_desc:
-                    ficha_text = re.sub(r"^(Descri[çc][ãa]o\s*Secund[áa]ria:\s*)$", f"Descrição Secundária: {cid_sec_desc}", ficha_text, flags=re.MULTILINE | re.IGNORECASE)
+                    if re.search(r"^Descri[çc][ãa]o[ \t]*Secund[áa]ria:[ \t]*", ficha_text, re.MULTILINE | re.IGNORECASE):
+                        ficha_text = re.sub(r"^(Descri[çc][ãa]o[ \t]*Secund[áa]ria:[ \t]*)[^\r\n]*$", f"Descrição Secundária: {cid_sec_desc}", ficha_text, flags=re.MULTILINE | re.IGNORECASE)
+                    else:
+                        ficha_text = re.sub(r"(CID 10 Secund[áa]rio:[^\n\r]*\n)", r"\1Descrição Secundária: " + cid_sec_desc + "\n", ficha_text, count=1)
             else:
                 ficha_text = re.sub(r"^CID[ \t]*(?:10)?[ \t]*Secund[áa]rio:[ \t]*(?:Descri[çc][ãa]o[ \t]*Secund[áa]ria|M[ée]dico[ \t]*Perito|CRM|[^\r\n]*)$", "CID 10 Secundário:", ficha_text, flags=re.MULTILINE | re.IGNORECASE)
                 ficha_text = re.sub(r"^Descri[çc][ãa]o[ \t]*Secund[áa]ria:[ \t]*(?:M[ée]dico[ \t]*Perito|CRM|[^\r\n]*)$", "Descrição Secundária:", ficha_text, flags=re.MULTILINE | re.IGNORECASE)
 
             med_val = str(payload.get("medico") or "").strip()
             if med_val:
-                ficha_text = re.sub(r"^(M[ée]dico\s*Perito:\s*)$", f"Médico Perito: {med_val}", ficha_text, flags=re.MULTILINE)
+                ficha_text = re.sub(r"^(M[ée]dico[ \t]*Perito:[ \t]*)[^\r\n]*$", f"Médico Perito: {med_val}", ficha_text, flags=re.MULTILINE)
             crm_val = str(payload.get("crm_responsavel") or "").strip()
             if crm_val:
-                ficha_text = re.sub(r"^(CRM:\s*)$", f"CRM: {crm_val}", ficha_text, flags=re.MULTILINE)
+                ficha_text = re.sub(r"^(CRM:[ \t]*)[^\r\n]*$", f"CRM: {crm_val}", ficha_text, flags=re.MULTILINE)
+
+            dt_atd = str(payload.get("data_atendimento") or "").strip()
+            hr_atd = str(payload.get("hora_atendimento") or "").strip()
+            if dt_atd:
+                dt_atd_br = _format_date_br(dt_atd)
+                dthr_str = dt_atd_br if (" " in dt_atd_br or not hr_atd) else f"{dt_atd_br} {hr_atd[:5]}".strip()
+                if re.search(r"^Dt/Hr[ \t]*Per[íi]cia:[ \t]*", ficha_text, re.MULTILINE | re.IGNORECASE):
+                    ficha_text = re.sub(r"^(Dt/Hr[ \t]*Per[íi]cia:[ \t]*)[^\r\n]*$", f"Dt/Hr Perícia: {dthr_str}", ficha_text, flags=re.MULTILINE | re.IGNORECASE)
+                elif "Dt/Hr Perícia:" not in ficha_text:
+                    ficha_text = re.sub(r"(CRM:[^\n\r]*\n)", r"\1Dt/Hr Perícia: " + dthr_str + "\n", ficha_text, count=1)
 
             justif_empty_match = re.search(r"(\(\*\)\s*Justificativa Parecer Médico:?\s*\n\s*)(\(\*\)\s*Parecer Final)", ficha_text, re.IGNORECASE)
             if justif_empty_match:
@@ -2248,17 +2342,29 @@ def api_ai_esisla():
 
             # Exame Físico Geral: priorizar estritamente os achados registrados no atendimento pelo médico perito
             ef_achados = str(payload.get("exame_fisico_descricao") or "").strip()
-            ef_tipo = str(payload.get("exame_fisico_tipo") or "").strip()
-            ef_match = re.search(r"(\(\*\)\s*Exame Físico Geral:?\s*\n\s*)(.*?)(\n\s*Descrição das Alterações Clínicas)", ficha_text, re.DOTALL | re.IGNORECASE)
+            ef_tipo = str(payload.get("outros_subtipo") or payload.get("exame_fisico_tipo") or "").strip()
+            ef_match = re.search(r"(\(\*\)\s*Exame Físico Geral:?\s*\n\s*)(.*?)(\n\s*Descrição das Alterações (?:Clínicas|Médicas))", ficha_text, re.DOTALL | re.IGNORECASE)
             if ef_match:
                 if ef_achados:
                     ef_text = ef_achados
-                    if ef_tipo and not ef_text.lower().startswith(ef_tipo.lower()) and ef_tipo.lower() not in ("outros", "e outros"):
+                    ef_text = re.sub(r"^(?:Exame F[íi]sico Geral|Aparelho\s+E\s+outros|Aparelho\s+outros|E\s+outros|Outros)\s*:\s*", "", ef_text, flags=re.IGNORECASE).strip()
+                    if ef_tipo and not any(t in ef_tipo.lower() for t in ("geral", "outro")) and not ef_text.lower().startswith(ef_tipo.lower()):
                         ef_text = f"{ef_tipo}: {ef_text}"
                     ficha_text = ficha_text[:ef_match.start(2)] + ef_text + ficha_text[ef_match.end(2):]
                 elif not ef_match.group(2).strip():
-                    ef_text = f"{ef_tipo}: Exame físico/mental sem alterações descompensadas descritas." if ef_tipo else "Sem alterações incapacitantes observadas no ato pericial."
+                    ef_text = f"{ef_tipo}: Exame físico/mental sem alterações descompensadas descritas." if (ef_tipo and not any(t in ef_tipo.lower() for t in ("geral", "outro"))) else "Sem alterações incapacitantes observadas no ato pericial."
                     ficha_text = ficha_text[:ef_match.start(2)] + ef_text + ficha_text[ef_match.end(2):]
+
+            # Descrição das Alterações Clínicas e Relato dos Exames Complementares
+            alt_clin = str(payload.get("alteracoes_clinicas_exames") or "").strip()
+            m_alt = re.search(r"(\nDescrição das Alterações (?:Clínicas|Médicas) encontradas e Relato dos Exames Complementares:?\s*\n)(.*?)(\n\s*\(\*\)\s*Descrição da\(s\)\s*Limitação)", ficha_text, re.DOTALL | re.IGNORECASE)
+            if m_alt:
+                cur_alt = m_alt.group(2).strip()
+                if alt_clin:
+                    ficha_text = ficha_text[:m_alt.start(2)] + alt_clin + ficha_text[m_alt.end(2):]
+                elif not cur_alt or "não foram apresentados" in cur_alt.lower() or "nao foram apresentados" in cur_alt.lower():
+                    fallback_txt = "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial."
+                    ficha_text = ficha_text[:m_alt.start(2)] + fallback_txt + ficha_text[m_alt.end(2):]
 
             # Limitações Físicas e Mentais: se parecer CONTRÁRIO, registrar ausência de limitações incapacitantes
             if is_contra:
@@ -2267,23 +2373,19 @@ def api_ai_esisla():
                 m_lim = re.search(r"(\(\*\)\s*Descri[çc][ãa]o\s*da\(s\)\s*Limita[çc][ãa]o[^\n\r]*\n\s*)(.*?)(\n\s*\(\*\)\s*Parecer\s*M[ée]dico)", ficha_text, re.DOTALL | re.IGNORECASE)
                 if m_lim:
                     cur_lim = m_lim.group(2).strip()
-                    if not cur_lim or "não se observa" not in cur_lim.lower() and "nao se observa" not in cur_lim.lower():
+                    if not cur_lim or ("não se observa" not in cur_lim.lower() and "nao se observa" not in cur_lim.lower()):
                         ficha_text = ficha_text[:m_lim.start(2)] + lim_contra + ficha_text[m_lim.end(2):]
             else:
                 doc_lim = str(payload.get("desc_limitacao") or payload.get("descLimitacao") or "").strip()
                 if doc_lim:
                     m_lim = re.search(r"(\(\*\)\s*Descri[çc][ãa]o\s*da\(s\)\s*Limita[çc][ãa]o[^\n\r]*\n\s*)(.*?)(\n\s*\(\*\)\s*Parecer\s*M[ée]dico)", ficha_text, re.DOTALL | re.IGNORECASE)
                     if m_lim:
-                        cur_lim = m_lim.group(2).strip()
-                        # Se a IA não incluiu as limitações preenchidas pelo médico ou deixou vazio/genérico
-                        palavras_chave = [p for p in doc_lim.lower().split() if len(p) >= 4]
-                        if not cur_lim or (len(palavras_chave) >= 2 and not any(p in cur_lim.lower() for p in palavras_chave[:4])):
-                            cargo_nome = payload.get("cargo") or "servidor"
-                            if "rol de atividades" in doc_lim.lower():
-                                pres_lim = doc_lim
-                            else:
-                                pres_lim = f"{doc_lim}, atividades estas constantes no Rol de Atividades do cargo de {cargo_nome}."
-                            ficha_text = ficha_text[:m_lim.start(2)] + pres_lim + ficha_text[m_lim.end(2):]
+                        cargo_nome = payload.get("cargo") or "servidor"
+                        if "rol de atividades" in doc_lim.lower():
+                            pres_lim = doc_lim
+                        else:
+                            pres_lim = f"{doc_lim}, atividades estas constantes no Rol de Atividades do cargo de {cargo_nome}."
+                        ficha_text = ficha_text[:m_lim.start(2)] + pres_lim + ficha_text[m_lim.end(2):]
 
             # Remove qualquer resquício de (Tipo-Data-Resultado)
             ficha_text = re.sub(r"Atestado/Relat[óo]rio/Exames Complementares\s*\([^\)]*Tipo[^\)]*\):?", "Atestado/Relatório/Exames Complementares:", ficha_text, flags=re.IGNORECASE)
@@ -3075,6 +3177,21 @@ def api_list_atendimentos():
                 "unidade": aux.get("unidade"),
                 "doencaMotivo": aux.get("doencaMotivo"),
                 "queixaDuracao": aux.get("queixaDuracao"),
+                "exameFisicoTipo": payload.get("exameFisicoTipo") or aux.get("exameFisicoTipo") or aux.get("agilExameFisicoTipo") or "",
+                "outrosSubtipo": payload.get("outrosSubtipo") or aux.get("outrosSubtipo") or payload.get("areaExameClinico") or aux.get("areaExameClinico") or "",
+                "areaExameClinico": payload.get("areaExameClinico") or aux.get("areaExameClinico") or payload.get("outrosSubtipo") or aux.get("outrosSubtipo") or "",
+                "outrosResultado": payload.get("outrosResultado") or aux.get("outrosResultado") or payload.get("resultadoAvaliacao") or aux.get("resultadoAvaliacao") or "",
+                "resultadoAvaliacao": payload.get("resultadoAvaliacao") or aux.get("resultadoAvaliacao") or payload.get("outrosResultado") or aux.get("outrosResultado") or "",
+                "exameFisicoDescricao": payload.get("exameFisicoDescricao") or aux.get("exameFisicoDescricao") or payload.get("agilExameFisicoDescricao") or aux.get("agilExameFisicoDescricao") or "",
+                "altura": payload.get("altura") or aux.get("altura") or payload.get("agilAltura") or aux.get("agilAltura") or "",
+                "peso": payload.get("peso") or aux.get("peso") or payload.get("agilPeso") or aux.get("agilPeso") or "",
+                "pressaoSistolica": payload.get("pressaoSistolica") or aux.get("pressaoSistolica") or "",
+                "pressaoDiastolica": payload.get("pressaoDiastolica") or aux.get("pressaoDiastolica") or "",
+                "pulso": payload.get("pulso") or aux.get("pulso") or "",
+                "historicoPregresso": payload.get("historicoPregresso") or aux.get("historicoPregresso") or payload.get("antecedentes") or aux.get("antecedentes") or "",
+                "descLimitacao": payload.get("descLimitacao") or aux.get("descLimitacao") or "",
+                "justificativa": payload.get("justificativa") or aux.get("justificativa") or payload.get("agilJustificativa") or aux.get("agilJustificativa") or "",
+                "parecer": payload.get("parecer") or aux.get("parecer") or "",
             },
         })
 

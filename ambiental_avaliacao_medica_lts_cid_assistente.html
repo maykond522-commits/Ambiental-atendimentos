@@ -1782,8 +1782,10 @@ body:not(.mode-agil-active) #containerModoAgil {
     </div>
     <div class="sticky-hud-actions">
       <span class="hud-save-status" id="hudSaveStatus">✓ Salvo</span>
-      <button type="button" class="btn btn-outline btn-sm" onclick="saveNow()" title="Atalho: Ctrl + S">💾 Salvar</button>
-      <button type="button" class="btn btn-green btn-sm" onclick="finalizarAtendimentoHeader()" title="Atalho: Ctrl + Enter">Finalizar ✓</button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="openManagement()">Gestão</button>
+      <button type="button" class="btn btn-danger btn-sm" onclick="deleteAtendimento()">Excluir</button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="saveNow()" title="Atalho: Ctrl + S">Salvar rascunho</button>
+      <button type="button" class="btn btn-green btn-sm" onclick="finalizarAtendimentoHeader()" title="Atalho: Ctrl + Enter">Finalizar</button>
     </div>
   </div>
 </div>
@@ -4223,15 +4225,25 @@ function syncState(){
     state.fisioterapia=$("fisioterapia")?$("fisioterapia").checked:!!state.fisioterapia;
     state.capacidade=getRadio("capacidade")||state.capacidade||"";
     state.parecer=getRadio("parecer")||state.parecer||"";
-    state.exameFisicoTipo=$("exameFisicoTipo")?.value||state.exameFisicoTipo||"";
-    state.exameFisicoDescricao=$("exameFisicoDescricao")?.value||state.exameFisicoDescricao||"";
+    state.exameFisicoTipo=$("agilExameFisicoTipo")?.value||$("exameFisicoTipo")?.value||state.exameFisicoTipo||prevAux.exameFisicoTipo||"";
+    state.exameFisicoDescricao=$("agilExameFisicoDescricao")?.value||$("exameFisicoDescricao")?.value||state.exameFisicoDescricao||"";
     state.alteracoesClinicasExames=$("alteracoesClinicasExames")?.value||state.alteracoesClinicasExames||"";
+    state.altura=$("agilAltura")?.value||$("altura")?.value||state.altura||prevAux.altura||"";
+    state.peso=$("agilPeso")?.value||$("peso")?.value||state.peso||prevAux.peso||"";
+    state.pressaoSistolica=$("agilPressaoSistolica")?.value||$("pressaoSistolica")?.value||state.pressaoSistolica||prevAux.pressaoSistolica||"";
+    state.pressaoDiastolica=$("agilPressaoDiastolica")?.value||$("pressaoDiastolica")?.value||state.pressaoDiastolica||prevAux.pressaoDiastolica||"";
+    state.pulso=$("agilPulso")?.value||$("pulso")?.value||state.pulso||prevAux.pulso||"";
+    state.outrosSubtipo=state.outrosSubtipo||prevAux.outrosSubtipo||prevAux.areaExameClinico||"";
+    if(state.outrosSubtipo) state.areaExameClinico=state.outrosSubtipo;
+    state.outrosResultado=state.outrosResultado||prevAux.outrosResultado||prevAux.resultadoAvaliacao||"";
+    if(state.outrosResultado) state.resultadoAvaliacao=state.outrosResultado;
     state.exam={selected:state.exameFisicoTipo,descricao:state.exameFisicoDescricao};
     if (typeof QuesitoService !== "undefined") {
       state.quesitos = QuesitoService.get();
     }
 
     state.aux={
+      ...prevAux,
       dataAtd:getVal("dataAtd", prevAux.dataAtd || today()),
       horaAtd:getVal("horaAtd", prevAux.horaAtd || timeNow()),
       crmResponsavel:getVal("crmResponsavel", prevAux.crmResponsavel),
@@ -4250,20 +4262,30 @@ function syncState(){
       dataAlteracaoMed:getVal("dataAlteracaoMed", prevAux.dataAlteracaoMed),
       obsAlteracaoMed:getVal("obsAlteracaoMed", prevAux.obsAlteracaoMed),
       obsTerapias:getVal("obsTerapias", prevAux.obsTerapias),
-      historicoPregresso:getVal("historicoPregresso", prevAux.historicoPregresso || prevAux.doencaMotivo || ""),
+      historicoPregresso:getVal("historicoPregresso", prevAux.historicoPregresso || $("agilHistoricoPregresso")?.value || prevAux.doencaMotivo || ""),
       crmCro:getVal("crmCro", prevAux.crmCro),
       cid:getVal("cid", prevAux.cid || state.cid),
       dataDocumento:getVal("dataDocumento", prevAux.dataDocumento),
       diasSolicitados:getVal("diasSolicitados", prevAux.diasSolicitados),
       obsDocumentos:getVal("obsDocumentos", prevAux.obsDocumentos),
-      descLimitacao:getVal("descLimitacao", prevAux.descLimitacao),
+      descLimitacao:getVal("descLimitacao", prevAux.descLimitacao || $("agilDescLimitacao")?.value || ""),
       atividadesComprometidas:getVal("atividadesComprometidas", prevAux.atividadesComprometidas),
       obsLimitacoes:getVal("obsLimitacoes", prevAux.obsLimitacoes),
+      exameFisicoTipo:state.exameFisicoTipo,
       exameFisicoDescricao:getVal("exameFisicoDescricao", prevAux.exameFisicoDescricao || state.exameFisicoDescricao),
-      pressaoSistolica:getVal("pressaoSistolica", prevAux.pressaoSistolica),
-      pressaoDiastolica:getVal("pressaoDiastolica", prevAux.pressaoDiastolica),
-      pulso:getVal("pulso", prevAux.pulso),
-      justificativa:getVal("justificativa", prevAux.justificativa || state.justificativa)
+      pressaoSistolica:getVal("pressaoSistolica", prevAux.pressaoSistolica || $("agilPressaoSistolica")?.value || state.pressaoSistolica),
+      pressaoDiastolica:getVal("pressaoDiastolica", prevAux.pressaoDiastolica || $("agilPressaoDiastolica")?.value || state.pressaoDiastolica),
+      pulso:getVal("pulso", prevAux.pulso || $("agilPulso")?.value || state.pulso),
+      altura:getVal("altura", prevAux.altura || $("agilAltura")?.value || state.altura),
+      peso:getVal("peso", prevAux.peso || $("agilPeso")?.value || state.peso),
+      outrosSubtipo:state.outrosSubtipo,
+      areaExameClinico:state.areaExameClinico || state.outrosSubtipo,
+      outrosResultado:state.outrosResultado,
+      resultadoAvaliacao:state.resultadoAvaliacao || state.outrosResultado,
+      exameMentalResultado:state.exameMentalResultado || prevAux.exameMentalResultado || "",
+      osteomuscularResultado:state.osteomuscularResultado || prevAux.osteomuscularResultado || "",
+      osteomuscularRegioes:state.osteomuscularRegioes || prevAux.osteomuscularRegioes || {},
+      justificativa:getVal("justificativa", prevAux.justificativa || state.justificativa || $("agilJustificativa")?.value || "")
     };
   } finally {
     __isSyncingState = false;
@@ -4903,7 +4925,75 @@ function renderParecerHint(){
   $("parecerHint").textContent=p==="CONTRÁRIO"?"Parecer CONTRÁRIO selecionado. Garanta que a justificativa esteja preenchida e coerente com os achados.":p==="FAVORÁVEL"?"Parecer FAVORÁVEL selecionado. Garanta que a justificativa esteja preenchida e coerente com os achados.":"Selecione o parecer definido pelo médico.";
 }
 
-function values(){syncState();return {atendimento:state.atendimento,dataAtendimento:state.aux.dataAtd,horaInicio:state.aux.horaAtd,medicoResponsavel:state.medico,crmResponsavel:state.aux.crmResponsavel,nomePaciente:state.aux.nomePaciente,cpfPaciente:state.aux.cpfPaciente,cargo:state.aux.cargo,tempoCargo:state.aux.tempoCargo,unidadeTempo:state.aux.tempoUnidade,idade:state.aux.idade,readaptado:state.readaptado,atividadesReadaptado:state.aux.atividadesReadaptado,queixaDuracao:state.aux.queixaDuracao,doencaMotivo:state.aux.doencaMotivo,inicioTratamento:state.aux.inicioTratamento,frequenciaConsultas:state.aux.freqConsultas,sintomasLimitacao:state.aux.sintomasLimitacao,medicamentos:state.medications,alteracaoDosagem:state.alteracaoMed,dataAlteracaoMed:state.aux.dataAlteracaoMed,obsAlteracaoMed:state.aux.obsAlteracaoMed,psicoterapia:state.psicoterapia,fisioterapia:state.fisioterapia,obsTerapias:state.aux.obsTerapias,outrasDoencas:state.outrasDoencas,condicoes:state.conditions,historicoPregresso:state.aux.historicoPregresso,crmCro:state.aux.crmCro,cid:state.aux.cid,cidsSecundarios:state.cidsSecundarios||[],dataDocumento:state.aux.dataDocumento,diasSolicitados:state.aux.diasSolicitados,obsDocumentos:state.aux.obsDocumentos,documentosComplementares:state.documentosComplementares,exame:state.exam,exameFisicoTipo:state.exameFisicoTipo,exameFisicoDescricao:state.exameFisicoDescricao||state.aux.exameFisicoDescricao||"",pressaoSistolica:state.aux.pressaoSistolica||"",pressaoDiastolica:state.aux.pressaoDiastolica||"",pulso:state.aux.pulso||"",alteracoesClinicasExames:state.alteracoesClinicasExames,limitacaoFuncional:state.limitacaoFuncional,descLimitacao:state.aux.descLimitacao,limitacaoRol:state.limitacaoRol,atividadesComprometidas:state.aux.atividadesComprometidas,obsLimitacoes:state.aux.obsLimitacoes,quesitos:state.quesitos,capacidade:state.capacidade,justificativa:state.aux.justificativa,parecer:state.parecer,finalizado:!!state.finalizado,finalizadoEm:state.finalizadoEm||""};}
+function values(){
+  syncState();
+  const a = state.aux || {};
+  return {
+    atendimento: state.atendimento,
+    dataAtendimento: a.dataAtd,
+    horaInicio: a.horaAtd,
+    medicoResponsavel: state.medico,
+    crmResponsavel: a.crmResponsavel,
+    nomePaciente: a.nomePaciente || state.nomePaciente || "",
+    cpfPaciente: a.cpfPaciente || state.cpfPaciente || "",
+    cargo: a.cargo,
+    tempoCargo: a.tempoCargo,
+    unidadeTempo: a.tempoUnidade,
+    idade: a.idade,
+    readaptado: state.readaptado,
+    atividadesReadaptado: a.atividadesReadaptado,
+    queixaDuracao: a.queixaDuracao || state.queixaDuracao || "",
+    doencaMotivo: a.doencaMotivo,
+    inicioTratamento: a.inicioTratamento,
+    frequenciaConsultas: a.freqConsultas,
+    sintomasLimitacao: a.sintomasLimitacao,
+    medicamentos: state.medications,
+    alteracaoDosagem: state.alteracaoMed,
+    dataAlteracaoMed: a.dataAlteracaoMed,
+    obsAlteracaoMed: a.obsAlteracaoMed,
+    psicoterapia: state.psicoterapia,
+    fisioterapia: state.fisioterapia,
+    obsTerapias: a.obsTerapias,
+    outrasDoencas: state.outrasDoencas,
+    condicoes: state.conditions,
+    historicoPregresso: a.historicoPregresso || state.historicoPregresso || "",
+    crmCro: a.crmCro,
+    cid: a.cid || state.cid || "",
+    cidsSecundarios: state.cidsSecundarios || [],
+    dataDocumento: a.dataDocumento,
+    diasSolicitados: a.diasSolicitados,
+    obsDocumentos: a.obsDocumentos,
+    documentosComplementares: state.documentosComplementares,
+    exame: state.exam,
+    exameFisicoTipo: state.exameFisicoTipo || a.exameFisicoTipo || "",
+    outrosSubtipo: state.outrosSubtipo || a.outrosSubtipo || state.areaExameClinico || a.areaExameClinico || "",
+    outrosResultado: state.outrosResultado || a.outrosResultado || state.resultadoAvaliacao || a.resultadoAvaliacao || "",
+    areaExameClinico: state.areaExameClinico || a.areaExameClinico || state.outrosSubtipo || a.outrosSubtipo || "",
+    resultadoAvaliacao: state.resultadoAvaliacao || a.resultadoAvaliacao || state.outrosResultado || a.outrosResultado || "",
+    exameMentalResultado: state.exameMentalResultado || a.exameMentalResultado || "",
+    osteomuscularResultado: state.osteomuscularResultado || a.osteomuscularResultado || "",
+    osteomuscularRegioes: state.osteomuscularRegioes || a.osteomuscularRegioes || {},
+    altura: state.altura || a.altura || state.agilAltura || a.agilAltura || state.biotipoAltura || "",
+    peso: state.peso || a.peso || state.agilPeso || a.agilPeso || state.biotipoPeso || "",
+    exameFisicoDescricao: state.exameFisicoDescricao || a.exameFisicoDescricao || "",
+    pressaoSistolica: a.pressaoSistolica || state.pressaoSistolica || "",
+    pressaoDiastolica: a.pressaoDiastolica || state.pressaoDiastolica || "",
+    pulso: a.pulso || state.pulso || "",
+    alteracoesClinicasExames: state.alteracoesClinicasExames || a.alteracoesClinicasExames || "",
+    limitacaoFuncional: state.limitacaoFuncional,
+    descLimitacao: a.descLimitacao || state.descLimitacao || "",
+    limitacaoRol: state.limitacaoRol,
+    atividadesComprometidas: a.atividadesComprometidas || state.atividadesComprometidas || "",
+    obsLimitacoes: a.obsLimitacoes || state.obsLimitacoes || "",
+    quesitos: state.quesitos,
+    capacidade: state.capacidade,
+    justificativa: a.justificativa || state.justificativa || "",
+    parecer: state.parecer,
+    finalizado: !!state.finalizado,
+    finalizadoEm: state.finalizadoEm || "",
+    aux: a
+  };
+}
 
 function missingFields(){return ValidationEngine.get().blocking;}
 function renderReview(){
@@ -8982,8 +9072,26 @@ function copiarCodigoBookmarklet() {
 }
 
 function detectarSistemaExameFisico(st, aux, texto, cidCode) {
-  const exTipo = String(st?.exameFisicoTipo || aux?.exameFisicoTipo || st?.agilExameFisicoTipo || aux?.agilExameFisicoTipo || '').trim().toLowerCase();
-  const outrosSub = String(st?.outrosSubtipo || aux?.outrosSubtipo || st?.areaExameClinico || aux?.areaExameClinico || '').trim().toLowerCase();
+  const exTipo = String(
+    st?.exameFisicoTipo || aux?.exameFisicoTipo ||
+    st?.agilExameFisicoTipo || aux?.agilExameFisicoTipo ||
+    st?.exame_fisico_tipo || aux?.exame_fisico_tipo ||
+    ''
+  ).trim().toLowerCase();
+
+  const outrosSub = String(
+    st?.outrosSubtipo || aux?.outrosSubtipo ||
+    st?.areaExameClinico || aux?.areaExameClinico ||
+    st?.outros_subtipo || aux?.outros_subtipo ||
+    st?.area_exame_clinico || aux?.area_exame_clinico ||
+    ''
+  ).trim().toLowerCase();
+
+  const exDesc = String(
+    st?.exameFisicoDescricao || aux?.exameFisicoDescricao ||
+    st?.agilExameFisicoDescricao || aux?.agilExameFisicoDescricao ||
+    ''
+  ).trim().toLowerCase();
 
   // 1. Subtipos selecionados quando a opção "Outros" foi detalhada pelo médico (chips das 12 áreas clínicas)
   if (outrosSub.includes('geral') || outrosSub === 'e outros' || outrosSub === 'outros') return 'outro';
@@ -8998,7 +9106,6 @@ function detectarSistemaExameFisico(st, aux, texto, cidCode) {
   if (outrosSub.includes('endocrin') || outrosSub.includes('metabol') || outrosSub.includes('diabet')) return 'ae';
   if (outrosSub.includes('nervoso') || outrosSub.includes('neurol')) return 'sn';
   if (outrosSub.includes('sentidos') || outrosSub.includes('oftalm') || outrosSub.includes('otol')) return 'os';
-  if (outrosSub === 'e outros' || outrosSub === 'outros' || outrosSub.includes('geral')) return 'outro';
 
   // 2. Precedência da seleção principal do médico em "Tipo de exame físico / mental"
   if (exTipo === 'exame mental' || (exTipo.includes('mental') && !exTipo.includes('físic'))) {
@@ -9007,7 +9114,7 @@ function detectarSistemaExameFisico(st, aux, texto, cidCode) {
   if (exTipo.includes('osteomuscular') || exTipo.includes('conjutivo') || exTipo.includes('conjuntivo')) {
     return 'aoal';
   }
-  if (exTipo === 'outros' || exTipo === 'e outros' || outrosSub === 'e outros' || outrosSub === 'outros' || exTipo.startsWith('outro')) {
+  if (exTipo.includes('geral') || exTipo === 'outros' || exTipo === 'e outros' || outrosSub === 'e outros' || outrosSub === 'outros' || exTipo.startsWith('outro')) {
     return 'outro';
   }
   // Caso exTipo seja diretamente um dos sistemas específicos (ex: formulário estendido)
@@ -9021,37 +9128,43 @@ function detectarSistemaExameFisico(st, aux, texto, cidCode) {
   if (exTipo.includes('nervoso') || exTipo.includes('neurol')) return 'sn';
   if (exTipo.includes('sentidos') || exTipo.includes('oftalm') || exTipo.includes('otol')) return 'os';
 
-  // 3. Precedência pelo código CID do atendimento (mais confiável que texto de IA livre)
-  const c = String(cidCode || '').toUpperCase().trim();
-  if (c.startsWith('M')) return 'aoal';
-  if (c.startsWith('F')) return 'em';
-  if (c.startsWith('I')) return 'ac';
-  if (c.startsWith('J')) return 'ar';
-  if (c.startsWith('L')) return 'tcspf';
-  if (c.startsWith('K')) return 'ad';
-  if (c.startsWith('N')) return 'agu';
-  if (c.startsWith('D')) return 'ahp';
-  if (c.startsWith('E')) return 'ae';
-  if (c.startsWith('G')) return 'sn';
-  if (c.startsWith('H')) return 'os';
-
-  // 4. Fallback pelo cabeçalho gerado no texto
+  // 3. Verificação pelo conteúdo do texto clínico registrado (exame físico padrão / achados)
+  const exameFisicoTexto = ((String(texto || '').match(/\(\*\)\s*Exame Físico Geral:?\s*\n\s*([\s\S]*?)(?=\n\s*(?:Descrição das Alterações|Descri[çc][ãa]o das Altera[çc][õo]es|\(\*\)Descrição da\(s\) Limitação|\(\*\)Parecer Médico|Limitação|$))/i) || [])[1] || exDesc || '';
+  const efLower = exameFisicoTexto.toLowerCase();
   const exameFisicoLinha1 = (String(texto || '').match(/\(\*\)\s*Exame Físico Geral:?\s*\n\s*([^\n\r]+)/i) || [])[1]?.toLowerCase() || '';
-  if (exameFisicoLinha1.startsWith('aparelho e outro') || exameFisicoLinha1.startsWith('aparelho outro') || exameFisicoLinha1.startsWith('e outros') || exameFisicoLinha1.includes('outros:')) return 'outro';
-  if (exameFisicoLinha1.includes('osteomuscular') || exameFisicoLinha1.includes('conjutivo') || exameFisicoLinha1.includes('conjuntivo')) return 'aoal';
-  if (exameFisicoLinha1.startsWith('exame mental')) return 'em';
-  if (exameFisicoLinha1.includes('circulat')) return 'ac';
-  if (exameFisicoLinha1.includes('respirat')) return 'ar';
-  if (exameFisicoLinha1.includes('pele') || exameFisicoLinha1.includes('subcut')) return 'tcspf';
-  if (exameFisicoLinha1.includes('digest')) return 'ad';
-  if (exameFisicoLinha1.includes('genit')) return 'agu';
-  if (exameFisicoLinha1.includes('hemolin')) return 'ahp';
-  if (exameFisicoLinha1.includes('endocrin')) return 'ae';
-  if (exameFisicoLinha1.includes('nervoso')) return 'sn';
-  if (exameFisicoLinha1.includes('sentidos')) return 'os';
-  if (exameFisicoLinha1.includes('outro')) return 'outro';
+  if (exameFisicoLinha1.startsWith('aparelho e outro') || exameFisicoLinha1.startsWith('aparelho outro') || exameFisicoLinha1.startsWith('e outros') || exameFisicoLinha1.includes('outros:') || efLower.includes('bom do estado geral') || efLower.includes('exame físico geral')) {
+    return 'outro';
+  }
+  if (exameFisicoLinha1.includes('osteomuscular') || exameFisicoLinha1.includes('conjutivo') || exameFisicoLinha1.includes('conjuntivo') || efLower.includes('osteomuscular')) return 'aoal';
+  if (exameFisicoLinha1.startsWith('exame mental') || efLower.startsWith('exame mental')) return 'em';
+  if ((exameFisicoLinha1.includes('circulat') || efLower.includes('circulat')) && !efLower.includes('bom do estado geral') && !efLower.includes('ap.respirat')) return 'ac';
+  if ((exameFisicoLinha1.includes('respirat') || efLower.includes('respirat')) && !efLower.includes('bom do estado geral') && !efLower.includes('cardio')) return 'ar';
+  if (exameFisicoLinha1.includes('pele') || exameFisicoLinha1.includes('subcut') || efLower.includes('pele') || efLower.includes('subcut')) return 'tcspf';
+  if (exameFisicoLinha1.includes('digest') || efLower.includes('digest')) return 'ad';
+  if (exameFisicoLinha1.includes('genit') || efLower.includes('genit')) return 'agu';
+  if (exameFisicoLinha1.includes('hemolin') || efLower.includes('hemolin')) return 'ahp';
+  if (exameFisicoLinha1.includes('endocrin') || efLower.includes('endocrin')) return 'ae';
+  if (exameFisicoLinha1.includes('nervoso') || efLower.includes('nervoso')) return 'sn';
+  if (exameFisicoLinha1.includes('sentidos') || efLower.includes('sentidos')) return 'os';
+  if (exameFisicoLinha1.includes('outro') || exameFisicoLinha1.includes('geral')) return 'outro';
 
-  return 'aoal';
+  // 4. Precedência pelo código CID do atendimento (SOMENTE se não houve escolha médica nem texto específico)
+  if (!exTipo && !outrosSub) {
+    const c = String(cidCode || '').toUpperCase().trim();
+    if (c.startsWith('M')) return 'aoal';
+    if (c.startsWith('F')) return 'em';
+    if (c.startsWith('I')) return 'ac';
+    if (c.startsWith('J')) return 'ar';
+    if (c.startsWith('L')) return 'tcspf';
+    if (c.startsWith('K')) return 'ad';
+    if (c.startsWith('N')) return 'agu';
+    if (c.startsWith('D')) return 'ahp';
+    if (c.startsWith('E')) return 'ae';
+    if (c.startsWith('G')) return 'sn';
+    if (c.startsWith('H')) return 'os';
+  }
+
+  return 'outro';
 }
 
 function cleanQueixaDuracao(text) {
@@ -9111,10 +9224,10 @@ function copiarLaudoEsislaAtendimento() {
   // No e-SISLA o campo voMedico.parRlExApres (idExameApres) deve conter exclusivamente os achados do Exame Físico Geral direto
   let exApres = '';
   if (state.fichaEsisla) {
-    const m = state.fichaEsisla.match(/\(\*\)\s*Exame Físico Geral:?\s*([\s\S]*?)(?=\n\s*(?:Descrição das Alterações Clínicas|\(\*\)Descrição da\(s\) Limitação|Limitação|$))/i);
+    const m = state.fichaEsisla.match(/\(\*\)\s*Exame Físico Geral:?\s*([\s\S]*?)(?=\n\s*(?:Descrição das Alterações|Descri[çc][ãa]o das Altera[çc][õo]es|\(\*\)Descrição da\(s\) Limitação|\(\*\)Parecer Médico|Limitação|$))/i);
     if (m && m[1].trim()) exApres = m[1].trim();
     if (!exApres) {
-      const m2 = state.fichaEsisla.match(/Descrição das Alterações Clínicas encontradas[^:]*:\s*([\s\S]*?)(?=\n\s*(?:\(\*\)Descrição da\(s\) Limitação|Limitação|$))/i);
+      const m2 = state.fichaEsisla.match(/Descrição das Alterações (?:Clínicas|Médicas)?[^:]*:\s*([\s\S]*?)(?=\n\s*(?:\(\*\)Descrição da\(s\) Limitação|\(\*\)Parecer Médico|Limitação|$))/i);
       if (m2 && m2[1].trim()) exApres = m2[1].trim();
     }
   }

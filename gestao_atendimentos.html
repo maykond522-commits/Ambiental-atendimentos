@@ -2759,6 +2759,12 @@ function cleanAntecedentesMorbidos(text) {
     t = t.replace(/\s{2,}/g, ' ');
     t = t.trim();
     if (t === '.' || !t) return '';
+    if (t !== "Nega" && t !== "Nega.") {
+        const low = t.toLowerCase();
+        if (!low.includes("nega demais") && !low.includes("cirurgias") && !low.includes("neoplasias") && !low.includes("nega antecedentes")) {
+            t = t.replace(/[\s\.\,;]+$/, '') + ". Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias.";
+        }
+    }
     return t;
 }
 

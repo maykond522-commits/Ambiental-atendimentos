@@ -7367,25 +7367,47 @@ function gerarNarrativaQueixaMelhoriaContinua(st, v) {
   const cidVal = st.cid || aux.cid || v.cid || $("agilCid")?.value || "";
   const cidNome = typeof findCID === "function" ? (findCID(cidVal)?.n || "") : "";
   const doenca = aux.doencaMotivo || v.doencaMotivo || $("agilDoencaMotivo")?.value || (cidVal ? `${cidVal}${cidNome ? ' — ' + cidNome : ''}` : "");
+  const idade = aux.idade || v.idade || $("agilIdade")?.value || "";
+  const cargo = aux.cargo || v.cargo || $("agilCargo")?.value || "";
+  const tempoCargo = aux.tempoCargo || v.tempoCargo || $("agilTempoCargo")?.value || "";
+  const unidadeTempo = aux.unidadeTempo || v.unidadeTempo || $("agilTempoUnidade")?.value || "anos";
+  const readap = String(st.readaptado || aux.readaptado || v.readaptado || getRadio("agilReadaptado") || "").toLowerCase() === "sim";
+  const ativReadap = aux.atividadesReadaptado || v.atividadesReadaptado || $("agilAtividadesReadaptado")?.value || "";
+  
+  const cidVal = st.cid || aux.cid || v.cid || $("agilCid")?.value || "";
+  const cidNome = typeof findCID === "function" ? (findCID(cidVal)?.n || "") : "";
+  const doenca = aux.doencaMotivo || v.doencaMotivo || $("agilDoencaMotivo")?.value || (cidVal ? `${cidVal}${cidNome ? ' — ' + cidNome : ''}` : "");
   const inicioTrat = aux.inicioTratamento || v.inicioTratamento || $("agilInicioTratamento")?.value || "";
   const freqCons = aux.freqConsultas || v.freqConsultas || $("agilFreqConsultas")?.value || "";
   const sintomas = aux.sintomasLimitacao || v.sintomasLimitacao || $("agilSintomasLimitacao")?.value || "";
   
-  // Medicações com dosagem em mg/dia
+  // Medicações com e sem dosagem informada
   const meds = (st.medications || v.medicamentos || []).filter(m => m && (m.medicamento || m.nome));
   let medsStr = "";
   if (meds.length > 0) {
     medsStr = meds.map(m => {
       const nome = m.medicamento || m.nome || "";
-      const dose = m.dosagem || "";
-      const freq = m.frequencia || "";
-      const obs = m.observacao || "";
+      const dose = (m.dosagem || "").trim();
+      const freq = (m.frequencia || "").trim();
+      const obs = (m.observacao || "").trim();
       let item = nome;
-      if (dose) item += ` [${dose}]`;
-      if (freq) item += ` (${freq})`;
-      if (obs && !obs.includes(dose)) item += ` — ${obs}`;
-      return item;
-    }).join(", ");
+      if (dose) {
+        if (!item.endsWith(" ") && !dose.startsWith("/")) {
+          item += ` ${dose}`;
+        } else {
+          item += dose;
+        }
+      } else {
+        item += `, não informado sua dosagem`;
+      }
+      if (freq) {
+        item += ` ${freq}`;
+      }
+      if (obs && !obs.includes(dose) && !obs.includes(freq)) {
+        item += ` (${obs})`;
+      }
+      return item.trim();
+    }).join(" e ");
   }
   
   // Terapias
@@ -7402,89 +7424,112 @@ function gerarNarrativaQueixaMelhoriaContinua(st, v) {
   let partes = [];
   
   // 1. Identificação funcional
-  let ident = "Servidor(a)";
+  const sexo = (st.sexo || v.sexo || "").toLowerCase();
+  const isFem = sexo === "f" || sexo === "feminino";
+  let ident = isFem ? "Servidora" : "Servidor";
   if (idade) ident += ` de ${idade} anos`;
-  if (cargo) ident += `, ocupante do cargo de ${cargo}`;
-  if (tempoCargo) ident += `, com ${tempoCargo} ${unidadeTempo.toLowerCase()} de exercício funcional`;
-  ident += ".";
-  partes.push(ident);
+  if (cargo) {
+    if (tempoCargo) {
+      ident += `, ${cargo} há ${tempoCargo} ${unidadeTempo.toLowerCase()}`;
+    } else {
+      ident += `, ocupante do cargo de ${cargo}`;
+    }
+  }
   
-  // 2. Readaptação (se não for readaptado, não colocar na ficha)
+  // 2. Readaptação: se readaptado, relata atividades; se não, (Não readaptado)
   if (readap) {
-    partes.push(`Encontra-se atualmente em readaptação funcional${ativReadap ? `, desempenhando as seguintes atividades: ${ativReadap}.` : "."}`);
+    ident += `, em readaptação funcional${ativReadap ? ` (atividades: ${ativReadap})` : ""}`;
+  } else {
+    ident += `, ${isFem ? '(Não readaptada)' : '(Não readaptado)'}`;
   }
 
-  // 3. Doença e acompanhamento
+  // 3. Doença, início do tratamento e consultas
   if (doenca) {
-    let trat = `Relata acompanhamento clínico motivado por ${doenca}`;
+    let cleanDoenca = doenca.replace(/^[Vv]em\s+com\s+atestado\s+de\s+\d+\s+dias\s*(?:por|de|devido\s+a)?\s*/i, "")
+                            .replace(/^[Aa]testado\s+de\s+\d+\s+dias\s*(?:por|de|devido\s+a)?\s*/i, "").trim();
+    ident += `, com queixa de ${cleanDoenca}`;
+    
     if (inicioTrat && !isArtifactAttendanceDate(inicioTrat, aux.dataAtd || st.aux?.dataAtd || $("dataAtd")?.value)) {
       const s = String(inicioTrat).trim();
       if (/^\d{4}$/.test(s)) {
-        trat += `, sendo que iniciou-se seu tratamento em ${s}`;
+        ident += ` desde ${s}`; // iniciou-se seu tratamento em
       } else if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
         const p = s.split("-");
-        trat += `, sendo que iniciou-se seu tratamento em ${p[2]}/${p[1]}/${p[0]}`;
+        ident += ` desde ${p[2]}/${p[1]}/${p[0]}`; // iniciou-se seu tratamento em
+      } else if (s.toLowerCase().startsWith("desde") || s.toLowerCase().startsWith("há") || s.toLowerCase().startsWith("ha")) {
+        ident += ` ${s}`;
       } else {
-        trat += `, sendo que iniciou-se seu tratamento em ${s}`;
+        ident += ` desde ${s}`; // iniciou-se seu tratamento em
       }
     }
+    
     if (freqCons) {
       const f = String(freqCons).trim();
       const fLow = f.toLowerCase();
       if (fLow === "quinzenal") {
-        trat += `, realiza consultas quinzenalmente`;
+        ident += `, realizando consultas quinzenalmente`; // realiza consultas quinzenalmente
       } else if (fLow === "mensal") {
-        trat += `, realiza consultas mensalmente`;
+        ident += `, realizando consultas mensalmente`;
       } else if (fLow === "semanal") {
-        trat += `, realiza consultas semanalmente`;
+        ident += `, realizando consultas semanalmente`;
       } else if (fLow === "bimestral") {
-        trat += `, realiza consultas bimestralmente`;
+        ident += `, realizando consultas bimestralmente`;
       } else if (fLow === "trimestral") {
-        trat += `, realiza consultas trimestralmente`;
+        ident += `, realizando consultas trimestralmente`;
       } else if (fLow === "semestral") {
-        trat += `, realiza consultas semestralmente`;
+        ident += `, realizando consultas semestralmente`;
       } else if (fLow === "anual") {
-        trat += `, realiza consultas anualmente`;
+        ident += `, realizando consultas anualmente`;
       } else if (/^\d+\s*dias?$/i.test(fLow)) {
-        trat += `, com consultas a cada ${fLow}`;
+        ident += `, com consultas a cada ${fLow}`;
       } else if (fLow.startsWith("a cada")) {
-        trat += `, com consultas ${fLow}`;
+        ident += `, com consultas ${fLow}`;
       } else {
-        trat += `, comparecendo a consultas de periodicidade ${f}`;
+        ident += `, comparecendo a consultas de periodicidade ${f}`;
       }
     }
-    trat += ".";
-    partes.push(trat);
   }
+  ident += ".";
+  partes.push(ident);
   
-  // 4. Sintomas e limitações referidas
+  // 4. Sintomas e limitações
   if (sintomas) {
-    partes.push(`Refere como queixa e sintomas limitantes: ${sintomas}.`);
+    let sClean = sintomas.trim();
+    if (sClean.toLowerCase().startsWith("queixa-se de") || sClean.toLowerCase().startsWith("refere")) {
+      partes.push(sClean.endsWith(".") ? sClean : sClean + ".");
+    } else {
+      partes.push(`Queixa-se de ${sClean.endsWith(".") ? sClean.slice(0, -1) : sClean}.`);
+    }
   }
   
   // 5. Medicações
   if (medsStr) {
-    partes.push(`Faz uso regular das seguintes medicações prescritas: ${medsStr}.`);
+    partes.push(`Em uso de ${medsStr}.`);
   } else {
-    partes.push("Não refere uso regular de medicações no momento da perícia.");
+    partes.push("Negou uso de medicações.");
   }
   
-  // 6. Alteração de medicação (CID F)
+  // 6. Alteração de medicação (CID F e geral)
   const altMed = String(st.alteracaoMed || aux.alteracaoMed || getRadio("agilAlteracaoMed") || "").toLowerCase() === "sim";
   if (altMed) {
     const dtAlt = aux.dataAlteracaoMed || $("agilDataAlteracaoMed")?.value || "";
     const obsAlt = aux.obsAlteracaoMed || $("agilObsAlteracaoMed")?.value || "";
     partes.push(`Informa alteração recente na prescrição medicamentosa${dtAlt ? ` em ${formatDate(dtAlt)}` : ""}${obsAlt ? ` (${obsAlt})` : ""}.`);
+  } else {
+    partes.push("(Não relatou troca de alteração de dosagem da medicação.)");
   }
   
   // 7. Terapias
-  let teraps = [];
-  if (psico) teraps.push("psicoterapia");
-  if (fisio) teraps.push("fisioterapia");
-  if (teraps.length > 0) {
-    partes.push(`Realiza acompanhamento regular em ${teraps.join(" e ")}${obsTerapias ? ` (${obsTerapias})` : ""}.`);
+  if (fisio && !psico) {
+    const fTxt = obsTerapias ? `Realiza fisioterapia ${obsTerapias}` : "Realiza fisioterapia";
+    partes.push(`${fTxt} (e não realiza psicoterapia).`);
+  } else if (psico && !fisio) {
+    const pTxt = obsTerapias ? `Realiza psicoterapia ${obsTerapias}` : "Realiza psicoterapia";
+    partes.push(`${pTxt} (e não realiza fisioterapia).`);
+  } else if (fisio && psico) {
+    partes.push(`Realiza acompanhamento em fisioterapia e psicoterapia${obsTerapias ? ` (${obsTerapias})` : ""}.`);
   } else {
-    partes.push("Nega acompanhamento em psicoterapia ou fisioterapia no momento.");
+    partes.push("Não alegou fazer fisioterapia e psicoterapia.");
   }
   
   return partes.join(" ");
@@ -7497,14 +7542,21 @@ function gerarNarrativaAntecedentesMelhoriaContinua(st, v) {
   const rawHist = (aux.historicoPregresso || v.historicoPregresso || $("agilHistoricoPregresso")?.value || "").trim();
   const conds = (st.conditions || v.condicoes || []).filter(c => c && (c.nome || c.doenca));
   
-  // Se já tiver uma redação do médico, preserva estritamente o que foi registrado
-  if (rawHist && rawHist !== "Nega") {
-    return rawHist;
+  const fraseComplemento = "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias.";
+
+  // Se já tiver uma redação do médico ou histórico, limpa menção a atestados e complementa com negação de cirurgias e neoplasias
+  if (rawHist && rawHist !== "Nega" && rawHist !== "Nega.") {
+    let t = rawHist.replace(/[\s\.\,]*\b(?:[Vv]em\s+com\s+atestado|[Aa]testado)\s+de\s+\d+\s+dias[^\.\n\r]*[\.\,]?/gi, "").trim();
+    if (!t.endsWith(".")) t += ".";
+    if (!t.toLowerCase().includes("nega demais") && !t.toLowerCase().includes("cirurgias") && !t.toLowerCase().includes("neoplasias") && !t.toLowerCase().includes("nega antecedentes")) {
+      t += " " + fraseComplemento;
+    }
+    return t;
   }
   
   if (conds.length > 0) {
     const condsStr = conds.map(c => `${c.nome || c.doenca}${c.tratamento ? ` em uso de ${c.tratamento}` : ""}`).join("; ");
-    return `Informa histórico de comorbidades: ${condsStr}.`;
+    return `Informa histórico de comorbidades: ${condsStr}. ${fraseComplemento}`;
   }
   
   return rawHist || "Nega.";
@@ -7654,13 +7706,14 @@ function aplicarSintesePericialMelhoriaContinua(force = false) {
   }
   
   // 2. Antecedentes Mórbidos
-  const narrativaAntecedentes = gerarNarrativaAntecedentesMelhoriaContinua(state, v);
-  if (narrativaAntecedentes && (force || !state.aux.historicoPregresso || state.aux.historicoPregresso === "Nega")) {
-    state.aux.historicoPregresso = narrativaAntecedentes;
-    state.historicoPregresso = narrativaAntecedentes;
-    if ($("historicoPregresso")) $("historicoPregresso").value = narrativaAntecedentes;
-    if ($("agilHistoricoPregresso") && (force || !$("agilHistoricoPregresso").value.trim())) {
-      $("agilHistoricoPregresso").value = narrativaAntecedentes;
+  const histAtual = (state.aux?.historicoPregresso || state.historicoPregresso || $("agilHistoricoPregresso")?.value || "").trim();
+  if (histAtual && histAtual !== "Nega" && histAtual !== "Nega.") {
+    const narrativaAntecedentes = gerarNarrativaAntecedentesMelhoriaContinua(state, v);
+    if (narrativaAntecedentes) {
+      state.aux.historicoPregresso = narrativaAntecedentes;
+      state.historicoPregresso = narrativaAntecedentes;
+      if ($("historicoPregresso")) $("historicoPregresso").value = narrativaAntecedentes;
+      if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = narrativaAntecedentes;
     }
   }
   
@@ -7711,7 +7764,7 @@ function ensureAgileBackgroundDefaults() {
   // 03 — Antecedentes mórbidos: síntese contínua pericial
   const histAgil = (state.aux?.historicoPregresso || state.historicoPregresso || $("agilHistoricoPregresso")?.value || $("historicoPregresso")?.value || "").trim();
   const histDef = histAgil || "Nega";
-  const histMelhoria = (histDef === "Nega") ? gerarNarrativaAntecedentesMelhoriaContinua(state, values()) : histDef;
+  const histMelhoria = (histDef !== "Nega" && histDef !== "Nega.") ? gerarNarrativaAntecedentesMelhoriaContinua(state, values()) : histDef;
   state.aux.historicoPregresso = histMelhoria;
   state.historicoPregresso = histMelhoria;
   if ($("historicoPregresso")) $("historicoPregresso").value = histMelhoria;

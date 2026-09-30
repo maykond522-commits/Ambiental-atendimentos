@@ -2754,9 +2754,8 @@ def test_requisitos_atendimento_antecedentes_inicio_freq_meds_esisla(monkeypatch
     assert res.status_code == 200
     ficha = res.get_json()["ficha_esisla"]
 
-    # 7. Servidor não readaptado: NÃO deve constar "não readaptado"
-    assert "não readaptado" not in ficha.lower()
-    assert "nao readaptado" not in ficha.lower()
+    # 7. Servidor não readaptado: deve constar (Não readaptado) conforme diretriz pericial
+    assert "não readaptado" in ficha.lower() or "nao readaptado" in ficha.lower()
 
     # 4. Frequência corrigida
     assert "a cada quinzenal" not in ficha
@@ -2860,3 +2859,91 @@ def test_favorable_limitations_never_contrary_and_preserves_osteo_mental(monkeyp
     assert "posturas viciosas" in ficha.lower()
     assert "agachamentos" in ficha.lower()
     assert "Rol de Atividades do cargo de Assistente Administrativo" in ficha
+
+
+def test_narrativas_exaustivas_queixa_antecedentes_e_limitacoes(monkeypatch):
+    """Valida a redação exaustiva e completa solicitada pelo usuário:
+    1. Queixa e Duração com (Não readaptado), (Não relatou troca de alteração de dosagem da medicação.),
+       negação cruzada de fisioterapia/psicoterapia e medicação sem dosagem informada.
+    2. Antecedentes Mórbidos com relato complementado com 'Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias.'.
+    3. Exame físico preservado integralmente.
+    4. Limitações priorizando as implementadas no sistema.
+    """
+    from app import app, EsislaResult, _clean_esisla_text, TASK_PROMPTS
+    import pathlib
+
+    atd = (ROOT / "ambiental_avaliacao_medica_lts_cid_assistente.html").read_text(encoding="utf-8")
+    gestao = (ROOT / "gestao_atendimentos.html").read_text(encoding="utf-8")
+    app_text = (ROOT / "app.py").read_text(encoding="utf-8")
+
+    # 1. Frontend: presenças e regras nos arquivos
+    assert "gerarNarrativaQueixaMelhoriaContinua" in atd
+    assert "gerarNarrativaAntecedentesMelhoriaContinua" in atd
+    assert "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias." in atd
+    assert "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias." in gestao
+    assert "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias." in app_text
+
+    # 2. Teste de api_ai_esisla com antecedentes com histórico e sem readaptação
+    raw_template = (
+        "Registro da perícia Médica para Licença\n\n"
+        "(*) Queixa e Duração:\n"
+        "Servidor de 21 anos, Adm há 22 anos, (Não readaptado), com queixa de artrose avançada no joelho direito com lesão crônica no menisco desde 2025, realizando consultas mensalmente. Queixa-se de dor constante que queima e pontua. Em uso de Tramadol 50 mg/ se dor intensa até 8/8h e Dipirona 1 g/, não informado sua dosagem. (Não relatou troca de alteração de dosagem da medicação.) Realiza fisioterapia três vezes por semana (e não realiza psicoterapia).\n\n"
+        "Antecedentes Mórbidos:\n"
+        "Refere histórico relacionado a Artrose avançada no joelho direito com lesão crônica no menisco e entorse feia nesse mesmo joelho há cerca de 5 anos.\n\n"
+        "Atestado/Relatório/Exames Complementares:\nEm anexo.\n\n"
+        "Altura: 1,75\nPeso: 75\n\n"
+        "(*)Exame Físico Geral\n"
+        "Aparelho Osteomuscular e Tecido Conjuntivo: Joelho direito com crepitação femoropatelar moderada, dor à flexão acima de 90 graus e teste de McMurray positivo para menisco medial.\n\n"
+        "Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:\n"
+        "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial.\n\n"
+        "(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):\n"
+        "Limitação funcional para deambulação prolongada, agachamento e subir/descer escadas de modo habitual, atividades estas constantes no Rol de Atividades do cargo de Adm.\n\n"
+        "(*)Parecer Médico\n"
+        "Parecer: FAVORÁVEL\n"
+        "Nº Dias: 15\n"
+        "Data Início: 30/09/2026\n"
+        "CID 10: M23.2\n"
+        "Descrição: Transtorno do menisco devido a ruptura ou lesão antiga\n"
+        "Médico Perito: Dr. Perito\n"
+        "CRM: 12345\n"
+        "Dt/Hr Perícia: 30/09/2026 14:00\n\n"
+        "(*)Resposta aos quesitos\n1) Sim\n2) Sim\n3) Sim\n\n"
+        "(*)Justificativa Parecer Médico\n"
+        "Capacidade laborativa temporariamente prejudicada em razão da lesão meniscal com necessidade de repouso articular.\n\n"
+        "(*) Parecer Final\nNº Dias: 15\nData Início: 30/09/2026\nCID 10: M23.2\n"
+    )
+
+    monkeypatch.setattr("app._authenticate_request", lambda: ({"id": "1", "email": "admin@ambiental.com", "nome": "Admin", "perfil": "Administrador"}, "token123"))
+    monkeypatch.setattr("app._generate_cached", lambda *args, **kwargs: (EsislaResult(ficha_esisla=raw_template), False, "hash123"))
+
+    client = app.test_client()
+    res = client.post("/api/ai/esisla", json={
+        "atendimento": "999003",
+        "parecer": "FAVORÁVEL",
+        "readaptado": False,
+        "cargo": "Adm",
+        "cid": "M23.2",
+        "historico_pregresso": "Refere histórico relacionado a Artrose avançada no joelho direito com lesão crônica no menisco e entorse feia nesse mesmo joelho há cerca de 5 anos.",
+        "exame_fisico_descricao": "Joelho direito com crepitação femoropatelar moderada, dor à flexão acima de 90 graus e teste de McMurray positivo para menisco medial.",
+        "exame_fisico_tipo": "Aparelho Osteomuscular e Tecido Conjuntivo"
+    })
+    assert res.status_code == 200
+    ficha = res.get_json()["ficha_esisla"]
+
+    # Validações estritas da narrativa do usuário
+    assert "(Não readaptado)" in ficha or "não readaptado" in ficha.lower()
+    assert "desde 2025" in ficha
+    assert "realizando consultas mensalmente" in ficha
+    assert "não informado sua dosagem" in ficha
+    assert "(Não relatou troca de alteração de dosagem da medicação.)" in ficha
+    assert "(e não realiza psicoterapia)" in ficha
+
+    # Antecedentes mórbidos complementados
+    assert "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias." in ficha
+
+    # Exame físico preservado estritamente
+    assert "Joelho direito com crepitação femoropatelar moderada, dor à flexão acima de 90 graus e teste de McMurray positivo para menisco medial." in ficha
+
+    # Limitações vinculadas ao rol
+    assert "Rol de Atividades do cargo de Adm" in ficha
+

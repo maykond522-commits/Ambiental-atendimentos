@@ -1082,18 +1082,24 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
    Reescreva e sintetize em parágrafo único, fluido e coeso, integrando os dados clínicos e ocupacionais na ordem padronizada do Programa de Melhoria Contínua:
    (1) Idade ("Servidor de X anos" ou "Periciado de X anos", respeitando o gênero: homem = "Servidor de X anos" / "Periciado de X anos", mulher = "Servidora de X anos" / "Periciada de X anos"; em caso de dúvida, utilize "Servidor de X anos"),
    (2) Cargo e (3) Tempo de cargo ("[cargo] há X anos/meses"),
-   (4) Readaptação funcional (se o servidor for readaptado, indicar atividades exercidas; se NÃO for readaptado, NÃO mencione readaptação funcional na ficha, omita qualquer menção a não readaptação),
+   (4) Readaptação funcional (se o servidor for readaptado, indicar expressamente as atividades exercidas; se NÃO for readaptado ou em branco, registrar expressamente "(Não readaptado)" ou "(Não readaptada)"),
    (5) Doença motivadora informada ("com queixa de ..."),
-   (6) Início do tratamento: se informado apenas o ano (ex: 2020), registre obrigatoriamente "iniciou-se seu tratamento em [ano]"; se informada a data completa (DD/MM/AAAA), preserve a data exata informada ("iniciou-se seu tratamento em [DD/MM/AAAA]"). NUNCA invente a data de hoje nem diga que o tratamento se iniciou hoje se a data não foi informada como data de início.
-   (7) Frequência das consultas: formule com naturalidade e correção gramatical (ex.: "realiza consultas quinzenalmente", "realiza consultas mensalmente", "com consultas a cada 15 dias", "com consultas a cada 2 meses"). NUNCA gere formulações incorretas como "a cada quinzenal".
-   (8) Sintomas e limitações laborais relatadas ("Queixa-se de ... com dificuldade para ..."),
+   (6) Início do tratamento: se informado ano (ex: 2025), registre obrigatoriamente "desde [ano]" (ou "iniciou-se seu tratamento em [ano]"); se informada data completa (DD/MM/AAAA), preserve a data exata informada ("desde [DD/MM/AAAA]"). NUNCA invente a data de hoje nem diga que o tratamento se iniciou hoje se a data não foi informada como data de início.
+   (7) Frequência das consultas: formule com naturalidade e correção gramatical (ex.: "realizando consultas mensalmente", "realizando consultas quinzenalmente", "com consultas a cada 15 dias", "com consultas a cada 2 meses"). NUNCA gere formulações incorretas como "a cada quinzenal".
+   (8) Sintomas e limitações laborais relatadas ("Queixa-se de ..."), detalhando os sintomas informados.
    (9) Medicações em curso,
-   (10) Dosagens sempre em mg/dia e histórico de trocas de medicações (obrigatório detalhar dosagem diária em mg/dia e histórico de trocas/alterações de dosagem para patologias com CID F / psiquiátricas, ex.: "Em uso de Sertralina 100 mg/dia e Clonazepam 2 mg/dia, sem trocas recentes de medicação"),
-   (11) Terapias não medicamentosas ("Realiza psicoterapia semanal" / "Realiza fisioterapia ...").
+   (10) Dosagens sempre em mg/dia e histórico de trocas de medicações (obrigatório detalhar dosagem diária em mg/dia e histórico de trocas/alterações de dosagem para patologias com CID F / psiquiátricas, ex.: "Em uso de Sertralina 100 mg/dia e Clonazepam 2 mg/dia, sem trocas recentes de medicação"). Se o servidor informar a medicação MAS NÃO a dosagem, registrar expressamente: "[medicação], não informado sua dosagem [posologia]" (ex.: "Dipirona 1 g/, não informado sua dosagem"). Se não fizer uso de medicações: registrar "Negou uso de medicações." ou "Não alegou uso de medicações.". Se não houve trocas de dosagem: registrar expressamente "(Não relatou troca de alteração de dosagem da medicação.)",
+   (11) Terapias não medicamentosas ("Realiza psicoterapia semanal" / "Realiza fisioterapia ..."). Detalhar explicitamente as duas terapias: se realiza uma e não a outra, relatar a que faz e negar expressamente a outra (ex.: "Realiza fisioterapia três vezes por semana (e não realiza psicoterapia)." ou "Realiza psicoterapia semanal (e não realiza fisioterapia)."). Se não realiza nenhuma das duas, registrar expressamente: "Não alegou fazer fisioterapia e psicoterapia.". Se realiza ambas, registrar: "Realiza fisioterapia [frequência] e psicoterapia [frequência].".
    Fontes a integrar: idade, cargo, tempo_funcao, unidade_tempo, readaptado, atividades_readaptado, doenca_motivo, queixa_duracao, inicio_tratamento, frequencia_consultas, sintomas_limitacoes, medicamentos, alteracao_dosagem, data_alteracao_med, obs_alteracao_med, psicoterapia, fisioterapia, obs_terapias.
    Exemplo de referência oficial DPME:
    "Servidor de 40 anos, professor há 10 anos, com queixa de depressão desde 2020, realizando consultas quinzenalmente. Queixa-se de tristeza, desânimo, choro fácil e insônia, com dificuldade para planejar aulas e manter a atenção. Em uso de Sertralina 100 mg/dia e Clonazepam 2 mg/dia, sem trocas recentes de medicação. Realiza psicoterapia semanal."
-   Apenas inclua elementos presentes nos dados registrados, conectando-os de forma natural. Não invente dados não registrados nem acrescente diagnóstico ou interpretação que não esteja escrita nos dados.
+   Exemplos de referência oficial do sistema:
+   Exemplo 1 (Ortopédico completo):
+   "Servidor de 21 anos, Adm há 22 anos, (Não readaptado), com queixa de artrose avançada no joelho direito com lesão crônica no menisco desde 2025, realizando consultas mensalmente. Queixa-se de dor constante que queima e pontua. Em uso de Tramadol 50 mg/ se (tiver) dor intensa até 8/8h e Dipirona 1 g/ se (tiver) dor até 6/6h. (Não relatou troca de alteração de dosagem da medicação.) Realiza fisioterapia três vezes por semana (e não realiza psicoterapia)."
+   Exemplo 2 (Mental / Psiquiátrico com negação de medicações e terapias):
+   "Servidora de 49 anos, ocupante do cargo de Professora de Matemática, vinculada ao Estado desde 1992, (Não readaptada), lotada na Secretaria da Escola. Relata que, há aproximadamente três anos, recebeu diagnóstico de transtorno depressivo, desencadeado por conflitos interpessoais no ambiente de trabalho, com agravamento progressivo dos sintomas nos últimos meses. Refere episódios de choro espontâneo, irritabilidade/agressividade, compulsão alimentar, fobia social, taquicardia, desânimo para sair de casa, tristeza persistente, insônia, pesadelos, angústia e isolamento social. Informa dificuldade para realizar atividades rotineiras e afazeres domésticos. Informa histórico de internação em hospital psiquiátrico há 1 ano e 6 meses, com alta há 1 ano. Nega ideação suicida no momento. (Não relatou troca de alteração de dosagem da medicação.) Não alegou fazer fisioterapia e psicoterapia, negou uso de medicações."
+   Exemplo 3 (Medicação sem dosagem informada):
+   "Servidor de 38 anos, Agente Administrativo há 8 anos, (Não readaptado), com queixa de dor lombar crônica desde 2024, realizando consultas bimestralmente. Queixa-se de dores com irradiação para membros inferiores. Em uso de Tramadol 50 mg/ a cada 8 horas e Dipirona 1g/, não informado sua dosagem. (Não relatou troca de alteração de dosagem da medicação.) Realiza fisioterapia duas vezes por semana (e não realiza psicoterapia)."
 
 2. “Antecedentes Mórbidos”
    Consolide de forma sintética, clara e técnica os dados de outras_doencas, condicoes, antecedentes e historico_pregresso, cobrindo os 4 itens padronizados:
@@ -1103,25 +1109,25 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
    (4) Histórico de neoplasias e tratamentos associados.
    Fontes a integrar: antecedentes, historico_pregresso, outras_doencas, condicoes.
    ATENÇÃO: O conteúdo registrado em antecedentes / historico_pregresso ("Histórico pregresso" no questionário) DEVE OBRIGATORIAMENTE ser integrado e considerado nesta seção de Antecedentes Mórbidos.
-   REGRA MANDATÓRIA QUANDO EM BRANCO / NÃO INFORMADO: Se não houver histórico pregresso ou se os dados de antecedentes / historico_pregresso estiverem em branco ou vazios, PREENCHA OBRIGATORIAMENTE COM: "Nega." (ou "Nega").
-   REGRA OBRIGATÓRIA DE EXCLUSÃO DE ATESTADO NOS ANTECEDENTES MÓRBIDOS:
-   NUNCA mencione dias de atestado, afastamento ou concessões ("Vem com atestado de X dias...", "atestado de...", "com atestado de...") nesta seção de Antecedentes Mórbidos.
    Antecedentes Mórbidos destinam-se EXCLUSIVAMENTE ao histórico pregresso clínico da patologia (ex.: "Hipertenso desde os 29 anos, em tratamento medicamentoso. Nega cirurgias prévias ou hábitos tóxicos."). Informações sobre atestados e afastamentos pertencem exclusivamente aos campos documentais e parecer.
-   Exemplo de referência oficial DPME:
-   "Hipertenso e diabético há 5 anos, em tratamento medicamentoso. Apendicectomia há 10 anos. Nega tabagismo, etilismo ou uso de substâncias ilícitas. Nega histórico de neoplasias."
-   Consolide somente outras_doencas, condicoes, antecedentes e historico_pregresso. Pode eliminar repetição e organizar o conteúdo quando isso melhora a leitura, mas não introduza condições, diagnósticos ou tratamentos não registrados.
+   REGRA OBRIGATÓRIA DE EXCLUSÃO DE ATESTADO NOS ANTECEDENTES MÓRBIDOS:
+   NUNCA mencione dias de atestado, afastamento ou concessões ("Vem com atestado de X dias...", "atestado de...", "com atestado de...") nesta seção de Antecedentes Mórbidos. Informações sobre atestados e afastamentos pertencem exclusivamente aos campos documentais e parecer.
+   REGRA OBRIGATÓRIA DE COMPLEMENTAÇÃO EXAUSTIVA:
+   - Se houver histórico relatado (pelo médico ou histórico de lesões/comorbidades): conclua obrigatoriamente a narrativa com: "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
+     Exemplo de referência oficial do sistema:
+     "Refere histórico relacionado a Artrose avançada no joelho direito com lesão crônica no menisco e entorse feia nesse mesmo joelho há cerca de 5 anos. Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
+   - REGRA MANDATÓRIA QUANDO EM BRANCO / NÃO INFORMADO: Se não houver histórico pregresso ou se os dados de antecedentes / historico_pregresso estiverem em branco ou vazios, PREENCHA OBRIGATORIAMENTE COM: "Nega." (ou "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas.").
 
 3. “(*)Exame Físico Geral”
    ESTE CAMPO É EXCLUSIVO PARA O EXAME FÍSICO / MENTAL DIRETO REALIZADO PELO MÉDICO PERITO NO ATO PERICIAL:
-   - PRESERVAÇÃO INTEGRAL: Tudo o que for registrado pelo médico perito no momento do atendimento em "(*)Exame Físico Geral — achados observados" (exame_fisico_descricao) DEVE SER MANTIDO E PRESERVADO INTEGRALMENTE. Não altere os termos nem descarte achados do médico.
-   - A IA NÃO DEVE GERAR NEM CRIAR EXAME FÍSICO NOVO. Preencha exclusivamente com o que foi registrado no momento do atendimento pelo médico perito (exame_fisico_descricao e exame_fisico_tipo). NUNCA invente exames de aparelhos não registrados (como Aparelho Respiratório, etc.).
+   - PRESERVAÇÃO INTEGRAL E EXATA: O Exame Físico/Mental informado no momento do atendimento pelo médico perito (exame_fisico_descricao) DEVE SER COLOCADO EXATAMENTE COMO INFORMADO NO ATENDIMENTO.
+   - Preservar integralmente cada achado, termo e conclusão sem alterações, sem resumos e sem invenções.
+   - A IA NÃO DEVE GERAR NEM CRIAR ACHADOS DE EXAME FÍSICO NOVOS. Preencha exclusivamente com o que foi registrado no momento do atendimento pelo médico perito (exame_fisico_descricao e exame_fisico_tipo). NUNCA invente exames de aparelhos não registrados (como Aparelho Respiratório, etc.).
    - Integre obrigatoriamente o Tipo de exame físico / mental (exame_fisico_tipo, area_exame_clinico, outros_subtipo) com o que consta em "(*)Exame Físico Geral — achados observados" (exame_fisico_descricao):
-     * Identifique expressamente o segmento/sistema avaliado correspondente aos checkboxes oficiais do e-SISLA (ex.: "Aparelho Osteomuscular e Tecido Conjuntivo: [achados]" ou "Exame Mental: [achados]" ou "[Área avaliada]: [achados]"), seguido da descrição clínica pericial dos achados observados.
-     * Para patologia Mental / Psiquiátrica (CID F): estruture os achados psíquicos objetivos observados pelo perito: postura e acompanhamento (descrever se veio acompanhado ou desacompanhado, postura na sala de espera e durante o atendimento), orientação temporoespacial, aparência física e cuidados de higiene, fluxo e curso do pensamento, linguagem e diálogo (espontâneo, colaborativo), psicomotricidade, humor e afeto, volição, pragmatismo e presença ou ausência de ideação/delírios relatados.
-     * Para patologia Ortopédica / Físico-funcional: estruture os achados físicos objetivos periciais: inspeção dinâmica e marcha, fácies de dor, cicatrizes, trofismo muscular, amplitude de movimento articular ativo e passivo, força muscular (grau 0 a 5), presença de contraturas musculares, sensibilidade e reflexos tendinosos profundos relatados.
+     * Identifique expressamente o segmento/sistema avaliado correspondente aos checkboxes oficiais do e-SISLA (ex.: "Aparelho Osteomuscular e Tecido Conjuntivo: [achados exatos]" ou "Exame Mental: [achados exatos]" ou "[Área avaliada]: [achados exatos]"), seguido da descrição clínica pericial dos achados observados.
      * Para Outros tipos de exame: integre a área avaliada (area_exame_clinico) e o resultado (resultado_avaliacao: Normal ou Alterado) com os achados clínicos descritos. Quando a opção for "Outros" ou a área for "E outros" / "Outros", NUNCA escreva prefixos como "Aparelho E outros:", "Aparelho outros:", "E outros:" ou "Outros:" no texto. Inicie a redação DIRETAMENTE com a descrição dos achados clínicos objetivos observados.
    - REGRA DE AJUSTE PARA ACHADOS MUITO CURTOS (SOMENTE EM CASOS EXTREMOS):
-     Se a anotação do médico em exame_fisico_descricao for excessivamente concisa, telegráfica ou lacônica (ex.: apenas "dor lombar", "tristeza", "sem alterações", "normal", "apenas dor à palpação", "limitação"), a IA DEVE ajustar e estruturar uma descrição clínica pericial formal, completa e técnica no padrão DPME/SP, compatível com o tipo de exame e a especialidade, garantindo a solidez pericial do prontuário. Em atendimentos que já possuam descrição detalhada, preserve estritamente o relato sem invenções.
+     Se a anotação do médico em exame_fisico_descricao for excessivamente concisa, telegráfica ou lacônica (ex.: apenas "dor lombar", "tristeza", "sem alterações", "normal", "apenas dor à palpação", "limitação"), a IA DEVE ajustar e estruturar uma descrição clínica pericial formal, completa e técnica no padrão DPME/SP, compatível com o tipo de exame e a especialidade, garantindo a solidez pericial do prontuário. Em atendimentos que já possuam descrição detalhada ou achados do perito, preserve estritamente o relato sem invenções.
    - NUNCA descreva exames de imagem ou laboratoriais trazidos pelo servidor neste campo.
    - NUNCA copie para este campo o texto de exames complementares.
 
@@ -1132,30 +1138,24 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
    - SE O SERVIDOR NÃO APRESENTOU EXAMES COMPLEMENTARES DE IMAGEM OU LABORATORIAIS:
      Registre formalmente: "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial."
    - ATENÇÃO CRÍTICA — DIFERENCIAÇÃO OBRIGATÓRIA:
-     Os campos “(*)Exame Físico Geral” e “Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:” NUNCA DEVEM VIR COM TEXTOS IDÊNTICOS! O Exame Físico Geral é a avaliação clínica direta do perito; este campo é o relato documental dos exames de imagem/laboratório trazidos pelo servidor. É terminantemente proibido duplicar o conteúdo entre esses dois campos.
+     Os campos “(*)Exame Físico Geral” e “Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:” NUNCA DEVEM VIR COM TEXTOS IDÊNTICOS!
 
 5. “(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)”
-   Relacione expressamente as limitações físicas ou mentais com as atividades do ROL do servidor (cargo), reunindo desc_limitacao, limitacao_funcional, limitacao_rol, atividades_comprometidas, sintomas_limitacoes e obs_limitacoes:
+   PRIORIZAÇÃO OBRIGATÓRIA DAS LIMITAÇÕES OFICIAIS IMPLEMENTADAS NO SISTEMA:
    - PRESERVAÇÃO RIGOROSA DE LIMITAÇÕES JÁ PREENCHIDAS: Se o campo desc_limitacao (ou limitacao_funcional / sintomas_limitacoes) já contiver texto preenchido pelo médico perito no atendimento (inclusive limitações osteomusculares específicas de regiões ou psicossociais/emocionais), PRESERVE E PRIORIZE ESTRITAMENTE o texto já registrado pelo profissional, integrando com o Rol de Atividades do cargo. NÃO substitua nem altere limitações já preenchidas por fórmulas genéricas.
-   - Se Parecer CONTRÁRIO (capacidade preservada): adote OBRIGATORIAMENTE a fórmula padrão oficial:
+   - NUNCA gere formulações de ausência de limitação ("não se observa limitações", "capacidade preservada", "sem limitações") quando o Parecer Médico for FAVORÁVEL (deferido). Isso causará grave inconsistência no e-SISLA!
+   - Quando o Parecer for FAVORÁVEL, utilize SEMPRE as limitações padronizadas do sistema integradas com o Rol de Atividades do cargo:
+     * Para patologias mentais / psiquiátricas (CID F ou Exame Mental alterado):
+       "Apresenta limitações psicossociais e psicoemocionais que repercutem nas habilidades necessárias para interatividade social, planejamentos, manter concentração e ter autodomínio, atividades estas constantes no Rol de Atividades do cargo de [cargo]."
+     * Para patologias osteomusculares (CID M ou exame osteomuscular alterado):
+       Priorize a limitação da região anatômica afetada:
+       - Joelho: "Limitação funcional para deambulação prolongada, agachamento e subir/descer escadas de modo habitual, atividades estas constantes no Rol de Atividades do cargo de [cargo]."
+       - Coluna / Lombar: "Limitação funcional para atividades com sobrecarga mecânica na coluna, flexão repetitiva de tronco ou manutenção de posturas estáticas prolongadas, atividades estas constantes no Rol de Atividades do cargo de [cargo]."
+       - Ombro: "Limitação para elevação de membros superiores acima do nível dos ombros e sustentação de peso de modo habitual, atividades estas constantes no Rol de Atividades do cargo de [cargo]."
+       - Cotovelo / Punho / Mão: "Limitação para movimentos repetitivos de membros superiores, pronação/supinação sob carga e preensão manual com força, atividades estas constantes no Rol de Atividades do cargo de [cargo]."
+     * Sempre finalizar vinculando expressamente ao: "Rol de Atividades do cargo de [cargo]." (ex.: "atividades estas constantes no Rol de Atividades do cargo de [cargo].")
+   - Quando o Parecer for CONTRÁRIO (indeferido):
      "Do ponto de vista médico não se observa limitações físicas ou mentais funcionais incapacitantes para as atribuições do cargo de [cargo], constantes no rol de atividades."
-     * Para patologia estritamente Física: "Do ponto de vista médico não se observa limitações físicas funcionais incapacitantes para as atribuições do cargo de [cargo], constantes no rol de atividades."
-     * Para patologia estritamente Mental: "Do ponto de vista médico não se observa limitações mentais funcionais incapacitantes para as atribuições do cargo de [cargo], constantes no rol de atividades."
-   - Se Parecer FAVORÁVEL (ou capacidade laborativa temporariamente prejudicada): adote a fórmula padrão oficial e adeque com inteligência pericial as limitações ao CID principal e às funções do cargo:
-     * Para patologia Física / Osteomuscular:
-       "Apresenta limitações físicas funcionais temporárias para [atividades/limitações registradas], atividades estas constantes no Rol de Atividades do cargo de [cargo]."
-     * Para patologia Mental / Psiquiátrica (CID F):
-       "Apresenta limitações mentais funcionais temporárias para [atividades/limitações registradas], atividades estas constantes no Rol de Atividades do cargo de [cargo]."
-     * Fórmula padrão genérica:
-       "Apresenta limitações [físicas/mentais] funcionais temporárias para [atividades/limitações registradas], atividades estas constantes no Rol de Atividades do cargo de [cargo]."
-     Diretrizes clínicas de inteligência pericial por grupo de CID:
-     * Cardiovasculares / Hipertensão (CID I, ex.: I10, I15): limitações temporárias para esforços físicos intensos, estresse emocional agudo e situações de urgência/emergência que demandem higidez cardiovascular plena.
-     * Osteomusculares / Ortopédicos (CID M, ex.: M54, M75): limitações temporárias para carregamento de peso, ortostatismo prolongado, movimentos repetitivos ou posturas forçadas.
-     * Psiquiátricos / Saúde Mental (CID F, ex.: F32, F41): limitações temporárias para tomada de decisões sob pressão, gestão de conflitos/crises e jornadas extenuantes (e porte de arma em carreiras policiais).
-     * Respiratórios (CID J): limitações temporárias para esforços aeróbicos intensos e exposição a poluentes, poeiras ou irritantes.
-     * Demais patologias: limitações temporárias para esforços físicos intensos e atividades habituais que demandem higidez plena da área afetada.
-     (Exemplo de referência oficial: "Apresenta limitações físicas funcionais temporárias para ortostatismo prolongado, caminhadas e subir/descer escadas, atividades estas constantes no Rol de Atividades do cargo de professor.")
-   - É permitido reduzir repetição e formar uma redação única, mas “Sim” sozinho não autoriza criar uma limitação específica.
 
 6. “(*)Justificativa Parecer Médico”
    Apresente OBRIGATORIAMENTE a conclusão pericial fundamentada conforme o padrão do Programa de Melhoria Contínua (NUNCA DEIXE ESTE CAMPO VAZIO quando houver parecer e dados do atendimento):
@@ -2526,11 +2526,18 @@ def api_ai_esisla():
                     clean_ant = re.sub(r"^[\s\.\,]+", "", clean_ant).strip()
                     if not clean_ant or clean_ant == ".":
                         clean_ant = "Nega."
-                    elif not clean_ant.endswith("."):
-                        clean_ant += "."
+                    else:
+                        if not clean_ant.endswith("."):
+                            clean_ant += "."
+                        if "nega demais" not in clean_ant.lower() and "cirurgias" not in clean_ant.lower() and "neoplasias" not in clean_ant.lower() and "nega antecedentes" not in clean_ant.lower():
+                            clean_ant += " Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
                     ficha_text = ficha_text[:m_ant.start(2)] + clean_ant + ficha_text[m_ant.end(2):]
                 elif not cur_ant or cur_ant == "." or cur_ant.lower() in ("nega", "nega."):
                     ficha_text = ficha_text[:m_ant.start(2)] + "Nega." + ficha_text[m_ant.end(2):]
+                elif cur_ant and cur_ant.lower() not in ("nega", "nega."):
+                    if "nega demais" not in cur_ant.lower() and "cirurgias" not in cur_ant.lower() and "neoplasias" not in cur_ant.lower() and "nega antecedentes" not in cur_ant.lower():
+                        c_ant = cur_ant.rstrip(".,; ") + ". Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
+                        ficha_text = ficha_text[:m_ant.start(2)] + c_ant + ficha_text[m_ant.end(2):]
 
             par_val = str(payload.get("parecer") or "").strip().upper()
             is_contra = "CONTR" in par_val
@@ -2663,11 +2670,18 @@ def api_ai_esisla():
                         fallback_txt = "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial."
                         ficha_text = ficha_text[:m_alt_sec.start(2)] + fallback_txt + ficha_text[m_alt_sec.end(2):]
 
-            # Omitir menção a readaptação se o servidor NÃO for readaptado
+            # Readaptação: se o servidor NÃO for readaptado, assegura inclusão explícita de (Não readaptado) se ausente
             if not is_readap:
-                ficha_text = re.sub(r",\s*n[ãa]o\s+readaptad[oa]\b", "", ficha_text, flags=re.IGNORECASE)
-                ficha_text = re.sub(r"\bn[ãa]o\s+readaptad[oa],\s*", "", ficha_text, flags=re.IGNORECASE)
-                ficha_text = re.sub(r"\s*N[ãa]o\s+se\s+encontra\s+em\s+readapta[çc][ãa]o\s+funcional\.?\s*", " ", ficha_text, flags=re.IGNORECASE)
+                if not re.search(r"n[ãa]o\s+readaptad[oa]", ficha_text, flags=re.IGNORECASE):
+                    termo_nr = "(Não readaptada)" if "servidora" in ficha_text.lower() else "(Não readaptado)"
+                    # Inserir após a identificação/cargo na Queixa e Duração
+                    ficha_text = re.sub(
+                        r"(\(\*\)\s*Queixa e Dura[çc][ãa]o:?\s*\n\s*Servidor[^\n\r,]+,\s*[^,\n\r]+?(?:há\s+[^\n\r,]+)?)",
+                        rf"\1, {termo_nr}",
+                        ficha_text,
+                        count=1,
+                        flags=re.IGNORECASE
+                    )
 
             # Correção de frequência de consultas para português natural
             ficha_text = re.sub(r"\bcom\s+consultas\s+a\s+cada\s+quinzenal(?:mente)?\b", "realiza consultas quinzenalmente", ficha_text, flags=re.IGNORECASE)

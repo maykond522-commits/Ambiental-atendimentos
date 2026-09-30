@@ -1636,6 +1636,90 @@ def _format_date_br(val: Any) -> str:
         return f"{dia}/{mes}/{ano}"
     return s
 
+
+LIMITACOES_OSTEOMUSCULAR = {
+    "cervical": "Limitações para mudança do campo visual de forma brusca ou habitual, elevação ou movimentação de membros superiores acimada linha escapular de modo habitual",
+    "lombar": "Limitações para realizar dosiflexão e extensão, de forma abrupta ou de modo habitual, deambulação de modo frequente e longos trajetos, permanência em ostostatismo prolongado, posição sentado de modo permanente e ou habitual sem opção de alternância postural",
+    "ombro_direito": "Limitações para ação braçal, com execução de elevação ou movimentação de membros superiores acimada linha escapular de modo habitual",
+    "ombro_esquerdo": "Limitações para ação braçal, com execução de elevação ou movimentação de membros superiores acimada linha escapular de modo habitual",
+    "cotovelo_direito": "Limitações da ADM que comprometem a ação braçal, limitam a aplicação de força motriz, diminuem a destreza manual, comprometem execução de manuscritos de forma habitual e sistemática",
+    "cotovelo_esquerdo": "Limitações da ADM que comprometem a ação braçal, limitam a aplicação de força motriz, diminuem a destreza manual, comprometem execução de manuscritos de forma habitual e sistemática",
+    "antebraco_direito": "Limitações da ADM que comprometem a ação braçal, limitam a aplicação de força motriz, diminuem a destreza manual, comprometem execução de manuscritos de forma habitual e sistemática",
+    "antebraco_esquerdo": "Limitações da ADM que comprometem a ação braçal, limitam a aplicação de força motriz, diminuem a destreza manual, comprometem execução de manuscritos de forma habitual e sistemática",
+    "mao_direita": "Limitações da ADM que comprometem o desempenho esperado para atividades manipulativas, limitam a ação manual, limitam movimentos finos, limitam a destreza manual, comprometem execução de manuscritos e digitação de forma habitual",
+    "mao_esquerda": "Limitações da ADM que comprometem o desempenho esperado para atividades manipulativas, limitam a ação manual, limitam movimentos finos, limitam a destreza manual, comprometem execução de manuscritos e digitação de forma habitual",
+    "quadril": "Limitações para realizar rotação do tronco de forma abrupta ou de modo habitual, deambulação de modo frequente e longos trajetos, permanência em ostostatismo prolongado, posição sentado de modo permanente e ou habitual sem opção de alternância postural",
+    "joelho_direito": "Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ostostatismo prolongado, realizar agachamentos, subir e descer escadarias de modo habitual e sem apoio",
+    "joelho_esquerdo": "Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ostostatismo prolongado, realizar agachamentos, subir e descer escadarias de modo habitual e sem apoio",
+    "tornozelo_direito": "Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ostostatismo prolongado, subir e descer escadarias de modo habitual",
+    "tornozelo_esquerdo": "Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ostostatismo prolongado, subir e descer escadarias de modo habitual",
+}
+LIMITACAO_MENTAL = "Apresenta limitações psicossociais e psicoemocionais que repercutem nas habilidades necessárias para interatividade social, planejamentos, manter concentração e ter autodomínio."
+
+
+def _is_contrary_limitation_text(text: str) -> bool:
+    if not text:
+        return False
+    s = str(text).lower()
+    return (
+        "não se observa" in s or "nao se observa" in s
+        or "não se identificam" in s or "nao se identificam" in s
+        or "sem limitações" in s or "sem limitacoes" in s
+        or "não há limitações" in s or "nao ha limitacoes" in s
+        or "capacidade laborativa preservada" in s
+    )
+
+
+def _resolve_favorable_limitation(payload: dict[str, Any], cargo: str = "servidor") -> str:
+    a = payload.get("aux") or {}
+    # 1. Se houver limitação registrada pelo médico sem boilerplate contrário, preserva
+    raw_lim = str(
+        payload.get("desc_limitacao")
+        or payload.get("descLimitacao")
+        or payload.get("atividades_comprometidas")
+        or payload.get("atividadesComprometidas")
+        or a.get("desc_limitacao")
+        or a.get("descLimitacao")
+        or a.get("sintomasLimitacao")
+        or ""
+    ).strip()
+    if raw_lim and not _is_contrary_limitation_text(raw_lim):
+        if "rol de atividades" in raw_lim.lower():
+            return raw_lim
+        return f"{raw_lim.rstrip('.,; ')}, atividades estas constantes no Rol de Atividades do cargo de {cargo}."
+
+    # 2. Verificar regiões osteomusculares alteradas no payload
+    reg_map = payload.get("osteomuscular_regioes") or payload.get("osteomuscularRegioes") or a.get("osteomuscularRegioes") or {}
+    if isinstance(reg_map, dict):
+        alteradas = [k for k, v in reg_map.items() if str(v).lower() == "alterado" and k in LIMITACOES_OSTEOMUSCULAR]
+        if alteradas:
+            lims = [LIMITACOES_OSTEOMUSCULAR[k] for k in alteradas]
+            lims_unicas = list(dict.fromkeys(lims))
+            lim_str = " e ".join(lims_unicas)
+            return f"{lim_str.rstrip('.,; ')}, atividades estas constantes no Rol de Atividades do cargo de {cargo}."
+
+    # 3. Inferir por CID ou tipo de exame
+    cid = str(payload.get("cid") or a.get("cid") or "").upper().strip()
+    ef_tipo = str(payload.get("exame_fisico_tipo") or payload.get("exameFisicoTipo") or a.get("exameFisicoTipo") or "").lower()
+
+    if "mental" in ef_tipo or cid.startswith("F"):
+        return f"{LIMITACAO_MENTAL} Atividades estas constantes no Rol de Atividades do cargo de {cargo}."
+
+    if any(cid.startswith(p) for p in ("M22", "M23", "M24", "M25")):
+        return f"{LIMITACOES_OSTEOMUSCULAR['joelho_direito']}, atividades estas constantes no Rol de Atividades do cargo de {cargo}."
+    if any(cid.startswith(p) for p in ("M54", "M51", "M50", "M53")):
+        return f"{LIMITACOES_OSTEOMUSCULAR['lombar']}, atividades estas constantes no Rol de Atividades do cargo de {cargo}."
+    if cid.startswith("M75"):
+        return f"{LIMITACOES_OSTEOMUSCULAR['ombro_direito']}, atividades estas constantes no Rol de Atividades do cargo de {cargo}."
+    if any(cid.startswith(p) for p in ("M77", "M65", "G56")):
+        return f"{LIMITACOES_OSTEOMUSCULAR['cotovelo_direito']}, atividades estas constantes no Rol de Atividades do cargo de {cargo}."
+
+    if "osteo" in ef_tipo or cid.startswith("M"):
+        return f"Limitação para executar tarefas que requerem posturas viciosas, sobrecarga articular, movimentos repetitivos ou permanência em posições estáticas de modo habitual, atividades estas constantes no Rol de Atividades do cargo de {cargo}."
+
+    return f"Apresenta limitações físicas funcionais temporárias para as atividades habituais com necessidade de repouso e adaptação funcional, atividades estas constantes no Rol de Atividades do cargo de {cargo}."
+
+
 def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
     a = payload.get("aux") or {}
 
@@ -1860,11 +1944,18 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
         "limitacao_funcional": payload.get("limitacao_funcional") or payload.get("limitacaoFuncional"),
         "limitacao_rol": payload.get("limitacao_rol") or payload.get("limitacaoRol"),
         "desc_limitacao": (
-            payload.get("desc_limitacao")
-            or payload.get("descLimitacao")
-            or a.get("desc_limitacao")
-            or a.get("descLimitacao")
-            or ""
+            _resolve_favorable_limitation(payload, str(payload.get("cargo") or a.get("cargo") or "servidor").strip())
+            if (str(payload.get("parecer") or a.get("parecer") or "").strip().upper() in ("F", "FAVORÁVEL", "FAVORAVEL")
+                or str(payload.get("parecer") or a.get("parecer") or "").strip().upper().startswith("FAV"))
+               and (not str(payload.get("desc_limitacao") or payload.get("descLimitacao") or a.get("desc_limitacao") or a.get("descLimitacao") or "").strip()
+                    or _is_contrary_limitation_text(str(payload.get("desc_limitacao") or payload.get("descLimitacao") or a.get("desc_limitacao") or a.get("descLimitacao") or "").strip()))
+            else (
+                payload.get("desc_limitacao")
+                or payload.get("descLimitacao")
+                or a.get("desc_limitacao")
+                or a.get("descLimitacao")
+                or ""
+            )
         ),
         "atividades_comprometidas": payload.get("atividades_comprometidas") or a.get("atividadesComprometidas"),
         "obs_limitacoes": payload.get("obs_limitacoes") or a.get("obsLimitacoes"),
@@ -2586,6 +2677,17 @@ def api_ai_esisla():
             ficha_text = re.sub(r"\bcom\s+consultas\s+a\s+cada\s+semanal(?:mente)?\b", "realiza consultas semanalmente", ficha_text, flags=re.IGNORECASE)
             ficha_text = re.sub(r"\ba\s+cada\s+semanal\b", "semanalmente", ficha_text, flags=re.IGNORECASE)
 
+            # Ajuste de início do tratamento
+            raw_ini = str(payload.get("inicio_tratamento") or payload.get("inicioTratamento") or "").strip()
+            if not raw_ini:
+                ficha_text = re.sub(r",\s*iniciou-se\s+seu\s+tratamento\s+hoje\b", "", ficha_text, flags=re.IGNORECASE)
+                ficha_text = re.sub(r",\s*com\s+in[íi]cio\s+do\s+tratamento\s+hoje\b", "", ficha_text, flags=re.IGNORECASE)
+                ficha_text = re.sub(r"\biniciou-se\s+seu\s+tratamento\s+hoje[,\.]?\s*", "", ficha_text, flags=re.IGNORECASE)
+                ficha_text = re.sub(r"\bcom\s+in[íi]cio\s+de\s+tratamento\s+na\s+presente\s+data[,\.]?\s*", "", ficha_text, flags=re.IGNORECASE)
+            elif re.match(r"^\d{4}$", raw_ini):
+                ficha_text = re.sub(r"\biniciou-se\s+seu\s+tratamento\s+em\s+\d{1,2}/\d{1,2}/\d{4}\b", f"iniciou-se seu tratamento em {raw_ini}", ficha_text, flags=re.IGNORECASE)
+                ficha_text = re.sub(r"\biniciou-se\s+seu\s+tratamento\s+hoje\b", f"iniciou-se seu tratamento em {raw_ini}", ficha_text, flags=re.IGNORECASE)
+
             # Limitações Físicas e Mentais: se parecer CONTRÁRIO, registrar ausência de limitações incapacitantes
             if is_contra:
                 cargo_nome = payload.get("cargo") or "servidor"
@@ -2593,18 +2695,21 @@ def api_ai_esisla():
                 m_lim = re.search(r"(\(\*\)\s*Descri[çc][ãa]o\s*da\(s\)\s*Limita[çc][ãa]o[^\n\r]*\n\s*)(.*?)(\n\s*\(\*\)\s*Parecer\s*M[ée]dico)", ficha_text, re.DOTALL | re.IGNORECASE)
                 if m_lim:
                     cur_lim = m_lim.group(2).strip()
-                    if not cur_lim or ("não se observa" not in cur_lim.lower() and "nao se observa" not in cur_lim.lower()):
+                    if not cur_lim or not _is_contrary_limitation_text(cur_lim):
                         ficha_text = ficha_text[:m_lim.start(2)] + lim_contra + ficha_text[m_lim.end(2):]
             else:
-                doc_lim = str(payload.get("desc_limitacao") or payload.get("descLimitacao") or "").strip()
-                if doc_lim:
-                    m_lim = re.search(r"(\(\*\)\s*Descri[çc][ãa]o\s*da\(s\)\s*Limita[çc][ãa]o[^\n\r]*\n\s*)(.*?)(\n\s*\(\*\)\s*Parecer\s*M[ée]dico)", ficha_text, re.DOTALL | re.IGNORECASE)
-                    if m_lim:
-                        cargo_nome = payload.get("cargo") or "servidor"
-                        if "rol de atividades" in doc_lim.lower():
-                            pres_lim = doc_lim
+                cargo_nome = payload.get("cargo") or "servidor"
+                fav_lim = _resolve_favorable_limitation(payload, cargo_nome)
+                m_lim = re.search(r"(\(\*\)\s*Descri[çc][ãa]o\s*da\(s\)\s*Limita[çc][ãa]o[^\n\r]*\n\s*)(.*?)(\n\s*\(\*\)\s*Parecer\s*M[ée]dico)", ficha_text, re.DOTALL | re.IGNORECASE)
+                if m_lim:
+                    cur_lim = m_lim.group(2).strip()
+                    if not cur_lim or _is_contrary_limitation_text(cur_lim):
+                        ficha_text = ficha_text[:m_lim.start(2)] + fav_lim + ficha_text[m_lim.end(2):]
+                    else:
+                        if "rol de atividades" in cur_lim.lower():
+                            pres_lim = cur_lim
                         else:
-                            pres_lim = f"{doc_lim}, atividades estas constantes no Rol de Atividades do cargo de {cargo_nome}."
+                            pres_lim = f"{cur_lim.rstrip('.,; ')}, atividades estas constantes no Rol de Atividades do cargo de {cargo_nome}."
                         ficha_text = ficha_text[:m_lim.start(2)] + pres_lim + ficha_text[m_lim.end(2):]
 
             # Remove qualquer resquício de (Tipo-Data-Resultado)

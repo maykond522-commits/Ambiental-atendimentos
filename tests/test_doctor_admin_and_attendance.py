@@ -2776,3 +2776,87 @@ def test_requisitos_atendimento_antecedentes_inicio_freq_meds_esisla(monkeypatch
     assert "Diastólica (mmHg): 80" in ficha
     assert "Altura: 1.80" in ficha
     assert "Peso: 80" in ficha
+
+
+def test_favorable_limitations_never_contrary_and_preserves_osteo_mental(monkeypatch):
+    """Garante que quando o parecer for FAVORÁVEL:
+    1. Jamais vaze o boilerplate contrário ('não se observa limitações físicas ou mentais funcionais').
+    2. Quando for joelho (ex: M23.2), aplique a limitação oficial de joelho (posturas viciosas, agachamentos).
+    3. Quando for mental (CID F), aplique as limitações psicossociais e psicoemocionais.
+    4. Frontend e Gestão possuem as regras e helpers para sanitização e exibição correta.
+    """
+    from app import app, EsislaResult, _is_contrary_limitation_text, _resolve_favorable_limitation
+
+    # 1. Helper de detecção de texto contrário
+    assert _is_contrary_limitation_text("Do ponto de vista médico não se observa limitações físicas ou mentais funcionais incapacitantes para as atribuições do cargo de Adm, constantes no rol de atividades.") is True
+    assert _is_contrary_limitation_text("Não se identificam limitações funcionais em níveis que possam ser considerados incapacitantes neste momento.") is True
+    assert _is_contrary_limitation_text("Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, agachamentos") is False
+
+    # 2. Resolução de limitação osteomuscular para joelho (M23.2)
+    payload_joelho = {
+        "parecer": "FAVORÁVEL",
+        "cid": "M23.2",
+        "cargo": "Assistente Administrativo",
+        "desc_limitacao": "Do ponto de vista médico não se observa limitações físicas ou mentais funcionais incapacitantes" # boilerplate contrário que deve ser expurgado
+    }
+    lim_joelho = _resolve_favorable_limitation(payload_joelho, "Assistente Administrativo")
+    assert "não se observa" not in lim_joelho.lower()
+    assert "posturas viciosas" in lim_joelho.lower()
+    assert "agachamentos" in lim_joelho.lower()
+    assert "Rol de Atividades do cargo de Assistente Administrativo" in lim_joelho
+
+    # 3. Resolução de limitação para Saúde Mental (CID F32)
+    payload_mental = {
+        "parecer": "FAVORÁVEL",
+        "cid": "F32.2",
+        "cargo": "Professor",
+        "desc_limitacao": ""
+    }
+    lim_mental = _resolve_favorable_limitation(payload_mental, "Professor")
+    assert "não se observa" not in lim_mental.lower()
+    assert "interatividade social" in lim_mental.lower()
+    assert "autodomínio" in lim_mental.lower()
+    assert "Rol de Atividades do cargo de Professor" in lim_mental
+
+    # 4. Teste no endpoint /api/ai/esisla com parecer FAVORÁVEL e modelo retornando texto contrário
+    raw_contrary_template = (
+        "Registro da perícia Médica para Licença\n\n"
+        "(*) Queixa e Duração:\nServidor de 42 anos, assistente administrativo há 8 anos, com queixa de gonartrose em joelho direito.\n\n"
+        "Antecedentes Mórbidos:\nNega.\n\n"
+        "Atestado/Relatório/Exames Complementares:\nEm anexo.\n\n"
+        "(*)Exame Físico Geral\nAparelho Osteomuscular e Tecido Conjuntivo: Dor em interlinha articular medial de joelho D.\n\n"
+        "Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:\nNão foram apresentados exames complementares.\n\n"
+        "(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):\n"
+        "Do ponto de vista médico não se observa limitações físicas ou mentais funcionais incapacitantes para as atribuições do cargo de Assistente Administrativo, constantes no rol de atividades.\n\n"
+        "(*)Parecer Médico\n"
+        "Parecer: FAVORÁVEL\n"
+        "Nº Dias: 3\n"
+        "Data Início: 09/03/2026\n"
+        "CID 10: M23.2\n"
+        "Descrição: Transtorno de menisco\n"
+        "Médico Perito: Dr. Perito\n"
+        "CRM: 12345\n\n"
+        "(*)Resposta aos quesitos\n1) Sim\n2) Sim\n3) Sim\n\n"
+        "(*)Justificativa Parecer Médico\nCapacidade temporariamente prejudicada.\n\n"
+        "(*) Parecer Final\nNº Dias: 3\nData Início: 09/03/2026\nCID 10: M23.2\n"
+    )
+
+    monkeypatch.setattr("app._authenticate_request", lambda: ({"id": "1", "email": "admin@ambiental.com", "nome": "Admin", "perfil": "Administrador"}, "token123"))
+    monkeypatch.setattr("app._generate_cached", lambda *args, **kwargs: (EsislaResult(ficha_esisla=raw_contrary_template), False, "hash123"))
+
+    client = app.test_client()
+    res = client.post("/api/ai/esisla", json={
+        "atendimento": "999002",
+        "parecer": "FAVORÁVEL",
+        "cid": "M23.2",
+        "cargo": "Assistente Administrativo",
+        "desc_limitacao": "Do ponto de vista médico não se observa limitações físicas ou mentais funcionais incapacitantes para as atribuições do cargo de Assistente Administrativo, constantes no rol de atividades."
+    })
+    assert res.status_code == 200
+    ficha = res.get_json()["ficha_esisla"]
+
+    # Deve ter substituído o texto contrário pela limitação específica de joelho
+    assert "não se observa limitações físicas ou mentais funcionais" not in ficha.lower()
+    assert "posturas viciosas" in ficha.lower()
+    assert "agachamentos" in ficha.lower()
+    assert "Rol de Atividades do cargo de Assistente Administrativo" in ficha

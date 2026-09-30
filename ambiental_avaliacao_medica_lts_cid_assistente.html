@@ -2027,18 +2027,22 @@ body:not(.mode-agil-active) #containerModoAgil {
                   <button type="button" class="chip-sm" onclick="adicionarMedRapida('Duloxetina', '30 mg', '1x/dia pela manhã', 'Dose diária: 30 mg/dia')">+ Duloxetina 30mg</button>
                   <button type="button" class="chip-sm" onclick="adicionarMedRapida('Quetiapina', '25 mg', '1x/dia à noite', 'Dose diária: 25 mg/dia')">+ Quetiapina 25mg</button>
                   <button type="button" class="chip-sm" onclick="adicionarMedRapida('Zolpidem', '10 mg', '1x/dia ao deitar', 'Dose diária: 10 mg/dia')">+ Zolpidem 10mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Amitriptilina', '25 mg', '1x/dia à noite', 'Dose diária: 25 mg/dia')">+ Amitriptilina 25mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Mirtazapina', '15 mg', '1x/dia à noite', 'Dose diária: 15 mg/dia')">+ Mirtazapina 15mg</button>
                 </div>
               </div>
 
               <!-- Hipertensão & Cardiovascular -->
               <div style="margin-bottom:6px">
-                <span style="font-size:10.5px;font-weight:700;color:#DC2626;text-transform:uppercase;letter-spacing:0.5px">❤️ Hipertensão / Cardiovascular:</span>
+                <span style="font-size:10.5px;font-weight:700;color:#DC2626;text-transform:uppercase;letter-spacing:0.5px">❤️ Hipertensão / Cardiovascular / Gastro:</span>
                 <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:3px">
                   <button type="button" class="chip-sm" onclick="adicionarMedRapida('Losartana Potássica', '50 mg', '1x/dia', 'Dose diária: 50 mg/dia')">+ Losartana 50mg</button>
                   <button type="button" class="chip-sm" onclick="adicionarMedRapida('Enalapril', '20 mg', '1x/dia', 'Dose diária: 20 mg/dia')">+ Enalapril 20mg</button>
                   <button type="button" class="chip-sm" onclick="adicionarMedRapida('Hidroclorotiazida', '25 mg', '1x/dia pela manhã', 'Dose diária: 25 mg/dia')">+ Hidroclorotiazida 25mg</button>
                   <button type="button" class="chip-sm" onclick="adicionarMedRapida('Amlodipino', '5 mg', '1x/dia', 'Dose diária: 5 mg/dia')">+ Amlodipino 5mg</button>
                   <button type="button" class="chip-sm" onclick="adicionarMedRapida('Atenolol', '50 mg', '1x/dia', 'Dose diária: 50 mg/dia')">+ Atenolol 50mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Sinvastatina', '20 mg', '1x/dia à noite', 'Dose diária: 20 mg/dia')">+ Sinvastatina 20mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Omeprazol', '20 mg', '1x/dia em jejum', 'Dose diária: 20 mg/dia')">+ Omeprazol 20mg</button>
                 </div>
               </div>
 
@@ -2058,9 +2062,12 @@ body:not(.mode-agil-active) #containerModoAgil {
                 <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:3px">
                   <button type="button" class="chip-sm" onclick="adicionarMedRapida('Ciclobenzaprina', '10 mg', '1x/dia à noite', 'Dose diária: 10 mg/dia')">+ Ciclobenzaprina 10mg</button>
                   <button type="button" class="chip-sm" onclick="adicionarMedRapida('Pregabalina', '75 mg', '2x/dia (12/12h)', 'Dose diária: 150 mg/dia')">+ Pregabalina 75mg 12/12h</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Gabapentina', '300 mg', '1x/dia à noite', 'Dose diária: 300 mg/dia')">+ Gabapentina 300mg</button>
                   <button type="button" class="chip-sm" onclick="adicionarMedRapida('Dipirona', '1 g', 'se dor até 6/6h', 'Uso sintomático s/n')">+ Dipirona 1g</button>
                   <button type="button" class="chip-sm" onclick="adicionarMedRapida('Paracetamol', '750 mg', 'se dor até 6/6h', 'Uso sintomático s/n')">+ Paracetamol 750mg</button>
                   <button type="button" class="chip-sm" onclick="adicionarMedRapida('Ibuprofeno', '600 mg', 'a cada 8h após refeição', 'Dose diária: 1800 mg/dia')">+ Ibuprofeno 600mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Meloxicam', '15 mg', '1x/dia após almoço', 'Dose diária: 15 mg/dia')">+ Meloxicam 15mg</button>
+                  <button type="button" class="chip-sm" onclick="adicionarMedRapida('Cetoprofeno', '150 mg', '1x/dia', 'Dose diária: 150 mg/dia')">+ Cetoprofeno 150mg</button>
                   <button type="button" class="chip-sm" onclick="adicionarMedRapida('Tramadol', '50 mg', 'se dor intensa até 8/8h', 'Uso sob demanda')">+ Tramadol 50mg</button>
                   <button type="button" class="chip-sm" onclick="adicionarMedRapida('Prednisona', '20 mg', '1x/dia pela manhã', 'Uso anti-inflamatório')">+ Prednisona 20mg</button>
                 </div>
@@ -2101,12 +2108,7 @@ body:not(.mode-agil-active) #containerModoAgil {
 
           <!-- Subpainel Antecedentes mórbidos & Outras Doenças -->
           <div class="subpanel" style="margin-top:16px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-              <h4 style="margin:0">Antecedentes mórbidos</h4>
-              <button type="button" class="btn btn-outline" style="font-size:11.5px;padding:3px 9px;font-weight:600;color:#047857;background:#ECFDF5;border-color:#A7F3D0;display:inline-flex;align-items:center;gap:5px" onclick="negarAntecedentes()" title="Clique para preencher: Nega antecedentes mórbidos relevantes...">
-                <span>🛡️</span> Nega antecedentes.
-              </button>
-            </div>
+            <h4 style="margin:0 0 8px 0">Antecedentes mórbidos</h4>
             <div class="subpanel" style="margin-top:8px;margin-bottom:14px">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
                 <h4 style="margin:0">Histórico pregresso</h4>
@@ -5043,6 +5045,19 @@ function focusValidationItem(step,label){
 function renderParecerHint(){
   const p=getRadio("parecer");
   $("parecerHint").textContent=p==="CONTRÁRIO"?"Parecer CONTRÁRIO selecionado. Garanta que a justificativa esteja preenchida e coerente com os achados.":p==="FAVORÁVEL"?"Parecer FAVORÁVEL selecionado. Garanta que a justificativa esteja preenchida e coerente com os achados.":"Selecione o parecer definido pelo médico.";
+  if (p === "FAVORÁVEL") {
+    const curLim = state.descLimitacao || state.aux?.descLimitacao || "";
+    if (!curLim || isContraryLimitationText(curLim)) {
+      const novaLim = (typeof gerarNarrativaLimitacoesMelhoriaContinua === "function") ? gerarNarrativaLimitacoesMelhoriaContinua(state, values()) : "";
+      if (novaLim) {
+        state.descLimitacao = novaLim;
+        if (!state.aux) state.aux = {};
+        state.aux.descLimitacao = novaLim;
+        if ($("descLimitacao")) $("descLimitacao").value = novaLim;
+        if ($("agilSintomasLimitacao")) $("agilSintomasLimitacao").value = novaLim;
+      }
+    }
+  }
 }
 
 function values(){
@@ -5801,6 +5816,16 @@ const TEXTO_OSTEO_NORMAL_EXAME = "Aparelho Osteomuscular e Tecido Conjuntivo com
 const TEXTO_OSTEO_NORMAL_LIMITACAO = "Do ponto de vista médico não se observa limitações físicas funcionais incapacitantes relacionadas ao aparelho osteomuscular.";
 const TEXTO_OSTEO_NORMAL_JUSTIFICATIVA = "Capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações de ordem osteomuscular incapacitantes para as atribuições rotineiras do cargo atual.";
 
+function isContraryLimitationText(text) {
+  if (!text) return false;
+  const s = String(text).toLowerCase();
+  return s.includes("não se observa") || s.includes("nao se observa")
+      || s.includes("não se identificam") || s.includes("nao se identificam")
+      || s.includes("sem limitações") || s.includes("sem limitacoes")
+      || s.includes("capacidade laborativa preservada")
+      || s.includes("não há limitações") || s.includes("nao ha limitacoes");
+}
+
 function capitalizeFirstLetter(str) {
   if (!str) return "";
   const s = String(str).trim();
@@ -6012,7 +6037,7 @@ function aplicarRegioesOsteomusculares() {
     $("limitacao2Panel")?.classList.remove("hidden");
     
     const existingDescLimOsteo = (state.descLimitacao || state.aux?.descLimitacao || $("descLimitacao")?.value || "").trim();
-    if (!existingDescLimOsteo) {
+    if (!existingDescLimOsteo || isContraryLimitationText(existingDescLimOsteo)) {
       state.descLimitacao = limitacoesTexto;
       if (!state.aux) state.aux = {};
       state.aux.descLimitacao = limitacoesTexto;
@@ -6021,11 +6046,19 @@ function aplicarRegioesOsteomusculares() {
     
     // Auto-preencher atividades comprometidas do Rol com as limitações já aplicadas
     const existingAtivRolOsteo = (state.atividadesComprometidas || state.aux?.atividadesComprometidas || $("atividadesComprometidas")?.value || "").trim();
-    if (!existingAtivRolOsteo) {
+    if (!existingAtivRolOsteo || isContraryLimitationText(existingAtivRolOsteo)) {
       state.atividadesComprometidas = limitacoesTexto;
       if (!state.aux) state.aux = {};
       state.aux.atividadesComprometidas = limitacoesTexto;
       if ($("atividadesComprometidas")) $("atividadesComprometidas").value = limitacoesTexto;
+    }
+
+    const existingSintOsteo = (state.aux?.sintomasLimitacao || state.sintomasLimitacao || $("agilSintomasLimitacao")?.value || "").trim();
+    if (!existingSintOsteo || isContraryLimitationText(existingSintOsteo) || existingSintOsteo === "Conforme exame físico/mental") {
+      state.aux.sintomasLimitacao = limitacoesTexto;
+      state.sintomasLimitacao = limitacoesTexto;
+      if ($("agilSintomasLimitacao")) $("agilSintomasLimitacao").value = limitacoesTexto;
+      if ($("sintomasLimitacao")) $("sintomasLimitacao").value = limitacoesTexto;
     }
     
     QuesitoService.set(0, "Sim");
@@ -6804,7 +6837,7 @@ function onAgilDoencaMotivoInput(val) {
   if (!curHist || curHist === "Nega" || curHist === "Nega." || curHist.startsWith("Refere histórico relacionado a")) {
     const v = (val || "").trim();
     if (v) {
-      const autoText = `Refere histórico relacionado a ${v}. Nega cirurgias prévias relevantes, neoplasias ou hábitos tabágicos e etilistas.`;
+      const autoText = `Refere histórico relacionado a ${v}.`;
       state.aux.historicoPregresso = autoText;
       state.historicoPregresso = autoText;
       if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = autoText;
@@ -7270,7 +7303,7 @@ function aplicarExameMentalAlterado() {
   $("limitacao1Panel")?.classList.remove("hidden");
   $("limitacao2Panel")?.classList.remove("hidden");
   const existingDescLimMentalAlt = (state.descLimitacao || state.aux?.descLimitacao || $("descLimitacao")?.value || "").trim();
-  if (!existingDescLimMentalAlt) {
+  if (!existingDescLimMentalAlt || isContraryLimitationText(existingDescLimMentalAlt)) {
     state.descLimitacao = TEXTO_LIMITACAO_ALTERADO;
     if (!state.aux) state.aux = {};
     state.aux.descLimitacao = TEXTO_LIMITACAO_ALTERADO;
@@ -7279,11 +7312,19 @@ function aplicarExameMentalAlterado() {
   
   // Auto-preencher atividades comprometidas do Rol com as limitações mentais já aplicadas
   const existingAtivRolMental = (state.atividadesComprometidas || state.aux?.atividadesComprometidas || $("atividadesComprometidas")?.value || "").trim();
-  if (!existingAtivRolMental) {
+  if (!existingAtivRolMental || isContraryLimitationText(existingAtivRolMental)) {
     state.atividadesComprometidas = TEXTO_LIMITACAO_ALTERADO;
     if (!state.aux) state.aux = {};
     state.aux.atividadesComprometidas = TEXTO_LIMITACAO_ALTERADO;
     if ($("atividadesComprometidas")) $("atividadesComprometidas").value = TEXTO_LIMITACAO_ALTERADO;
+  }
+
+  const existingSintMental = (state.aux?.sintomasLimitacao || state.sintomasLimitacao || $("agilSintomasLimitacao")?.value || "").trim();
+  if (!existingSintMental || isContraryLimitationText(existingSintMental) || existingSintMental === "Conforme exame físico/mental") {
+    state.aux.sintomasLimitacao = TEXTO_LIMITACAO_ALTERADO;
+    state.sintomasLimitacao = TEXTO_LIMITACAO_ALTERADO;
+    if ($("agilSintomasLimitacao")) $("agilSintomasLimitacao").value = TEXTO_LIMITACAO_ALTERADO;
+    if ($("sintomasLimitacao")) $("sintomasLimitacao").value = TEXTO_LIMITACAO_ALTERADO;
   }
   
   QuesitoService.set(0, "Sim");
@@ -7456,21 +7497,17 @@ function gerarNarrativaAntecedentesMelhoriaContinua(st, v) {
   const rawHist = (aux.historicoPregresso || v.historicoPregresso || $("agilHistoricoPregresso")?.value || "").trim();
   const conds = (st.conditions || v.condicoes || []).filter(c => c && (c.nome || c.doenca));
   
-  // Se já tiver uma redação longa do médico, preserva
-  if (rawHist && rawHist !== "Nega" && rawHist.length > 40) {
+  // Se já tiver uma redação do médico, preserva estritamente o que foi registrado
+  if (rawHist && rawHist !== "Nega") {
     return rawHist;
   }
   
   if (conds.length > 0) {
     const condsStr = conds.map(c => `${c.nome || c.doenca}${c.tratamento ? ` em uso de ${c.tratamento}` : ""}`).join("; ");
-    return `Informa histórico de comorbidades: ${condsStr}. Nega cirurgias prévias relevantes, antecedentes neoplásicos ou hábitos tabágicos e etilistas.`;
+    return `Informa histórico de comorbidades: ${condsStr}.`;
   }
   
-  if (rawHist && rawHist !== "Nega") {
-    return `${rawHist.replace(/[.;,]+$/, "")}. Nega cirurgias prévias relevantes, antecedentes neoplásicos ou hábitos tabágicos e etilistas.`;
-  }
-  
-  return "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas.";
+  return rawHist || "Nega.";
 }
 
 function gerarNarrativaAtestadoMelhoriaContinua(st, v) {
@@ -7495,31 +7532,72 @@ function gerarNarrativaLimitacoesMelhoriaContinua(st, v) {
   const cargo = st.cargo || v.cargo || "servidor";
   const isMental = st.exameFisicoTipo === "Exame Mental";
   const isOsteo = st.exameFisicoTipo === "Aparelho Osteomuscular e Tecido Conjutivo";
-  const isFav = (st.parecer === "FAVORÁVEL" || st.parecer === "Favorável");
+  const regMap = st.osteomuscularRegioes || {};
+  const alteradas = Object.keys(regMap).filter(k => regMap[k] === "Alterado" && DADOS_OSTEOMUSCULAR[k]);
+  const isOsteoAlterado = isOsteo && alteradas.length > 0;
+  const isMentalAlterado = isMental && st.exameMentalResultado === "Alterado";
+  const pVal = String(st.parecer || v.parecer || (typeof getRadio === 'function' ? getRadio("parecer") : "") || "").toUpperCase();
+  const isFav = pVal === "F" || pVal.startsWith("FAV") || isOsteoAlterado || isMentalAlterado;
   
   if (isMental) {
     if (isFav) {
-      const ativ = st.atividadesComprometidas || v.atividadesComprometidas || "desempenho de tarefas que demandem liderança, interatividade social, concentração, autodomínio e disciplina";
-      return `Apresenta limitações mentais funcionais temporárias para ${ativ}, atividades estas constantes no Rol de Atividades do cargo de ${cargo}.`;
+      let ativ = st.atividadesComprometidas || v.atividadesComprometidas || st.descLimitacao || "";
+      if (!ativ || isContraryLimitationText(ativ)) {
+        ativ = TEXTO_LIMITACAO_ALTERADO;
+      }
+      if (ativ.includes("Rol de Atividades")) return ativ;
+      return `${ativ.replace(/[.;,]+$/, "")}, atividades estas constantes no Rol de Atividades do cargo de ${cargo}.`;
     } else {
       return `Do ponto de vista médico não se observa limitações mentais funcionais incapacitantes para as atribuições do cargo de ${cargo}, constantes no rol de atividades.`;
     }
   } else if (isOsteo) {
     if (isFav) {
-      const regMap = st.osteomuscularRegioes || {};
-      const alteradas = Object.keys(regMap).filter(k => regMap[k] === "Alterado" && DADOS_OSTEOMUSCULAR[k]);
-      const grupos = (typeof agruparRegioesAlteradas === "function") ? agruparRegioesAlteradas(alteradas) : [];
-      const nomes = grupos.length ? grupos.map(g => g.label).join(", ") : "segmento osteomuscular avaliado";
-      const ativ = st.atividadesComprometidas || v.atividadesComprometidas || `tarefas com sobrecarga articular (${nomes}), movimentos repetitivos ou posturas forçadas`;
-      return `Apresenta limitações físicas funcionais temporárias para ${ativ}, atividades estas constantes no Rol de Atividades do cargo de ${cargo}.`;
+      let ativ = st.atividadesComprometidas || v.atividadesComprometidas || st.descLimitacao || "";
+      if (!ativ || isContraryLimitationText(ativ)) {
+        if (alteradas.length > 0) {
+          ativ = formatarLimitacoesOsteo(alteradas.map(k => DADOS_OSTEOMUSCULAR[k].limitacao));
+        } else {
+          const cid = String(st.cid || v.cid || "").toUpperCase();
+          if (cid.startsWith("M22") || cid.startsWith("M23") || cid.startsWith("M24") || cid.startsWith("M25")) {
+            ativ = DADOS_OSTEOMUSCULAR.joelho_direito.limitacao;
+          } else if (cid.startsWith("M54") || cid.startsWith("M51") || cid.startsWith("M50") || cid.startsWith("M53")) {
+            ativ = DADOS_OSTEOMUSCULAR.lombar.limitacao;
+          } else if (cid.startsWith("M75")) {
+            ativ = DADOS_OSTEOMUSCULAR.ombro_direito.limitacao;
+          } else if (cid.startsWith("M77") || cid.startsWith("M65") || cid.startsWith("G56")) {
+            ativ = DADOS_OSTEOMUSCULAR.cotovelo_direito.limitacao;
+          } else {
+            ativ = "Limitação para executar tarefas que requerem posturas viciosas, sobrecarga articular, movimentos repetitivos ou permanência em posições estáticas de modo habitual";
+          }
+        }
+      }
+      if (ativ.includes("Rol de Atividades")) return ativ;
+      return `${ativ.replace(/[.;,]+$/, "")}, atividades estas constantes no Rol de Atividades do cargo de ${cargo}.`;
     } else {
       return `Do ponto de vista médico não se observa limitações físicas funcionais incapacitantes para as atribuições do cargo de ${cargo}, constantes no rol de atividades.`;
     }
   }
   
   if (isFav) {
-    const ativ = st.atividadesComprometidas || v.atividadesComprometidas || st.descLimitacao || "as atividades habituais";
-    return `Apresenta limitações físicas funcionais temporárias para ${ativ}, atividades estas constantes no Rol de Atividades do cargo de ${cargo}.`;
+    let ativ = st.atividadesComprometidas || v.atividadesComprometidas || st.descLimitacao || "";
+    if (!ativ || isContraryLimitationText(ativ)) {
+      const cid = String(st.cid || v.cid || "").toUpperCase();
+      if (cid.startsWith("F")) {
+        ativ = TEXTO_LIMITACAO_ALTERADO;
+      } else if (cid.startsWith("M22") || cid.startsWith("M23") || cid.startsWith("M24") || cid.startsWith("M25")) {
+        ativ = DADOS_OSTEOMUSCULAR.joelho_direito.limitacao;
+      } else if (cid.startsWith("M54") || cid.startsWith("M51") || cid.startsWith("M50") || cid.startsWith("M53")) {
+        ativ = DADOS_OSTEOMUSCULAR.lombar.limitacao;
+      } else if (cid.startsWith("M75")) {
+        ativ = DADOS_OSTEOMUSCULAR.ombro_direito.limitacao;
+      } else if (cid.startsWith("M77") || cid.startsWith("M65") || cid.startsWith("G56")) {
+        ativ = DADOS_OSTEOMUSCULAR.cotovelo_direito.limitacao;
+      } else {
+        ativ = "Apresenta limitações físicas funcionais temporárias para as atividades habituais com necessidade de repouso e adaptação funcional";
+      }
+    }
+    if (ativ.includes("Rol de Atividades")) return ativ;
+    return `${ativ.replace(/[.;,]+$/, "")}, atividades estas constantes no Rol de Atividades do cargo de ${cargo}.`;
   } else {
     return `Do ponto de vista médico não se observa limitações físicas ou mentais funcionais incapacitantes para as atribuições do cargo de ${cargo}, constantes no rol de atividades.`;
   }
@@ -7595,7 +7673,11 @@ function aplicarSintesePericialMelhoriaContinua(force = false) {
 
   // 4. Limitações e Rol de Atividades
   const narrativaLim = gerarNarrativaLimitacoesMelhoriaContinua(state, v);
-  if (narrativaLim && (force || !state.descLimitacao || state.descLimitacao.length < 20)) {
+  const curDescLim = (state.descLimitacao || state.aux?.descLimitacao || "").trim();
+  const pStr = String(state.parecer || v.parecer || (typeof getRadio === 'function' ? getRadio("parecer") : "") || "").toUpperCase();
+  const isPParFav = pStr === "F" || pStr.startsWith("FAV");
+  const needLimUpdate = force || !curDescLim || curDescLim.length < 20 || (isPParFav && isContraryLimitationText(curDescLim)) || (!isPParFav && !isContraryLimitationText(curDescLim) && curDescLim.includes("Apresenta limitações"));
+  if (narrativaLim && needLimUpdate) {
     state.descLimitacao = narrativaLim;
     state.aux.descLimitacao = narrativaLim;
     state.atividadesComprometidas = narrativaLim;
@@ -7678,8 +7760,16 @@ function ensureAgileBackgroundDefaults() {
     if ($("agilInicioTratamento")) $("agilInicioTratamento").value = "";
   }
   
-  if (!state.aux.sintomasLimitacao) {
-    state.aux.sintomasLimitacao = state.aux.descLimitacao || (state.exameMentalResultado === "Alterado" ? TEXTO_LIMITACAO_ALTERADO : (state.exameMentalResultado === "Normal" ? TEXTO_LIMITACAO_NORMAL : "Conforme exame físico/mental"));
+  const isFavGeneral = String(state.parecer || getRadio("parecer") || "").toUpperCase().startsWith("FAV")
+    || (state.exameFisicoTipo === "Exame Mental" && state.exameMentalResultado === "Alterado")
+    || (state.exameFisicoTipo === "Aparelho Osteomuscular e Tecido Conjutivo" && Object.values(state.osteomuscularRegioes || {}).some(v => v === "Alterado"));
+
+  if (!state.aux.sintomasLimitacao || (isFavGeneral && isContraryLimitationText(state.aux.sintomasLimitacao))) {
+    if (isFavGeneral) {
+      state.aux.sintomasLimitacao = gerarNarrativaLimitacoesMelhoriaContinua(state, values());
+    } else {
+      state.aux.sintomasLimitacao = state.aux.descLimitacao || (state.exameMentalResultado === "Alterado" ? TEXTO_LIMITACAO_ALTERADO : (state.exameMentalResultado === "Normal" ? TEXTO_LIMITACAO_NORMAL : "Conforme exame físico/mental"));
+    }
     if ($("sintomasLimitacao")) $("sintomasLimitacao").value = state.aux.sintomasLimitacao;
     if ($("agilSintomasLimitacao")) $("agilSintomasLimitacao").value = state.aux.sintomasLimitacao;
   }
@@ -7699,6 +7789,10 @@ function ensureAgileBackgroundDefaults() {
       state.limitacaoRol = "Sim";
       state.capacidade = "Capacidade parcial e temporariamente prejudicada";
       state.parecer = "FAVORÁVEL";
+      if (!state.descLimitacao || isContraryLimitationText(state.descLimitacao)) {
+        state.descLimitacao = gerarNarrativaLimitacoesMelhoriaContinua(state, values());
+        state.aux.descLimitacao = state.descLimitacao;
+      }
       state.aux.justificativa = state.aux.justificativa || $("agilJustificativa")?.value || TEXTO_JUSTIFICATIVA_ALTERADO;
       state.justificativa = state.aux.justificativa;
     } else {
@@ -7716,6 +7810,10 @@ function ensureAgileBackgroundDefaults() {
       state.limitacaoRol = "Sim";
       state.capacidade = "Capacidade parcial e temporariamente prejudicada";
       state.parecer = "FAVORÁVEL";
+      if (!state.descLimitacao || isContraryLimitationText(state.descLimitacao)) {
+        state.descLimitacao = gerarNarrativaLimitacoesMelhoriaContinua(state, values());
+        state.aux.descLimitacao = state.descLimitacao;
+      }
       state.aux.justificativa = state.aux.justificativa || $("agilJustificativa")?.value || (state.descLimitacao ? `Capacidade parcial e temporariamente prejudicada, ${state.descLimitacao}` : TEXTO_JUSTIFICATIVA_ALTERADO);
       state.justificativa = state.aux.justificativa;
     } else {
@@ -8071,11 +8169,20 @@ function adicionarMedRapida(med, dose, freq, obs) {
 
 function negarAntecedentes() {
   const frase = "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas.";
+  const atual = ($("agilHistoricoPregresso")?.value || state.historicoPregresso || state.aux?.historicoPregresso || "").trim();
+  let resultado = frase;
+  if (atual && atual !== "Nega" && atual !== "Nega.") {
+    if (!atual.toLowerCase().includes("nega antecedentes mórbidos") && !atual.toLowerCase().includes("nega cirurgias")) {
+      resultado = atual.replace(/[.;,]+$/, "") + ". " + frase;
+    } else {
+      resultado = atual;
+    }
+  }
   if (!state.aux) state.aux = {};
-  state.aux.historicoPregresso = frase;
-  state.historicoPregresso = frase;
-  if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = frase;
-  if ($("historicoPregresso")) $("historicoPregresso").value = frase;
+  state.aux.historicoPregresso = resultado;
+  state.historicoPregresso = resultado;
+  if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = resultado;
+  if ($("historicoPregresso")) $("historicoPregresso").value = resultado;
   if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
   if (typeof autoSave === "function") autoSave();
   if (typeof toast === "function") {
@@ -8798,6 +8905,19 @@ function aplicarAlinhamentoParecer(novoParecer) {
   state.parecer = novoParecer;
   setRadio("parecer", novoParecer);
   if (state.aux) state.aux.parecer = novoParecer;
+  if (novoParecer === "FAVORÁVEL") {
+    const curLim = state.descLimitacao || state.aux?.descLimitacao || "";
+    if (!curLim || isContraryLimitationText(curLim)) {
+      const novaLim = (typeof gerarNarrativaLimitacoesMelhoriaContinua === "function") ? gerarNarrativaLimitacoesMelhoriaContinua(state, values()) : "";
+      if (novaLim) {
+        state.descLimitacao = novaLim;
+        if (!state.aux) state.aux = {};
+        state.aux.descLimitacao = novaLim;
+        if ($("descLimitacao")) $("descLimitacao").value = novaLim;
+        if ($("agilSintomasLimitacao")) $("agilSintomasLimitacao").value = novaLim;
+      }
+    }
+  }
   verificarCoerenciaPericial();
   atualizarProgressoAgil();
   autoSave();
@@ -9804,7 +9924,11 @@ function copiarLaudoEsislaAtendimento() {
     const limList = [v.descLimitacao, v.atividadesComprometidas, v.sintomasLimitacao, v.obsLimitacoes].filter(x => String(x || '').trim());
     reqExComp = limList.join(' | ') || state.aux?.descLimitacao || v.descLimitacao || state.aux?.sintomasLimitacao || v.sintomasLimitacao || '';
   }
-  if (!reqExComp || reqExComp.length < 15) {
+  const parecerVal = String(state.parecer || v.parecer || (typeof getRadio === 'function' ? getRadio('parecer') : '') || '').toUpperCase();
+  const isFav = parecerVal === 'F' || parecerVal.startsWith('FAV');
+  if (isFav && isContraryLimitationText(reqExComp)) {
+    reqExComp = (typeof gerarNarrativaLimitacoesMelhoriaContinua === "function") ? gerarNarrativaLimitacoesMelhoriaContinua(state, v) : '';
+  } else if (!reqExComp || reqExComp.length < 15) {
     reqExComp = (typeof gerarNarrativaLimitacoesMelhoriaContinua === "function") ? gerarNarrativaLimitacoesMelhoriaContinua(state, v) : reqExComp;
   }
   reqExComp = sanitizeText(reqExComp, 2500);

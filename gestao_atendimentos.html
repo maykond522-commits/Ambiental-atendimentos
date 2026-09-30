@@ -2762,6 +2762,63 @@ function cleanAntecedentesMorbidos(text) {
     return t;
 }
 
+function isContraryLimitationTextGestao(text) {
+    if (!text) return false;
+    const s = String(text).toLowerCase();
+    return s.includes("não se observa") || s.includes("nao se observa")
+        || s.includes("não se identificam") || s.includes("nao se identificam")
+        || s.includes("sem limitações") || s.includes("sem limitacoes")
+        || s.includes("capacidade laborativa preservada")
+        || s.includes("não há limitações") || s.includes("nao ha limitacoes");
+}
+
+function resolverLimitacaoFavoravelGestao(st, aux, cargo, cid) {
+    const rawLim = st.descLimitacao || aux.descLimitacao || st.atividadesComprometidas || aux.atividadesComprometidas || st.sintomasLimitacao || aux.sintomasLimitacao || '';
+    if (rawLim && !isContraryLimitationTextGestao(rawLim)) {
+        if (rawLim.toLowerCase().includes("rol de atividades")) return rawLim;
+        return `${rawLim.replace(/[.;,]+$/, '')}, atividades estas constantes no Rol de Atividades do cargo de ${cargo}.`;
+    }
+    const regMap = st.osteomuscularRegioes || aux.osteomuscularRegioes || {};
+    const alteradas = Object.keys(regMap).filter(k => regMap[k] === "Alterado");
+    if (alteradas.length > 0) {
+        const limsMap = {
+            joelho_direito: "Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ostostatismo prolongado, realizar agachamentos, subir e descer escadarias de modo habitual e sem apoio",
+            joelho_esquerdo: "Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ostostatismo prolongado, realizar agachamentos, subir e descer escadarias de modo habitual e sem apoio",
+            lombar: "Limitações para realizar dosiflexão e extensão, de forma abrupta ou de modo habitual, deambulação de modo frequente e longos trajetos, permanência em ostostatismo prolongado, posição sentado de modo permanente e ou habitual sem opção de alternância postural",
+            cervical: "Limitações para mudança do campo visual de forma brusca ou habitual, elevação ou movimentação de membros superiores acimada linha escapular de modo habitual",
+            ombro_direito: "Limitações para ação braçal, com execução de elevação ou movimentação de membros superiores acimada linha escapular de modo habitual",
+            ombro_esquerdo: "Limitações para ação braçal, com execução de elevação ou movimentação de membros superiores acimada linha escapular de modo habitual",
+            cotovelo_direito: "Limitações da ADM que comprometem a ação braçal, limitam a aplicação de força motriz, diminuem a destreza manual, comprometem execução de manuscritos de forma habitual e sistemática",
+            cotovelo_esquerdo: "Limitações da ADM que comprometem a ação braçal, limitam a aplicação de força motriz, diminuem a destreza manual, comprometem execução de manuscritos de forma habitual e sistemática",
+            antebraco_direito: "Limitações da ADM que comprometem a ação braçal, limitam a aplicação de força motriz, diminuem a destreza manual, comprometem execução de manuscritos de forma habitual e sistemática",
+            antebraco_esquerdo: "Limitações da ADM que comprometem a ação braçal, limitam a aplicação de força motriz, diminuem a destreza manual, comprometem execução de manuscritos de forma habitual e sistemática",
+            mao_direita: "Limitações da ADM que comprometem o desempenho esperado para atividades manipulativas, limitam a ação manual, limitam movimentos finos, limitam a destreza manual, comprometem execução de manuscritos e digitação de forma habitual",
+            mao_esquerda: "Limitações da ADM que comprometem o desempenho esperado para atividades manipulativas, limitam a ação manual, limitam movimentos finos, limitam a destreza manual, comprometem execução de manuscritos e digitação de forma habitual",
+            quadril: "Limitações para realizar rotação do tronco de forma abrupta ou de modo habitual, deambulação de modo frequente e longos trajetos, permanência em ostostatismo prolongado, posição sentado de modo permanente e ou habitual sem opção de alternância postural",
+            tornozelo_direito: "Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ostostatismo prolongado, subir e descer escadarias de modo habitual",
+            tornozelo_esquerdo: "Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ostostatismo prolongado, subir e descer escadarias de modo habitual"
+        };
+        const lims = Array.from(new Set(alteradas.map(k => limsMap[k]).filter(Boolean)));
+        if (lims.length > 0) {
+            return `${lims.join(" e ")}, atividades estas constantes no Rol de Atividades do cargo de ${cargo}.`;
+        }
+    }
+    const cUpper = String(cid || '').toUpperCase();
+    if (cUpper.startsWith("F") || (st.exameFisicoTipo || aux.exameFisicoTipo) === "Exame Mental") {
+        return `Apresenta limitações psicossociais e psicoemocionais que repercutem nas habilidades necessárias para interatividade social, planejamentos, manter concentração e ter autodomínio, atividades estas constantes no Rol de Atividades do cargo de ${cargo}.`;
+    }
+    if (cUpper.startsWith("M22") || cUpper.startsWith("M23") || cUpper.startsWith("M24") || cUpper.startsWith("M25")) {
+        return `Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ostostatismo prolongado, realizar agachamentos, subir e descer escadarias de modo habitual e sem apoio, atividades estas constantes no Rol de Atividades do cargo de ${cargo}.`;
+    }
+    if (cUpper.startsWith("M54") || cUpper.startsWith("M51") || cUpper.startsWith("M50") || cUpper.startsWith("M53")) {
+        return `Limitações para realizar dosiflexão e extensão, de forma abrupta ou de modo habitual, deambulação de modo frequente e longos trajetos, permanência em ostostatismo prolongado, posição sentado de modo permanente e ou habitual sem opção de alternância postural, atividades estas constantes no Rol de Atividades do cargo de ${cargo}.`;
+    }
+    if (cUpper.startsWith("M75")) {
+        return `Limitações para ação braçal, com execução de elevação ou movimentação de membros superiores acimada linha escapular de modo habitual, atividades estas constantes no Rol de Atividades do cargo de ${cargo}.`;
+    }
+    return `Apresenta limitações físicas funcionais temporárias para as atividades habituais com necessidade de repouso e adaptação funcional, atividades estas constantes no Rol de Atividades do cargo de ${cargo}.`;
+}
+
 function renderEsislaBlocos(textoFicha) {
     const container = document.getElementById('esislaBlocosContainer');
     if (!container) return;
@@ -2953,7 +3010,7 @@ function renderEsislaBlocos(textoFicha) {
         }
     }
 
-    const limitacoes = ext(str, [
+    let limitacoes = ext(str, [
             '(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)',
             '(*)Descrição da(s) Limitação',
             '(*)Descrição da Limitação',
@@ -2970,6 +3027,13 @@ function renderEsislaBlocos(textoFicha) {
         if (parecerBloco.toUpperCase().includes('CONTRÁRIO') || str.toUpperCase().includes('PARECER: CONTRÁRIO')) parecerTipo = 'CONTRÁRIO';
         else if (parecerBloco.toUpperCase().includes('FAVORÁVEL') || str.toUpperCase().includes('PARECER: FAVORÁVEL')) parecerTipo = 'FAVORÁVEL';
         else if (st.parecer || aux.parecer) parecerTipo = String(st.parecer || aux.parecer).toUpperCase();
+    }
+
+    const isFavLim = parecerTipo.toUpperCase().includes('FAVOR') || parecerTipo.toUpperCase() === 'F';
+    if (isFavLim && (!limitacoes || isContraryLimitationTextGestao(limitacoes))) {
+        const cargoNome = st.cargo || aux.cargo || 'servidor';
+        const cidCod = st.cid || aux.cid || (parecerBloco.match(/CID\s*(?:10)?:\s*([^\n\r]+)/i) || [])[1]?.trim() || '';
+        limitacoes = resolverLimitacaoFavoravelGestao(st, aux, cargoNome, cidCod);
     }
 
     let dias = (parecerBloco.match(/N[ºo°\.]*\s*Dias:\s*([^\n\r]+)/i) || [])[1]?.trim()

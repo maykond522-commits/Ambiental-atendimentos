@@ -5868,6 +5868,8 @@ function aplicarRegioesOsteomusculares() {
     state.limitacaoRol = "Sim";
     setRadio("limitacaoFuncional", "Sim");
     setRadio("limitacaoRol", "Sim");
+    $("limitacao1Panel")?.classList.remove("hidden");
+    $("limitacao2Panel")?.classList.remove("hidden");
     
     const existingDescLimOsteo = (state.descLimitacao || state.aux?.descLimitacao || $("descLimitacao")?.value || "").trim();
     if (!existingDescLimOsteo) {
@@ -5875,6 +5877,15 @@ function aplicarRegioesOsteomusculares() {
       if (!state.aux) state.aux = {};
       state.aux.descLimitacao = limitacoesTexto;
       if ($("descLimitacao")) $("descLimitacao").value = limitacoesTexto;
+    }
+    
+    // Auto-preencher atividades comprometidas do Rol com as limitações já aplicadas
+    const existingAtivRolOsteo = (state.atividadesComprometidas || state.aux?.atividadesComprometidas || $("atividadesComprometidas")?.value || "").trim();
+    if (!existingAtivRolOsteo) {
+      state.atividadesComprometidas = limitacoesTexto;
+      if (!state.aux) state.aux = {};
+      state.aux.atividadesComprometidas = limitacoesTexto;
+      if ($("atividadesComprometidas")) $("atividadesComprometidas").value = limitacoesTexto;
     }
     
     QuesitoService.set(0, "Sim");
@@ -5940,6 +5951,12 @@ function aplicarOsteomuscularNormal() {
     if ($("descLimitacao")) $("descLimitacao").value = TEXTO_OSTEO_NORMAL_LIMITACAO;
   }
   
+  // Limpar atividades comprometidas do Rol (Normal = sem limitações)
+  state.atividadesComprometidas = "";
+  if (!state.aux) state.aux = {};
+  state.aux.atividadesComprometidas = "";
+  if ($("atividadesComprometidas")) $("atividadesComprometidas").value = "";
+  
   state.parecer = "CONTRÁRIO";
   setRadio("parecer", "CONTRÁRIO");
   ajustarQuesitosPorParecerEReadaptacao();
@@ -5978,6 +5995,11 @@ function limparOsteomuscular() {
   state.descLimitacao = "";
   state.aux.descLimitacao = "";
   if ($("descLimitacao")) $("descLimitacao").value = "";
+  
+  // Limpar atividades comprometidas do Rol
+  state.atividadesComprometidas = "";
+  state.aux.atividadesComprometidas = "";
+  if ($("atividadesComprometidas")) $("atividadesComprometidas").value = "";
   
   // Limpar justificativa
   state.justificativa = "";
@@ -7048,6 +7070,12 @@ function aplicarExameMentalNormal() {
     if ($("descLimitacao")) $("descLimitacao").value = TEXTO_LIMITACAO_NORMAL;
   }
   
+  // Limpar atividades comprometidas do Rol (Normal = sem limitações mentais)
+  state.atividadesComprometidas = "";
+  if (!state.aux) state.aux = {};
+  state.aux.atividadesComprometidas = "";
+  if ($("atividadesComprometidas")) $("atividadesComprometidas").value = "";
+  
   state.parecer = "CONTRÁRIO";
   setRadio("parecer", "CONTRÁRIO");
   ajustarQuesitosPorParecerEReadaptacao();
@@ -7078,12 +7106,23 @@ function aplicarExameMentalAlterado() {
   state.limitacaoRol = "Sim";
   setRadio("limitacaoFuncional", "Sim");
   setRadio("limitacaoRol", "Sim");
+  $("limitacao1Panel")?.classList.remove("hidden");
+  $("limitacao2Panel")?.classList.remove("hidden");
   const existingDescLimMentalAlt = (state.descLimitacao || state.aux?.descLimitacao || $("descLimitacao")?.value || "").trim();
   if (!existingDescLimMentalAlt) {
     state.descLimitacao = TEXTO_LIMITACAO_ALTERADO;
     if (!state.aux) state.aux = {};
     state.aux.descLimitacao = TEXTO_LIMITACAO_ALTERADO;
     if ($("descLimitacao")) $("descLimitacao").value = TEXTO_LIMITACAO_ALTERADO;
+  }
+  
+  // Auto-preencher atividades comprometidas do Rol com as limitações mentais já aplicadas
+  const existingAtivRolMental = (state.atividadesComprometidas || state.aux?.atividadesComprometidas || $("atividadesComprometidas")?.value || "").trim();
+  if (!existingAtivRolMental) {
+    state.atividadesComprometidas = TEXTO_LIMITACAO_ALTERADO;
+    if (!state.aux) state.aux = {};
+    state.aux.atividadesComprometidas = TEXTO_LIMITACAO_ALTERADO;
+    if ($("atividadesComprometidas")) $("atividadesComprometidas").value = TEXTO_LIMITACAO_ALTERADO;
   }
   
   QuesitoService.set(0, "Sim");

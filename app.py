@@ -59,7 +59,7 @@ else:
     # Em produção, a aplicação deve receber CORS_ORIGINS explicitamente.
     ALLOWED_ORIGINS = []
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
-ESISLA_PROMPT_VERSION = "esisla-v8-altura-peso-exame-parecer"
+ESISLA_PROMPT_VERSION = "esisla-v9-no-inicio-tratamento"
 GEMINI_FALLBACK_MODELS = [
     m.strip() for m in os.getenv("GEMINI_FALLBACK_MODELS", "gemini-3.5-flash-lite,gemini-3.5-flash").split(",")
     if m.strip() and m.strip() != GEMINI_MODEL
@@ -980,19 +980,20 @@ REGRA MANDATÓRIA DE DATAS NO PADRÃO OFICIAL E-SISLA (DD/MM/AAAA):
 REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
 
 1. “(*) Queixa e Duração”
-   Reescreva e sintetize em parágrafo único, fluido e coeso, integrando os dados clínicos e ocupacionais na ordem padronizada dos 11 itens do Programa de Melhoria Contínua:
+   Reescreva e sintetize em parágrafo único, fluido e coeso, integrando os dados clínicos e ocupacionais na ordem padronizada do Programa de Melhoria Contínua:
    (1) Idade ("Servidor de X anos" ou "Periciado de X anos"),
    (2) Cargo e (3) Tempo de cargo ("[cargo] há X anos/meses"),
    (4) Readaptação funcional e atividades atribuídas (se readaptado, indicar atividades exercidas; se não, constar "não readaptado"),
    (5) Doença motivadora informada ("com queixa de ..."),
-   (6) Início do tratamento e (7) Frequência das consultas ("Refere início do tratamento há ..., com consultas a cada ..."),
-   (8) Sintomas e limitações laborais relatadas ("Queixa-se de ... com dificuldade para ..."),
-   (9) Medicações em curso,
-   (10) Dosagens sempre em mg/dia e histórico de trocas de medicações (obrigatório detalhar dosagem diária em mg/dia e histórico de trocas/alterações de dosagem para patologias com CID F / psiquiátricas, ex.: "Em uso de Sertralina 100 mg/dia e Clonazepam 2 mg/dia, sem trocas recentes de medicação"),
-   (11) Terapias não medicamentosas ("Realiza psicoterapia semanal" / "Realiza fisioterapia ...").
-   Fontes a integrar: idade, cargo, tempo_funcao, unidade_tempo, readaptado, atividades_readaptado, doenca_motivo, queixa_duracao, inicio_tratamento, frequencia_consultas, sintomas_limitacoes, medicamentos, alteracao_dosagem, data_alteracao_med, obs_alteracao_med, psicoterapia, fisioterapia, obs_terapias.
+   (6) Frequência das consultas ("com consultas a cada ..."),
+   (7) Sintomas e limitações laborais relatadas ("Queixa-se de ... com dificuldade para ..."),
+   (8) Medicações em curso,
+   (9) Dosagens sempre em mg/dia e histórico de trocas de medicações (obrigatório detalhar dosagem diária em mg/dia e histórico de trocas/alterações de dosagem para patologias com CID F / psiquiátricas, ex.: "Em uso de Sertralina 100 mg/dia e Clonazepam 2 mg/dia, sem trocas recentes de medicação"),
+   (10) Terapias não medicamentosas ("Realiza psicoterapia semanal" / "Realiza fisioterapia ...").
+   REGRA OBRIGATÓRIA DE EXCLUSÃO: NUNCA mencione "Refere início do tratamento em [data]" nem inclua frases sobre início de tratamento por data (ex.: "Refere início do tratamento em 29/09/2026") na Queixa e Duração, independentemente da data. Omitir sempre qualquer menção de início de tratamento com data.
+   Fontes a integrar: idade, cargo, tempo_funcao, unidade_tempo, readaptado, atividades_readaptado, doenca_motivo, queixa_duracao, frequencia_consultas, sintomas_limitacoes, medicamentos, alteracao_dosagem, data_alteracao_med, obs_alteracao_med, psicoterapia, fisioterapia, obs_terapias.
    Exemplo de referência oficial DPME:
-   "Servidor de 40 anos, professor há 10 anos, não readaptado, com queixa de depressão desde 2020. Refere início do tratamento há 2 anos, com consultas a cada 2 meses. Queixa-se de tristeza, desânimo, choro fácil e insônia, com dificuldade para planejar aulas e manter a atenção. Em uso de Sertralina 100 mg/dia e Clonazepam 2 mg/dia, sem trocas recentes de medicação. Realiza psicoterapia semanal."
+   "Servidor de 40 anos, professor há 10 anos, não readaptado, com queixa de depressão desde 2020, com consultas a cada 2 meses. Queixa-se de tristeza, desânimo, choro fácil e insônia, com dificuldade para planejar aulas e manter a atenção. Em uso de Sertralina 100 mg/dia e Clonazepam 2 mg/dia, sem trocas recentes de medicação. Realiza psicoterapia semanal."
    Apenas inclua elementos presentes nos dados registrados, conectando-os de forma natural. Não invente dados não registrados nem acrescente diagnóstico ou interpretação que não esteja escrita nos dados.
 
 2. “Antecedentes Mórbidos”
@@ -1974,6 +1975,32 @@ def api_ai_documento():
         if isinstance(exc, ValueError): return _error("VALIDATION_ERROR", str(exc), False, 400)
         return _provider_error(exc)
 
+def _clean_queixa_duracao_text(text: str) -> str:
+    if not text:
+        return text
+    t = str(text)
+    intro = r"[Rr]efere\s+in[íi]cio\s+d[eo]\s+tratamento\s+(?:em|no\s+dia|desde|a\s+partir\s+de|h[áa])\s+[^,.;\n]+"
+    t = re.sub(r"[\.\;]\s*" + intro + r"[\.\;]", ".", t)
+    t = re.sub(r"[\.\;]\s*" + intro + r",\s*", ". ", t)
+    t = re.sub(r",\s*" + intro + r"(?=,)", "", t)
+    t = re.sub(r",\s*" + intro + r"[\.\;]", ".", t)
+    t = re.sub(r"^\s*" + intro + r"[\.,]?\s*", "", t)
+    t = re.sub(r"\b" + intro, "", t)
+    intro_direct = r"[Ii]n[íi]cio\s+d[eo]\s+tratamento\s+(?:em|no\s+dia|desde|a\s+partir\s+de)\s+[^,.;\n]+"
+    t = re.sub(r"[\.\;]\s*" + intro_direct + r"[\.\;]", ".", t)
+    t = re.sub(r"[\.\;]\s*" + intro_direct + r",\s*", ". ", t)
+    t = re.sub(r",\s*" + intro_direct + r"(?=,)", "", t)
+    t = re.sub(r",\s*" + intro_direct + r"[\.\;]", ".", t)
+    t = re.sub(r"^\s*" + intro_direct + r"[\.,]?\s*", "", t)
+    t = re.sub(r"\b" + intro_direct, "", t)
+    t = re.sub(r"\s{2,}", " ", t)
+    t = re.sub(r"\.\s*\.", ".", t)
+    t = re.sub(r",\s*,", ",", t)
+    t = re.sub(r"\s*,\s*\.", ".", t)
+    t = re.sub(r"\.\s*,", ".", t)
+    t = re.sub(r"\.\s*([a-zà-ú])", lambda m: ". " + m.group(1).upper(), t)
+    return t.strip()
+
 def _clean_esisla_text(text: str) -> str:
     text = str(text or "").strip()
     text = re.sub(r"^```(?:text|txt|plaintext)?\s*", "", text, flags=re.IGNORECASE)
@@ -1997,6 +2024,13 @@ def _clean_esisla_text(text: str) -> str:
     text = re.sub(r"\bpaciente\b", "servidor", text)
     text = re.sub(r"\bPacientes\b", "Servidores", text)
     text = re.sub(r"\bpacientes\b", "servidores", text)
+
+    # Limpeza e remoção obrigatória de menções a início de tratamento por data na Queixa e Duração
+    m_queixa = re.search(r"(\(\*\)\s*Queixa e Duração:?\s*\n)(.*?)(\n\s*Antecedentes Mórbidos)", text, re.DOTALL | re.IGNORECASE)
+    if m_queixa:
+        h1, b_queixa, h2 = m_queixa.groups()
+        b_clean = _clean_queixa_duracao_text(b_queixa)
+        text = text[:m_queixa.start()] + h1 + b_clean + h2 + text[m_queixa.end():]
 
     # Ajuste e conversão de todas as datas ISO ou com zeros (ex.: 2026-00-00, 2026-09-25) para padrão oficial e-SISLA (DD/MM/AAAA)
     def _iso_to_br(m):

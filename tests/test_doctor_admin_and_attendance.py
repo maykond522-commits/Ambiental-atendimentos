@@ -155,7 +155,17 @@ def test_gestao_admin_refresh_and_esisla_view():
     assert 'id="downloadEsislaBtn"' in GESTAO_ATENDIMENTOS
     assert 'id="copyEsislaBtn"' in GESTAO_ATENDIMENTOS
     assert 'id="esislaGenerating"' in GESTAO_ATENDIMENTOS
-    assert 'esisla-spinner-box' in GESTAO_ATENDIMENTOS
+    # Auto-sync em tempo real e atualização automática sem necessidade de F5
+    assert 'id="syncChip"' in GESTAO_ATENDIMENTOS
+    assert 'id="syncDot"' in GESTAO_ATENDIMENTOS
+    assert 'id="syncTitle"' in GESTAO_ATENDIMENTOS
+    assert 'id="syncSub"' in GESTAO_ATENDIMENTOS
+    assert 'id="searchRefreshBtn"' in GESTAO_ATENDIMENTOS
+    assert 'function initAutoSync()' in GESTAO_ATENDIMENTOS
+    assert 'computeDatasetFingerprint(' in GESTAO_ATENDIMENTOS
+    assert 'autoSyncIntervalTimer' in GESTAO_ATENDIMENTOS
+    assert 'visibilitychange' in GESTAO_ATENDIMENTOS
+    assert 'window.lastFetchBackendSuccess' in GESTAO_ATENDIMENTOS
 
 
 def test_agenda_backend_and_database_contract():
@@ -1907,6 +1917,118 @@ def test_quesitos_readaptado_e_contrario_e_cid_secundario():
     assert "q2_ans = \"Sim\" if is_readap else \"Não\"" in app_py
     assert "Se Parecer CONTRÁRIO e o colaborador FOR readaptado: 1) Sim, 2) Sim, 3) Não" in app_py
     assert "Se Parecer CONTRÁRIO e o colaborador NÃO for readaptado: 1) Sim, 2) Não, 3) Não" in app_py
+
+
+def test_remover_inicio_tratamento_queixa_duracao():
+    from app import _clean_queixa_duracao_text, _clean_esisla_text
+    
+    # 1. Testar limpeza isolada de texto de queixa
+    exemplo1 = "Servidor de 40 anos, professor, não readaptado, com queixa de depressão desde 2020. Refere início do tratamento em 29/09/2026. Queixa-se de desânimo."
+    limpo1 = _clean_queixa_duracao_text(exemplo1)
+    assert "Refere início do tratamento em 29/09/2026" not in limpo1
+    assert "Servidor de 40 anos, professor, não readaptado, com queixa de depressão desde 2020. Queixa-se de desânimo." == limpo1
+
+    exemplo2 = "Servidor de 40 anos, professor, com queixa de dor. Refere início do tratamento em 15/03/2024, com consultas a cada 2 meses."
+    limpo2 = _clean_queixa_duracao_text(exemplo2)
+    assert "Refere início do tratamento em 15/03/2024" not in limpo2
+    assert "com consultas a cada 2 meses" in limpo2.lower()
+
+    # 2. Testar na ficha e-SISLA completa
+    ficha = """Registro da perícia Médica para Licença Saúde
+Nome do servidor: Maria da Silva
+(*) Queixa e Duração:
+Servidor de 40 anos, professor há 10 anos, não readaptado, com queixa de depressão desde 2020. Refere início do tratamento em 29/09/2026, com consultas a cada 2 meses. Queixa-se de desânimo e tristeza.
+
+Antecedentes Mórbidos:
+Hipertenso há 5 anos.
+"""
+    ficha_limpa = _clean_esisla_text(ficha)
+    assert "Refere início do tratamento em 29/09/2026" not in ficha_limpa
+    assert "Queixa-se de desânimo e tristeza." in ficha_limpa
+
+    # 3. Testar contratos no gestao_atendimentos e assistente
+    gestao = (ROOT / "gestao_atendimentos.html").read_text(encoding="utf-8")
+    atd = (ROOT / "ambiental_avaliacao_medica_lts_cid_assistente.html").read_text(encoding="utf-8")
+    assert "function cleanQueixaDuracao(" in gestao
+    assert "cleanQueixaDuracao(ext(str, '(*) Queixa e Duração'" in gestao
+    assert "cleanQueixaDuracao(ext(texto, '(*) Queixa e Duração'" in gestao
+    assert "function cleanQueixaDuracao(" in atd
+
+
+def test_antecedentes_morbidos_ext_nao_trunca_com_palavra_atestado():
+    import re
+    gestao = (ROOT / "gestao_atendimentos.html").read_text(encoding="utf-8")
+
+    # 1. Verificar presenca das regras aprimoradas no gestao_atendimentos.html
+    assert "headersFimAntecedentes" in gestao
+    assert "ext(str, 'Antecedentes Mórbidos', headersFimAntecedentes)" in gestao
+    assert "ext(texto, 'Antecedentes Mórbidos', headersFimAntecedentes)" in gestao
+    assert "p.toLowerCase() === 'atestado'" in gestao
+
+    # 2. Executar extracao identica a do javascript com texto real do caso relatado pelo usuario
+    texto = """Registro da perícia Médica para Licença
+
+(*) Queixa e Duração:
+Servidor com dor lombar há 10 dias.
+
+Antecedentes Mórbidos:
+Hipertenso desde os 29 anos. Vem com atestado de 15 dias do Dr. Roberto. Nega diabetes e cirurgias prévias.
+
+Atestado/Relatório/Exames Complementares:
+Em anexo.
+
+Pressão Arterial
+Sistólica (mmHg): 120
+Diastólica (mmHg): 80
+Pulso (bpm): 72
+"""
+
+    def toRegex(s, is_end=False):
+        if not s or s == "FIM_INEXISTENTE":
+            return ""
+        if s == "\n":
+            return r"(?:\r?\n|$)"
+        if isinstance(s, list):
+            parts = [toRegex(x, is_end) for x in s]
+            parts = [p for p in parts if p]
+            return "(?:" + "|".join(parts) + ")"
+        p = re.sub(r":+$", "", s).strip()
+        p = re.escape(p)
+        p = p.replace(r"\(\*\)", r"\(\s*\*\s*\)\s*")
+        p = p.replace(r"\/", r"\s*\/\s*")
+        if is_end:
+            if p.lower() in ("atestado", "atestados"):
+                return r"(?:\r?\n|^)\s*" + p + r"(?:\s*[:\/]|$|\s+[0-9]+)"
+            return r"(?:\r?\n|^)\s*" + p + r"\s*:?"
+        return r"(?:(?:\r?\n|^)\s*)?" + p + r"\s*:?"
+
+    def ext(t, i, f):
+        si = toRegex(i, False)
+        sf = toRegex(f, True)
+        rx = re.compile(si + r"\s*([\s\S]*?)\s*(?=" + (sf if sf else "$") + r"|$)", re.IGNORECASE)
+        m = rx.search(t)
+        return m.group(1).strip() if m else ""
+
+    headers = [
+        "Atestado/Relatório/Exames Complementares",
+        "Atestado/Relatório",
+        "Atestados/Relatórios",
+        "Atestado:",
+        "Atestados:",
+        "Atestado",
+        "Pressão Arterial",
+        "Sistólica",
+        "Altura",
+        "(*)Exame Físico Geral",
+    ]
+
+    extracted = ext(texto, "Antecedentes Mórbidos", headers)
+    assert "Hipertenso desde os 29 anos." in extracted
+    assert "Vem com atestado de 15 dias" in extracted
+    assert "Nega diabetes e cirurgias prévias." in extracted
+    assert not extracted.startswith("Hipertenso desde os 29 anos. Vem com\n")
+    assert extracted != "Hipertenso desde os 29 anos. Vem com"
+
 
 
 

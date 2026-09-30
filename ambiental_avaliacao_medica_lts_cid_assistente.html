@@ -7082,9 +7082,9 @@ function ensureAgileBackgroundDefaults() {
   }
   
   if (!state.aux.inicioTratamento) {
-    state.aux.inicioTratamento = state.aux.dataAtd || today();
-    if ($("inicioTratamento")) $("inicioTratamento").value = state.aux.inicioTratamento;
-    if ($("agilInicioTratamento")) $("agilInicioTratamento").value = state.aux.inicioTratamento;
+    state.aux.inicioTratamento = "";
+    if ($("inicioTratamento")) $("inicioTratamento").value = "";
+    if ($("agilInicioTratamento")) $("agilInicioTratamento").value = "";
   }
   
   if (!state.aux.sintomasLimitacao) {
@@ -9067,6 +9067,28 @@ function detectarSistemaExameFisico(st, aux, texto, cidCode) {
   return 'aoal';
 }
 
+function cleanQueixaDuracao(text) {
+  if (!text) return '';
+  let t = String(text);
+  const intro = /(?:[Rr]efere\s+in[íi]cio\s+d[eo]\s+tratamento\s+(?:em|no\s+dia|desde|a\s+partir\s+de|h[áa])\s+[^,.;\n]+)/;
+  const introDirect = /(?:[Ii]n[íi]cio\s+d[eo]\s+tratamento\s+(?:em|no\s+dia|desde|a\s+partir\s+de)\s+[^,.;\n]+)/;
+  [intro, introDirect].forEach(rx => {
+    t = t.replace(new RegExp('[\\.\\;]\\s*' + rx.source + '[\\.\\;]', 'gi'), '.');
+    t = t.replace(new RegExp('[\\.\\;]\\s*' + rx.source + ',\\s*', 'gi'), '. ');
+    t = t.replace(new RegExp(',\\s*' + rx.source + '(?=,)', 'gi'), '');
+    t = t.replace(new RegExp(',\\s*' + rx.source + '[\\.\\;]', 'gi'), '.');
+    t = t.replace(new RegExp('^\\s*' + rx.source + '[\\.,]?\\s*', 'gi'), '');
+    t = t.replace(new RegExp('\\b' + rx.source, 'gi'), '');
+  });
+  t = t.replace(/\s{2,}/g, ' ');
+  t = t.replace(/\.\s*\./g, '.');
+  t = t.replace(/,\s*,/g, ',');
+  t = t.replace(/\s*,\s*\./g, '.');
+  t = t.replace(/\.\s*,/g, '.');
+  t = t.replace(/\.\s*([a-zà-ú])/gi, (m, c) => '. ' + c.toUpperCase());
+  return t.trim();
+}
+
 function copiarLaudoEsislaAtendimento() {
   syncState();
   const v = values();
@@ -9079,7 +9101,7 @@ function copiarLaudoEsislaAtendimento() {
   let q3 = parecerVal === 'C' ? 'N' : 'S';
 
   // 1. Queixa e Duração (max 2000)
-  let cat = sanitizeText(state.aux?.queixaDuracao || v.queixaDuracao || '', 2000);
+  let cat = sanitizeText(cleanQueixaDuracao(state.aux?.queixaDuracao || v.queixaDuracao || ''), 2000);
 
   // Se houver relatos reais de exames complementares (não boilerplates nem "Em anexo"), integra em queixas conforme solicitado
   const altRaw = String(state.alteracoesClinicasExames || v.alteracoesClinicasExames || '').trim();

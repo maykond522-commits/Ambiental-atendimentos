@@ -2600,6 +2600,7 @@ function detectarSistemaExameFisico(st, aux, texto, cidCode) {
     const outrosSub = String(st?.outrosSubtipo || aux?.outrosSubtipo || st?.areaExameClinico || aux?.areaExameClinico || window.currentDetailFull?.outros_subtipo || window.currentDetailFull?.area_exame_clinico || '').trim().toLowerCase();
 
     // 1. Subtipos selecionados quando a opção "Outros" foi detalhada pelo médico (chips das 12 áreas clínicas)
+    if (outrosSub.includes('geral') || outrosSub === 'e outros' || outrosSub === 'outros') return 'outro';
     if (outrosSub.includes('osteomuscular') || outrosSub.includes('ortop')) return 'aoal';
     if (outrosSub.includes('mental') || outrosSub.includes('psiqui')) return 'em';
     if (outrosSub.includes('circulat') || outrosSub.includes('cardio')) return 'ac';
@@ -2692,12 +2693,18 @@ function cleanQueixaDuracao(text) {
 function cleanAntecedentesMorbidos(text) {
     if (!text) return '';
     let t = String(text);
+    // Remove qualquer vazamento acidental de cabeçalhos de atestado ou 'Em anexo'
+    t = t.replace(/(?:^|\r?\n)\s*Atestado\/Relat[óo]rio[^\n\r]*[\s\S]*$/gi, '');
+    t = t.replace(/(?:^|\r?\n)\s*Atestados?[^\n\r]*[\s\S]*$/gi, '');
+    t = t.replace(/\bEm anexo\.?\b/gi, '');
     t = t.replace(/[\s\.\,]*\b(?:[Vv]em\s+com\s+atestado|[Aa]testado)\s+de\s+\d+\s+dias[^\.\n\r]*[\.\,]?/gi, '.');
     t = t.replace(/\.{2,}/g, '.');
     t = t.replace(/^[\s\.\,;]+/, '');
     t = t.replace(/[\s\.\,;]+$/, '.');
     t = t.replace(/\s{2,}/g, ' ');
-    return t.trim();
+    t = t.trim();
+    if (t === '.' || !t) return '';
+    return t;
 }
 
 function renderEsislaBlocos(textoFicha) {
@@ -2765,7 +2772,7 @@ function renderEsislaBlocos(textoFicha) {
     ];
 
     let queixa = cleanQueixaDuracao(ext(str, '(*) Queixa e Duração', 'Antecedentes Mórbidos') || st.queixaDuracao || aux.queixaDuracao || '');
-    const antecedentes = cleanAntecedentesMorbidos(ext(str, 'Antecedentes Mórbidos', headersFimAntecedentes) || st.historicoPregresso || aux.historicoPregresso || st.antecedentes || aux.antecedentes || '');
+    const antecedentes = cleanAntecedentesMorbidos(ext(str, 'Antecedentes Mórbidos', headersFimAntecedentes) || st.historicoPregresso || aux.historicoPregresso || st.antecedentes || aux.antecedentes || '') || 'Nega';
     let atestado = ext(str, 'Atestado/Relatório/Exames Complementares', 'Pressão Arterial') || ext(str, 'Atestado', 'Pressão Arterial') || st.documentosApresentados || aux.documentosApresentados || '';
     if (atestado) {
         atestado = atestado.replace(/^\s*\(?\s*Tipo-Data-Resultado\s*\)?\s*:?\s*/i, '').trim();
@@ -3440,7 +3447,7 @@ function gerarJsonEsisla(textoFicha, enc) {
     ];
 
     let cat = cleanQueixaDuracao(ext(texto, '(*) Queixa e Duração', 'Antecedentes Mórbidos') || aux.queixaDuracao || st.queixaDuracao || aux.queixa || st.queixa || '');
-    const ap = cleanAntecedentesMorbidos(ext(texto, 'Antecedentes Mórbidos', headersFimAntecedentes) || aux.historicoPregresso || st.historicoPregresso || aux.antecedentes || st.antecedentes || '');
+    const ap = cleanAntecedentesMorbidos(ext(texto, 'Antecedentes Mórbidos', headersFimAntecedentes) || aux.historicoPregresso || st.historicoPregresso || aux.antecedentes || st.antecedentes || '') || 'Nega';
     // Diretriz e-SISLA: Atestados e Exames Complementares sempre sucinto como "Em anexo."
     let hda = 'Em anexo.';
     

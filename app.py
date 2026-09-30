@@ -59,7 +59,7 @@ else:
     # Em produção, a aplicação deve receber CORS_ORIGINS explicitamente.
     ALLOWED_ORIGINS = []
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
-ESISLA_PROMPT_VERSION = "esisla-v9-no-inicio-tratamento"
+ESISLA_PROMPT_VERSION = "esisla-v10-antecedentes-nega-limitacoes-preservadas"
 GEMINI_FALLBACK_MODELS = [
     m.strip() for m in os.getenv("GEMINI_FALLBACK_MODELS", "gemini-3.5-flash-lite,gemini-3.5-flash").split(",")
     if m.strip() and m.strip() != GEMINI_MODEL
@@ -1008,6 +1008,7 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
    (4) Histórico de neoplasias e tratamentos associados.
    Fontes a integrar: antecedentes, historico_pregresso, outras_doencas, condicoes.
    ATENÇÃO: O conteúdo registrado em antecedentes / historico_pregresso ("Histórico pregresso" no questionário) DEVE OBRIGATORIAMENTE ser integrado e considerado nesta seção de Antecedentes Mórbidos.
+   REGRA MANDATÓRIA QUANDO EM BRANCO / NÃO INFORMADO: Se não houver histórico pregresso ou se os dados de antecedentes / historico_pregresso estiverem em branco ou vazios, PREENCHA OBRIGATORIAMENTE COM: "Nega." (ou "Nega").
    REGRA OBRIGATÓRIA DE EXCLUSÃO DE ATESTADO NOS ANTECEDENTES MÓRBIDOS:
    NUNCA mencione dias de atestado, afastamento ou concessões ("Vem com atestado de X dias...", "atestado de...", "com atestado de...") nesta seção de Antecedentes Mórbidos.
    Antecedentes Mórbidos destinam-se EXCLUSIVAMENTE ao histórico pregresso clínico da patologia (ex.: "Hipertenso desde os 29 anos, em tratamento medicamentoso. Nega cirurgias prévias ou hábitos tóxicos."). Informações sobre atestados e afastamentos pertencem exclusivamente aos campos documentais e parecer.
@@ -1039,6 +1040,7 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
 
 5. “(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)”
    Relacione expressamente as limitações físicas ou mentais com as atividades do ROL do servidor (cargo), reunindo desc_limitacao, limitacao_funcional, limitacao_rol, atividades_comprometidas, sintomas_limitacoes e obs_limitacoes:
+   - PRESERVAÇÃO RIGOROSA DE LIMITAÇÕES JÁ PREENCHIDAS: Se o campo desc_limitacao (ou limitacao_funcional / sintomas_limitacoes) já contiver texto preenchido pelo médico perito no atendimento (inclusive limitações osteomusculares específicas de regiões ou psicossociais/emocionais), PRESERVE E PRIORIZE ESTRITAMENTE o texto já registrado pelo profissional, integrando com o Rol de Atividades do cargo. NÃO substitua nem altere limitações já preenchidas por fórmulas genéricas.
    - Se Parecer CONTRÁRIO (capacidade preservada): adote OBRIGATORIAMENTE a fórmula padrão oficial:
      "Do ponto de vista médico não se observa limitações físicas ou mentais funcionais incapacitantes para as atribuições do cargo de [cargo], constantes no rol de atividades."
    - Se Parecer FAVORÁVEL (ou capacidade laborativa temporariamente prejudicada): adote a fórmula padrão oficial e adeque com inteligência pericial as limitações ao CID principal e às funções do cargo:
@@ -1619,24 +1621,30 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
         "outras_doencas": payload.get("outras_doencas") or payload.get("outrasDoencas"),
         "condicoes": payload.get("condicoes") or payload.get("conditions") or [],
         "antecedentes": (
-            payload.get("antecedentes")
-            or payload.get("historico_pregresso")
-            or payload.get("historicoPregresso")
-            or payload.get("agilHistoricoPregresso")
-            or a.get("antecedentes")
-            or a.get("historico_pregresso")
-            or a.get("historicoPregresso")
-            or a.get("agilHistoricoPregresso")
+            str(
+                payload.get("antecedentes")
+                or payload.get("historico_pregresso")
+                or payload.get("historicoPregresso")
+                or payload.get("agilHistoricoPregresso")
+                or a.get("antecedentes")
+                or a.get("historico_pregresso")
+                or a.get("historicoPregresso")
+                or a.get("agilHistoricoPregresso")
+                or ""
+            ).strip() or "Nega"
         ),
         "historico_pregresso": (
-            payload.get("historico_pregresso")
-            or payload.get("historicoPregresso")
-            or payload.get("antecedentes")
-            or payload.get("agilHistoricoPregresso")
-            or a.get("historico_pregresso")
-            or a.get("historicoPregresso")
-            or a.get("antecedentes")
-            or a.get("agilHistoricoPregresso")
+            str(
+                payload.get("historico_pregresso")
+                or payload.get("historicoPregresso")
+                or payload.get("antecedentes")
+                or payload.get("agilHistoricoPregresso")
+                or a.get("historico_pregresso")
+                or a.get("historicoPregresso")
+                or a.get("antecedentes")
+                or a.get("agilHistoricoPregresso")
+                or ""
+            ).strip() or "Nega"
         ),
         "crm_cro": payload.get("crm_cro") or payload.get("crmCro") or a.get("crmCro"),
         "data_documento": _format_date_br(payload.get("data_documento") or payload.get("dataDocumento") or a.get("dataDocumento")),
@@ -1717,7 +1725,13 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
         "exame": payload.get("exame") or {},
         "limitacao_funcional": payload.get("limitacao_funcional") or payload.get("limitacaoFuncional"),
         "limitacao_rol": payload.get("limitacao_rol") or payload.get("limitacaoRol"),
-        "desc_limitacao": payload.get("desc_limitacao") or a.get("descLimitacao"),
+        "desc_limitacao": (
+            payload.get("desc_limitacao")
+            or payload.get("descLimitacao")
+            or a.get("desc_limitacao")
+            or a.get("descLimitacao")
+            or ""
+        ),
         "atividades_comprometidas": payload.get("atividades_comprometidas") or a.get("atividadesComprometidas"),
         "obs_limitacoes": payload.get("obs_limitacoes") or a.get("obsLimitacoes"),
         "capacidade": payload.get("capacidade"),
@@ -2070,6 +2084,11 @@ def _clean_esisla_text(text: str) -> str:
         h1, b_ant, h2 = m_ant.groups()
         b_clean = re.sub(r"[\s\.\,]*\b(?:[Vv]em\s+com\s+atestado|[Aa]testado)\s+de\s+\d+\s+dias[^\.\n\r]*[\.\,]?", ".", b_ant)
         b_clean = re.sub(r"\.{2,}", ".", b_clean).strip()
+        b_clean = re.sub(r"^[\s\.\,]+", "", b_clean).strip()
+        if not b_clean or b_clean == ".":
+            b_clean = "Nega."
+        elif not b_clean.endswith("."):
+            b_clean += "."
         text = text[:m_ant.start()] + h1 + b_clean + "\n\n" + h2 + text[m_ant.end():]
 
     # Separar campos que o modelo possa ter agrupado na mesma linha (ex: CID 10 Secundário: Descrição Secundária:)
@@ -2250,6 +2269,21 @@ def api_ai_esisla():
                     cur_lim = m_lim.group(2).strip()
                     if not cur_lim or "não se observa" not in cur_lim.lower() and "nao se observa" not in cur_lim.lower():
                         ficha_text = ficha_text[:m_lim.start(2)] + lim_contra + ficha_text[m_lim.end(2):]
+            else:
+                doc_lim = str(payload.get("desc_limitacao") or payload.get("descLimitacao") or "").strip()
+                if doc_lim:
+                    m_lim = re.search(r"(\(\*\)\s*Descri[çc][ãa]o\s*da\(s\)\s*Limita[çc][ãa]o[^\n\r]*\n\s*)(.*?)(\n\s*\(\*\)\s*Parecer\s*M[ée]dico)", ficha_text, re.DOTALL | re.IGNORECASE)
+                    if m_lim:
+                        cur_lim = m_lim.group(2).strip()
+                        # Se a IA não incluiu as limitações preenchidas pelo médico ou deixou vazio/genérico
+                        palavras_chave = [p for p in doc_lim.lower().split() if len(p) >= 4]
+                        if not cur_lim or (len(palavras_chave) >= 2 and not any(p in cur_lim.lower() for p in palavras_chave[:4])):
+                            cargo_nome = payload.get("cargo") or "servidor"
+                            if "rol de atividades" in doc_lim.lower():
+                                pres_lim = doc_lim
+                            else:
+                                pres_lim = f"{doc_lim}, atividades estas constantes no Rol de Atividades do cargo de {cargo_nome}."
+                            ficha_text = ficha_text[:m_lim.start(2)] + pres_lim + ficha_text[m_lim.end(2):]
 
             # Remove qualquer resquício de (Tipo-Data-Resultado)
             ficha_text = re.sub(r"Atestado/Relat[óo]rio/Exames Complementares\s*\([^\)]*Tipo[^\)]*\):?", "Atestado/Relatório/Exames Complementares:", ficha_text, flags=re.IGNORECASE)

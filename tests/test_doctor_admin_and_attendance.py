@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -47,13 +48,13 @@ def test_api_js_admin_and_esisla_contract():
 
 
 def test_attendance_header_actions():
-    # Only Gestão, Imprimir, Excluir, Salvar rascunho, Finalizar in header
+    # Only Gestão, Excluir, Salvar rascunho, Finalizar in header
     header_block = ATTENDANCE[ATTENDANCE.find('<div class="header-actions">'):ATTENDANCE.find('</header>')]
     assert 'onclick="openManagement()"' in header_block
-    assert 'onclick="openFinalReport()"' in header_block
     assert 'onclick="deleteAtendimento()"' in header_block
     assert 'onclick="saveNow()"' in header_block
     assert 'onclick="finalizeFromHeader()"' in header_block
+    assert 'onclick="openFinalReport()"' not in header_block
     
     # Must NOT have esisla or robo buttons in attendance header
     assert 'btnCopiarEsisla' not in header_block
@@ -396,8 +397,8 @@ def test_modo_agil_bloco3_finalization_and_hidden_parecer():
     assert 'function finalizarAtendimentoAgil()' in ATTENDANCE
     assert 'function ensureAgileBackgroundDefaults()' in ATTENDANCE
 
-    # Background defaults: 03 = doencaMotivo (em vez de Nega), 04 = Em anexo
-    assert 'state.aux.historicoPregresso = doenca' in ATTENDANCE
+    # Background defaults: 03 = histDef (coleta do campo ágil ou Nega se em branco), 04 = Em anexo
+    assert 'const histDef = histAgil || "Nega"' in ATTENDANCE
     assert 'state.aux.obsDocumentos = "Em anexo"' in ATTENDANCE
     assert 'state.aux.crmCro = "Em anexo"' in ATTENDANCE
     assert 'state.aux.diasSolicitados = "Conforme atestado"' in ATTENDANCE
@@ -2157,6 +2158,75 @@ def test_download_extensao_esisla():
     manifest_data = json.loads(manifest_bytes.decode("utf-8"))
     assert manifest_data["manifest_version"] == 3
     assert "Ambiental" in manifest_data["name"]
+
+
+def test_ajustes_senior_antecedentes_nega_checkboxes_outros_limitacoes_e_header():
+    """Valida as 4 melhorias solicitadas pelo usuário com rigor sênior:
+    1. Preservação de limitações físicas e mentais existentes (não sobrescreve se já preenchido).
+    2. Antecedentes Mórbidos coletados do modo ágil; se em branco, preenche 'Nega' / 'Nega.'.
+    3. Tipo de exame 'Outros -> Exame Físico Geral' e 'Outros -> E outros' marcam estritamente Checkbox e-SISLA: Outros.
+    4. Topo do atendimento com apenas Gestão, Excluir, Salvar rascunho e Finalizar, sem colisão de scroll.
+    """
+    from app import _clean_esisla_text, _minimal_ai_context
+
+    atd = (ROOT / "ambiental_avaliacao_medica_lts_cid_assistente.html").read_text(encoding="utf-8")
+    gestao = (ROOT / "gestao_atendimentos.html").read_text(encoding="utf-8")
+    app_text = (ROOT / "app.py").read_text(encoding="utf-8")
+
+    # 1. Header limpo e sem sobreposição de HUD
+    hdr_match = re.search(r'<div class="header-actions">([\s\S]*?)</div>', atd)
+    assert hdr_match is not None
+    hdr_content = hdr_match.group(1)
+    assert 'openManagement()' in hdr_content
+    assert 'deleteAtendimento()' in hdr_content
+    assert 'saveNow()' in hdr_content
+    assert 'finalizeFromHeader()' in hdr_content
+    assert 'openFinalReport()' not in hdr_content
+    assert 'abrirModalComprovanteComparecimento()' not in hdr_content
+    assert 'abrirModalBookmarkletAtendimento()' not in hdr_content
+
+    # CSS do Header relativo e HUD sólido
+    assert ".header{\n  position:relative; z-index:40;" in atd or ".header{\r\n  position:relative; z-index:40;" in atd
+    assert "background: #FFFFFF !important;" in atd
+
+    # 2. Antecedentes Mórbidos: coleta do campo e default 'Nega'
+    assert 'const histDef = histAgil || "Nega"' in atd
+    assert 'const apVal = (state.aux?.historicoPregresso || v.historicoPregresso || $("agilHistoricoPregresso")?.value || \'\').trim();' in atd
+    assert "cleanAntecedentesMorbidos(ext(str, 'Antecedentes Mórbidos', headersFimAntecedentes) || st.historicoPregresso || aux.historicoPregresso || st.antecedentes || aux.antecedentes || '') || 'Nega'" in gestao
+
+    # Teste no app.py com antecedentes vazio -> Nega
+    ctx_empty = _minimal_ai_context({"antecedentes": "", "historico_pregresso": ""})
+    assert ctx_empty["antecedentes"] == "Nega"
+    assert ctx_empty["historico_pregresso"] == "Nega"
+
+    # Teste de limpeza do texto e-SISLA com antecedentes vazio/ponto -> Nega.
+    esisla_sample = (
+        "Registro da perícia Médica para Licença\n\n"
+        "(*) Queixa e Duração:\nServidor de 40 anos, professor há 10 anos.\n\n"
+        "Antecedentes Mórbidos:\n.\n\n"
+        "Atestado/Relatório/Exames Complementares:\nEm anexo.\n\n"
+        "Altura: 1,75\nPeso: 75\n\n"
+        "(*)Exame Físico Geral\nAparelho Osteomuscular: dor lombar.\n\n"
+        "Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:\nNão foram apresentados exames.\n\n"
+        "(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):\nLimitação leve.\n\n"
+        "(*)Parecer Médico\nParecer: FAVORÁVEL\nNº Dias: 10\nData Início: 20/09/2026\nCID 10: M54.5\nDescrição: Dor lombar\nMédico Perito: Dr. Teste\nCRM: 12345\nDt/Hr Perícia: 25/09/2026 14:00\n\n"
+        "(*)Resposta aos quesitos\n1) Sim\n2) Sim\n3) Sim\n"
+    )
+    cleaned_sample = _clean_esisla_text(esisla_sample)
+    assert "Antecedentes Mórbidos:\nNega.\n\n" in cleaned_sample
+
+    # 3. Checkboxes e-SISLA: Outros -> Exame Físico Geral e E outros
+    for code in [gestao, atd]:
+        assert "if (outrosSub.includes('geral') || outrosSub === 'e outros' || outrosSub === 'outros') return 'outro'" in code
+        assert "if (outrosSub.includes('circulat') || outrosSub.includes('cardio')) return 'ac'" in code
+        assert "if (outrosSub.includes('respirat') || outrosSub.includes('pulmon')) return 'ar'" in code
+
+    # 4. Preservação de limitações físicas e mentais existentes
+    assert "existingDescLimOsteo" in atd
+    assert "existingDescLimOsteoNorm" in atd
+    assert "existingDescLimMentalNorm" in atd
+    assert "existingDescLimMentalAlt" in atd
+    assert "PRESERVAÇÃO RIGOROSA DE LIMITAÇÕES JÁ PREENCHIDAS" in app_text
 
 
 

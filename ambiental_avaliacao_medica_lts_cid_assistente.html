@@ -23,9 +23,8 @@ button{cursor:pointer}
 a{color:inherit}
 .app{min-height:100vh}
 .header{
-  position:sticky; top:0; z-index:40;
-  background:rgba(255,255,255,.96);
-  backdrop-filter:blur(14px);
+  position:relative; z-index:40;
+  background:#fff;
   border-bottom:1px solid var(--line);
 }
 .header-inner{
@@ -1589,10 +1588,9 @@ body:not(.mode-agil-active) #containerModoAgil {
   top: 0;
   left: 0;
   right: 0;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 1.5px solid #CBD5E1;
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
+  background: #FFFFFF !important;
+  border-bottom: 2px solid #0A4A8A;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.12);
   z-index: 9999;
   padding: 8px 24px;
   animation: slideDownHUD 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1807,9 +1805,6 @@ body:not(.mode-agil-active) #containerModoAgil {
     </div>
     <div class="header-actions">
       <button class="btn btn-outline optional" onclick="openManagement()">Gestão</button>
-      <button class="btn btn-outline optional" onclick="openFinalReport()" title="Visualizar e imprimir laudo pericial">Imprimir</button>
-      <button class="btn btn-outline optional" onclick="abrirModalComprovanteComparecimento()" title="Emitir Declaração/Comprovante de Comparecimento à Perícia para o servidor">📄 Comparecimento</button>
-      <button class="btn btn-outline optional" onclick="abrirModalBookmarkletAtendimento()" title="Como instalar o Botão dos Favoritos e-SISLA (sem F12)">⭐ Favorito e-SISLA</button>
       <button class="btn btn-danger optional" onclick="deleteAtendimento()">Excluir</button>
       <button class="btn btn-outline optional" onclick="saveNow()">Salvar rascunho</button>
       <button class="btn btn-green" onclick="finalizeFromHeader()">Finalizar</button>
@@ -5784,9 +5779,13 @@ function aplicarRegioesOsteomusculares() {
     setRadio("limitacaoFuncional", "Sim");
     setRadio("limitacaoRol", "Sim");
     
-    state.descLimitacao = limitacoesTexto;
-    state.aux.descLimitacao = limitacoesTexto;
-    if ($("descLimitacao")) $("descLimitacao").value = limitacoesTexto;
+    const existingDescLimOsteo = (state.descLimitacao || state.aux?.descLimitacao || $("descLimitacao")?.value || "").trim();
+    if (!existingDescLimOsteo) {
+      state.descLimitacao = limitacoesTexto;
+      if (!state.aux) state.aux = {};
+      state.aux.descLimitacao = limitacoesTexto;
+      if ($("descLimitacao")) $("descLimitacao").value = limitacoesTexto;
+    }
     
     QuesitoService.set(0, "Sim");
     QuesitoService.set(1, "Sim");
@@ -5843,9 +5842,13 @@ function aplicarOsteomuscularNormal() {
   setRadio("limitacaoFuncional", "Não");
   setRadio("limitacaoRol", "Não");
   
-  state.descLimitacao = TEXTO_OSTEO_NORMAL_LIMITACAO;
-  state.aux.descLimitacao = TEXTO_OSTEO_NORMAL_LIMITACAO;
-  if ($("descLimitacao")) $("descLimitacao").value = TEXTO_OSTEO_NORMAL_LIMITACAO;
+  const existingDescLimOsteoNorm = (state.descLimitacao || state.aux?.descLimitacao || $("descLimitacao")?.value || "").trim();
+  if (!existingDescLimOsteoNorm) {
+    state.descLimitacao = TEXTO_OSTEO_NORMAL_LIMITACAO;
+    if (!state.aux) state.aux = {};
+    state.aux.descLimitacao = TEXTO_OSTEO_NORMAL_LIMITACAO;
+    if ($("descLimitacao")) $("descLimitacao").value = TEXTO_OSTEO_NORMAL_LIMITACAO;
+  }
   
   state.parecer = "CONTRÁRIO";
   setRadio("parecer", "CONTRÁRIO");
@@ -6536,18 +6539,6 @@ function onAgilDoencaMotivoInput(val) {
   state.aux.doencaMotivo = val;
   state.doencaMotivo = val;
   if ($("doencaMotivo")) $("doencaMotivo").value = val;
-  
-  // O que for respondido em: "Qual a doença está tratando que motivou o afastamento?"
-  // seja o autopreenchimento do campo: "Histórico pregresso"
-  const currentHist = $("agilHistoricoPregresso")?.value || "";
-  const prevHist = state.aux.historicoPregresso || "";
-  if (!currentHist || currentHist === "Nega" || currentHist === prevHist) {
-    state.aux.historicoPregresso = val;
-    state.historicoPregresso = val;
-    if ($("historicoPregresso")) $("historicoPregresso").value = val;
-    if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = val;
-  }
-  
   if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
   autoSave();
 }
@@ -6753,12 +6744,6 @@ function onAgilCidInput(val) {
       state.doencaMotivo = rotulo;
       if ($("doencaMotivo")) $("doencaMotivo").value = rotulo;
       if ($("agilDoencaMotivo")) $("agilDoencaMotivo").value = rotulo;
-      if (!state.aux.historicoPregresso || state.aux.historicoPregresso === "Nega") {
-        state.aux.historicoPregresso = rotulo;
-        state.historicoPregresso = rotulo;
-        if ($("historicoPregresso")) $("historicoPregresso").value = rotulo;
-        if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = rotulo;
-      }
     }
   } else if (badge) {
     badge.style.display = "none";
@@ -6791,12 +6776,6 @@ function selectAgilCID(code) {
       state.aux.doencaMotivo = rotulo;
       if ($("doencaMotivo")) $("doencaMotivo").value = rotulo;
       if ($("agilDoencaMotivo")) $("agilDoencaMotivo").value = rotulo;
-      if (!state.aux.historicoPregresso || state.aux.historicoPregresso === "Nega") {
-        state.aux.historicoPregresso = rotulo;
-        state.historicoPregresso = rotulo;
-        if ($("historicoPregresso")) $("historicoPregresso").value = rotulo;
-        if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = rotulo;
-      }
     }
   }
   
@@ -6971,10 +6950,13 @@ function aplicarExameMentalNormal() {
   state.limitacaoRol = "Não";
   setRadio("limitacaoFuncional", "Não");
   setRadio("limitacaoRol", "Não");
-  state.descLimitacao = TEXTO_LIMITACAO_NORMAL;
-  if (!state.aux) state.aux = {};
-  state.aux.descLimitacao = TEXTO_LIMITACAO_NORMAL;
-  if ($("descLimitacao")) $("descLimitacao").value = TEXTO_LIMITACAO_NORMAL;
+  const existingDescLimMentalNorm = (state.descLimitacao || state.aux?.descLimitacao || $("descLimitacao")?.value || "").trim();
+  if (!existingDescLimMentalNorm) {
+    state.descLimitacao = TEXTO_LIMITACAO_NORMAL;
+    if (!state.aux) state.aux = {};
+    state.aux.descLimitacao = TEXTO_LIMITACAO_NORMAL;
+    if ($("descLimitacao")) $("descLimitacao").value = TEXTO_LIMITACAO_NORMAL;
+  }
   
   state.parecer = "CONTRÁRIO";
   setRadio("parecer", "CONTRÁRIO");
@@ -7006,10 +6988,13 @@ function aplicarExameMentalAlterado() {
   state.limitacaoRol = "Sim";
   setRadio("limitacaoFuncional", "Sim");
   setRadio("limitacaoRol", "Sim");
-  state.descLimitacao = TEXTO_LIMITACAO_ALTERADO;
-  if (!state.aux) state.aux = {};
-  state.aux.descLimitacao = TEXTO_LIMITACAO_ALTERADO;
-  if ($("descLimitacao")) $("descLimitacao").value = TEXTO_LIMITACAO_ALTERADO;
+  const existingDescLimMentalAlt = (state.descLimitacao || state.aux?.descLimitacao || $("descLimitacao")?.value || "").trim();
+  if (!existingDescLimMentalAlt) {
+    state.descLimitacao = TEXTO_LIMITACAO_ALTERADO;
+    if (!state.aux) state.aux = {};
+    state.aux.descLimitacao = TEXTO_LIMITACAO_ALTERADO;
+    if ($("descLimitacao")) $("descLimitacao").value = TEXTO_LIMITACAO_ALTERADO;
+  }
   
   QuesitoService.set(0, "Sim");
   QuesitoService.set(1, "Sim");
@@ -7041,13 +7026,13 @@ function ensureAgileBackgroundDefaults() {
   if ($("doencaMotivo")) $("doencaMotivo").value = doenca;
   if ($("agilDoencaMotivo")) $("agilDoencaMotivo").value = doenca;
 
-  // 03 — Antecedentes mórbidos: preencher com a doença que motivou o afastamento (em vez de "Nega")
-  if (!state.aux.historicoPregresso || state.aux.historicoPregresso === "Nega") {
-    state.aux.historicoPregresso = doenca;
-  }
-  state.historicoPregresso = state.aux.historicoPregresso;
-  if ($("historicoPregresso")) $("historicoPregresso").value = state.aux.historicoPregresso;
-  if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = state.aux.historicoPregresso;
+  // 03 — Antecedentes mórbidos: coletar do campo preenchido no modo ágil; se em branco, definir como "Nega"
+  const histAgil = (state.aux?.historicoPregresso || state.historicoPregresso || $("agilHistoricoPregresso")?.value || $("historicoPregresso")?.value || "").trim();
+  const histDef = histAgil || "Nega";
+  state.aux.historicoPregresso = histDef;
+  state.historicoPregresso = histDef;
+  if ($("historicoPregresso")) $("historicoPregresso").value = histDef;
+  if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = histDef;
   
   if (!state.outrasDoencas) {
     state.outrasDoencas = "Sim";
@@ -7502,14 +7487,14 @@ function syncVoiceField(targetId, val, isFinal = false) {
     state.doencaMotivo = val;
     if ($("doencaMotivo") && $("doencaMotivo") !== document.activeElement) $("doencaMotivo").value = val;
     if ($("agilDoencaMotivo") && $("agilDoencaMotivo") !== document.activeElement) $("agilDoencaMotivo").value = val;
-    const currentHist = $("agilHistoricoPregresso")?.value || "";
-    const prevHist = state.aux.historicoPregresso || "";
-    if (!currentHist || currentHist === "Nega" || currentHist === prevHist) {
-      state.aux.historicoPregresso = val;
-      state.historicoPregresso = val;
-      if ($("historicoPregresso")) $("historicoPregresso").value = val;
-      if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = val;
-    }
+    if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
+    if (isFinal && typeof autoSave === "function") autoSave();
+  } else if (targetId === "agilHistoricoPregresso" || targetId === "historicoPregresso") {
+    if (!state.aux) state.aux = {};
+    state.aux.historicoPregresso = val;
+    state.historicoPregresso = val;
+    if ($("historicoPregresso") && $("historicoPregresso") !== document.activeElement) $("historicoPregresso").value = val;
+    if ($("agilHistoricoPregresso") && $("agilHistoricoPregresso") !== document.activeElement) $("agilHistoricoPregresso").value = val;
     if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
     if (isFinal && typeof autoSave === "function") autoSave();
   } else if (targetId === "agilSintomasLimitacao" || targetId === "sintomasLimitacao") {
@@ -9001,6 +8986,7 @@ function detectarSistemaExameFisico(st, aux, texto, cidCode) {
   const outrosSub = String(st?.outrosSubtipo || aux?.outrosSubtipo || st?.areaExameClinico || aux?.areaExameClinico || '').trim().toLowerCase();
 
   // 1. Subtipos selecionados quando a opção "Outros" foi detalhada pelo médico (chips das 12 áreas clínicas)
+  if (outrosSub.includes('geral') || outrosSub === 'e outros' || outrosSub === 'outros') return 'outro';
   if (outrosSub.includes('osteomuscular') || outrosSub.includes('ortop')) return 'aoal';
   if (outrosSub.includes('mental') || outrosSub.includes('psiqui')) return 'em';
   if (outrosSub.includes('circulat') || outrosSub.includes('cardio')) return 'ac';
@@ -9114,7 +9100,8 @@ function copiarLaudoEsislaAtendimento() {
   }
 
   // 2. Antecedentes Mórbidos (max 2000)
-  const ap = sanitizeText(state.aux?.historicoPregresso || v.historicoPregresso || state.aux?.doencaMotivo || v.doencaMotivo || '', 2000);
+  const apVal = (state.aux?.historicoPregresso || v.historicoPregresso || $("agilHistoricoPregresso")?.value || '').trim();
+  const ap = sanitizeText(apVal || 'Nega', 2000);
 
   // 3. Atestado / Relatório / Exames Complementares (Tipo-Data-Resultado) (max 2500)
   // Diretriz oficial e-SISLA: sempre "Em anexo."

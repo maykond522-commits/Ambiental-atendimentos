@@ -1915,10 +1915,15 @@ body:not(.mode-agil-active) #containerModoAgil {
 
       <!-- Bloco 02 — Queixa e Duração & Antecedentes -->
       <div class="agil-card">
-        <div class="agil-card-head">
+        <div class="agil-card-head" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
           <div>
             <h3><span>📋</span> 02 — Queixa e Duração &amp; Antecedentes</h3>
             <p>Queixa principal que motivou o afastamento, medicações, terapias e antecedentes.</p>
+          </div>
+          <div>
+            <button type="button" class="btn btn-outline" style="font-size:11.5px;padding:4px 10px;font-weight:700;color:#1D4ED8;background:#EFF6FF;border-color:#BFDBFE;display:inline-flex;align-items:center;gap:6px" onclick="aplicarSintesePericialMelhoriaContinua(true); toast('Narrativa pericial padronizada montada com sucesso!')" title="Gera o parágrafo completo de queixa e antecedentes no padrão do Programa de Melhoria Contínua">
+              <span>✨</span> Padronizar Narrativa
+            </button>
           </div>
         </div>
         <div class="agil-card-body">
@@ -5658,8 +5663,8 @@ DADOS_OSTEOMUSCULAR.joelhos = DADOS_OSTEOMUSCULAR.joelho_direito;
 DADOS_OSTEOMUSCULAR.tornozelos = DADOS_OSTEOMUSCULAR.tornozelo_direito;
 
 const TEXTO_OSTEO_NORMAL_EXAME = "Aparelho Osteomuscular e Tecido Conjuntivo com trofismo e tônus musculares preservados globalmente, ausência de edemas, deformidades articulares ou cicatrizes patológicas. Mobilidade ativa e passiva preservadas em coluna vertebral (cervical e lombar) e articulações periféricas (ombros, cotovelos, punhos, mãos, quadris, joelhos e tornozelos). Testes ortopédicos especiais negativos bilateralmente. Marcha típica sem claudicação.";
-const TEXTO_OSTEO_NORMAL_LIMITACAO = "Não se identificam limitações funcionais incapacitantes no exame físico pericial osteomuscular.";
-const TEXTO_OSTEO_NORMAL_JUSTIFICATIVA = "Capacidade laborativa preservada, avaliação pericial clínica do aparelho osteomuscular sem evidências de incapacidade laborativa no momento do exame pericial.";
+const TEXTO_OSTEO_NORMAL_LIMITACAO = "Do ponto de vista médico não se observa limitações físicas funcionais incapacitantes relacionadas ao aparelho osteomuscular.";
+const TEXTO_OSTEO_NORMAL_JUSTIFICATIVA = "Capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações de ordem osteomuscular incapacitantes para as atribuições rotineiras do cargo atual.";
 
 function capitalizeFirstLetter(str) {
   if (!str) return "";
@@ -7145,6 +7150,276 @@ function aplicarExameMentalAlterado() {
   toast("Exame mental ALTERADO: achados, limitações, quesitos e parecer FAVORÁVEL preenchidos.");
 }
 
+/* =========================================================
+   PROGRAMA DE MELHORIA CONTÍNUA (AMBIENTAL) — MOTOR DE SÍNTESE PERICIAL EM SEGUNDO PLANO
+   Garante atendimento integral às diretrizes e-SISLA / DPME sem burocracia para o médico no Modo Ágil.
+   ========================================================= */
+
+function gerarNarrativaQueixaMelhoriaContinua(st, v) {
+  v = v || {};
+  st = st || state;
+  const aux = st.aux || {};
+  
+  const idade = aux.idade || v.idade || $("agilIdade")?.value || "";
+  const cargo = aux.cargo || v.cargo || $("agilCargo")?.value || "";
+  const tempoCargo = aux.tempoCargo || v.tempoCargo || $("agilTempoCargo")?.value || "";
+  const unidadeTempo = aux.unidadeTempo || v.unidadeTempo || $("agilTempoUnidade")?.value || "anos";
+  const readap = String(st.readaptado || aux.readaptado || v.readaptado || getRadio("agilReadaptado") || "").toLowerCase() === "sim";
+  const ativReadap = aux.atividadesReadaptado || v.atividadesReadaptado || $("agilAtividadesReadaptado")?.value || "";
+  
+  const cidVal = st.cid || aux.cid || v.cid || $("agilCid")?.value || "";
+  const cidNome = typeof findCID === "function" ? (findCID(cidVal)?.n || "") : "";
+  const doenca = aux.doencaMotivo || v.doencaMotivo || $("agilDoencaMotivo")?.value || (cidVal ? `${cidVal}${cidNome ? ' — ' + cidNome : ''}` : "");
+  const inicioTrat = aux.inicioTratamento || v.inicioTratamento || $("agilInicioTratamento")?.value || "";
+  const freqCons = aux.freqConsultas || v.freqConsultas || $("agilFreqConsultas")?.value || "";
+  const sintomas = aux.sintomasLimitacao || v.sintomasLimitacao || $("agilSintomasLimitacao")?.value || "";
+  
+  // Medicações com dosagem em mg/dia
+  const meds = (st.medications || v.medicamentos || []).filter(m => m && (m.medicamento || m.nome));
+  let medsStr = "";
+  if (meds.length > 0) {
+    medsStr = meds.map(m => {
+      const nome = m.medicamento || m.nome || "";
+      const dose = m.dosagem || "";
+      const freq = m.frequencia || "";
+      const obs = m.observacao || "";
+      let item = nome;
+      if (dose) item += ` [${dose}]`;
+      if (freq) item += ` (${freq})`;
+      if (obs && !obs.includes(dose)) item += ` — ${obs}`;
+      return item;
+    }).join(", ");
+  }
+  
+  // Terapias
+  const psico = !!(st.psicoterapia || aux.psicoterapia || v.psicoterapia || $("agilPsicoterapia")?.checked);
+  const fisio = !!(st.fisioterapia || aux.fisioterapia || v.fisioterapia || $("agilFisioterapia")?.checked);
+  const obsTerapias = aux.obsTerapias || v.obsTerapias || $("agilObsTerapias")?.value || "";
+  
+  // Se o médico já digitou um texto completo e longo (narrativa própria), preservamos sua digitação
+  const rawQ = (aux.queixaDuracao || v.queixaDuracao || $("agilDoencaMotivo")?.value || "").trim();
+  if (rawQ.length > 180 && (rawQ.toLowerCase().includes("servidor") || rawQ.toLowerCase().includes("ocupante") || rawQ.toLowerCase().includes("relata"))) {
+    return rawQ;
+  }
+  
+  let partes = [];
+  
+  // 1. Identificação funcional
+  let ident = "Servidor(a)";
+  if (idade) ident += ` de ${idade} anos`;
+  if (cargo) ident += `, ocupante do cargo de ${cargo}`;
+  if (tempoCargo) ident += `, com ${tempoCargo} ${unidadeTempo.toLowerCase()} de exercício funcional`;
+  ident += ".";
+  partes.push(ident);
+  
+  // 2. Readaptação
+  if (readap) {
+    partes.push(`Encontra-se atualmente em readaptação funcional${ativReadap ? `, desempenhando as seguintes atividades: ${ativReadap}.` : "."}`);
+  } else {
+    partes.push("Não se encontra em readaptação funcional.");
+  }
+  
+  // 3. Doença e acompanhamento
+  if (doenca) {
+    let trat = `Relata acompanhamento clínico motivado por ${doenca}`;
+    if (inicioTrat) trat += `, com início do tratamento em ${inicioTrat}`;
+    if (freqCons) trat += `, comparecendo a consultas de periodicidade ${freqCons}`;
+    trat += ".";
+    partes.push(trat);
+  }
+  
+  // 4. Sintomas e limitações referidas
+  if (sintomas) {
+    partes.push(`Refere como queixa e sintomas limitantes: ${sintomas}.`);
+  }
+  
+  // 5. Medicações
+  if (medsStr) {
+    partes.push(`Faz uso regular das seguintes medicações prescritas: ${medsStr}.`);
+  } else {
+    partes.push("Não refere uso regular de medicações no momento da perícia.");
+  }
+  
+  // 6. Alteração de medicação (CID F)
+  const altMed = String(st.alteracaoMed || aux.alteracaoMed || getRadio("agilAlteracaoMed") || "").toLowerCase() === "sim";
+  if (altMed) {
+    const dtAlt = aux.dataAlteracaoMed || $("agilDataAlteracaoMed")?.value || "";
+    const obsAlt = aux.obsAlteracaoMed || $("agilObsAlteracaoMed")?.value || "";
+    partes.push(`Informa alteração recente na prescrição medicamentosa${dtAlt ? ` em ${formatDate(dtAlt)}` : ""}${obsAlt ? ` (${obsAlt})` : ""}.`);
+  }
+  
+  // 7. Terapias
+  let teraps = [];
+  if (psico) teraps.push("psicoterapia");
+  if (fisio) teraps.push("fisioterapia");
+  if (teraps.length > 0) {
+    partes.push(`Realiza acompanhamento regular em ${teraps.join(" e ")}${obsTerapias ? ` (${obsTerapias})` : ""}.`);
+  } else {
+    partes.push("Nega acompanhamento em psicoterapia ou fisioterapia no momento.");
+  }
+  
+  return partes.join(" ");
+}
+
+function gerarNarrativaAntecedentesMelhoriaContinua(st, v) {
+  v = v || {};
+  st = st || state;
+  const aux = st.aux || {};
+  const rawHist = (aux.historicoPregresso || v.historicoPregresso || $("agilHistoricoPregresso")?.value || "").trim();
+  const conds = (st.conditions || v.condicoes || []).filter(c => c && (c.nome || c.doenca));
+  
+  // Se já tiver uma redação longa do médico, preserva
+  if (rawHist && rawHist !== "Nega" && rawHist.length > 40) {
+    return rawHist;
+  }
+  
+  if (conds.length > 0) {
+    const condsStr = conds.map(c => `${c.nome || c.doenca}${c.tratamento ? ` em uso de ${c.tratamento}` : ""}`).join("; ");
+    return `Informa histórico de comorbidades: ${condsStr}. Nega cirurgias prévias relevantes, antecedentes neoplásicos ou hábitos tabágicos e etilistas.`;
+  }
+  
+  if (rawHist && rawHist !== "Nega") {
+    return `${rawHist.replace(/[.;,]+$/, "")}. Nega cirurgias prévias relevantes, antecedentes neoplásicos ou hábitos tabágicos e etilistas.`;
+  }
+  
+  return "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas.";
+}
+
+function gerarNarrativaAtestadoMelhoriaContinua(st, v) {
+  v = v || {};
+  st = st || state;
+  const aux = st.aux || {};
+  const crm = (aux.crmCro || v.crmCro || $("agilCrmCro")?.value || "").trim();
+  const cid = (st.cid || aux.cid || v.cid || $("agilCid")?.value || "").trim();
+  const dataDoc = (aux.dataDocumento || v.dataDocumento || $("agilDataDocumento")?.value || "").trim();
+  const dias = (aux.diasSolicitados || v.diasSolicitados || $("agilDiasSolicitados")?.value || "").trim();
+  
+  if (crm && crm !== "Em anexo" && dias && dias !== "Conforme atestado") {
+    return `CRM ${crm}, solicita ${dias} dias de afastamento, a partir do dia ${formatDate(dataDoc) || dataDoc || "da emissão"}, pelo CID ${cid} — Relatório médico em anexo.`;
+  }
+  
+  return "CRM e relatório médico assistente em anexo condizente com o CID apresentado.";
+}
+
+function gerarNarrativaLimitacoesMelhoriaContinua(st, v) {
+  v = v || {};
+  st = st || state;
+  const isMental = st.exameFisicoTipo === "Exame Mental";
+  const isOsteo = st.exameFisicoTipo === "Aparelho Osteomuscular e Tecido Conjutivo";
+  const isFav = (st.parecer === "FAVORÁVEL" || st.parecer === "Favorável");
+  
+  if (isMental) {
+    if (isFav) {
+      return "Comprometimento psíquico de habilidades necessárias ao desempenho de tarefas que demandem liderança, interatividade social, concentração, autodomínio e disciplina para as atividades do rol do cargo.";
+    } else {
+      return "Não se identificam alterações psicopatológicas ou prejuízos de habilidades executivas essenciais.";
+    }
+  } else if (isOsteo) {
+    if (isFav) {
+      const regMap = st.osteomuscularRegioes || {};
+      const alteradas = Object.keys(regMap).filter(k => regMap[k] === "Alterado" && DADOS_OSTEOMUSCULAR[k]);
+      const grupos = (typeof agruparRegioesAlteradas === "function") ? agruparRegioesAlteradas(alteradas) : [];
+      const nomes = grupos.length ? grupos.map(g => g.label).join(", ") : "segmento osteomuscular avaliado";
+      return `Do ponto de vista médico-pericial, foram observadas limitações físicas funcionais e incapacitantes relacionadas a ${nomes} para realizar tarefas com sobrecarga articular, movimentos repetitivos ou posturas desfavoráveis para as atribuições do rol do cargo.`;
+    } else {
+      return "Do ponto de vista médico não se observa limitações físicas funcionais incapacitantes relacionadas ao aparelho osteomuscular.";
+    }
+  }
+  
+  if (isFav) {
+    return st.descLimitacao || st.aux?.descLimitacao || "Foram observadas limitações funcionais incapacitantes para as atividades rotineiras do cargo no período pleiteado.";
+  } else {
+    return "Não se identificam limitações funcionais em níveis que possam ser considerados incapacitantes no momento do exame pericial.";
+  }
+}
+
+function gerarNarrativaJustificativaMelhoriaContinua(st, v) {
+  v = v || {};
+  st = st || state;
+  const isMental = st.exameFisicoTipo === "Exame Mental";
+  const isOsteo = st.exameFisicoTipo === "Aparelho Osteomuscular e Tecido Conjutivo";
+  const isFav = (st.parecer === "FAVORÁVEL" || st.parecer === "Favorável");
+  
+  const rawJ = (st.aux?.justificativa || st.justificativa || $("agilJustificativa")?.value || "").trim();
+  if (rawJ && rawJ.length > 70 && !rawJ.includes("não se identificam limitações funcionais em níveis")) {
+    return rawJ;
+  }
+  
+  if (isFav) {
+    if (isMental) {
+      return "Capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol, em razão de limitações na esfera psicoemocional que comprometem a interatividade com grupos, manutenção da concentração e autocontrole de sentimentos em situações laborais conflituosas, referente ao período pleiteado.";
+    } else if (isOsteo) {
+      const regMap = st.osteomuscularRegioes || {};
+      const alteradas = Object.keys(regMap).filter(k => regMap[k] === "Alterado" && DADOS_OSTEOMUSCULAR[k]);
+      const lim = (typeof formatarLimitacoesOsteo === "function") ? formatarLimitacoesOsteo(alteradas.map(k => DADOS_OSTEOMUSCULAR[k]?.limitacao).filter(Boolean)) : "";
+      return `Capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol, em razão de limitações de ordem osteomuscular (${lim || "comprometimento funcional osteoarticular"}), referente ao período pleiteado.`;
+    } else {
+      return "Capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol e as limitações funcionais identificadas no exame pericial, referente ao período pleiteado.";
+    }
+  } else {
+    if (isMental) {
+      return "Capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações psicopatológicas ou limitações da esfera mental incapacitantes para as atribuições rotineiras do cargo atual.";
+    } else if (isOsteo) {
+      return "Capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações de ordem osteomuscular incapacitantes para as atribuições rotineiras do cargo atual.";
+    } else {
+      return "Capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações clínicas incapacitantes para as atribuições rotineiras do cargo atual.";
+    }
+  }
+}
+
+function aplicarSintesePericialMelhoriaContinua(force = false) {
+  if (!state.aux) state.aux = {};
+  const v = typeof values === "function" ? values() : {};
+  
+  // 1. Queixa e Duração
+  const narrativaQueixa = gerarNarrativaQueixaMelhoriaContinua(state, v);
+  if (narrativaQueixa && (force || !state.aux.queixaDuracao || state.aux.queixaDuracao.length < 100)) {
+    state.aux.queixaDuracao = narrativaQueixa;
+    state.queixaDuracao = narrativaQueixa;
+    if ($("queixaDuracao")) $("queixaDuracao").value = narrativaQueixa;
+  }
+  
+  // 2. Antecedentes Mórbidos
+  const narrativaAntecedentes = gerarNarrativaAntecedentesMelhoriaContinua(state, v);
+  if (narrativaAntecedentes && (force || !state.aux.historicoPregresso || state.aux.historicoPregresso === "Nega")) {
+    state.aux.historicoPregresso = narrativaAntecedentes;
+    state.historicoPregresso = narrativaAntecedentes;
+    if ($("historicoPregresso")) $("historicoPregresso").value = narrativaAntecedentes;
+    if ($("agilHistoricoPregresso") && (force || !$("agilHistoricoPregresso").value.trim())) {
+      $("agilHistoricoPregresso").value = narrativaAntecedentes;
+    }
+  }
+  
+  // 3. Atestado / Relatório
+  const narrativaAtestado = gerarNarrativaAtestadoMelhoriaContinua(state, v);
+  if (narrativaAtestado) {
+    state.aux.obsDocumentos = narrativaAtestado;
+    if ($("obsDocumentos")) $("obsDocumentos").value = narrativaAtestado;
+  }
+
+  // 4. Limitações e Rol de Atividades
+  const narrativaLim = gerarNarrativaLimitacoesMelhoriaContinua(state, v);
+  if (narrativaLim && (force || !state.descLimitacao || state.descLimitacao.length < 20)) {
+    state.descLimitacao = narrativaLim;
+    state.aux.descLimitacao = narrativaLim;
+    state.atividadesComprometidas = narrativaLim;
+    state.aux.atividadesComprometidas = narrativaLim;
+    if ($("descLimitacao")) $("descLimitacao").value = narrativaLim;
+    if ($("atividadesComprometidas")) $("atividadesComprometidas").value = narrativaLim;
+  }
+
+  // 5. Justificativa
+  const narrativaJustif = gerarNarrativaJustificativaMelhoriaContinua(state, v);
+  if (narrativaJustif && (force || !state.justificativa || state.justificativa.length < 40)) {
+    state.justificativa = narrativaJustif;
+    state.aux.justificativa = narrativaJustif;
+    if ($("justificativa")) $("justificativa").value = narrativaJustif;
+    if ($("agilJustificativa")) $("agilJustificativa").value = narrativaJustif;
+  }
+  
+  autoSave();
+}
+
 function ensureAgileBackgroundDefaults() {
   if (!state.aux) state.aux = {};
   
@@ -7155,13 +7430,14 @@ function ensureAgileBackgroundDefaults() {
   if ($("doencaMotivo")) $("doencaMotivo").value = doenca;
   if ($("agilDoencaMotivo")) $("agilDoencaMotivo").value = doenca;
 
-  // 03 — Antecedentes mórbidos: coletar do campo preenchido no modo ágil; se em branco, definir como "Nega"
+  // 03 — Antecedentes mórbidos: síntese contínua pericial
   const histAgil = (state.aux?.historicoPregresso || state.historicoPregresso || $("agilHistoricoPregresso")?.value || $("historicoPregresso")?.value || "").trim();
   const histDef = histAgil || "Nega";
-  state.aux.historicoPregresso = histDef;
-  state.historicoPregresso = histDef;
-  if ($("historicoPregresso")) $("historicoPregresso").value = histDef;
-  if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = histDef;
+  const histMelhoria = (histDef === "Nega") ? gerarNarrativaAntecedentesMelhoriaContinua(state, values()) : histDef;
+  state.aux.historicoPregresso = histMelhoria;
+  state.historicoPregresso = histMelhoria;
+  if ($("historicoPregresso")) $("historicoPregresso").value = histMelhoria;
+  if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = histMelhoria;
   
   if (!state.outrasDoencas) {
     state.outrasDoencas = "Sim";
@@ -7172,6 +7448,10 @@ function ensureAgileBackgroundDefaults() {
   
   // 04 — Atestado / Relatório / Exames: "Em anexo"
   if (!state.aux.obsDocumentos) state.aux.obsDocumentos = "Em anexo";
+  const narratDoc = (typeof gerarNarrativaAtestadoMelhoriaContinua === "function") ? gerarNarrativaAtestadoMelhoriaContinua(state, values()) : '';
+  if (narratDoc && !narratDoc.includes("condizente com o CID")) {
+    state.aux.obsDocumentos = narratDoc;
+  }
   if ($("obsDocumentos")) $("obsDocumentos").value = state.aux.obsDocumentos;
   if (!state.aux.crmCro) {
     state.aux.crmCro = "Em anexo";
@@ -7207,8 +7487,10 @@ function ensureAgileBackgroundDefaults() {
     if ($("agilSintomasLimitacao")) $("agilSintomasLimitacao").value = state.aux.sintomasLimitacao;
   }
 
-  if (!state.aux.queixaDuracao) {
-    state.aux.queixaDuracao = state.queixaDuracao || state.aux.doencaMotivo || "Conforme queixa informada no atendimento";
+  // Síntese de Queixa e Duração
+  const narratQueixa = gerarNarrativaQueixaMelhoriaContinua(state, values());
+  if (!state.aux.queixaDuracao || state.aux.queixaDuracao === "Conforme queixa informada no atendimento" || state.aux.queixaDuracao === state.aux.doencaMotivo || state.aux.queixaDuracao.length < 80) {
+    state.aux.queixaDuracao = narratQueixa || state.queixaDuracao || state.aux.doencaMotivo || "Conforme queixa informada no atendimento";
     state.queixaDuracao = state.aux.queixaDuracao;
     if ($("queixaDuracao")) $("queixaDuracao").value = state.aux.queixaDuracao;
   }
@@ -9240,7 +9522,11 @@ function copiarLaudoEsislaAtendimento() {
   let q3 = parecerVal === 'C' ? 'N' : 'S';
 
   // 1. Queixa e Duração (max 2000)
-  let cat = sanitizeText(cleanQueixaDuracao(state.aux?.queixaDuracao || v.queixaDuracao || ''), 2000);
+  let queixaTexto = state.aux?.queixaDuracao || v.queixaDuracao || '';
+  if (!queixaTexto || queixaTexto.length < 80 || queixaTexto === state.aux?.doencaMotivo) {
+    queixaTexto = (typeof gerarNarrativaQueixaMelhoriaContinua === "function") ? gerarNarrativaQueixaMelhoriaContinua(state, v) : queixaTexto;
+  }
+  let cat = sanitizeText(cleanQueixaDuracao(queixaTexto), 2000);
 
   // Se houver relatos reais de exames complementares (não boilerplates nem "Em anexo"), integra em queixas conforme solicitado
   const altRaw = String(state.alteracoesClinicasExames || v.alteracoesClinicasExames || '').trim();
@@ -9253,11 +9539,16 @@ function copiarLaudoEsislaAtendimento() {
 
   // 2. Antecedentes Mórbidos (max 2000)
   const apVal = (state.aux?.historicoPregresso || v.historicoPregresso || $("agilHistoricoPregresso")?.value || '').trim();
-  const ap = sanitizeText(apVal || 'Nega', 2000);
+  const apFinal = (apVal && apVal !== 'Nega' && apVal.length > 30) ? apVal : ((typeof gerarNarrativaAntecedentesMelhoriaContinua === "function") ? gerarNarrativaAntecedentesMelhoriaContinua(state, v) : (apVal || 'Nega'));
+  const ap = sanitizeText(apFinal, 2000);
 
   // 3. Atestado / Relatório / Exames Complementares (Tipo-Data-Resultado) (max 2500)
   // Diretriz oficial e-SISLA: sempre "Em anexo."
   let hda = 'Em anexo.';
+  const narratAtd = (typeof gerarNarrativaAtestadoMelhoriaContinua === "function") ? gerarNarrativaAtestadoMelhoriaContinua(state, v) : '';
+  if (narratAtd && !narratAtd.includes('condizente com o CID')) {
+    hda = narratAtd;
+  }
 
   // 4. Exame Físico Geral / Descrição das Alterações Clínicas e Exames (max 2500)
   // No e-SISLA o campo voMedico.parRlExApres (idExameApres) deve conter exclusivamente os achados do Exame Físico Geral direto
@@ -9288,6 +9579,9 @@ function copiarLaudoEsislaAtendimento() {
     const limList = [v.descLimitacao, v.atividadesComprometidas, v.sintomasLimitacao, v.obsLimitacoes].filter(x => String(x || '').trim());
     reqExComp = limList.join(' | ') || state.aux?.descLimitacao || v.descLimitacao || state.aux?.sintomasLimitacao || v.sintomasLimitacao || '';
   }
+  if (!reqExComp || reqExComp.length < 15) {
+    reqExComp = (typeof gerarNarrativaLimitacoesMelhoriaContinua === "function") ? gerarNarrativaLimitacoesMelhoriaContinua(state, v) : reqExComp;
+  }
   reqExComp = sanitizeText(reqExComp, 2500);
 
   // 6. Justificativa Parecer Médico (max 2000)
@@ -9297,6 +9591,9 @@ function copiarLaudoEsislaAtendimento() {
     if (m && m[1].trim()) justif = m[1].trim();
   }
   if (!justif) justif = state.aux?.justificativa || v.justificativa || '';
+  if (!justif || justif.length < 25) {
+    justif = (typeof gerarNarrativaJustificativaMelhoriaContinua === "function") ? gerarNarrativaJustificativaMelhoriaContinua(state, v) : justif;
+  }
   justif = sanitizeText(justif, 2000);
 
   // 7. CRM e Nome Médico Assistente

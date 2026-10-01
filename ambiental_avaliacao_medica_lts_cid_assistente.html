@@ -5863,7 +5863,7 @@ const TEXTO_LIMITACAO_NORMAL = `Não se identificam limitações funcionais em n
 
 const TEXTO_JUSTIFICATIVA_NORMAL = `Capacidade laborativa preservada, não se identificam limitações funcionais em níveis que possam ser considerados incapacitantes neste momento.`;
 
-const TEXTO_EXAME_MENTAL_ALTERADO = `Apresentas-e consciente, boa orientação, apresentação e cuidado pessoal sem vaidades, boa higiene, se veste de forma adequada ao clima. Facie entristecida, hipotimica, manifestação de labilidade emocional, seu diálogo é claro, produtivo, com tom de voz baixa, com afetividade prejudicada, nota-se insight negativo sobre seu quadro clinico, com prejuízos de memorização, dificuldade para relatar datas e fatos recentes, apresenta perfil intelecto natural, compatível com sua formação acadêmica, demostra Juízo crítico da realidade preservado, pensamentos ruminantes com conteúdo de ressentimentos, desesperança, desestruturado. Hipopragamatica, com volição prejudicada, sem traços sugestivos de ideação suicida ou conteúdo persecutório.`;
+const TEXTO_EXAME_MENTAL_ALTERADO = `Apresenta-se consciente, boa orientação, apresentação e cuidado pessoal sem vaidades, boa higiene, se veste de forma adequada ao clima. Facie entristecida, hipotimica, manifestação de labilidade emocional, seu diálogo é claro, produtivo, com tom de voz baixa, com afetividade prejudicada, nota-se insight negativo sobre seu quadro clinico, com prejuízos de memorização, dificuldade para relatar datas e fatos recentes, apresenta perfil intelecto natural, compatível com sua formação acadêmica, demostra Juízo crítico da realidade preservado, pensamentos ruminantes com conteúdo de ressentimentos, desesperança, desestruturado. Hipopragamatica, com volição prejudicada, sem traços sugestivos de ideação suicida ou conteúdo persecutório.`;
 
 const TEXTO_LIMITACAO_ALTERADO = `Apresenta limitações psicossociais e psicoemocionais que repercutem nas habilidades necessárias para interatividade social, planejamentos, manter concentração e ter autodomínio.`;
 
@@ -7073,7 +7073,7 @@ function onAgilExameTipoChange(val) {
     if (typeof updateOsteoUI === "function") updateOsteoUI();
     const cur = state.exameFisicoDescricao || "";
     const temGeralCur = cur.includes("EXAME FÍSICO DO AP.RESPIRATÓRIO:") || cur.includes("Bom do estado geral");
-    if (cur === TEXTO_EXAME_MENTAL_NORMAL || cur === TEXTO_EXAME_MENTAL_ALTERADO || cur === TEXTO_OSTEO_NORMAL || cur.includes("Trapézios sem contraturas") || cur.includes("mobilidade ativa e passiva normais") || (temGeralCur && (cur.includes("Nível de consciência:") || cur.includes("Apresentas-e consciente") || cur.includes("mobilidade ativa")))) {
+    if (cur === TEXTO_EXAME_MENTAL_NORMAL || cur === TEXTO_EXAME_MENTAL_ALTERADO || cur === TEXTO_OSTEO_NORMAL || cur.includes("Trapézios sem contraturas") || cur.includes("mobilidade ativa e passiva normais") || (temGeralCur && (cur.includes("Nível de consciência:") || cur.includes("Apresenta-se consciente") || cur.includes("Apresentas-e consciente") || cur.includes("mobilidade ativa")))) {
       const resetVal = temGeralCur ? TEXTO_EXAME_FISICO_GERAL_PADRAO : "";
       state.exameFisicoDescricao = resetVal;
       if (!state.aux) state.aux = {};
@@ -9791,9 +9791,7 @@ function gerarCodigoBookmarkletUniversal() {
     setInput('textarea[name="voMedico.parRlCat"]',sanitizeText(campos['voMedico.parRlCat'],2000));
     setInput('textarea[name="voMedico.parRlAp"]',sanitizeText(campos['voMedico.parRlAp'],2000));
     setInput('textarea[name="voMedico.parRlHda"]',sanitizeText(campos['voMedico.parRlHda'],2500));
-    var crmVal=(campos['voResult.numCrm']||'').toString().replace(/\\D/g,'').slice(0,9);
-    setInput('input[name="voResult.numCrm"]',crmVal);setInput('#crmMedicoAssistente',crmVal);
-    if(crmVal&&typeof win.recuperaNomeMedico==='function'){try{win.recuperaNomeMedico(crmVal);}catch(_){}}
+    // CRM do assistente não é preenchido para evitar colar o CRM da perita
     setInput('input[name="voResult.strNomeMedico"]',sanitizeText(campos['voResult.strNomeMedico'],60));
     var sis=(campos['voMedico.lgPressArterialMax']||campos['lgPressArterialMax']||'').toString().replace(/\\D/g,'').slice(0,3);
     var dia=(campos['voMedico.lgPressArterialMin']||campos['lgPressArterialMin']||'').toString().replace(/\\D/g,'').slice(0,3);
@@ -10090,24 +10088,30 @@ function cleanQueixaDuracao(text, atdDate) {
     t = t.replace(new RegExp('^\\s*' + rx.source + '[\\.,]?\\s*', 'gi'), '');
     t = t.replace(new RegExp('\\b' + rx.source, 'gi'), '');
   });
-  // 1. Normaliza "Servidor, não readaptado, de 38 anos" -> "Servidor de 38 anos, relatou não ser readaptado"
-  t = t.replace(/\b(Servidor|Servidora),\s*não\s+readaptad([oa]),\s*de\s+(\d+\s+anos)\b/gi, "$1 de $3, relatou não ser readaptad$2");
+  // 1. Elimina repetições de "Servidor(a), não readaptado(a), de X anos, relatou não ser readaptado(a)"
+  t = t.replace(/\b(Servidor|Servidora),\s*não\s+readaptad([oa]),\s*de\s+(\d+\s+anos),?\s*(?:relatou\s+não\s+ser\s+readaptad[oa],?|\(?\s*não\s+readaptad[oa]\s*\)?,?)?\s*/gi, "$1 de $3, relatou não ser readaptad$2, ");
+  t = t.replace(/\b(Servidor|Servidora),\s*relatou\s+não\s+ser\s+readaptad([oa]),\s*de\s+(\d+\s+anos),?\s*/gi, "$1 de $3, relatou não ser readaptad$2, ");
 
-  // 2. Normaliza "Servidor de 38 anos, [não readaptado / (não readaptado)]" -> "Servidor de 38 anos, relatou não ser readaptado"
-  t = t.replace(/\b(Servidor|Servidora)\s+de\s+(\d+\s+anos),?\s*(?:\(?\s*não\s+readaptad([oa])\s*\)?|relatou\s+não\s+ser\s+readaptad([oa])),?\s*(?:,\s*)?([A-ZÁ-Úa-zà-ú\s]+?\s+há\s+\d+\s+(?:anos|meses|dias))/gi, function(m, serv, anos, r1, r2, cargoTempo) {
-    const suff = r1 || r2 || (serv.toLowerCase() === 'servidora' ? 'a' : 'o');
+  // 2. Se houver "Servidor(a) de X anos" seguido de repetições de [não readaptado / relatou não ser readaptado]
+  t = t.replace(/\b(Servidor|Servidora)\s+de\s+(\d+\s+anos)(?:,?\s*(?:\(?\s*não\s+readaptad([oa])\s*\)?|relatou\s+não\s+ser\s+readaptad([oa])))+/gi, function(m, serv, anos) {
+    const suff = serv.toLowerCase() === 'servidora' ? 'a' : 'o';
+    return `${serv} de ${anos}, relatou não ser readaptad${suff}`;
+  });
+
+  // 3. Normaliza cargo e tempo: "relatou não ser readaptado(a), é [cargo] há [tempo]"
+  t = t.replace(/(\b(?:Servidor|Servidora)\s+de\s+\d+\s+anos,\s*relatou\s+não\s+ser\s+readaptad[oa]),?\s*(?:,\s*)?([A-ZÁ-Úa-zà-ú\s\d/]+?\s+há\s+\d+\s+(?:anos|meses|dias))/gi, function(m, servBlock, cargoTempo) {
     let ct = String(cargoTempo || '').trim();
     if (ct.toLowerCase().startsWith('é ') || ct.toLowerCase().startsWith('e ')) {
       ct = ct.slice(2).trim();
     }
-    return `${serv} de ${anos}, relatou não ser readaptad${suff}, é ${ct}`;
+    return `${servBlock}, é ${ct}`;
   });
 
-  // 3. Limpa qualquer duplicação de 'é é' ou 'é, é'
+  // 4. Limpa qualquer duplicação de 'é é' ou 'é, é'
   t = t.replace(/\bé\s+é\b/gi, "é");
   t = t.replace(/,?\s*é\s*,\s*é\b/gi, ", é");
 
-  // 4. Remove parênteses artificiais em "(Não relatou...)", "(Não readaptado)" e "(e não realiza...)"
+  // 5. Remove parênteses artificiais em "(Não relatou...)", "(Não readaptado)" e "(e não realiza...)"
   t = t.replace(/\(\s*n[ãa]o\s+readaptad([oa])\s*\)/gi, "não readaptad$1");
   t = t.replace(/\(\s*(Não relatou troca de alteração de dosagem da medicação\.?)\s*\)/gi, "$1");
   t = t.replace(/\(\s*e\s+não\s+realiza\s+(psicoterapia|fisioterapia)\.?\s*\)/gi, "e não realiza $1.");
@@ -10281,7 +10285,7 @@ function copiarLaudoEsislaAtendimento() {
     'voMedico.parRlExApres': exApres,
     'voMedico.parRlReqExComp': reqExComp,
     'voMedico.parRlComp': justif,
-    'voResult.numCrm': crmDigits,
+    'voResult.numCrm': '',
     'voResult.strNomeMedico': nomeMed,
     'voMedico.lgPressArterialMax': paSis,
     'voMedico.lgPressArterialMin': paDia,

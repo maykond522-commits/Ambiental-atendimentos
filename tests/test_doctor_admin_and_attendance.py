@@ -368,7 +368,7 @@ def test_modo_agil_exame_mental_normal_autofill_contract():
 def test_modo_agil_exame_mental_alterado_autofill_contract():
     assert 'function aplicarExameMentalAlterado()' in ATTENDANCE
     assert 'TEXTO_EXAME_MENTAL_ALTERADO' in ATTENDANCE
-    assert 'Apresentas-e consciente, boa orientação' in ATTENDANCE
+    assert 'Apresenta-se consciente, boa orientação' in ATTENDANCE
     assert 'Facie entristecida, hipotimica, manifestação de labilidade emocional' in ATTENDANCE
     assert 'insight negativo sobre seu quadro clinico' in ATTENDANCE
     assert 'pensamentos ruminantes com conteúdo de ressentimentos, desesperança, desestruturado' in ATTENDANCE
@@ -2510,7 +2510,7 @@ def test_api_ai_esisla_vitals_dthr_antecedentes_and_limitacoes_preservation(monk
     res_sem_ant = client.post("/api/ai/esisla", json=payload_sem_ant)
     assert res_sem_ant.status_code == 200
     ficha_sem_ant = res_sem_ant.get_json()["ficha_esisla"]
-    assert re.search(r"Antecedentes Mórbidos:\s*Nega\.", ficha_sem_ant) is not None
+    assert re.search(r"Antecedentes Mórbidos:\s*(?:Nega\.|Nega antecedentes)", ficha_sem_ant) is not None
 
 
 def test_html_scripts_syntax_balance_no_unexpected_tokens():
@@ -2931,12 +2931,12 @@ def test_narrativas_exaustivas_queixa_antecedentes_e_limitacoes(monkeypatch):
     ficha = res.get_json()["ficha_esisla"]
 
     # Validações estritas da narrativa do usuário
-    assert "(Não readaptado)" in ficha or "não readaptado" in ficha.lower()
+    assert "(Não readaptado)" in ficha or "não readaptado" in ficha.lower() or "relatou não ser readaptado" in ficha.lower()
     assert "desde 2025" in ficha
     assert "realizando consultas mensalmente" in ficha
     assert "não informado sua dosagem" in ficha
-    assert "(Não relatou troca de alteração de dosagem da medicação.)" in ficha
-    assert "(e não realiza psicoterapia)" in ficha
+    assert "(Não relatou troca de alteração de dosagem da medicação.)" in ficha or "não relatou troca de alteração de dosagem da medicação" in ficha.lower()
+    assert "(e não realiza psicoterapia)" in ficha or "e não realiza psicoterapia" in ficha.lower()
 
     # Antecedentes mórbidos complementados
     assert "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias." in ficha
@@ -2946,4 +2946,65 @@ def test_narrativas_exaustivas_queixa_antecedentes_e_limitacoes(monkeypatch):
 
     # Limitações vinculadas ao rol
     assert "Rol de Atividades do cargo de Adm" in ficha
+
+
+def test_auth_loading_failsafe_and_caching():
+    # Both attendance and gestao must have immediate failsafe dismissal for authLoading
+    assert "_dismissAuthLoading" in ATTENDANCE
+    assert "localStorage.getItem(\"ambiental.auth.profile\")" in ATTENDANCE
+    assert "setTimeout(_dismissAuthLoading, 1200)" in ATTENDANCE
+    assert "_dismissAuthLoading" in GESTAO_ATENDIMENTOS
+    assert "setTimeout(_dismissAuthLoading, 1200)" in GESTAO_ATENDIMENTOS
+
+
+def test_modo_agil_priority_and_collaborator_prefill():
+    # Must prioritize doctor's configured mode over stale localStorage
+    assert "(currentProfile && currentProfile.modo_atendimento) ? doctorDefaultMode :" in ATTENDANCE
+    
+    # Must prefill collaborator fields (cpf, cargo, idade, tempoCargo, etc.)
+    assert 'const cpfParam = params.get("cpf") || params.get("cpfPaciente");' in ATTENDANCE
+    assert 'const cargoParam = params.get("cargo");' in ATTENDANCE
+    assert 'const idadeParam = params.get("idade");' in ATTENDANCE
+    assert 'const tempoCargoParam = params.get("tempo_cargo") || params.get("tempoCargo");' in ATTENDANCE
+    assert 'state.aux.cargo = cargoParam;' in ATTENDANCE
+    assert 'state.aux.idade = idadeParam;' in ATTENDANCE
+
+    # openEval in gestao_atendimentos.html must propagate patient and collaborator data
+    assert "p.set('paciente', v.patient)" in GESTAO_ATENDIMENTOS
+    assert "p.set('cargo', v.cargo)" in GESTAO_ATENDIMENTOS
+
+    # iniciarAtendimentoAgenda in gestao_medicos.html must support attendance id
+    assert "iniciarAtendimentoAgenda = function(nome, protocolo, ni, hora, atdNum)" in GESTAO_MEDICOS
+
+
+def test_api_get_atendimento_augments_collaborator_fields():
+    # Verify app.py api_get_atendimento augments payload with database columns
+    assert 'paciente_nome_row = str(r.get("paciente_nome") or "").strip()' in APP
+    assert 'if not payload.get("nomePaciente"): payload["nomePaciente"] = paciente_nome_row' in APP
+    assert 'if not payload.get("cpfPaciente"): payload["cpfPaciente"] = paciente_cpf_row' in APP
+
+
+def test_queixa_duracao_relatou_nao_ser_readaptado_e_cargo():
+    from app import _clean_queixa_duracao_text
+
+    antigo = (
+        "Servidor, não readaptado, de 38 anos, Investigador de policia há 29 anos, com queixa de hipertensão arterial. "
+        "Refere que teve crise de hipertensão 250x15 mmhg, não teve melhora e foi internado na UTI. "
+        "Em uso de enalapril 40 mg, Anlodipina 10 mg dia, Propanolol 40 mg dia. "
+        "Não relatou troca de alteração de dosagem da medicação. Não alegou fazer fisioterapia e psicoterapia."
+    )
+    esperado = (
+        "Servidor de 38 anos, relatou não ser readaptado, é Investigador de policia há 29 anos, com queixa de hipertensão arterial. "
+        "Refere que teve crise de hipertensão 250x15 mmhg, não teve melhora e foi internado na UTI. "
+        "Em uso de enalapril 40 mg, Anlodipina 10 mg dia, Propanolol 40 mg dia. "
+        "Não relatou troca de alteração de dosagem da medicação. Não alegou fazer fisioterapia e psicoterapia."
+    )
+    resultado = _clean_queixa_duracao_text(antigo)
+    assert resultado == esperado
+
+    # Presença do gerador atualizado em ambiental_avaliacao_medica_lts_cid_assistente.html
+    assert 'ident += `, relatou não ser ${isFem ? \'readaptada\' : \'readaptado\'}`;' in ATTENDANCE
+    assert 'ident += `, é ${cargoFormatado} há ${tempoCargo} ${unidadeTempo.toLowerCase()}`;' in ATTENDANCE
+
+
 

@@ -2761,10 +2761,36 @@ function cleanQueixaDuracao(text) {
         t = t.replace(new RegExp('^\\s*' + rx.source + '[\\.,]?\\s*', 'gi'), '');
         t = t.replace(new RegExp('\\b' + rx.source, 'gi'), '');
     });
+    // 1. Elimina repetições de "Servidor(a), não readaptado(a), de X anos, relatou não ser readaptado(a)"
+    t = t.replace(/\b(Servidor|Servidora),\s*não\s+readaptad([oa]),\s*de\s+(\d+\s+anos),?\s*(?:relatou\s+não\s+ser\s+readaptad[oa],?|\(?\s*não\s+readaptad[oa]\s*\)?,?)?\s*/gi, "$1 de $3, relatou não ser readaptad$2, ");
+    t = t.replace(/\b(Servidor|Servidora),\s*relatou\s+não\s+ser\s+readaptad([oa]),\s*de\s+(\d+\s+anos),?\s*/gi, "$1 de $3, relatou não ser readaptad$2, ");
+
+    // 2. Se houver "Servidor(a) de X anos" seguido de repetições de [não readaptado / relatou não ser readaptado]
+    t = t.replace(/\b(Servidor|Servidora)\s+de\s+(\d+\s+anos)(?:,?\s*(?:\(?\s*não\s+readaptad([oa])\s*\)?|relatou\s+não\s+ser\s+readaptad([oa])))+/gi, function(m, serv, anos) {
+        const suff = serv.toLowerCase() === 'servidora' ? 'a' : 'o';
+        return `${serv} de ${anos}, relatou não ser readaptad${suff}`;
+    });
+
+    // 3. Normaliza cargo e tempo: "relatou não ser readaptado(a), é [cargo] há [tempo]"
+    t = t.replace(/(\b(?:Servidor|Servidora)\s+de\s+\d+\s+anos,\s*relatou\s+não\s+ser\s+readaptad[oa]),?\s*(?:,\s*)?([A-ZÁ-Úa-zà-ú\s\d/]+?\s+há\s+\d+\s+(?:anos|meses|dias))/gi, function(m, servBlock, cargoTempo) {
+        let ct = String(cargoTempo || '').trim();
+        if (ct.toLowerCase().startsWith('é ') || ct.toLowerCase().startsWith('e ')) {
+            ct = ct.slice(2).trim();
+        }
+        return `${servBlock}, é ${ct}`;
+    });
+
+    // 4. Limpa qualquer duplicação de 'é é' ou 'é, é'
+    t = t.replace(/\bé\s+é\b/gi, "é");
+    t = t.replace(/,?\s*é\s*,\s*é\b/gi, ", é");
+
+    // 5. Remove parênteses artificiais em "(Não relatou...)", "(Não readaptado)" e "(e não realiza...)"
     t = t.replace(/\(\s*n[ãa]o\s+readaptad([oa])\s*\)/gi, "não readaptad$1");
-    t = t.replace(/,\s*[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b/gi, ", não readaptad$1, Investigador");
-    t = t.replace(/,\s*[Il],\s*nvestigador\b/gi, ", Investigador");
-    t = t.replace(/\b[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b/gi, "não readaptad$1, Investigador");
+    t = t.replace(/\(\s*(Não relatou troca de alteração de dosagem da medicação\.?)\s*\)/gi, "$1");
+    t = t.replace(/\(\s*e\s+não\s+realiza\s+(psicoterapia|fisioterapia)\.?\s*\)/gi, "e não realiza $1.");
+    t = t.replace(/,\s*[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b/gi, ", relatou não ser readaptad$1, é Investigador");
+    t = t.replace(/,\s*[Il],\s*nvestigador\b/gi, ", é Investigador");
+    t = t.replace(/\b[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b/gi, "relatou não ser readaptad$1, é Investigador");
     t = t.replace(/,\s*[Il],\s*(?=(?:não\s+readaptad[oa]|investigador|[a-zà-ú]))/gi, ", ");
     t = t.replace(/\s{2,}/g, ' ');
     t = t.replace(/\.\s*\./g, '.');
@@ -3923,7 +3949,7 @@ function gerarJsonEsisla(textoFicha, enc) {
         'voMedico.parRlCat': cat,
         'voMedico.parRlAp': ap,
         'voMedico.parRlHda': hda,
-        'voResult.numCrm': crmDigits,
+        'voResult.numCrm': '',
         'voResult.strNomeMedico': nomeMed,
         'voMedico.lgPressArterialMax': paSis,
         'voMedico.lgPressArterialMin': paDia,
@@ -4121,13 +4147,7 @@ function gerarScriptAutoPreenchimentoEsisla(payloadObj) {
     // 3. Descrição das Limitações
     setInput('textarea[name="voMedico.parRlReqExComp"]', sanitizeText(campos['voMedico.parRlReqExComp'], 2500));
     
-    // 4. Médico Assistente (CRM puramente numérico, máx 9)
-    var crmVal = (campos['voResult.numCrm'] || '').toString().replace(/\\D/g, '').slice(0, 9);
-    setInput('input[name="voResult.numCrm"]', crmVal);
-    setInput('#crmMedicoAssistente', crmVal);
-    if (crmVal && typeof win.recuperaNomeMedico === 'function') {
-      try { win.recuperaNomeMedico(crmVal); } catch(_) {}
-    }
+    // 4. Médico Assistente - Não preencher CRM para evitar colar o CRM da perita
     setInput('input[name="voResult.strNomeMedico"]', sanitizeText(campos['voResult.strNomeMedico'], 60));
     
     // 5. Pressão Arterial e Pulso
@@ -5354,9 +5374,7 @@ function gerarCodigoBookmarkletEsislaUniversal() {
     setInput('textarea[name="voMedico.parRlCat"]',sanitizeText(campos['voMedico.parRlCat'],2000));
     setInput('textarea[name="voMedico.parRlAp"]',sanitizeText(campos['voMedico.parRlAp'],2000));
     setInput('textarea[name="voMedico.parRlHda"]',sanitizeText(campos['voMedico.parRlHda'],2500));
-    var crmVal=(campos['voResult.numCrm']||'').toString().replace(/\\D/g,'').slice(0,9);
-    setInput('input[name="voResult.numCrm"]',crmVal);setInput('#crmMedicoAssistente',crmVal);
-    if(crmVal&&typeof win.recuperaNomeMedico==='function'){try{win.recuperaNomeMedico(crmVal);}catch(_){}}
+    // CRM do assistente não é preenchido para evitar colar o CRM da perita
     setInput('input[name="voResult.strNomeMedico"]',sanitizeText(campos['voResult.strNomeMedico'],60));
     var sis=(campos['voMedico.lgPressArterialMax']||campos['lgPressArterialMax']||'').toString().replace(/\\D/g,'').slice(0,3);
     var dia=(campos['voMedico.lgPressArterialMin']||campos['lgPressArterialMin']||'').toString().replace(/\\D/g,'').slice(0,3);

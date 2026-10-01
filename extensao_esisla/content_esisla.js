@@ -187,13 +187,8 @@
       // 3. Descrição das Limitações
       setInput('textarea[name="voMedico.parRlReqExComp"]', sanitizeText(campos['voMedico.parRlReqExComp'], 2500), 'Limitações');
 
-      // 4. Médico Assistente (CRM puramente numérico, máx 9 dígitos)
-      var crmVal = (campos['voResult.numCrm'] || '').toString().replace(/\D/g, '').slice(0, 9);
-      setInput('input[name="voResult.numCrm"]', crmVal, 'CRM Assistente');
-      setInput('#crmMedicoAssistente', crmVal);
-      if (crmVal && typeof win.recuperaNomeMedico === 'function') {
-        try { win.recuperaNomeMedico(crmVal); } catch(_) {}
-      }
+      // 4. Médico Assistente: Conforme diretriz oficial, o CRM do médico assistente NÃO deve ser colado no e-SISLA para evitar colar o CRM da perita
+      // O campo de CRM do médico assistente permanece intocado
       setInput('input[name="voResult.strNomeMedico"]', sanitizeText(campos['voResult.strNomeMedico'], 60), 'Nome Assistente');
 
       // 5. Pressão Arterial e Pulso

@@ -1123,8 +1123,8 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
 1. “(*) Queixa e Duração”
    Reescreva e sintetize em parágrafo único, fluido e coeso, integrando os dados clínicos e ocupacionais na ordem padronizada do Programa de Melhoria Contínua:
    (1) Idade ("Servidor de X anos" ou "Periciado de X anos", respeitando o gênero: homem = "Servidor de X anos" / "Periciado de X anos", mulher = "Servidora de X anos" / "Periciada de X anos"; em caso de dúvida, utilize "Servidor de X anos"),
-   (2) Readaptação funcional (se o servidor NÃO for readaptado ou em branco, registrar logo após a idade "não readaptado" ou "não readaptada", SEM parênteses, ex.: "Servidor de 38 anos, não readaptado, Investigador de Polícia há 29 anos..." ou "Servidor de 38 anos, não readaptado Investigador de Polícia há 29 anos..."; se for readaptado, indicar expressamente as atividades exercidas),
-   (3) Cargo e (4) Tempo de cargo ("[cargo] há X anos/meses"),
+   (2) Readaptação funcional (mencionar OBRIGATORIAMENTE UMA ÚNICA VEZ logo após a idade: "relatou não ser readaptado" para homem ou "relatou não ser readaptada" para mulher, sem parênteses, ex.: "Servidor de 38 anos, relatou não ser readaptado, é Investigador de Polícia há 29 anos..."; se for readaptado(a), "relatou ser readaptado(a), exercendo atualmente as atividades de [atividades]"). NUNCA duplique termos de readaptação (é TERMINANTEMENTE PROIBIDO escrever "Servidor, não readaptado, de X anos, relatou não ser readaptado").
+   (3) Cargo e (4) Tempo de cargo ("é [cargo] há X anos/meses"),
    (5) Doença motivadora informada ("com queixa de ..."),
    (6) Início do tratamento: se informado ano (ex: 2025), registre obrigatoriamente "desde [ano]" (ou "iniciou-se seu tratamento em [ano]"); se informada data completa (DD/MM/AAAA), preserve a data exata informada ("desde [DD/MM/AAAA]"). NUNCA invente a data de hoje nem diga que o tratamento se iniciou hoje se a data não foi informada como data de início.
    (7) Frequência das consultas: formule com naturalidade e correção gramatical (ex.: "realizando consultas mensalmente", "realizando consultas quinzenalmente", "com consultas a cada 15 dias", "com consultas a cada 2 meses"). NUNCA gere formulações incorretas como "a cada quinzenal".
@@ -1137,11 +1137,11 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
    "Servidor de 40 anos, professor há 10 anos, com queixa de depressão desde 2020, realizando consultas quinzenalmente. Queixa-se de tristeza, desânimo, choro fácil e insônia, com dificuldade para planejar aulas e manter a atenção. Em uso de Sertralina 100 mg/dia e Clonazepam 2 mg/dia, sem trocas recentes de medicação. Realiza psicoterapia semanal."
    Exemplos de referência oficial do sistema:
    Exemplo 1 (Ortopédico completo):
-   "Servidor de 21 anos, não readaptado, Adm há 22 anos, com queixa de artrose avançada no joelho direito com lesão crônica no menisco desde 2025, realizando consultas mensalmente. Queixa-se de dor constante que queima e pontua. Em uso de Tramadol 50 mg/ se (tiver) dor intensa até 8/8h e Dipirona 1 g/ se (tiver) dor até 6/6h. (Não relatou troca de alteração de dosagem da medicação.) Realiza fisioterapia três vezes por semana (e não realiza psicoterapia)."
+   "Servidor de 21 anos, relatou não ser readaptado, é Adm há 22 anos, com queixa de artrose avançada no joelho direito com lesão crônica no menisco desde 2025, realizando consultas mensalmente. Queixa-se de dor constante que queima e pontua. Em uso de Tramadol 50 mg/ se (tiver) dor intensa até 8/8h e Dipirona 1 g/ se (tiver) dor até 6/6h. Não relatou troca de alteração de dosagem da medicação. Realiza fisioterapia três vezes por semana (e não realiza psicoterapia)."
    Exemplo 2 (Mental / Psiquiátrico com negação de medicações e terapias):
-   "Servidora de 49 anos, não readaptada, Professora de Matemática, vinculada ao Estado desde 1992, lotada na Secretaria da Escola. Relata que, há aproximadamente três anos, recebeu diagnóstico de transtorno depressivo, desencadeado por conflitos interpessoais no ambiente de trabalho, com agravamento progressivo dos sintomas nos últimos meses. Refere episódios de choro espontâneo, irritabilidade/agressividade, compulsão alimentar, fobia social, taquicardia, desânimo para sair de casa, tristeza persistente, insônia, pesadelos, angústia e isolamento social. Informa dificuldade para realizar atividades rotineiras e afazeres domésticos. Informa histórico de internação em hospital psiquiátrico há 1 ano e 6 meses, com alta há 1 ano. Nega ideação suicida no momento. (Não relatou troca de alteração de dosagem da medicação.) Não alegou fazer fisioterapia e psicoterapia, negou uso de medicações."
+   "Servidora de 49 anos, relatou não ser readaptada, é Professora de Matemática, vinculada ao Estado desde 1992, lotada na Secretaria da Escola. Relata que, há aproximadamente três anos, recebeu diagnóstico de transtorno depressivo, desencadeado por conflitos interpessoais no ambiente de trabalho, com agravamento progressivo dos sintomas nos últimos meses. Refere episódios de choro espontâneo, irritabilidade/agressividade, compulsão alimentar, fobia social, taquicardia, desânimo para sair de casa, tristeza persistente, insônia, pesadelos, angústia e isolamento social. Informa dificuldade para realizar atividades rotineiras e afazeres domésticos. Informa histórico de internação em hospital psiquiátrico há 1 ano e 6 meses, com alta há 1 ano. Nega ideação suicida no momento. Não relatou troca de alteração de dosagem da medicação. Não alegou fazer fisioterapia e psicoterapia, negou uso de medicações."
    Exemplo 3 (Medicação sem dosagem informada):
-   "Servidor de 38 anos, não readaptado, Agente Administrativo há 8 anos, com queixa de dor lombar crônica desde 2024, realizando consultas bimestralmente. Queixa-se de dores com irradiação para membros inferiores. Em uso de Tramadol 50 mg/ a cada 8 horas e Dipirona 1g/, não informado sua dosagem. (Não relatou troca de alteração de dosagem da medicação.) Realiza fisioterapia duas vezes por semana (e não realiza psicoterapia)."
+   "Servidor de 38 anos, relatou não ser readaptado, é Agente Administrativo há 8 anos, com queixa de dor lombar crônica desde 2024, realizando consultas bimestralmente. Queixa-se de dores com irradiação para membros inferiores. Em uso de Tramadol 50 mg/ a cada 8 horas e Dipirona 1g/, não informado sua dosagem. Não relatou troca de alteração de dosagem da medicação. Realiza fisioterapia duas vezes por semana (e não realiza psicoterapia)."
 
 2. “Antecedentes Mórbidos”
    Consolide de forma sintética, clara e técnica os dados de outras_doencas, condicoes, antecedentes e historico_pregresso, cobrindo os 4 itens padronizados:
@@ -1255,7 +1255,7 @@ REGRA DE DESDUPLICAÇÃO E AUTO-ANÁLISE DE CONSISTÊNCIA:
    - Altura e Peso: ajuste valores anômalos para o padrão pericial (ex.: altura "175" sem ponto -> "1.75"; peso sem vírgula como "750" -> "75").
    - Início do tratamento: se colocado ano (ex: 2020), coloque "iniciou-se seu tratamento em 2020"; preserve a data exata se fornecida; nunca suponha que iniciou hoje.
    - Frequência de consultas: se colocado "Quinzenal", converta para "realiza consultas quinzenalmente"; se "15 dias", "com consultas a cada 15 dias"; nunca use "a cada quinzenal".
-   - Readaptação: se o servidor NÃO for readaptado, registre "não readaptado" ou "não readaptada" logo após a idade, sem parênteses (ex.: "Servidor de 38 anos, não readaptado, [cargo] há X anos...").
+   - Readaptação: mencione OBRIGATORIAMENTE UMA ÚNICA VEZ. Se o servidor NÃO for readaptado, registre "relatou não ser readaptado(a), é [cargo] há X anos..." logo após a idade, sem parênteses e NUNCA duplique (ex.: "Servidor de 38 anos, relatou não ser readaptado, é Investigador de Polícia há 29 anos...").
 
 FORMATO DE SAÍDA — PRESERVE EXATAMENTE A ORDEM E OS TÍTULOS:
 Registro da perícia Médica para Licença
@@ -2396,25 +2396,47 @@ def _clean_queixa_duracao_text(text: str) -> str:
     if not text:
         return text
     t = str(text)
-    # 1. Normaliza "Servidor, não readaptado, de 38 anos" -> "Servidor de 38 anos, relatou não ser readaptado"
-    t = re.sub(r"\b(Servidor|Servidora),\s*não\s+readaptad([oa]),\s*de\s+(\d+\s+anos)\b", r"\1 de \3, relatou não ser readaptad\2", t, flags=re.IGNORECASE)
+    # 1. Elimina repetições de "Servidor(a), não readaptado(a), de X anos, relatou não ser readaptado(a)"
+    t = re.sub(
+        r'\b(Servidor|Servidora),\s*não\s+readaptad([oa]),\s*de\s+(\d+\s+anos),?\s*(?:relatou\s+não\s+ser\s+readaptad[oa],?|\(?\s*não\s+readaptad[oa]\s*\)?,?)?\s*',
+        r'\1 de \3, relatou não ser readaptad\2, ',
+        t,
+        flags=re.IGNORECASE
+    )
+    t = re.sub(
+        r'\b(Servidor|Servidora),\s*relatou\s+não\s+ser\s+readaptad([oa]),\s*de\s+(\d+\s+anos),?\s*',
+        r'\1 de \3, relatou não ser readaptad\2, ',
+        t,
+        flags=re.IGNORECASE
+    )
 
-    # 2. Normaliza "Servidor de 38 anos, [não readaptado / (não readaptado)]" -> "Servidor de 38 anos, relatou não ser readaptado"
-    def _repl_readap_cargo(m):
-        serv = m.group(1)
-        anos = m.group(2)
-        r = m.group(3) or m.group(4) or ("a" if serv.lower() == "servidora" else "o")
-        cargo_tempo = m.group(5).strip()
-        if cargo_tempo.lower().startswith("é ") or cargo_tempo.lower().startswith("e "):
-            cargo_tempo = cargo_tempo[2:].strip()
-        return f"{serv} de {anos}, relatou não ser readaptad{r}, é {cargo_tempo}"
-    t = re.sub(r"\b(Servidor|Servidora)\s+de\s+(\d+\s+anos),?\s*(?:\(?\s*não\s+readaptad([oa])\s*\)?|relatou\s+não\s+ser\s+readaptad([oa])),?\s*(?:,\s*)?([A-ZÁ-Úa-zà-ú\s]+?\s+há\s+\d+\s+(?:anos|meses|dias))", _repl_readap_cargo, t, flags=re.IGNORECASE)
+    # 2. Se houver "Servidor(a) de X anos" seguido de repetições de [não readaptado / relatou não ser readaptado]
+    t = re.sub(
+        r'\b(Servidor|Servidora)\s+de\s+(\d+\s+anos)(?:,?\s*(?:\(?\s*não\s+readaptad([oa])\s*\)?|relatou\s+não\s+ser\s+readaptad([oa])))+',
+        lambda m: f'{m.group(1)} de {m.group(2)}, relatou não ser readaptad{"a" if m.group(1).lower() == "servidora" else "o"}',
+        t,
+        flags=re.IGNORECASE
+    )
 
-    # 3. Limpa qualquer duplicação de 'é é' ou 'é, é'
+    # 3. Normaliza cargo e tempo: "relatou não ser readaptado(a), é [cargo] há [tempo]"
+    def _repl_cargo(m):
+        serv_block = m.group(1)
+        ct = m.group(2).strip()
+        if ct.lower().startswith('é ') or ct.lower().startswith('e '):
+            ct = ct[2:].strip()
+        return f'{serv_block}, é {ct}'
+    t = re.sub(
+        r'(\b(?:Servidor|Servidora)\s+de\s+\d+\s+anos,\s*relatou\s+não\s+ser\s+readaptad[oa]),?\s*(?:,\s*)?([A-ZÁ-Úa-zà-ú\s\d/]+?\s+há\s+\d+\s+(?:anos|meses|dias))',
+        _repl_cargo,
+        t,
+        flags=re.IGNORECASE
+    )
+
+    # 4. Limpa qualquer duplicação de 'é é' ou 'é, é'
     t = re.sub(r"\bé\s+é\b", "é", t, flags=re.IGNORECASE)
     t = re.sub(r",?\s*é\s*,\s*é\b", ", é", t, flags=re.IGNORECASE)
 
-    # 4. Remove parênteses artificiais em "(Não relatou...)", "(Não readaptado)" e "(e não realiza...)"
+    # 5. Remove parênteses artificiais em "(Não relatou...)", "(Não readaptado)" e "(e não realiza...)"
     t = re.sub(r"\(\s*n[ãa]o\s+readaptad([oa])\s*\)", r"não readaptad\1", t, flags=re.IGNORECASE)
     t = re.sub(r"\(\s*(Não relatou troca de alteração de dosagem da medicação\.?)\s*\)", r"\1", t, flags=re.IGNORECASE)
     t = re.sub(r"\(\s*e\s+não\s+realiza\s+(psicoterapia|fisioterapia)\.?\s*\)", r"e não realiza \1.", t, flags=re.IGNORECASE)
@@ -2467,6 +2489,7 @@ def _clean_esisla_text(text: str) -> str:
     text = re.sub(r"\bpaciente\b", "servidor", text)
     text = re.sub(r"\bPacientes\b", "Servidores", text)
     text = re.sub(r"\bpacientes\b", "servidores", text)
+    text = re.sub(r"\bApresentas-e\b", "Apresenta-se", text)
 
     # Limpeza e remoção obrigatória de menções a início de tratamento por data na Queixa e Duração
     m_queixa = re.search(r"(\(\*\)\s*Queixa e Duração:?\s*\n)(.*?)(\n\s*Antecedentes Mórbidos)", text, re.DOTALL | re.IGNORECASE)
@@ -2854,11 +2877,11 @@ def api_ai_esisla():
                 ficha_text = re.sub(r"\b[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b", r"não readaptad\1, Investigador", ficha_text, flags=re.IGNORECASE)
                 ficha_text = re.sub(r",\s*[Il],\s*(?=(?:não\s+readaptad[oa]|investigador|[a-zà-ú]))", r", ", ficha_text, flags=re.IGNORECASE)
 
-                if not re.search(r"n[ãa]o\s+readaptad[oa]", ficha_text, flags=re.IGNORECASE):
-                    termo_nr = "não readaptada" if "servidora" in ficha_text.lower() else "não readaptado"
+                if not re.search(r"n[ãa]o\s+readaptad[oa]|relatou\s+n[ãa]o\s+ser\s+readaptad[oa]", ficha_text, flags=re.IGNORECASE):
+                    termo_nr = "relatou não ser readaptada" if "servidora" in ficha_text.lower() else "relatou não ser readaptado"
                     # Inserir logo após a identificação/idade: "Servidor(a) de X anos"
                     ficha_text = re.sub(
-                        r"(\(\*\)\s*Queixa e Dura[çc][ãa]o:?\s*\n\s*Servidor[^\n\r,]*?(?:de\s+\d+\s+anos)?)\s*(?:,\s*)?",
+                        r"(\(\*\)\s*Queixa e Dura[çc][ãa]o:?\s*\n\s*(?:Servidor|Servidora)(?:\s+de\s+\d+\s+anos)?)\s*(?:,\s*)?",
                         rf"\1, {termo_nr}, ",
                         ficha_text,
                         count=1,
@@ -2932,6 +2955,11 @@ def api_ai_esisla():
                     if q_rx.search(q_block):
                         q_block = q_rx.sub(rf"\1 {q_ans}", q_block, count=1)
                 ficha_text = ficha_text[:q_section.start(1)] + q_block + ficha_text[q_section.end(1):]
+            ficha_text = re.sub(r"\bApresentas-e\b", "Apresenta-se", ficha_text)
+            m_queixa_final = re.search(r"(\(\*\)\s*Queixa e Dura[çc][ãa]o:?\s*\n)(.*?)(\n\s*Antecedentes Mórbidos)", ficha_text, re.DOTALL | re.IGNORECASE)
+            if m_queixa_final:
+                h1, b_q, h2 = m_queixa_final.groups()
+                ficha_text = ficha_text[:m_queixa_final.start()] + h1 + _clean_queixa_duracao_text(b_q) + h2 + ficha_text[m_queixa_final.end():]
 
             result = EsislaResult(ficha_esisla=ficha_text)
             return jsonify({

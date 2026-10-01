@@ -70,3 +70,46 @@ def test_esisla_programa_melhoria_continua_guidelines():
     for phrase in required_phrases:
         assert phrase in APP, f"Falta a diretriz obrigatória de melhoria contínua: '{phrase}'"
 
+
+def test_cid_catalog_and_info():
+    import app
+    info_dot = app.get_cid_info("J70.4")
+    assert info_dot and "Transt" in info_dot.get("nome", "")
+    info_nodot = app.get_cid_info("J704")
+    assert info_nodot and "Transt" in info_nodot.get("nome", "")
+    info_c20 = app.get_cid_info("C20")
+    assert info_c20 and "reto" in info_c20.get("nome", "").lower()
+
+
+def test_clean_justificativa_removes_granting_and_fixes_mismatched_cid():
+    import app
+    sample = (
+        "Considero a capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol do cargo de "
+        "Investigador de polícia, em razão de limitações na esfera de Aparelho Respiratório decorrentes do CID J70.4 (C20 — Neoplasia maligna do reto), "
+        "tais como dispneia aos médios esforços. Concedo 1 dia de afastamento a contar da data de início dos sintomas, tempo este considerado suficiente "
+        "para restabelecimento da capacidade laborativa para a função periciada."
+    )
+    cleaned = app._clean_justificativa_text(sample)
+    assert "Concedo 1 dia" not in cleaned
+    assert "tempo este considerado suficiente" not in cleaned
+    assert "C20" not in cleaned
+    assert "CID J70.4" in cleaned
+    assert "Transt" in cleaned
+
+
+def test_task_instruction_justificativa_sanitizes_mismatched_doenca_motivo():
+    import app
+    payload = {
+        "cid": "J70.4",
+        "doenca_motivo": "C20 — Neoplasia maligna do reto",
+        "cargo": "Investigador de polícia",
+        "idade": "38 anos",
+        "exame_fisico_tipo": "Outros",
+        "area_exame_clinico": "Aparelho Respiratório",
+        "resultado_avaliacao": "Alterado",
+    }
+    instruction = app._task_instruction("justificativa", payload)
+    assert "C20 — Neoplasia" not in instruction
+    assert "Transt" in instruction
+
+

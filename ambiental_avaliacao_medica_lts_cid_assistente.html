@@ -3604,25 +3604,59 @@ function cidFamilyFallback(code){
 }
 
 function findCID(code){
-  const c = normalizeCID(code);
+  const raw = String(code || "").trim();
+  if (!raw) return null;
+  const c = normalizeCID(raw);
   if (!c) return null;
-  const exact = cidLibrary.find(x => x.c === c);
+  const cNoDot = c.replace(/\./g, "");
+  let exact = cidLibrary.find(x => x.c.toUpperCase() === c || x.c.toUpperCase().replace(/\./g, "") === cNoDot);
   if (exact) return exact;
+  if (!c.includes(".") && c.length >= 4) {
+    const withDot = c.slice(0, 3) + "." + c.slice(3);
+    exact = cidLibrary.find(x => x.c.toUpperCase() === withDot);
+    if (exact) return exact;
+  }
   if (CID_CATEGORIES[c]) {
     const fb = cidFamilyFallback(c);
     return { c: c, n: CID_CATEGORIES[c].n, g: CID_CATEGORIES[c].g || fb.g, k: CID_CATEGORIES[c].k || c[0], q: fb.q };
   }
-  if (c.length >= 2) {
-    const starts = cidLibrary.find(x => x.c.startsWith(c));
-    if (starts) {
-      const catName = CID_CATEGORIES[c]?.n;
-      if (catName) {
-        return { c: c, n: catName, g: starts.g, k: starts.k, q: starts.q };
-      }
-      return starts;
+  if (CID_CATEGORIES[cNoDot]) {
+    const fb = cidFamilyFallback(cNoDot);
+    return { c: cNoDot, n: CID_CATEGORIES[cNoDot].n, g: CID_CATEGORIES[cNoDot].g || fb.g, k: CID_CATEGORIES[cNoDot].k || cNoDot[0], q: fb.q };
+  }
+  const cat3 = c.slice(0, 3);
+  const starts = cidLibrary.find(x => x.c.toUpperCase().startsWith(cat3) || x.c.toUpperCase().replace(/\./g, "").startsWith(cat3));
+  if (starts) {
+    const catName = CID_CATEGORIES[cat3]?.n;
+    if (catName) {
+      return { c: c, n: catName, g: starts.g, k: starts.k, q: starts.q };
     }
+    return starts;
   }
   return null;
+}
+
+function searchCIDs(query, limit = 12) {
+  const q = String(query || "").trim();
+  if (!q) return [];
+  const qNorm = q.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+  const qClean = qNorm.replace(/\s+/g, "");
+  const qNoDot = qClean.replace(/\./g, "");
+  const exacts = [], prefix = [], matches = [];
+  for (let i = 0; i < cidLibrary.length; i++) {
+    const item = cidLibrary[i];
+    const cUpper = item.c.toUpperCase();
+    const cNoDot = cUpper.replace(/\./g, "");
+    if (cUpper === qClean || cNoDot === qNoDot) {
+      exacts.push(item);
+    } else if (cUpper.startsWith(qClean) || cNoDot.startsWith(qNoDot)) {
+      prefix.push(item);
+    } else if (item._norm && item._norm.includes(qNorm)) {
+      matches.push(item);
+    }
+    if (exacts.length + prefix.length + matches.length >= limit * 2) break;
+  }
+  return [...exacts, ...prefix, ...matches].slice(0, limit);
 }
 
 function discardAIJustificativa() {
@@ -3659,7 +3693,8 @@ async function loadCIDs(){
       const code = String(row[ci]??"").trim(), name = String(row[ni]??"").trim();
       if(!code&&!name) continue;
       const group = idxGroup>=0?String(row[idxGroup]??"").trim():"", fb = cidFamilyFallback(code);
-      merged.push({c:code,n:name||"Descrição não informada",g:group||fb.g,k:normalizeCID(code).charAt(0),q:fb.q});
+      const rawNorm = (code.replace(/\./g,"") + " " + code + " " + name).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();
+      merged.push({c:code,n:name||"Descrição não informada",g:group||fb.g,k:normalizeCID(code).charAt(0),q:fb.q,_norm:rawNorm});
       existing.add(code.toUpperCase());
     }
     
@@ -3668,7 +3703,8 @@ async function loadCIDs(){
       if(!existing.has(code.toUpperCase())){
         const cat = CID_CATEGORIES[code];
         const fb = cidFamilyFallback(code);
-        merged.push({c:code,n:cat.n,g:cat.g||fb.g,k:cat.k||code[0],q:fb.q});
+        const rawNorm = (code.replace(/\./g,"") + " " + code + " " + cat.n).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();
+        merged.push({c:code,n:cat.n,g:cat.g||fb.g,k:cat.k||code[0],q:fb.q,_norm:rawNorm});
       }
     });
     
@@ -3756,9 +3792,11 @@ function renderCIDAssist(entry){
 }
 
 function renderCIDSuggestions(value){
-  const v = normalizeCID(value), box = $("cidSuggestions");
-  if(!v){ box.classList.remove("show"); box.innerHTML=""; return; }
-  const results = cidLibrary.filter(x => x.c.toUpperCase().startsWith(v) || x.n.toUpperCase().includes(v)).slice(0, 12);
+  const box = $("cidSuggestions");
+  if(!box) return;
+  const q = String(value || "").trim();
+  if(!q){ box.classList.remove("show"); box.innerHTML=""; return; }
+  const results = searchCIDs(q, 12);
   if(!results.length){ box.classList.remove("show"); box.innerHTML=""; return; }
   box.innerHTML = results.map(x => `
     <button type="button" class="cid-option" data-cid-code="${esc(x.c)}">
@@ -3777,12 +3815,14 @@ function onCidInput(value){
   const exact = findCID(value);
   if(exact) {
     renderCIDAssist(exact);
-    // Se o médico digitou exatamente o código e o campo de doença que motivou afastamento está vazio, auxilia preenchendo
-    if(!$("doencaMotivo").value.trim() && exact.n && !exact.n.includes("Apoio") && exact.c === normalizeCID(value)){
-      $("doencaMotivo").value = `${exact.c} — ${exact.n}`;
-      state.doencaMotivo = $("doencaMotivo").value;
+    const rotulo = `${exact.c} — ${exact.n}`;
+    const oldDoenca = String(state.aux?.doencaMotivo || state.doencaMotivo || $("doencaMotivo")?.value || "").trim();
+    const isOldCID = /^[A-Z]\d{2}(\.\d+)?\s*[—–-]/i.test(oldDoenca);
+    if((!oldDoenca || oldDoenca === "Conforme queixa relatada" || isOldCID || !oldDoenca.toUpperCase().startsWith(exact.c.toUpperCase())) && exact.n && !exact.n.includes("Apoio")){
+      $("doencaMotivo").value = rotulo;
+      state.doencaMotivo = rotulo;
       if(!state.aux) state.aux = {};
-      state.aux.doencaMotivo = $("doencaMotivo").value;
+      state.aux.doencaMotivo = rotulo;
     }
   } else if(normalizeCID(value).length >= 1) {
     renderCIDAssist(null);
@@ -3850,12 +3890,15 @@ function selectCID(code){
   if (!state.aux) state.aux = {};
   state.aux.cid = cleanCode;
   
-  // Se o campo "Qual a doença está tratando que motivou o afastamento?" estiver vazio, passa o apoio preenchendo automaticamente
-  if (!$("doencaMotivo").value.trim() && found && found.n && !found.n.includes("Apoio")) {
+  if (found && found.n && !found.n.includes("Apoio")) {
     const rotulo = `${found.c} — ${found.n}`;
-    $("doencaMotivo").value = rotulo;
-    state.doencaMotivo = rotulo;
-    state.aux.doencaMotivo = rotulo;
+    const oldDoenca = String(state.aux?.doencaMotivo || state.doencaMotivo || $("doencaMotivo")?.value || "").trim();
+    const isOldCID = /^[A-Z]\d{2}(\.\d+)?\s*[—–-]/i.test(oldDoenca);
+    if (!oldDoenca || oldDoenca === "Conforme queixa relatada" || isOldCID || !oldDoenca.toUpperCase().startsWith(found.c.toUpperCase())) {
+      $("doencaMotivo").value = rotulo;
+      state.doencaMotivo = rotulo;
+      state.aux.doencaMotivo = rotulo;
+    }
   }
   
   autoSave();
@@ -3939,7 +3982,46 @@ document.addEventListener("click",(e)=>{
 let aiController=null,aiLastResult=null,aiLastAction="",aiInFlight=false,aiClientCache=new Map();
 function setAIState(text,kind=""){const el=$("aiState");if(el){el.className=`ai-state ${kind}`;el.textContent=text;}}
 function stableHash(value){let str="";try{const stable=v=>Array.isArray(v)?v.map(stable):v&&typeof v==="object"?Object.keys(v).sort().reduce((o,k)=>(o[k]=stable(v[k]),o),{}):v;str=JSON.stringify(stable(value));}catch{str=String(value)}let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h+=(h<<1)+(h<<4)+(h<<7)+(h<<8)+(h<<24);}return (h>>>0).toString(16);}
-function renderAIResult(result,target="aiOutput"){const box=$(target),out=$("aiJustificativaOutput");if(!box)return;const text=String(result?.justificativa||"").trim();box.textContent=text||"A IA não retornou uma sugestão válida.";if(out)out.style.display=text?"block":"none";}
+function cleanJustificativaText(text) {
+  let t = String(text || "").trim();
+  if (!t) return "";
+  t = t.replace(/\bPaciente\b/g, "Servidor")
+       .replace(/\bpaciente\b/g, "servidor")
+       .replace(/\bPacientes\b/g, "Servidores")
+       .replace(/\bpacientes\b/g, "servidores");
+  t = t.replace(/[\s\.\,]*\b(?:Concedo|concedo|Concedido[s]?|concedido[s]?)\s+\d+\s+dias?\s+de\s+afastamento[^\.\n\r]*[\.\,]?/g, ".");
+  t = t.replace(/[\s\.\,]*\btempo\s+este\s+considerado\s+suficiente\s+para\s+(?:o\s+)?restabelecimento\s+da\s+capacidade\s+laborativa[^\.\n\r]*[\.\,]?/gi, ".");
+  t = t.replace(/[\s\.\,]*\ba\s+contar\s+da\s+data\s+de\s+in[íi]cio\s+dos\s+sintomas[^\.\n\r]*[\.\,]?/gi, ".");
+  t = t.replace(/\bCID\s+([A-Z]\d{2}(?:\.\d+)?)\s*\(\s*([A-Z]\d{2}(?:\.\d+)?)\s*[—–-]\s*([^\)]+)\)/gi, (m, c1, c2, d2) => {
+    const c1Clean = c1.toUpperCase().replace(/\./g, "");
+    const c2Clean = c2.toUpperCase().replace(/\./g, "");
+    if (c1Clean === c2Clean) return `CID ${c1} — ${d2.trim()}`;
+    const info1 = findCID(c1);
+    if (info1 && info1.n && !info1.n.includes("Apoio")) return `CID ${c1} — ${info1.n}`;
+    return `CID ${c1}`;
+  });
+  t = t.replace(/\bCID\s+([A-Z]\d{2}(?:\.\d+)?)\s*[—–-]\s*([A-Z]\d{2}(?:\.\d+)?)\s*[—–-]\s*([^,\.\n]+)/gi, (m, c1, c2, d2) => {
+    const c1Clean = c1.toUpperCase().replace(/\./g, "");
+    const c2Clean = c2.toUpperCase().replace(/\./g, "");
+    if (c1Clean === c2Clean) return `CID ${c1} — ${d2.trim()}`;
+    const info1 = findCID(c1);
+    if (info1 && info1.n && !info1.n.includes("Apoio")) return `CID ${c1} — ${info1.n}`;
+    return `CID ${c1}`;
+  });
+  t = t.replace(/\s*,\s*\./g, ".").replace(/\.{2,}/g, ".").replace(/[ \t]{2,}/g, " ").trim();
+  t = t.replace(/^[\s\.\,]+/, "").trim();
+  if (t && !/[.!?]$/.test(t)) t += ".";
+  return t;
+}
+
+function renderAIResult(result,target="aiOutput"){
+  const box=$(target),out=$("aiJustificativaOutput");
+  if(!box)return;
+  const rawText=String(result?.justificativa||"").trim();
+  const text=cleanJustificativaText(rawText);
+  box.textContent=text||"A IA não retornou uma sugestão válida.";
+  if(out)out.style.display=text?"block":"none";
+}
 function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
 async function apiAI(path, payload, action, label, target = "aiOutput") {
   if (!navigator.onLine) {
@@ -4043,14 +4125,30 @@ function getJustificativaContext(){
   const limitacoes=[v.descLimitacao,v.atividadesComprometidas,v.sintomasLimitacao,v.alteracoesClinicasExames].filter(x=>String(x||"").trim()).join(" | ");
   const subtipo = state.outrosSubtipo || state.aux?.outrosSubtipo || state.aux?.areaExameClinico || "";
   const resultado = state.outrosResultado || state.aux?.outrosResultado || state.aux?.resultadoAvaliacao || "";
+  
+  const cidVal = String(v.cid || state.cid || "").trim();
+  let doencaVal = String(v.doencaMotivo || state.doencaMotivo || "").trim();
+  const foundCid = findCID(cidVal);
+  if (foundCid && foundCid.n && !foundCid.n.includes("Apoio")) {
+    const isOldCID = /^[A-Z]\d{2}(\.\d+)?\s*[—–-]/i.test(doencaVal);
+    if (!doencaVal || doencaVal === "Conforme queixa relatada" || (isOldCID && !doencaVal.toUpperCase().startsWith(cidVal.toUpperCase()))) {
+      doencaVal = `${foundCid.c} — ${foundCid.n}`;
+      if ($("doencaMotivo")) $("doencaMotivo").value = doencaVal;
+      if ($("agilDoencaMotivo")) $("agilDoencaMotivo").value = doencaVal;
+      state.doencaMotivo = doencaVal;
+      if (!state.aux) state.aux = {};
+      state.aux.doencaMotivo = doencaVal;
+    }
+  }
+
   return {
     atendimento:v.atendimento,
     cargo:v.cargo,
     idade:v.idade,
-    cid:v.cid,
+    cid:cidVal,
     cids_secundarios:v.cidsSecundarios || state.cidsSecundarios || [],
     cidsSecundarios:v.cidsSecundarios || state.cidsSecundarios || [],
-    doenca_motivo:v.doencaMotivo,
+    doenca_motivo:doencaVal,
     queixa_duracao:v.queixaDuracao,
     tempo_funcao:v.tempoCargo,
     unidade_tempo:v.unidadeTempo,
@@ -4078,7 +4176,8 @@ function getJustificativaContext(){
 function invalidateAICache(){aiClientCache.clear();}
 async function applyAIText(mode) {
   if(isFinalizedReadOnly()){toast("Atendimento finalizado: a sugestão pode ser analisada, mas não aplicada.");return;}
-  const text=String(aiLastResult?.justificativa||"").trim();
+  const rawText = String(aiLastResult?.justificativa || "").trim();
+  const text = cleanJustificativaText(rawText);
   if(!text)return toast("Não há sugestão de IA disponível.");
   const f=$("justificativa"),cur=f.value.trim();
   if(mode==="replace"){
@@ -4123,15 +4222,17 @@ async function gerarJustificativaAgilIA(){
   if (state.exameFisicoTipo === "Outros" && state.outrosResultado === "Alterado") {
     const cidVal = state.cid || state.aux?.cid || $("cid")?.value || $("agilCid")?.value || "";
     const cidInfo = typeof findCID === "function" ? findCID(cidVal) : null;
-    const cidNome = cidInfo?.n || state.aux?.doencaMotivo || "patologia em tratamento";
+    const cidNome = cidInfo?.n || "patologia em tratamento";
     const cargoNome = state.aux?.cargo || state.cargo || $("cargo")?.value || $("agilCargo")?.value || "servidor";
-    if (!state.descLimitacao && !state.aux?.descLimitacao) {
+    const curDesc = String(state.descLimitacao || state.aux?.descLimitacao || "").trim();
+    const isOldLimitacao = curDesc.startsWith("Limitações funcionais decorrentes do quadro clínico");
+    if (!curDesc || isOldLimitacao) {
       const limitacaoCid = `Limitações funcionais decorrentes do quadro clínico (${cidVal ? cidVal + ' - ' : ''}${cidNome}), com redução temporária do rendimento e necessidade de repouso/adaptação funcional para as atividades do cargo de ${cargoNome}.`;
       state.descLimitacao = limitacaoCid;
       if (!state.aux) state.aux = {};
       state.aux.descLimitacao = limitacaoCid;
       if ($("descLimitacao")) $("descLimitacao").value = limitacaoCid;
-      if (!state.aux.sintomasLimitacao) {
+      if (!state.aux.sintomasLimitacao || state.aux.sintomasLimitacao.startsWith("Limitações funcionais decorrentes")) {
         state.aux.sintomasLimitacao = limitacaoCid;
         state.sintomasLimitacao = limitacaoCid;
       }
@@ -4144,7 +4245,7 @@ async function gerarJustificativaAgilIA(){
   try {
     const res = await apiAI("/api/ai/justificativa", getJustificativaContext(), "justificativa", "Gerando justificativa...");
     if (res && res.justificativa) {
-      const text = String(res.justificativa).trim();
+      const text = cleanJustificativaText(res.justificativa);
       if ($("agilJustificativa")) $("agilJustificativa").value = text;
       if ($("justificativa")) $("justificativa").value = text;
       if (!state.aux) state.aux = {};
@@ -7113,7 +7214,7 @@ function onAgilCidInput(val) {
     return;
   }
   
-  const results = cidLibrary.filter(x => x.c.toUpperCase().startsWith(v) || x.n.toUpperCase().includes(v)).slice(0, 10);
+  const results = searchCIDs(val, 10);
   if (box) {
     if (!results.length) {
       box.classList.remove("show");
@@ -7136,8 +7237,10 @@ function onAgilCidInput(val) {
   if (exact && badge) {
     badge.style.display = "inline-flex";
     badge.innerHTML = `<strong>${esc(exact.c)}</strong> — ${esc(exact.n)}`;
-    if (!state.aux.doencaMotivo || state.aux.doencaMotivo === "Conforme queixa relatada") {
-      const rotulo = `${exact.c} — ${exact.n}`;
+    const rotulo = `${exact.c} — ${exact.n}`;
+    const oldDoenca = String(state.aux?.doencaMotivo || state.doencaMotivo || "").trim();
+    const isOldCID = /^[A-Z]\d{2}(\.\d+)?\s*[—–-]/i.test(oldDoenca);
+    if (!oldDoenca || oldDoenca === "Conforme queixa relatada" || isOldCID || !oldDoenca.toUpperCase().startsWith(exact.c.toUpperCase())) {
       state.aux.doencaMotivo = rotulo;
       state.doencaMotivo = rotulo;
       if ($("doencaMotivo")) $("doencaMotivo").value = rotulo;
@@ -7169,7 +7272,9 @@ function selectAgilCID(code) {
   
   if (found && found.n && !found.n.includes("Apoio")) {
     const rotulo = `${found.c} — ${found.n}`;
-    if (!state.aux.doencaMotivo || state.aux.doencaMotivo === "Conforme queixa relatada") {
+    const oldDoenca = String(state.aux?.doencaMotivo || state.doencaMotivo || "").trim();
+    const isOldCID = /^[A-Z]\d{2}(\.\d+)?\s*[—–-]/i.test(oldDoenca);
+    if (!oldDoenca || oldDoenca === "Conforme queixa relatada" || isOldCID || !oldDoenca.toUpperCase().startsWith(found.c.toUpperCase())) {
       state.doencaMotivo = rotulo;
       state.aux.doencaMotivo = rotulo;
       if ($("doencaMotivo")) $("doencaMotivo").value = rotulo;
@@ -7497,10 +7602,10 @@ function gerarNarrativaQueixaMelhoriaContinua(st, v) {
   const fisio = !!(st.fisioterapia || aux.fisioterapia || v.fisioterapia || $("agilFisioterapia")?.checked);
   const obsTerapias = aux.obsTerapias || v.obsTerapias || $("agilObsTerapias")?.value || "";
   
-  // Se o médico já digitou um texto completo e longo (narrativa própria), preservamos sua digitação
+  // Se o médico já digitou um texto completo e longo (narrativa própria), preservamos sua digitação limpando inconsistências
   const rawQ = (aux.queixaDuracao || v.queixaDuracao || $("agilDoencaMotivo")?.value || "").trim();
   if (rawQ.length > 180 && (rawQ.toLowerCase().includes("servidor") || rawQ.toLowerCase().includes("ocupante") || rawQ.toLowerCase().includes("relata"))) {
-    return rawQ;
+    return cleanQueixaDuracao(rawQ, aux.dataAtd || st.aux?.dataAtd || $("dataAtd")?.value);
   }
   
   let partes = [];
@@ -7511,18 +7616,20 @@ function gerarNarrativaQueixaMelhoriaContinua(st, v) {
   let ident = isFem ? "Servidora" : "Servidor";
   if (idade) ident += ` de ${idade} anos`;
   
-  // 2. Readaptação: logo após a idade e sem parênteses: "não readaptado" / "não readaptada"
+  // 2. Readaptação: logo após a idade: "relatou não ser readaptado" / "relatou ser readaptado"
   if (readap) {
-    ident += `, em readaptação funcional${ativReadap ? ` (atividades: ${ativReadap})` : ""}`;
+    ident += `, relatou ser ${isFem ? 'readaptada' : 'readaptado'}${ativReadap ? `, exercendo atualmente as atividades de ${ativReadap}` : ""}`;
   } else {
-    ident += `, ${isFem ? 'não readaptada' : 'não readaptado'}`;
+    ident += `, relatou não ser ${isFem ? 'readaptada' : 'readaptado'}`;
   }
 
+  // 3. Cargo: "é {cargo} há {tempoCargo} {unidadeTempo}"
   if (cargo) {
+    const cargoFormatado = cargo.trim().replace(/^é\s+/i, '');
     if (tempoCargo) {
-      ident += `, ${cargo} há ${tempoCargo} ${unidadeTempo.toLowerCase()}`;
+      ident += `, é ${cargoFormatado} há ${tempoCargo} ${unidadeTempo.toLowerCase()}`;
     } else {
-      ident += `, ocupante do cargo de ${cargo}`;
+      ident += `, é ${cargoFormatado}`;
     }
   }
 
@@ -7599,7 +7706,7 @@ function gerarNarrativaQueixaMelhoriaContinua(st, v) {
     const obsAlt = aux.obsAlteracaoMed || $("agilObsAlteracaoMed")?.value || "";
     partes.push(`Informa alteração recente na prescrição medicamentosa${dtAlt ? ` em ${formatDate(dtAlt)}` : ""}${obsAlt ? ` (${obsAlt})` : ""}.`);
   } else {
-    partes.push("(Não relatou troca de alteração de dosagem da medicação.)");
+    partes.push("Não relatou troca de alteração de dosagem da medicação.");
   }
   
   // 7. Terapias
@@ -9983,10 +10090,30 @@ function cleanQueixaDuracao(text, atdDate) {
     t = t.replace(new RegExp('^\\s*' + rx.source + '[\\.,]?\\s*', 'gi'), '');
     t = t.replace(new RegExp('\\b' + rx.source, 'gi'), '');
   });
+  // 1. Normaliza "Servidor, não readaptado, de 38 anos" -> "Servidor de 38 anos, relatou não ser readaptado"
+  t = t.replace(/\b(Servidor|Servidora),\s*não\s+readaptad([oa]),\s*de\s+(\d+\s+anos)\b/gi, "$1 de $3, relatou não ser readaptad$2");
+
+  // 2. Normaliza "Servidor de 38 anos, [não readaptado / (não readaptado)]" -> "Servidor de 38 anos, relatou não ser readaptado"
+  t = t.replace(/\b(Servidor|Servidora)\s+de\s+(\d+\s+anos),?\s*(?:\(?\s*não\s+readaptad([oa])\s*\)?|relatou\s+não\s+ser\s+readaptad([oa])),?\s*(?:,\s*)?([A-ZÁ-Úa-zà-ú\s]+?\s+há\s+\d+\s+(?:anos|meses|dias))/gi, function(m, serv, anos, r1, r2, cargoTempo) {
+    const suff = r1 || r2 || (serv.toLowerCase() === 'servidora' ? 'a' : 'o');
+    let ct = String(cargoTempo || '').trim();
+    if (ct.toLowerCase().startsWith('é ') || ct.toLowerCase().startsWith('e ')) {
+      ct = ct.slice(2).trim();
+    }
+    return `${serv} de ${anos}, relatou não ser readaptad${suff}, é ${ct}`;
+  });
+
+  // 3. Limpa qualquer duplicação de 'é é' ou 'é, é'
+  t = t.replace(/\bé\s+é\b/gi, "é");
+  t = t.replace(/,?\s*é\s*,\s*é\b/gi, ", é");
+
+  // 4. Remove parênteses artificiais em "(Não relatou...)", "(Não readaptado)" e "(e não realiza...)"
   t = t.replace(/\(\s*n[ãa]o\s+readaptad([oa])\s*\)/gi, "não readaptad$1");
-  t = t.replace(/,\s*[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b/gi, ", não readaptad$1, Investigador");
-  t = t.replace(/,\s*[Il],\s*nvestigador\b/gi, ", Investigador");
-  t = t.replace(/\b[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b/gi, "não readaptad$1, Investigador");
+  t = t.replace(/\(\s*(Não relatou troca de alteração de dosagem da medicação\.?)\s*\)/gi, "$1");
+  t = t.replace(/\(\s*e\s+não\s+realiza\s+(psicoterapia|fisioterapia)\.?\s*\)/gi, "e não realiza $1.");
+  t = t.replace(/,\s*[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b/gi, ", relatou não ser readaptad$1, é Investigador");
+  t = t.replace(/,\s*[Il],\s*nvestigador\b/gi, ", é Investigador");
+  t = t.replace(/\b[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b/gi, "relatou não ser readaptad$1, é Investigador");
   t = t.replace(/,\s*[Il],\s*(?=(?:não\s+readaptad[oa]|investigador|[a-zà-ú]))/gi, ", ");
   t = t.replace(/\s{2,}/g, ' ');
   t = t.replace(/\.\s*\./g, '.');

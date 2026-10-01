@@ -3,6 +3,7 @@ from __future__ import annotations
 import atexit
 import base64
 from contextlib import contextmanager
+import csv
 import json
 import os
 import re
@@ -858,6 +859,47 @@ class FinalReportTextResult(BaseModel):
     relatorio: str
 
 
+_CID_CATALOG: dict[str, dict[str, str]] | None = None
+
+def get_cid_info(code: str) -> dict[str, str]:
+    global _CID_CATALOG
+    if _CID_CATALOG is None:
+        _CID_CATALOG = {}
+        csv_path = os.path.join(BASE_DIR, "cid10_saude_ocupacional_afastamentos.csv")
+        if os.path.exists(csv_path):
+            try:
+                with open(csv_path, encoding="utf-8-sig", errors="ignore") as f:
+                    first_line = f.readline()
+                    delimiter = ";" if ";" in first_line else ","
+                    f.seek(0)
+                    reader = csv.DictReader(f, delimiter=delimiter)
+                    for row in reader:
+                        c = str(row.get("codigo_cid") or "").strip().upper()
+                        if c:
+                            _CID_CATALOG[c] = {
+                                "nome": str(row.get("nome_doenca") or "").strip(),
+                                "grupo": str(row.get("grupo_doenca") or "").strip(),
+                                "prioridade": str(row.get("prioridade_saude_ocupacional") or "").strip(),
+                            }
+            except Exception as e:
+                app.logger.warning("Falha ao carregar catálogo de CIDs: %s", e)
+    clean_code = str(code or "").strip().upper()
+    if clean_code in _CID_CATALOG:
+        return _CID_CATALOG[clean_code]
+    if "." not in clean_code and len(clean_code) >= 4:
+        with_dot = clean_code[:3] + "." + clean_code[3:]
+        if with_dot in _CID_CATALOG:
+            return _CID_CATALOG[with_dot]
+    elif "." in clean_code:
+        no_dot = clean_code.replace(".", "")
+        if no_dot in _CID_CATALOG:
+            return _CID_CATALOG[no_dot]
+    cat3 = clean_code[:3]
+    if cat3 in _CID_CATALOG:
+        return _CID_CATALOG[cat3]
+    return {}
+
+
 SYSTEM_PROMPT = """
 Você é o Ambiental IA — Assistente técnico de apoio à avaliação médico-pericial ocupacional.
 Sua função é apoiar o médico com organização, síntese, revisão textual e identificação de coerência/ausências.
@@ -904,10 +946,9 @@ OBJETIVO DA REDAÇÃO:
 PADRÕES TÉCNICOS OFICIAIS (Programa de Melhoria Contínua):
 - Se Parecer FAVORÁVEL: Estruture obrigatoriamente a classificação da capacidade laborativa em 1ª pessoa alinhado à diretriz oficial:
   "Considero a capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol, em razão de limitações na esfera [psicoemocional/osteomuscular] que compromete para [atividades comprometidas informadas], referente ao período pleiteado."
-  * Se houver redução de dias em relação ao atestado assistente:
-    "Concedo [X] dias de afastamento a contar da data de início dos sintomas, tempo este considerado suficiente para restabelecimento da capacidade laborativa para a função periciada."
   * Se houver perfil de cronicidade/incapacidade definitiva para a função habitual:
     Indique formalmente o direcionamento pericial para readaptação funcional.
+  * Não inclua na justificativa expressões de concessão de dias ou prazos de afastamento (ex.: "Concedo X dias...", "tempo este considerado suficiente para restabelecimento da capacidade laborativa para a função periciada."). O número de dias concedidos possui campo próprio.
 - Se Parecer CONTRÁRIO: Estruture obrigatoriamente em 1ª pessoa alinhado à diretriz oficial:
   "Constato a capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações de ordem [osteomuscular/psíquica] incapacitantes para as atribuições rotineiras do cargo atual."
 - Pareceres contrários administrativos por erros de finalização DPME:
@@ -921,8 +962,8 @@ Quando o tipo de exame físico/mental for "Outros" ou quando for indicada uma á
 1. NÃO DESCREVA O EXAME FÍSICO: A justificativa não deve descrever procedimentos, manobras ou detalhes de exame físico (o exame físico já possui campo próprio no prontuário).
 2. FOCO EXCLUSIVO EM LIMITAÇÕES FUNCIONAIS E LABORAIS COM BASE NO CID: A fundamentação deve focar diretamente nas LIMITAÇÕES funcionais e operacionais que o CID aplicado ({cid} — {doenca_motivo}) acarreta para as atribuições do cargo ({cargo}):
    - Se a área for classificada como ALTERADA (ou Parecer Favorável):
-     Identifique e explicite as limitações práticas funcionais associadas ao CID {cid} ({doenca_motivo}) em relação às tarefas do cargo de {cargo} (por exemplo, limitações para esforço físico, posturas estáticas/dinâmicas, sobrecarga articular/muscular, ritmo de trabalho ou atividades do rol). Estruture obrigatoriamente em 1ª pessoa:
-     "Considero a capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol do cargo de {cargo}, em razão de limitações na esfera de {area_exame_clinico} decorrentes do CID {cid} ({doenca_motivo}), tais como [descrever as limitações funcionais específicas do CID em relação às atividades do cargo, ex.: impedimento temporário para esforços físicos intensos, sobrecarga mecânica ou atividades habituais que demandem higidez plena da área afetada]."
+     Identifique e explicite as limitações práticas funcionais associadas ao CID {cid} — {doenca_motivo} em relação às tarefas do cargo de {cargo} (por exemplo, limitações para esforço físico, posturas estáticas/dinâmicas, sobrecarga articular/muscular, ritmo de trabalho ou atividades do rol). Estruture obrigatoriamente em 1ª pessoa:
+     "Considero a capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol do cargo de {cargo}, em razão de limitações na esfera de {area_exame_clinico} decorrentes do CID {cid} — {doenca_motivo}, tais como [descrever as limitações funcionais específicas do CID em relação às atividades do cargo, ex.: impedimento temporário para esforços físicos intensos, sobrecarga mecânica ou atividades habituais que demandem higidez plena da área afetada]."
    - Se a área for classificada como NORMAL (ou Parecer Contrário):
      Estruture obrigatoriamente em 1ª pessoa constatando a capacidade preservada diante da ausência de limitações laborais decorrentes do CID {cid}:
      "Constato a capacidade laborativa preservada, considerando que neste ato pericial não se observam limitações funcionais incapacitantes relacionadas ao CID {cid} para as atribuições rotineiras do cargo atual de {cargo}."
@@ -933,7 +974,8 @@ NÃO FAÇA:
 - não conclua incapacidade, nexo ou necessidade de afastamento apenas com base no CID;
 - não altere a capacidade laborativa nem o parecer informado pelo médico;
 - não crie exigências do cargo que não estejam registradas;
-- JAMAIS utilize o termo "Paciente" ou "paciente".
+- JAMAIS utilize o termo "Paciente" ou "paciente";
+- NÃO inclua termos de concessão de dias ou prazos de afastamento na justificativa (ex.: "Concedo X dias de afastamento...", "tempo este considerado suficiente para restabelecimento..."). O número de dias e datas possuem campos próprios no laudo.
 
 ESTILO:
 Escreva 1 parágrafo, aproximadamente 80–180 palavras quando houver dados suficientes. Use linguagem técnico-pericial, objetiva e natural, como fundamentação de um especialista em Medicina do Trabalho. Destaque a relação entre dados clínicos, achados objetivos, funcionalidade e trabalho somente na medida sustentada pelos dados.
@@ -1162,10 +1204,9 @@ REDAÇÃO INTELIGENTE DOS CINCO CAMPOS NARRATIVOS:
    - PRESERVAÇÃO INTEGRAL: Se o médico perito preencheu o campo de justificativa no momento do atendimento, preserve estritamente o seu texto, mantendo a redação registrada pelo perito.
    - Se Parecer FAVORÁVEL:
      "Capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol, em razão de limitações na esfera [psicoemocional/osteomuscular] que compromete para [atividades comprometidas informadas]."
-     * Caso haja redução de dias em relação ao atestado assistente:
-       "Concedido [X] dias de afastamento a contar da data de início dos sintomas, tempo este considerado suficiente para restabelecimento da capacidade laborativa para a função periciada."
      * Caso haja cronicidade ou perfil de incapacidade definitiva para a função habitual:
        Indique formalmente o direcionamento pericial para readaptação funcional.
+     * Não inclua na justificativa expressões de concessão de dias ou prazos de afastamento (ex.: "Concedido X dias...", "tempo este considerado suficiente para restabelecimento da capacidade laborativa para a função periciada."). O número de dias concedidos possui campo próprio.
    - Se Parecer CONTRÁRIO:
      "Capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações de ordem [osteomuscular/psíquica] incapacitantes para as atribuições rotineiras do cargo atual."
      Caso o parecer contrário decorra de regras periciais específicas informadas:
@@ -1291,7 +1332,27 @@ def _task_instruction(task: str, payload: dict[str, Any]) -> str:
         )
         tipo_exame = payload.get("exame_fisico_tipo") or "não informado"
 
-        cid_principal = payload.get("cid") or "não informado"
+        cid_principal = str(payload.get("cid") or "").strip()
+        cid_info = get_cid_info(cid_principal)
+        raw_doenca = str(payload.get("doenca_motivo") or "").strip()
+        doenca_motivo = raw_doenca
+        if cid_info and cid_info.get("nome"):
+            clean_m = re.match(r"^([A-Z]\d{2}(?:\.\d+)?)\s*[—–-]\s*(.*)$", raw_doenca, re.IGNORECASE)
+            if clean_m:
+                c_in_doenca = clean_m.group(1).upper().replace(".", "")
+                c_princ_clean = cid_principal.upper().replace(".", "")
+                if c_in_doenca != c_princ_clean:
+                    doenca_motivo = cid_info["nome"]
+                else:
+                    doenca_motivo = clean_m.group(2).strip() or cid_info["nome"]
+            elif not doenca_motivo or doenca_motivo.lower() in ("não informado", "não informada", "conforme queixa relatada"):
+                doenca_motivo = cid_info["nome"]
+            elif doenca_motivo.upper().startswith(cid_principal.upper()):
+                doenca_motivo = doenca_motivo[len(cid_principal):].lstrip(" —–-:").strip() or cid_info["nome"]
+        if not doenca_motivo:
+            doenca_motivo = "patologia informada"
+        payload["doenca_motivo"] = doenca_motivo
+
         cids_sec = payload.get("cids_secundarios") or payload.get("cidsSecundarios") or []
         cids_sec_list = []
         for item in cids_sec:
@@ -1310,7 +1371,7 @@ def _task_instruction(task: str, payload: dict[str, Any]) -> str:
             cargo=payload.get("cargo") or "não informado",
             idade=payload.get("idade") or "não informada",
             cid=cid_formatado,
-            doenca_motivo=payload.get("doenca_motivo") or "não informado",
+            doenca_motivo=doenca_motivo,
             queixa_duracao=payload.get("queixa_duracao") or "não informada",
             tempo_funcao=payload.get("tempo_funcao") or "não informado",
             unidade_tempo=payload.get("unidade_tempo") or "",
@@ -2190,6 +2251,87 @@ def status_ia():
     _status_cache.update(ts=now, result=result)
     return jsonify(result)
 
+def _clean_justificativa_text(text: str) -> str:
+    text = str(text or "").strip()
+    if not text:
+        return ""
+
+    # Regra terminológica: Servidor / Periciado (nunca Paciente)
+    text = re.sub(r"\bPaciente\b", "Servidor", text)
+    text = re.sub(r"\bpaciente\b", "servidor", text)
+    text = re.sub(r"\bPacientes\b", "Servidores", text)
+    text = re.sub(r"\bpacientes\b", "servidores", text)
+
+    # Remoção de expressões de concessão de dias de afastamento e prazos
+    text = re.sub(
+        r"[\s\.\,]*\b(?:[Cc]oncedo|[Cc]oncedido[s]?)\s+\d+\s+dias?\s+de\s+afastamento[^\.\n\r]*[\.\,]?",
+        ".",
+        text
+    )
+    text = re.sub(
+        r"[\s\.\,]*\btempo\s+este\s+considerado\s+suficiente\s+para\s+(?:o\s+)?restabelecimento\s+da\s+capacidade\s+laborativa[^\.\n\r]*[\.\,]?",
+        ".",
+        text
+    )
+    text = re.sub(
+        r"[\s\.\,]*\ba\s+contar\s+da\s+data\s+de\s+in[íi]cio\s+dos\s+sintomas[^\.\n\r]*[\.\,]?",
+        ".",
+        text
+    )
+
+    # Correção de CID duplicado ou incompatível no padrão:
+    # Ex: "CID J70.4 (C20 — Neoplasia maligna do reto)" ou "CID J70.4 (J70.4 — Transtorno...)"
+    def _fix_cid_mismatch(m):
+        c1 = m.group(1).upper()
+        c2 = m.group(2).upper()
+        desc2 = m.group(3).strip()
+        c1_clean = c1.replace(".", "")
+        c2_clean = c2.replace(".", "")
+        if c1_clean == c2_clean:
+            return f"CID {c1} — {desc2}"
+        info1 = get_cid_info(c1)
+        nome1 = info1.get("nome") if info1 else ""
+        if nome1:
+            return f"CID {c1} — {nome1}"
+        return f"CID {c1}"
+
+    text = re.sub(
+        r"\bCID\s+([A-Z]\d{2}(?:\.\d+)?)\s*\(\s*([A-Z]\d{2}(?:\.\d+)?)\s*[—–-]\s*([^\)]+)\)",
+        _fix_cid_mismatch,
+        text
+    )
+
+    def _fix_cid_double_dash(m):
+        c1 = m.group(1).upper()
+        c2 = m.group(2).upper()
+        desc2 = m.group(3).strip()
+        c1_clean = c1.replace(".", "")
+        c2_clean = c2.replace(".", "")
+        if c1_clean == c2_clean:
+            return f"CID {c1} — {desc2}"
+        info1 = get_cid_info(c1)
+        nome1 = info1.get("nome") if info1 else ""
+        if nome1:
+            return f"CID {c1} — {nome1}"
+        return f"CID {c1}"
+
+    text = re.sub(
+        r"\bCID\s+([A-Z]\d{2}(?:\.\d+)?)\s*[—–-]\s*([A-Z]\d{2}(?:\.\d+)?)\s*[—–-]\s*([^,\.\n]+)",
+        _fix_cid_double_dash,
+        text
+    )
+
+    # Limpeza de pontuação repetida e espaços
+    text = re.sub(r"\s*,\s*\.", ".", text)
+    text = re.sub(r"\.{2,}", ".", text)
+    text = re.sub(r"[ \t]{2,}", " ", text)
+    text = text.strip()
+    text = re.sub(r"^[\s\.\,]+", "", text).strip()
+    if text and not text.endswith((".", "!", "?")):
+        text += "."
+    return text
+
+
 @app.post("/api/ai/justificativa")
 def api_ai_justificativa():
     try:
@@ -2202,11 +2344,7 @@ def api_ai_justificativa():
             texto = str(result.justificativa or "").strip()
             if not texto:
                 raise ValueError("A IA retornou uma justificativa vazia.")
-            texto = re.sub(r"\bPaciente\b", "Servidor", texto)
-            texto = re.sub(r"\bpaciente\b", "servidor", texto)
-            texto = re.sub(r"\bPacientes\b", "Servidores", texto)
-            texto = re.sub(r"\bpacientes\b", "servidores", texto)
-            result.justificativa = texto
+            result.justificativa = _clean_justificativa_text(texto)
             return _ai_result_response(result, "justificativa", cached)
     except Exception as exc:
         if isinstance(exc, ValueError): return _error("VALIDATION_ERROR", str(exc), False, 400)
@@ -2258,12 +2396,31 @@ def _clean_queixa_duracao_text(text: str) -> str:
     if not text:
         return text
     t = str(text)
-    # Remove parênteses de "(Não readaptado)" / "(Não readaptada)"
+    # 1. Normaliza "Servidor, não readaptado, de 38 anos" -> "Servidor de 38 anos, relatou não ser readaptado"
+    t = re.sub(r"\b(Servidor|Servidora),\s*não\s+readaptad([oa]),\s*de\s+(\d+\s+anos)\b", r"\1 de \3, relatou não ser readaptad\2", t, flags=re.IGNORECASE)
+
+    # 2. Normaliza "Servidor de 38 anos, [não readaptado / (não readaptado)]" -> "Servidor de 38 anos, relatou não ser readaptado"
+    def _repl_readap_cargo(m):
+        serv = m.group(1)
+        anos = m.group(2)
+        r = m.group(3) or m.group(4) or ("a" if serv.lower() == "servidora" else "o")
+        cargo_tempo = m.group(5).strip()
+        if cargo_tempo.lower().startswith("é ") or cargo_tempo.lower().startswith("e "):
+            cargo_tempo = cargo_tempo[2:].strip()
+        return f"{serv} de {anos}, relatou não ser readaptad{r}, é {cargo_tempo}"
+    t = re.sub(r"\b(Servidor|Servidora)\s+de\s+(\d+\s+anos),?\s*(?:\(?\s*não\s+readaptad([oa])\s*\)?|relatou\s+não\s+ser\s+readaptad([oa])),?\s*(?:,\s*)?([A-ZÁ-Úa-zà-ú\s]+?\s+há\s+\d+\s+(?:anos|meses|dias))", _repl_readap_cargo, t, flags=re.IGNORECASE)
+
+    # 3. Limpa qualquer duplicação de 'é é' ou 'é, é'
+    t = re.sub(r"\bé\s+é\b", "é", t, flags=re.IGNORECASE)
+    t = re.sub(r",?\s*é\s*,\s*é\b", ", é", t, flags=re.IGNORECASE)
+
+    # 4. Remove parênteses artificiais em "(Não relatou...)", "(Não readaptado)" e "(e não realiza...)"
     t = re.sub(r"\(\s*n[ãa]o\s+readaptad([oa])\s*\)", r"não readaptad\1", t, flags=re.IGNORECASE)
-    # Limpa artefato de truncamento/corte acidental como ", I, (Não readaptado)nvestigador", ", I, não readaptado nvestigador" ou ", l, "
-    t = re.sub(r",\s*[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b", r", não readaptad\1, Investigador", t, flags=re.IGNORECASE)
-    t = re.sub(r",\s*[Il],\s*nvestigador\b", r", Investigador", t, flags=re.IGNORECASE)
-    t = re.sub(r"\b[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b", r"não readaptad\1, Investigador", t, flags=re.IGNORECASE)
+    t = re.sub(r"\(\s*(Não relatou troca de alteração de dosagem da medicação\.?)\s*\)", r"\1", t, flags=re.IGNORECASE)
+    t = re.sub(r"\(\s*e\s+não\s+realiza\s+(psicoterapia|fisioterapia)\.?\s*\)", r"e não realiza \1.", t, flags=re.IGNORECASE)
+    t = re.sub(r",\s*[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b", r", relatou não ser readaptad\1, é Investigador", t, flags=re.IGNORECASE)
+    t = re.sub(r",\s*[Il],\s*nvestigador\b", r", é Investigador", t, flags=re.IGNORECASE)
+    t = re.sub(r"\b[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b", r"relatou não ser readaptad\1, é Investigador", t, flags=re.IGNORECASE)
     t = re.sub(r",\s*[Il],\s*(?=(?:não\s+readaptad[oa]|investigador|[a-zà-ú]))", r", ", t, flags=re.IGNORECASE)
     intro = r"[Rr]efere\s+in[íi]cio\s+d[eo]\s+tratamento\s+(?:em|no\s+dia|desde|a\s+partir\s+de|h[áa])\s+[^,.;\n]+"
     t = re.sub(r"[\.\;]\s*" + intro + r"[\.\;]", ".", t)
@@ -2432,6 +2589,17 @@ def _clean_esisla_text(text: str) -> str:
         text,
         flags=re.IGNORECASE
     )
+
+    # Limpeza da seção (*)Justificativa Parecer Médico na ficha e-SISLA
+    m_just = re.search(
+        r"(\(\*\)\s*Justificativa Parecer M[ée]dico:?\s*\n)(.*?)(\n\s*\(\*\)\s*Parecer Final)",
+        text,
+        re.DOTALL | re.IGNORECASE
+    )
+    if m_just:
+        h1, b_just, h2 = m_just.groups()
+        b_clean = _clean_justificativa_text(b_just)
+        text = text[:m_just.start()] + h1 + b_clean + "\n\n" + h2 + text[m_just.end():]
 
     text = re.sub(r"\n{3,}", "\n\n", text)
 
@@ -4178,7 +4346,7 @@ def api_ia_health():
 
 @app.get("/cid10_saude_ocupacional_afastamentos.csv")
 def cid_csv():
-    return send_from_directory(BASE_DIR, "cid10_saude_ocupacional_afastamentos.csv", mimetype="text/csv")
+    return send_from_directory(BASE_DIR, "cid10_saude_ocupacional_afastamentos.csv", mimetype="text/csv; charset=utf-8")
 
 @app.get("/app")
 def app_html():

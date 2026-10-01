@@ -7459,16 +7459,6 @@ function gerarNarrativaQueixaMelhoriaContinua(st, v) {
   const cidVal = st.cid || aux.cid || v.cid || $("agilCid")?.value || "";
   const cidNome = typeof findCID === "function" ? (findCID(cidVal)?.n || "") : "";
   const doenca = aux.doencaMotivo || v.doencaMotivo || $("agilDoencaMotivo")?.value || (cidVal ? `${cidVal}${cidNome ? ' — ' + cidNome : ''}` : "");
-  const idade = aux.idade || v.idade || $("agilIdade")?.value || "";
-  const cargo = aux.cargo || v.cargo || $("agilCargo")?.value || "";
-  const tempoCargo = aux.tempoCargo || v.tempoCargo || $("agilTempoCargo")?.value || "";
-  const unidadeTempo = aux.unidadeTempo || v.unidadeTempo || $("agilTempoUnidade")?.value || "anos";
-  const readap = String(st.readaptado || aux.readaptado || v.readaptado || getRadio("agilReadaptado") || "").toLowerCase() === "sim";
-  const ativReadap = aux.atividadesReadaptado || v.atividadesReadaptado || $("agilAtividadesReadaptado")?.value || "";
-  
-  const cidVal = st.cid || aux.cid || v.cid || $("agilCid")?.value || "";
-  const cidNome = typeof findCID === "function" ? (findCID(cidVal)?.n || "") : "";
-  const doenca = aux.doencaMotivo || v.doencaMotivo || $("agilDoencaMotivo")?.value || (cidVal ? `${cidVal}${cidNome ? ' — ' + cidNome : ''}` : "");
   const inicioTrat = aux.inicioTratamento || v.inicioTratamento || $("agilInicioTratamento")?.value || "";
   const freqCons = aux.freqConsultas || v.freqConsultas || $("agilFreqConsultas")?.value || "";
   const sintomas = aux.sintomasLimitacao || v.sintomasLimitacao || $("agilSintomasLimitacao")?.value || "";
@@ -10012,11 +10002,11 @@ function copiarLaudoEsislaAtendimento() {
   const v = values();
 
   // Mapear quesitos e parecer
-  const parecerVal = (state.parecer === 'FAVORÁVEL' || state.parecer === 'Favorável') ? 'F' : 'C';
+  const parecerCode = (state.parecer === 'FAVORÁVEL' || state.parecer === 'Favorável') ? 'F' : 'C';
   const isReadap = String(state.readaptado || state.aux?.readaptado || v.readaptado || '').trim().toLowerCase() === 'sim';
   let q1 = 'S';
-  let q2 = parecerVal === 'C' ? (isReadap ? 'S' : 'N') : 'S';
-  let q3 = parecerVal === 'C' ? 'N' : 'S';
+  let q2 = parecerCode === 'C' ? (isReadap ? 'S' : 'N') : 'S';
+  let q3 = parecerCode === 'C' ? 'N' : 'S';
 
   // 1. Queixa e Duração (max 2000)
   let queixaTexto = state.aux?.queixaDuracao || v.queixaDuracao || '';

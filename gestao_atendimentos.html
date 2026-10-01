@@ -2000,15 +2000,22 @@ body.modal-lock { overscroll-behavior: none; }
 </head>
 <body class="admin-shell"><div class="top-sync-bar" id="topSyncBar"></div><div id="authLoading" style="position:fixed;inset:0;background:#F2F6FA;z-index:999999;display:grid;place-items:center;font-family:Inter,system-ui,sans-serif;color:#073F87"><div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #DDE6EF;border-radius:14px;padding:13px 16px;box-shadow:0 12px 35px rgba(10,30,55,.1);font-size:12px;font-weight:800"><img src="/logo.png" alt="" style="width:28px;height:28px;object-fit:contain"><span>Verificando sessão...</span></div></div>
 <script>
-  try {
-    const _cached = sessionStorage.getItem("ambiental.auth.profile");
-    if (_cached) {
-      const _data = JSON.parse(_cached);
-      if (_data && _data.ts && (Date.now() - _data.ts < 300000)) {
-        document.getElementById('authLoading')?.remove();
-      }
+  (function() {
+    function _dismissAuthLoading() {
+      try { document.getElementById('authLoading')?.remove(); } catch(_) {}
     }
-  } catch(_) {}
+    try {
+      const _cached = sessionStorage.getItem("ambiental.auth.profile") || localStorage.getItem("ambiental.auth.profile");
+      if (_cached) {
+        const _data = JSON.parse(_cached);
+        const _prof = _data?.profile || _data;
+        if (_prof && (_prof.id || _prof.nome || _prof.email)) {
+          _dismissAuthLoading();
+        }
+      }
+    } catch(_) {}
+    setTimeout(_dismissAuthLoading, 1200);
+  })();
 </script>
 
 <div id="dataLoading" class="data-loading" aria-live="polite" aria-busy="true">
@@ -2525,7 +2532,25 @@ function field(label,value,full=false){
 }
 function setModal(id,open=true){const el=document.getElementById(id);if(!el)return;el.classList.toggle('open',open);const anyOpen=[...document.querySelectorAll('.modal.open')].length>0;document.documentElement.classList.toggle('modal-lock',anyOpen);document.body.classList.toggle('modal-lock',anyOpen);if(open){requestAnimationFrame(()=>el.querySelector('button,textarea,[tabindex]:not([tabindex="-1"])')?.focus?.());}}
 function closeModal(id){setModal(id,false)}
-function openEval(enc){location.href='/app?atendimento='+enc}
+function openEval(enc){
+  try {
+    const rawId = decodeURIComponent(enc);
+    const r = find(rawId);
+    if (r) {
+      const v = values(r);
+      const p = new URLSearchParams();
+      p.set('atendimento', rawId);
+      if (v.patient && v.patient !== 'Paciente não informado') p.set('paciente', v.patient);
+      if (v.cpf) p.set('cpf', v.cpf);
+      if (v.cargo && v.cargo !== '-' && v.cargo !== 'Cargo não informado') p.set('cargo', v.cargo);
+      if (v.idade && v.idade !== '-') p.set('idade', v.idade);
+      if (v.unidade) p.set('unidade', v.unidade);
+      location.href = '/app?' + p.toString();
+      return;
+    }
+  } catch(_) {}
+  location.href='/app?atendimento='+enc;
+}
 function openDocument(enc){location.href='/app?atendimento='+enc+'&documento=1'}
 function normalizeRecordPayload(r){
     const p = (r?.payload && typeof r.payload === 'object') ? r.payload : (r || {});

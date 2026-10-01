@@ -147,11 +147,18 @@
         if (res.ok) {
           if (tokenHash) {
             STATE.syncedTokenHash = tokenHash;
-            try { sessionStorage.setItem("ambiental.auth.syncedHash", tokenHash); } catch(_) {}
+            try {
+              sessionStorage.setItem("ambiental.auth.syncedHash", tokenHash);
+              localStorage.setItem("ambiental.auth.syncedHash", tokenHash);
+            } catch(_) {}
           }
           if (data?.data) {
             STATE.profile = data.data;
-            try { sessionStorage.setItem("ambiental.auth.profile", JSON.stringify({ profile: data.data, tokenHash, ts: Date.now() })); } catch(_) {}
+            try {
+              const cacheStr = JSON.stringify({ profile: data.data, tokenHash, ts: Date.now() });
+              sessionStorage.setItem("ambiental.auth.profile", cacheStr);
+              localStorage.setItem("ambiental.auth.profile", cacheStr);
+            } catch(_) {}
           }
           return { ok: true, profile: data?.data };
         }
@@ -171,25 +178,23 @@
   }
 
   async function me() {
-    const token = await getAccessToken();
+    const token = await getAccessToken().catch(() => null);
     const tokenHash = token ? await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token))
       .then(buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join(""))
       .catch(() => "") : "";
 
-    // 1. Cache ultrarrápido em sessionStorage para transições instantâneas entre telas (ex: abrir novo atendimento)
-    if (tokenHash) {
-      try {
-        const cached = sessionStorage.getItem("ambiental.auth.profile");
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (parsed && parsed.ts && (Date.now() - parsed.ts < 300000) && (!parsed.tokenHash || parsed.tokenHash === tokenHash)) {
-            STATE.profile = parsed.profile;
-            STATE.syncedTokenHash = tokenHash;
-            return STATE.profile;
-          }
+    // 1. Cache ultrarrápido em sessionStorage / localStorage para transições instantâneas entre telas
+    try {
+      const cached = sessionStorage.getItem("ambiental.auth.profile") || localStorage.getItem("ambiental.auth.profile");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.ts && (Date.now() - parsed.ts < 300000) && (!tokenHash || !parsed.tokenHash || parsed.tokenHash === tokenHash)) {
+          STATE.profile = parsed.profile;
+          if (tokenHash) STATE.syncedTokenHash = tokenHash;
+          return STATE.profile;
         }
-      } catch (_) {}
-    }
+      }
+    } catch (_) {}
 
     const headers = { "Accept": "application/json" };
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -201,18 +206,24 @@
     const data = await res.json().catch(() => null);
     if (!res.ok || !data?.success) {
       if (res.status === 401) {
-        try { sessionStorage.removeItem("ambiental.auth.profile"); } catch(_) {}
+        try {
+          sessionStorage.removeItem("ambiental.auth.profile");
+          localStorage.removeItem("ambiental.auth.profile");
+        } catch(_) {}
         return null;
       }
       throw new Error(data?.error?.message || "Não foi possível validar o usuário.");
     }
     STATE.profile = data.data;
-    if (tokenHash) {
-      try {
-        sessionStorage.setItem("ambiental.auth.profile", JSON.stringify({ profile: STATE.profile, tokenHash, ts: Date.now() }));
+    try {
+      const cacheStr = JSON.stringify({ profile: STATE.profile, tokenHash, ts: Date.now() });
+      sessionStorage.setItem("ambiental.auth.profile", cacheStr);
+      localStorage.setItem("ambiental.auth.profile", cacheStr);
+      if (tokenHash) {
         sessionStorage.setItem("ambiental.auth.syncedHash", tokenHash);
-      } catch(_) {}
-    }
+        localStorage.setItem("ambiental.auth.syncedHash", tokenHash);
+      }
+    } catch(_) {}
     return STATE.profile;
   }
 
@@ -234,7 +245,7 @@
   }
 
   async function requireAuth({ area } = {}) {
-    await init();
+    await init().catch(e => console.warn("Supabase init em segundo plano:", e));
     const profile = await me();
     if (!profile) {
       const target = encodeURIComponent(location.pathname + location.search);
@@ -246,10 +257,10 @@
       throw new Error("PERMISSION_DENIED");
     }
     // Sincroniza o cookie HttpOnly de sessão apenas se ainda não estiver sincronizado
-    const token = await getAccessToken();
-    const storedHash = STATE.syncedTokenHash || sessionStorage.getItem("ambiental.auth.syncedHash");
-    if (!storedHash) {
-      await syncServerSession(token);
+    const token = await getAccessToken().catch(() => null);
+    const storedHash = STATE.syncedTokenHash || sessionStorage.getItem("ambiental.auth.syncedHash") || localStorage.getItem("ambiental.auth.syncedHash");
+    if (!storedHash && token) {
+      await syncServerSession(token).catch(() => {});
     }
     return profile;
   }
@@ -309,6 +320,8 @@
       try {
         sessionStorage.removeItem("ambiental.auth.profile");
         sessionStorage.removeItem("ambiental.auth.syncedHash");
+        localStorage.removeItem("ambiental.auth.profile");
+        localStorage.removeItem("ambiental.auth.syncedHash");
         storage.removeItem("ambiental.auth.session");
       } catch (_) {}
       await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin", keepalive: true }).catch(() => {});

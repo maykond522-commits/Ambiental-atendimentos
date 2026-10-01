@@ -1756,15 +1756,25 @@ body:not(.mode-agil-active) #containerModoAgil {
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/auth.js"></script><script src="/api.js"></script></head>
 <body><div id="authLoading" style="position:fixed;inset:0;background:#F2F6FA;z-index:999999;display:grid;place-items:center;font-family:Inter,system-ui,sans-serif;color:#073F87"><div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #DDE6EF;border-radius:14px;padding:13px 16px;box-shadow:0 12px 35px rgba(10,30,55,.1);font-size:12px;font-weight:800"><img src="/logo.png" alt="" style="width:28px;height:28px;object-fit:contain"><span>Verificando sessão...</span></div></div>
 <script>
-  try {
-    const _cached = sessionStorage.getItem("ambiental.auth.profile");
-    if (_cached) {
-      const _data = JSON.parse(_cached);
-      if (_data && _data.ts && (Date.now() - _data.ts < 300000)) {
-        document.getElementById('authLoading')?.remove();
-      }
+  (function() {
+    function _dismissAuthLoading() {
+      try { document.getElementById('authLoading')?.remove(); } catch(_) {}
     }
-  } catch(_) {}
+    try {
+      const _cached = sessionStorage.getItem("ambiental.auth.profile") || localStorage.getItem("ambiental.auth.profile");
+      if (_cached) {
+        const _data = JSON.parse(_cached);
+        const _prof = _data?.profile || _data;
+        if (_prof && (_prof.id || _prof.nome || _prof.email)) {
+          _dismissAuthLoading();
+          if ((_prof.modo_atendimento || 'agil') === 'agil') {
+            document.body?.classList.add('mode-agil-active');
+          }
+        }
+      }
+    } catch(_) {}
+    setTimeout(_dismissAuthLoading, 1200);
+  })();
 </script>
 <div class="app">
 <!-- MINI-HUD FLUTUANTE PERICIAL (Sticky ao rolar a página) -->
@@ -3399,7 +3409,8 @@ function applyProfessionalDefaults(profile){
 
 const authReady = AmbientalAuth.requireAuth({area:'atendimento'}).then(async profile=>{
   currentProfile = profile;
-  accessToken = await AmbientalAuth.getAccessToken();
+  accessToken = await AmbientalAuth.getAccessToken().catch(()=>null);
+  applyProfessionalDefaults(profile);
   const title = document.querySelector('.brand-title');
   if(title) title.textContent = 'AVALIAÇÃO MÉDICA PERICIAL — LTS';
   const hdr = document.querySelector('.header-actions');
@@ -3412,12 +3423,13 @@ const authReady = AmbientalAuth.requireAuth({area:'atendimento'}).then(async pro
     hdr.prepend(el);
   }
   document.getElementById('authLoading')?.remove();
+  return profile;
 }).catch(e=>{
   document.getElementById('authLoading')?.remove();
   if(e?.message!=='AUTH_REQUIRED'&&e?.message!=='PERMISSION_DENIED') console.error('Falha ao validar sessão.', e);
-  throw e;
+  return null;
 });
-setTimeout(() => { document.getElementById('authLoading')?.remove(); }, 2000);
+setTimeout(() => { document.getElementById('authLoading')?.remove(); }, 1200);
 const LOGO_DATA = "/logo.png";
 const API_FALLBACK="http://127.0.0.1:8000";
 const STORAGE_KEY="ambiental_lts_v2";
@@ -4430,8 +4442,12 @@ function applyState(){
   $("exameFisicoTipo") && ($("exameFisicoTipo").value=state.exameFisicoTipo||"");
   $("exameFisicoDescricao") && ($("exameFisicoDescricao").value=state.exameFisicoDescricao||"");
   $("alteracoesClinicasExames") && ($("alteracoesClinicasExames").value=state.alteracoesClinicasExames||"");
-  setRadio("readaptado",state.readaptado);setRadio("outrasDoencas",state.outrasDoencas);setRadio("alteracaoMed",state.alteracaoMed);setRadio("limitacaoFuncional",state.limitacaoFuncional);setRadio("limitacaoRol",state.limitacaoRol);setRadio("parecer",state.parecer);setRadio("capacidade",state.capacidade); $("psicoterapia").checked=!!state.psicoterapia;$("fisioterapia").checked=!!state.fisioterapia;
-  togglePanelsOnly(); updateLimitacaoStatus(); renderMedications();renderConditions();renderDocumentRecords();if(typeof ensureDefaultQuesitos==="function")ensureDefaultQuesitos();renderQuesitos();renderExam();renderSecondaryCIDs();renderParecerHint();applyFinalizedLock(); if($("cid").value)renderCIDAssist(findCID($("cid").value)||null); syncExtendedToAgil(); go(Math.min(9,Math.max(1,Number(state.current)||1)));
+  togglePanelsOnly(); updateLimitacaoStatus(); renderMedications();renderConditions();renderDocumentRecords();if(typeof ensureDefaultQuesitos==="function")ensureDefaultQuesitos();renderQuesitos();renderExam();renderSecondaryCIDs();renderParecerHint();applyFinalizedLock(); if($("cid").value)renderCIDAssist(findCID($("cid").value)||null); syncExtendedToAgil();
+  if (currentAttendanceMode === "agil") {
+    document.body.classList.add("mode-agil-active");
+  } else {
+    go(Math.min(9,Math.max(1,Number(state.current)||1)));
+  }
 }
 function togglePanelsOnly(){
   const readapVal = getRadio("readaptado") || getRadio("agilReadaptado");
@@ -4480,7 +4496,18 @@ async function tryServerLoad(id){
       state.__serverVersion=Number(d.versao||1);
       state.workflowStatus=d.status||state.workflowStatus||"RASCUNHO";
       state.finalizado=state.workflowStatus==="FINALIZADO";
+      if (!state.aux || typeof state.aux !== "object") state.aux = {};
+      state.atendimento = state.atendimento || d.atendimento || id;
+      const pacienteNome = state.nomePaciente || state.aux.nomePaciente || d.paciente_nome || d.paciente || "";
+      if (pacienteNome) { state.nomePaciente = pacienteNome; state.aux.nomePaciente = pacienteNome; }
+      const pacienteCpf = state.cpfPaciente || state.aux.cpfPaciente || d.paciente_cpf || d.cpf || "";
+      if (pacienteCpf) { state.cpfPaciente = pacienteCpf; state.aux.cpfPaciente = pacienteCpf; }
+      const cargo = state.cargo || state.aux.cargo || d.cargo || "";
+      if (cargo) { state.cargo = cargo; state.aux.cargo = cargo; }
+      const idade = state.idade || state.aux.idade || d.idade || "";
+      if (idade) { state.idade = idade; state.aux.idade = idade; }
       applyState();
+      syncExtendedToAgil();
       setPersistStatus("ok","Atendimento sincronizado com o servidor");
       return true;
     }
@@ -5481,12 +5508,21 @@ async function loadRegistryRecord(id){
 }
 async function init(){
  buildSteps();$("dataAtd").value=today();$("horaAtd").value=timeNow();let recovered=false;
- await authReady;
+ try { await authReady; } catch(e) { console.warn("authReady:", e); }
+ if (!currentProfile && window.AmbientalAuth?.profile) currentProfile = window.AmbientalAuth.profile;
+ if (!currentProfile) {
+   try {
+     const _c = JSON.parse(sessionStorage.getItem("ambiental.auth.profile") || localStorage.getItem("ambiental.auth.profile") || "null");
+     if (_c?.profile) currentProfile = _c.profile;
+   } catch(_) {}
+ }
+ if (currentProfile) applyProfessionalDefaults(currentProfile);
  await loadCIDs().catch(err => console.warn("Erro ao carregar base de CIDs:", err));
  const params=new URLSearchParams(location.search); const recordId=params.get("atendimento"); const isNew=params.get("novo")==="1"; const openDocumentOnLoad=params.get("documento")==="1";
  const doctorDefaultMode = (currentProfile?.modo_atendimento === "extenso" || currentProfile?.modo_atendimento === "estendido") ? "estendido" : "agil";
   if(isNew || !recordId){
    newEmptyState();
+   applyProfessionalDefaults(currentProfile);
    applyState();
    if (doctorDefaultMode === "estendido") {
      setAttendanceMode("estendido");
@@ -5502,20 +5538,34 @@ async function init(){
      applyProfessionalDefaults(currentProfile);
      applyState();
    }
-   const savedMode = localStorage.getItem("ambiental_attendance_mode") || doctorDefaultMode;
+   const savedMode = (currentProfile && currentProfile.modo_atendimento) ? doctorDefaultMode : (localStorage.getItem("ambiental_attendance_mode") || doctorDefaultMode);
    setAttendanceMode(savedMode);
  }
  const pacienteParam = params.get("paciente");
  const protocoloParam = params.get("protocolo") || params.get("agenda_protocolo");
  const horaParam = params.get("hora");
  const niParam = params.get("ni");
- if (pacienteParam || protocoloParam) {
+ const nomeAltParam = params.get("nome");
+ const cpfParam = params.get("cpf") || params.get("cpfPaciente");
+ const cargoParam = params.get("cargo");
+ const idadeParam = params.get("idade");
+ const tempoCargoParam = params.get("tempo_cargo") || params.get("tempoCargo");
+ const tempoUnidadeParam = params.get("tempo_unidade") || params.get("tempoUnidade");
+ const readaptadoParam = params.get("readaptado");
+ const unidadeParam = params.get("unidade");
+
+ if (pacienteParam || protocoloParam || cpfParam || cargoParam || idadeParam || nomeAltParam) {
    if (!state.aux) state.aux = {};
    if (pacienteParam) {
      state.aux.nomePaciente = pacienteParam;
      state.nomePaciente = pacienteParam;
      if ($("nomePaciente")) $("nomePaciente").value = pacienteParam;
      if ($("agilNomePaciente")) $("agilNomePaciente").value = pacienteParam;
+   } else if (nomeAltParam) {
+     state.aux.nomePaciente = nomeAltParam;
+     state.nomePaciente = nomeAltParam;
+     if ($("nomePaciente")) $("nomePaciente").value = nomeAltParam;
+     if ($("agilNomePaciente")) $("agilNomePaciente").value = nomeAltParam;
    }
    if (protocoloParam) {
      state.atendimento = protocoloParam;
@@ -5530,8 +5580,50 @@ async function init(){
    if (niParam) {
      state.aux.ni = niParam;
    }
+   if (cpfParam) {
+     const formattedCpf = formatCPF(cpfParam);
+     state.aux.cpfPaciente = formattedCpf;
+     state.cpfPaciente = formattedCpf;
+     if ($("cpfPaciente")) $("cpfPaciente").value = formattedCpf;
+     if ($("agilCpfPaciente")) $("agilCpfPaciente").value = formattedCpf;
+   }
+   if (cargoParam) {
+     state.aux.cargo = cargoParam;
+     state.cargo = cargoParam;
+     if ($("cargo")) $("cargo").value = cargoParam;
+     if ($("agilCargo")) $("agilCargo").value = cargoParam;
+   }
+   if (idadeParam) {
+     state.aux.idade = idadeParam;
+     state.idade = idadeParam;
+     if ($("idade")) $("idade").value = idadeParam;
+     if ($("agilIdade")) $("agilIdade").value = idadeParam;
+   }
+   if (tempoCargoParam) {
+     state.aux.tempoCargo = tempoCargoParam;
+     state.tempoCargo = tempoCargoParam;
+     if ($("tempoCargo")) $("tempoCargo").value = tempoCargoParam;
+     if ($("agilTempoCargo")) $("agilTempoCargo").value = tempoCargoParam;
+   }
+   if (tempoUnidadeParam) {
+     state.aux.tempoUnidade = tempoUnidadeParam;
+     state.tempoUnidade = tempoUnidadeParam;
+     if ($("tempoUnidade")) $("tempoUnidade").value = tempoUnidadeParam;
+     if ($("agilTempoUnidade")) $("agilTempoUnidade").value = tempoUnidadeParam;
+   }
+   if (readaptadoParam) {
+     const rVal = (readaptadoParam.toLowerCase() === "sim" || readaptadoParam === "1") ? "Sim" : "Não";
+     state.readaptado = rVal;
+     state.aux.readaptado = rVal;
+     setRadio("readaptado", rVal);
+     setRadio("agilReadaptado", rVal);
+   }
+   if (unidadeParam) {
+     state.aux.unidade = unidadeParam;
+   }
    applyProfessionalDefaults(currentProfile);
    applyState();
+   syncExtendedToAgil();
    autoSave();
  }
  if(openDocumentOnLoad) setTimeout(()=>openFinalReport(),250);

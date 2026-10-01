@@ -2130,7 +2130,7 @@ main { min-width: 0; }
           </div>
           <div class="agenda-patient-actions">
             ${hasAtd ? `
-              <button class="btn-sm primary" type="button" onclick="location.href='/app?atendimento=${encodeURIComponent(atdNum)}'">
+              <button class="btn-sm primary" type="button" onclick="iniciarAtendimentoAgenda('${esc(it.nome_periciado)}', '${esc(it.protocolo || '')}', '${esc(it.ni || '')}', '${esc(it.hora || '')}', '${esc(atdNum)}')">
                 Abrir Atendimento →
               </button>
             ` : `
@@ -2202,13 +2202,17 @@ main { min-width: 0; }
     }
   }
 
-  window.iniciarAtendimentoAgenda = function(nome, protocolo, ni, hora) {
+  window.iniciarAtendimentoAgenda = function(nome, protocolo, ni, hora, atdNum) {
     const p = new URLSearchParams();
-    p.set('novo', '1');
-    if (nome) p.set('paciente', nome);
+    if (atdNum) {
+      p.set('atendimento', atdNum);
+    } else {
+      p.set('novo', '1');
+    }
+    if (nome && nome !== 'Não informado') p.set('paciente', nome);
     if (protocolo) p.set('protocolo', protocolo);
     if (ni) p.set('ni', ni);
-    if (hora) p.set('hora', hora);
+    if (hora && hora !== '—') p.set('hora', hora);
     location.href = '/app?' + p.toString();
   };
 

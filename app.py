@@ -3650,6 +3650,25 @@ def api_get_atendimento(rid):
     denied = _require_record_access(r)
     if denied: return denied
     payload = r["payload_json"] if isinstance(r["payload_json"], dict) else json.loads(r["payload_json"])
+    if isinstance(payload, dict):
+        if not payload.get("atendimento"):
+            payload["atendimento"] = r.get("numero")
+        if not payload.get("aux") or not isinstance(payload.get("aux"), dict):
+            payload["aux"] = {}
+        paciente_nome_row = str(r.get("paciente_nome") or "").strip()
+        paciente_cpf_row = str(r.get("paciente_cpf") or "").strip()
+        medico_row = str(r.get("medico") or "").strip()
+        unidade_row = str(r.get("unidade") or "").strip()
+        if paciente_nome_row:
+            if not payload.get("nomePaciente"): payload["nomePaciente"] = paciente_nome_row
+            if not payload["aux"].get("nomePaciente"): payload["aux"]["nomePaciente"] = paciente_nome_row
+        if paciente_cpf_row:
+            if not payload.get("cpfPaciente"): payload["cpfPaciente"] = paciente_cpf_row
+            if not payload["aux"].get("cpfPaciente"): payload["aux"]["cpfPaciente"] = paciente_cpf_row
+        if medico_row:
+            if not payload.get("medico"): payload["medico"] = medico_row
+        if unidade_row:
+            if not payload["aux"].get("unidade"): payload["aux"]["unidade"] = unidade_row
     return _ok({"id":r["id"],"atendimento":r["numero"],"status":r["status"],"payload":payload,"completude":r["completude"],"atualizado_em":r["atualizado_em"],"finalizado_em":r["finalizado_em"],"versao":int(r.get("versao") or 1),"atualizado_por":r.get("atualizado_por")})
 
 @app.post("/api/atendimentos")

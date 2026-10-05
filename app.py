@@ -244,7 +244,7 @@ def _role_from_profile(user: dict[str, Any], db) -> tuple[str | None, dict[str, 
     if not db_email:
         db_email = email
     modo_atendimento = str(row.get("modo_atendimento") or "agil").strip().lower()
-    if modo_atendimento not in ("agil", "extenso"):
+    if modo_atendimento not in ("agil", "extenso", "ia"):
         modo_atendimento = "agil"
 
     if role not in _ALLOWED_ROLES:
@@ -858,6 +858,82 @@ class FinalReportTextResult(BaseModel):
     model_config = ConfigDict(extra="ignore")
     relatorio: str
 
+class MedicamentoItem(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    medicamento: str
+    dosagem: str
+    frequencia: str
+    observacao: str
+
+class CondicaoItem(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    nome: str
+    tratamento: str
+
+class QuesitoPreenchimentoItem(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: int
+    pergunta: str
+    resposta: str
+
+class PreenchimentoCompletoResult(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    nome_paciente: str
+    cpf_paciente: str
+    rg_paciente: str
+    data_nascimento: str
+    idade: str
+    sexo: str
+    cargo: str
+    tempo_cargo: str
+    tempo_unidade: str
+    readaptado: str
+    atividades_readaptado: str
+
+    doenca_motivo: str
+    inicio_tratamento: str
+    freq_consultas: str
+    sintomas_limitacao: str
+    medications: list[MedicamentoItem]
+    alteracao_med: str
+    data_alteracao_med: str
+    obs_alteracao_med: str
+    psicoterapia: bool
+    fisioterapia: bool
+    obs_terapias: str
+    outras_doencas: str
+    conditions: list[CondicaoItem]
+    historico_pregresso: str
+
+    cid: str
+    cid_descricao: str
+    cids_secundarios: list[str]
+    crm_cro: str
+    nome_medico_assistente: str
+    data_documento: str
+    dias_solicitados: str
+    obs_documentos: str
+
+    exame_fisico_tipo: str
+    outros_subtipo: str
+    outros_resultado: str
+    exame_mental_resultado: str
+    exame_fisico_descricao: str
+    pressao_sistolica: str
+    pressao_diastolica: str
+    pulso: str
+    altura: str
+    peso: str
+
+    limitacao_funcional: str
+    limitacao_rol: str
+    desc_limitacao: str
+    atividades_comprometidas: str
+
+    quesitos: list[QuesitoPreenchimentoItem]
+    capacidade: str
+    parecer: str
+    justificativa: str
 
 _CID_CATALOG: dict[str, dict[str, str]] | None = None
 
@@ -1312,6 +1388,84 @@ Data P.F.:
 
 VALIDAÇÃO FINAL:
 Cada frase factual da saída deve ser rastreável a um ou mais campos do questionário. Se não for rastreável, remova a frase. Se um valor não existir, deixe o campo vazio.
+""".strip(),
+    "preencher_ficha": """
+TAREFA: EXTRAÇÃO E ESTRUTURAÇÃO PERICIAL AVANÇADA DE TEXTO BRUTO PARA PREENCHIMENTO COMPLETO DE FICHA DE ATENDIMENTO MÉDICO-PERICIAL (LTS / DPME).
+
+Atue como médico perito sênior em Medicina do Trabalho e Perícias Médicas Oficiais do Estado de São Paulo (DPME - Programa de Melhoria Contínua).
+
+Você receberá um texto bruto contendo anotações informais do médico perito (ex.: mensagens de WhatsApp, anotações rápidas de consulta) e/ou dados administrativos copiados diretamente da tela do sistema e-SISLA / prontuário funcional.
+
+SEU OBJETIVO:
+Extrair todas as informações e redigir os campos da ficha pericial com alto nível técnico-pericial, redação formal, coesão vernacular e estrita aderência aos padrões periciais oficiais DPME, SEM inventar fatos divergentes dos relatados.
+
+DIRETRIZES DE EXTRAÇÃO E REDAÇÃO:
+
+1. DADOS CADASTRAIS E FUNCIONAIS:
+- nome_paciente: Nome completo em MAIÚSCULAS (ex.: "CAMILA DE OLIVEIRA").
+- cpf_paciente: Formatado com pontuação (ex.: "333.813.948-94").
+- rg_paciente: Limpo e formatado se fornecido.
+- data_nascimento: No formato DD/MM/AAAA (ex.: "08/09/1984").
+- idade: Apenas o número de anos (ex.: "42"). Se não explícito mas houver data de nascimento, calcule em relação ao ano corrente 2026.
+- sexo: "Feminino" ou "Masculino".
+- cargo: Nome oficial do cargo público (ex.: "Professor de Educação Básica II", "Investigador de Polícia", "PEB I").
+- tempo_cargo: Apenas o número (ex.: "20").
+- tempo_unidade: "Anos", "Meses" ou "Dias" (padrão: "Anos").
+- readaptado: "Sim" ou "Não" (se o texto indicar "Readaptado Não" ou omitir, registre "Não").
+- atividades_readaptado: Preencha somente se for readaptado.
+
+2. QUEIXA E DURAÇÃO & ANTECEDENTES:
+- doenca_motivo: Síntese clínica formal da queixa motivadora (ex.: "Pós-operatório de mastopexia e ressecção de nódulos mamários com deiscência parcial de sutura cirúrgica").
+- inicio_tratamento: Ano (ex.: "2026") ou data exata DD/MM/AAAA se informada. Se não houver, deixe vazio.
+- freq_consultas: "Mensal", "Quinzenal", "Semanal", etc.
+- sintomas_limitacao: Descrição profissional e robusta dos sintomas e limitações relatadas (ex.: "Refere dor local contínua de intensidade moderada em ferida operatória mamária, edema local e deiscência de 3 pontos cirúrgicos, acarretando limitação funcional importante para movimentação ampla de membros superiores, levantamento de peso e regência em sala de aula.").
+- medications: Lista de medicamentos em uso. Se informado nome informal ou sem dose (ex.: "dipirona"), padronize tecnicamente: medicamento "Dipirona", dosagem "1 g", frequencia "se dor até 6/6h", observacao "analgesia".
+- alteracao_med: "Não" (ou "Sim" se relatada troca recente).
+- psicoterapia: false ou true (se negado, false).
+- fisioterapia: false ou true (se negado, false).
+- obs_terapias: Redação formal pericial (ex.: "Não alegou fazer fisioterapia e psicoterapia.").
+- outras_doencas: "Sim" se houver outras patologias informadas, senão "Não".
+- conditions: Lista de comorbidades prévias estruturadas com tratamento.
+- historico_pregresso: Histórico pregresso formal (ex.: "Nega outras comorbidades crônicas, outras cirurgias pregressas além da atual ou uso de substâncias ilícitas.").
+
+3. ATESTADO DO MÉDICO ASSISTENTE E CID:
+- cid: Código CID-10 oficial pontuado (ex.: "Z98.8", "F32.1", "M54.5"). Se vier sem ponto (ex.: "Z988"), formate com ponto ("Z98.8").
+- cid_descricao: Descrição correspondente do CID-10 (ex.: "Outros estados pós-cirúrgicos especificados").
+- crm_cro: Dígitos numéricos do CRM do médico assistente (ex.: "224574").
+- nome_medico_assistente: Nome do médico assistente (ex.: "Bruna de Morais Torres").
+- data_documento: Data de emissão no formato ISO "YYYY-MM-DD" (ex.: "2026-09-29") ou DD/MM/AAAA.
+- dias_solicitados: Número de dias em dígitos (ex.: "15").
+- obs_documentos: Síntese formal do documento (ex.: "Atestado médico emitido em 29/09/2026 pela Dra. Bruna de Morais Torres (CRM 224574), indicando 15 dias de repouso por CID Z98.8.").
+
+4. EXAME FÍSICO / MENTAL E SINAIS VITAIS:
+- exame_fisico_tipo: Categoria correspondente ("Exame Mental" para patologias mentais/CID F; "Aparelho Osteomuscular e Tecido Conjutivo" para osteo/articular/CID M; "Outros" para procedimentos cirúrgicos, dermatologia, mamas, feridas, etc.).
+- outros_subtipo: Quando exame_fisico_tipo for "Outros", selecione o segmento correspondente dentre: "Exame Físico Geral", "Tecido celular subcutâneo", "Pele e Fâneros", "Aparelho Circulatório", "Aparelho Respiratório", "Aparelho Hemolinfopoético", "Aparelho Digestivo", "Aparelho Geniturinário", "Aparelho Endócrino", "Sistema Nervoso", "Órgãos dos Sentidos" ou "E outros". Para pós-operatório, mamas ou cirurgias gerais com ferida operatória, utilize "Exame Físico Geral". Se exame não for Outros, use "".
+- outros_resultado: Quando exame_fisico_tipo for "Outros", utilize "Alterado" se o parecer for FAVORÁVEL (com deiscência, dor, limitação funcional) ou "Normal" se parecer CONTRÁRIO (sem achados patológicos). Se exame não for Outros, use "".
+- exame_mental_resultado: Se exame mental, "Alterado" ou "Normal"; senão vazio.
+- exame_fisico_descricao: Redija uma propedêutica médica objetiva, técnica e plausível condizente com a queixa informada (ex.: para pós-operatório com deiscência: "Estado geral bom, consciente e orientada, acianótica, eupneica, afebril. Mamas simétricas, ferida operatória em cicatrização com edema moderado e deiscência de 3 pontos cirúrgicos sem secreção purulenta ativa. Dor à palpação local e limitação antálgica à abdução e elevação de membros superiores acima de 90 graus.").
+- pressao_sistolica: "120" (ou informada).
+- pressao_diastolica: "80" (ou informada).
+- pulso: "80" (ou informado).
+- altura e peso: se constar no texto, extraia; senão, deixe vazio.
+
+5. LIMITAÇÕES, ROL E JUSTIFICATIVA DO PARECER:
+- limitacao_funcional: "Sim" se incapacidade temporária / parecer favorável; "Não" se parecer contrário.
+- limitacao_rol: "Sim" se favorável; "Não" se contrário.
+- desc_limitacao: Descreva as limitações funcionais objetivas para as atribuições do cargo público (ex.: "Apresenta limitações físicas temporárias decorrentes do pós-operatório recente de cirurgia mamária com deiscência de pontos cirúrgicos, inviabilizando esforços físicos com membros superiores, levantamento de peso e permanência prolongada em sala de aula.").
+- atividades_comprometidas: Atividades específicas do rol comprometidas (ex.: "Regência de classe, escrita em lousa, transporte de materiais pedagógicos e controle de sala de aula.").
+- capacidade: "Capacidade parcial e temporariamente prejudicada" (se favorável) ou "Capacidade laborativa preservada" (se contrário).
+- parecer: "FAVORÁVEL" ou "CONTRÁRIO" (se o texto do médico disser "favorável", use "FAVORÁVEL").
+- quesitos:
+  * Se Favorável:
+    1: Sim (Há doença(s) ou sequela(s) de doença(s) prévia(s)?)
+    2: Sim (A(s) doença(s) ou sequela(s) de doença(s) prévia(s) gera(m) limitação(ões) para periciando(a)?)
+    3: Sim (A(s) limitação(ões) impede(m) o(a) periciando(a) de exercer alguma atividade do rol?)
+  * Se Contrário: 1: Sim, 2: Não, 3: Não.
+- justificativa: Redija em 1ª pessoa no padrão DPME, sem expressões como "Concedo X dias":
+  * Se Favorável: "Considero a capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol do cargo de [cargo], em razão de limitações físicas decorrentes de [doenca_motivo] (CID [cid]), referente ao período pleiteado."
+  * Se Contrário: "Constato a capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações incapacitantes para as atribuições rotineiras do cargo atual de [cargo]."
+
+REGRA TERMINOLÓGICA MANDATÓRIA: NUNCA utilize o termo "Paciente" ou "paciente". Utilize SEMPRE "Servidor", "Servidora" ou "Periciado/Periciada".
 """.strip()
 }
 
@@ -2143,6 +2297,7 @@ def guard():
         "/gerar-justificativa","/analisar-coerencia","/resumir-caso","/revisar-texto","/revisar-preenchimento","/gerar-relatorio-final",
         "/api/gerar-justificativa","/api/analisar-coerencia","/api/resumir-caso","/api/revisar-texto","/api/revisar-preenchimento","/api/gerar-relatorio-final",
         "/api/ai/justificativa","/api/ai/revisao","/api/ai/coerencia","/api/ai/documento","/api/ai/preenchimento","/api/ai/esisla",
+        "/api/ai/preencher-ficha",
     }
     if request.method=="POST" and request.path in ai_paths:
         if request.content_length and request.content_length>MAX_BODY_BYTES: return _error("VALIDATION_ERROR","Payload excede o limite permitido.",False,413)
@@ -3078,6 +3233,94 @@ def gerar_relatorio_final():
     except Exception as exc:
         if isinstance(exc, ValueError):
             return jsonify({"error": "invalid_request", "detail": str(exc)}), 400
+@app.post("/api/ai/preencher-ficha")
+def api_ai_preencher_ficha():
+    try:
+        raw = _json_body()
+        texto_bruto = str(raw.get("texto_bruto") or raw.get("texto") or "").strip()
+        if not texto_bruto:
+            return jsonify({"error": "validation_error", "detail": "Texto bruto não informado."}), 400
+
+        atendimento_id = _get_cadastro_id(raw)
+        with _cadastro_ai_lock(atendimento_id, "/api/ai/preencher-ficha"):
+            instruction = (
+                TASK_PROMPTS["preencher_ficha"]
+                + "\n\nTEXTO BRUTO FORNECIDO PELO USUÁRIO (ANOTAÇÕES DO MÉDICO E/OU DADOS DO SISTEMA):\n"
+                + texto_bruto
+            )
+            result = _generate_structured(instruction, PreenchimentoCompletoResult)
+
+            # Normalização de CID (ex.: Z988 -> Z98.8)
+            cid_str = (result.cid or "").strip().upper()
+            if cid_str and len(cid_str) == 4 and "." not in cid_str:
+                cid_str = f"{cid_str[:3]}.{cid_str[3:]}"
+                result.cid = cid_str
+            if cid_str and not result.cid_descricao:
+                cid_info = get_cid_info(cid_str)
+                if cid_info and cid_info.get("nome"):
+                    result.cid_descricao = cid_info["nome"]
+
+            # Normalização de Data do Atestado (para ISO YYYY-MM-DD aceito pelo input date)
+            doc_date = (result.data_documento or "").strip()
+            if doc_date:
+                m_date = re.match(r"^(\d{1,2})[/\-\.](\d{1,2})[/\-\.](\d{4})$", doc_date)
+                if m_date:
+                    result.data_documento = f"{m_date.group(3)}-{m_date.group(2).zfill(2)}-{m_date.group(1).zfill(2)}"
+
+            # Normalização de Unidade de Tempo
+            t_unid = (result.tempo_unidade or "").strip().lower()
+            if "m" in t_unid:
+                result.tempo_unidade = "Meses"
+            elif "d" in t_unid:
+                result.tempo_unidade = "Dias"
+            else:
+                result.tempo_unidade = "Anos"
+
+            # Normalização de CPF
+            cpf_digits = re.sub(r"\D", "", result.cpf_paciente or "")
+            if len(cpf_digits) == 11:
+                result.cpf_paciente = f"{cpf_digits[:3]}.{cpf_digits[3:6]}.{cpf_digits[6:9]}-{cpf_digits[9:]}"
+
+            # Normalização de Exame "Outros"
+            is_outros = (result.exame_fisico_tipo or "").strip().lower() == "outros"
+            if is_outros:
+                if not result.outros_subtipo or result.outros_subtipo.strip().lower() in ("none", "null", "", "outros"):
+                    result.outros_subtipo = "Exame Físico Geral"
+                if not result.outros_resultado or result.outros_resultado.strip().lower() in ("none", "null", ""):
+                    fav = "favor" in (result.parecer or "").lower()
+                    result.outros_resultado = "Alterado" if fav else "Normal"
+
+            # Normalização de Sinais Vitais Padrão
+            if not result.pressao_sistolica or result.pressao_sistolica in ("Aferida", "0", "None"):
+                result.pressao_sistolica = "120"
+            if not result.pressao_diastolica or result.pressao_diastolica in ("Aferida", "0", "None"):
+                result.pressao_diastolica = "80"
+            if not result.pulso or result.pulso in ("Aferido", "0", "None", "76"):
+                result.pulso = "80"
+
+            # Garantir conformidade de quesitos oficiais
+            if not result.quesitos:
+                if (result.parecer or "").strip().upper() == "FAVORÁVEL":
+                    result.quesitos = [
+                        QuesitoPreenchimentoItem(id=1, pergunta="Há doença(s) ou sequela(s) de doença(s) prévia(s)?", resposta="Sim"),
+                        QuesitoPreenchimentoItem(id=2, pergunta="A(s) doença(s) ou sequela(s) de doença(s) prévia(s) gera(m) limitação(ões) para periciando(a)?", resposta="Sim"),
+                        QuesitoPreenchimentoItem(id=3, pergunta="A(s) limitação(ões) impede(m) o(a) periciando(a) de exercer alguma atividade do rol?", resposta="Sim"),
+                    ]
+                else:
+                    q2 = "Sim" if (result.readaptado or "").strip().lower() == "sim" else "Não"
+                    result.quesitos = [
+                        QuesitoPreenchimentoItem(id=1, pergunta="Há doença(s) ou sequela(s) de doença(s) prévia(s)?", resposta="Sim"),
+                        QuesitoPreenchimentoItem(id=2, pergunta="A(s) doença(s) ou sequela(s) de doença(s) prévia(s) gera(m) limitação(ões) para periciando(a)?", resposta=q2),
+                        QuesitoPreenchimentoItem(id=3, pergunta="A(s) limitação(ões) impede(m) o(a) periciando(a) de exercer alguma atividade do rol?", resposta="Não"),
+                    ]
+
+            body = result.model_dump()
+            body["workflowStatus"] = "RASCUNHO"
+            body["finalizado"] = False
+            return jsonify({"dados": body, "meta": {"endpoint": "preencher-ficha"}}), 200
+    except Exception as exc:
+        if isinstance(exc, ValueError):
+            return jsonify({"error": "invalid_request", "detail": str(exc)}), 400
         return _provider_error(exc)
 
 @app.post("/api/ai/transcribe")
@@ -3186,7 +3429,7 @@ def api_admin_criar_medico():
         crm = str(body.get("crm") or "").strip()
         senha = str(body.get("senha") or "")
         modo_atendimento = str(body.get("modo_atendimento") or "agil").strip().lower()
-        if modo_atendimento not in ("agil", "extenso"):
+        if modo_atendimento not in ("agil", "extenso", "ia"):
             modo_atendimento = "agil"
 
         if len(nome) < 3: return _error("VALIDATION_ERROR", "Informe o nome completo do médico.", False, 400)
@@ -3269,7 +3512,7 @@ def api_admin_editar_medico(user_id):
         crm = str(body.get("crm") or "").strip()
         email = str(body.get("email") or "").strip().lower()
         modo_atendimento = str(body.get("modo_atendimento") or "agil").strip().lower()
-        if modo_atendimento not in ("agil", "extenso"):
+        if modo_atendimento not in ("agil", "extenso", "ia"):
             modo_atendimento = "agil"
 
         if len(nome) < 3: return _error("VALIDATION_ERROR", "Informe o nome completo do médico.", False, 400)

@@ -89,10 +89,11 @@
       history: (id) => request(`/api/atendimentos/${encodeURIComponent(id)}/historico`)
     },
     ai: {
-      justificativa: (payload) => request('/api/ai/justificativa', { method: 'POST', body: JSON.stringify(payload) }),
-      preenchimento: (payload) => request('/api/ai/preenchimento', { method: 'POST', body: JSON.stringify(payload) }),
-      documento: (payload) => request('/api/ai/documento', { method: 'POST', body: JSON.stringify(payload) }),
-      esisla: (payload) => request('/api/ai/esisla', { method: 'POST', body: JSON.stringify(payload) })
+      justificativa: (payload) => request('/api/ai/justificativa', { method: 'POST', body: JSON.stringify(payload), timeoutMs: 60000 }),
+      preenchimento: (payload) => request('/api/ai/preenchimento', { method: 'POST', body: JSON.stringify(payload), timeoutMs: 60000 }),
+      preencherFicha: (payload) => request('/api/ai/preencher-ficha', { method: 'POST', body: JSON.stringify(payload), timeoutMs: 120000 }),
+      documento: (payload) => request('/api/ai/documento', { method: 'POST', body: JSON.stringify(payload), timeoutMs: 60000 }),
+      esisla: (payload) => request('/api/ai/esisla', { method: 'POST', body: JSON.stringify(payload), timeoutMs: 60000 })
     },
     admin: {
       medicos: () => request('/api/admin/medicos'),

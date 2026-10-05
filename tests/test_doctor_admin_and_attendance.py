@@ -3007,4 +3007,53 @@ def test_queixa_duracao_relatou_nao_ser_readaptado_e_cargo():
     assert 'ident += `, é ${cargoFormatado} há ${tempoCargo} ${unidadeTempo.toLowerCase()}`;' in ATTENDANCE
 
 
+def test_ai_preencher_ficha_endpoint_and_frontend():
+    # 1. Validação do app.py
+    assert "class PreenchimentoCompletoResult(BaseModel):" in APP
+    assert '"preencher_ficha":' in APP
+    assert '@app.post("/api/ai/preencher-ficha")' in APP
+    assert "def api_ai_preencher_ficha():" in APP
+    assert '"/api/ai/preencher-ficha"' in APP
+    assert 'body["workflowStatus"] = "RASCUNHO"' in APP
+    assert 'body["finalizado"] = False' in APP
+
+    # 2. Validação da API JS
+    assert "preencherFicha: (payload) => request('/api/ai/preencher-ficha'" in API_JS
+
+    # 3. Validação da UI e funções de preenchimento inteligente
+    assert 'id="modalPreenchimentoIA"' in ATTENDANCE
+    assert "abrirModalPreenchimentoIA()" in ATTENDANCE
+    assert "executarPreenchimentoIA()" in ATTENDANCE
+    assert "function aplicarPreenchimentoIAResultado(dados)" in ATTENDANCE
+    assert 'state.workflowStatus = "RASCUNHO";' in ATTENDANCE
+    assert "state.finalizado = false;" in ATTENDANCE
+
+    # 4. Validação de salvaguardas e normalizações
+    assert "outros_subtipo: str" in APP
+    assert "outros_resultado: str" in APP
+    assert "toIsoDate" in ATTENDANCE
+    assert "isGenericCIDLabel" in ATTENDANCE
+    assert "agilVitalsPadraoCheck" in ATTENDANCE
+
+
+def test_modo_ia_doctor_selection_and_auto_launch():
+    # 1. Validação backend app.py para aceitar modo 'ia'
+    assert 'if modo_atendimento not in ("agil", "extenso", "ia"):' in APP
+
+    # 2. Validação gestao-medicos-admin.html
+    assert 'id="createModoIA"' in GESTAO_MEDICOS_ADMIN
+    assert 'id="editModoIA"' in GESTAO_MEDICOS_ADMIN
+    assert '✨ Modo IA' in GESTAO_MEDICOS_ADMIN
+    assert "else if (mode === 'ia') $('editModoIA').checked = true;" in GESTAO_MEDICOS_ADMIN
+    assert "✨ Modo IA</span>" in GESTAO_MEDICOS_ADMIN
+
+    # 3. Validação do auto-launch na ficha pericial (ambiental_avaliacao_medica_lts_cid_assistente.html)
+    assert "_prof.modo_atendimento === 'ia'" in ATTENDANCE
+    assert 'currentProfile?.modo_atendimento === "ia"' in ATTENDANCE
+    assert 'abrirModalPreenchimentoIA()' in ATTENDANCE
+
+
+
+
+
 

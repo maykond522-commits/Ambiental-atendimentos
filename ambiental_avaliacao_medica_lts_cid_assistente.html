@@ -1767,7 +1767,7 @@ body:not(.mode-agil-active) #containerModoAgil {
         const _prof = _data?.profile || _data;
         if (_prof && (_prof.id || _prof.nome || _prof.email)) {
           _dismissAuthLoading();
-          if ((_prof.modo_atendimento || 'agil') === 'agil') {
+          if ((_prof.modo_atendimento || 'agil') === 'agil' || _prof.modo_atendimento === 'ia') {
             document.body?.classList.add('mode-agil-active');
           }
         }
@@ -1792,6 +1792,7 @@ body:not(.mode-agil-active) #containerModoAgil {
     </div>
     <div class="sticky-hud-actions">
       <span class="hud-save-status" id="hudSaveStatus">✓ Salvo</span>
+      <button type="button" class="btn btn-outline btn-sm" onclick="abrirModalPreenchimentoIA()" style="color:#1D4ED8;font-weight:700" title="Preencher com IA a partir de anotações do médico ou dados copiados">✨ IA</button>
       <button type="button" class="btn btn-outline btn-sm" onclick="openManagement()">Gestão</button>
       <button type="button" class="btn btn-danger btn-sm" onclick="deleteAtendimento()">Excluir</button>
       <button type="button" class="btn btn-outline btn-sm" onclick="saveNow()" title="Atalho: Ctrl + S">Salvar rascunho</button>
@@ -1816,6 +1817,7 @@ body:not(.mode-agil-active) #containerModoAgil {
       <div class="save-status"><span id="saveDot" class="save-dot"></span><span id="saveText">Rascunho não iniciado</span></div>
     </div>
     <div class="header-actions">
+      <button type="button" class="btn btn-outline" onclick="abrirModalPreenchimentoIA()" style="background:linear-gradient(135deg, #EFF6FF, #DBEAFE);border-color:#3B82F6;color:#1D4ED8;font-weight:700;display:inline-flex;align-items:center;gap:6px" title="Preencher a ficha inteira com IA a partir de anotações do médico ou dados copiados do sistema">✨ Preencher com IA</button>
       <button class="btn btn-outline optional" onclick="openManagement()">Gestão</button>
       <button class="btn btn-danger optional" onclick="deleteAtendimento()">Excluir</button>
       <button class="btn btn-outline optional" onclick="saveNow()">Salvar rascunho</button>
@@ -1853,6 +1855,21 @@ body:not(.mode-agil-active) #containerModoAgil {
 
     <!-- CONTAINER MODO ÁGIL -->
     <div id="containerModoAgil">
+      <!-- Banner de Importação Rápida com IA -->
+      <div style="background:linear-gradient(135deg, #EFF6FF 0%, #F0FDF4 100%);border:1.5px dashed #2563EB;border-radius:14px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;box-shadow:0 2px 8px rgba(37,99,235,0.06)">
+        <div style="max-width:760px">
+          <strong style="color:#1E3A8A;font-size:13.5px;display:flex;align-items:center;gap:7px">
+            <span>✨</span> Preenchimento Inteligente com IA (Anotações do Médico ou Dados do e-SISLA)
+          </strong>
+          <span style="color:#475569;font-size:11.5px;display:block;margin-top:3px;line-height:1.4">
+            Cole as anotações do médico (WhatsApp/bloco de notas) e/ou dados copiados da tela do e-SISLA. A IA preenche a ficha inteira de modo técnico e estruturado (em modo rascunho, sem finalizar).
+          </span>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" onclick="abrirModalPreenchimentoIA()" style="font-weight:800;background:#2563EB;border-color:#1D4ED8;padding:8px 14px;font-size:12px;display:flex;align-items:center;gap:6px">
+          <span>✨</span> Colar Texto e Preencher
+        </button>
+      </div>
+
       <!-- Bloco 01 — Identificação do Atendimento & Colaborador -->
       <div class="agil-card">
         <div class="agil-card-head">
@@ -3390,6 +3407,56 @@ body:not(.mode-agil-active) #containerModoAgil {
   </div>
 </div>
 
+<!-- MODAL: PREENCHIMENTO INTELIGENTE COM IA (ANOTAÇÕES / SISTEMA) -->
+<div class="modal-backdrop" id="modalPreenchimentoIA" style="z-index:99999" onclick="if(event.target===this)fecharModalPreenchimentoIA()">
+  <div class="modal" style="width:min(820px,100%);max-height:92vh">
+    <div class="modal-head" style="background:linear-gradient(135deg, #0A4A8A, #0284C7);color:#fff">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:26px">✨</span>
+        <div>
+          <h3 style="margin:0;color:#fff;font-size:16.5px">Preenchimento Inteligente de Atendimento com IA</h3>
+          <div style="font-size:11.5px;color:#E0F2FE;margin-top:2px">Cole as anotações do médico (WhatsApp/bloco de notas) e/ou dados copiados do e-SISLA</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="fecharModalPreenchimentoIA()" style="color:#fff" title="Fechar">✕</button>
+    </div>
+    <div class="modal-body" style="padding:22px;display:flex;flex-direction:column;gap:14px">
+      <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:12px 14px;color:#1E3A8A;font-size:12px;line-height:1.5">
+        💡 <strong>Como funciona:</strong> Cole abaixo qualquer texto que você recebeu do médico ou copiou da tela do e-SISLA (inclusive textos mistos, fragmentados ou com abreviações). A IA analisará todo o conteúdo, extrairá os dados cadastrais, estruturará a queixa pericial, atestado, propedêutica e justificativa oficial (em modo <strong>Rascunho</strong>, permitindo que você revise e edite antes de finalizar).
+      </div>
+
+      <div>
+        <label for="txtPreenchimentoIABruto" style="display:block;font-size:12px;font-weight:700;color:#0F3254;margin-bottom:6px">
+          Texto Bruto (Anotações do Médico e/ou Dados do Sistema):
+        </label>
+        <textarea id="txtPreenchimentoIABruto" rows="11" class="input" style="width:100%;font-family:monospace;font-size:12px;line-height:1.45;resize:vertical;padding:12px;border:1.5px solid #CBD5E1;border-radius:8px;background:#fff" placeholder="Cole aqui o texto recebido... Exemplo:
+CAMILA DE OLIVEIRA
+42 anos, Professora peb II há 20 anos, Não readaptada
+Queixa: retirou 2 nódulos nos seios, mastopexia com edema e abertura de 3 pontos.
+Sintomas: dor, inchaço. Medicações: dipirona. Psico/fisio: não.
+Atestado de 15 dias do dia 29/09 por Z98.8 favorável.
+
+(Também pode colar junto os dados da tela do e-SISLA: CPF, RG, CID, CRM do assistente, etc.)"></textarea>
+      </div>
+
+      <div id="aiPreencherLoading" style="display:none;background:#F0FDF4;border:1px solid #86EFAC;border-radius:10px;padding:14px;color:#166534;font-size:12.5px;align-items:center;gap:12px">
+        <span class="save-dot working" style="width:14px;height:14px;display:inline-block"></span>
+        <div>
+          <strong>A IA está estruturando o atendimento completo...</strong>
+          <div style="font-size:11.5px;color:#15803D;margin-top:2px">Analisando o texto bruto, dados cadastrais, queixa clínica, dosagens, atestado, propedêutica física e parecer DPME. Esse processo pode levar cerca de 15 a 25 segundos, aguarde...</div>
+        </div>
+      </div>
+
+      <div class="footer-actions" style="margin-top:4px;padding:0;display:flex;justify-content:space-between;align-items:center">
+        <button type="button" class="btn btn-outline" onclick="fecharModalPreenchimentoIA()">Cancelar</button>
+        <button type="button" class="btn btn-green" id="btnProcessarPreenchimentoIA" onclick="executarPreenchimentoIA()" style="font-weight:800;display:flex;align-items:center;gap:8px;padding:10px 20px;font-size:13px">
+          <span>✨</span> Processar e Preencher Ficha
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 let accessToken = null;
 let currentProfile = null;
@@ -3893,8 +3960,8 @@ function selectCID(code){
   if (found && found.n && !found.n.includes("Apoio")) {
     const rotulo = `${found.c} — ${found.n}`;
     const oldDoenca = String(state.aux?.doencaMotivo || state.doencaMotivo || $("doencaMotivo")?.value || "").trim();
-    const isOldCID = /^[A-Z]\d{2}(\.\d+)?\s*[—–-]/i.test(oldDoenca);
-    if (!oldDoenca || oldDoenca === "Conforme queixa relatada" || isOldCID || !oldDoenca.toUpperCase().startsWith(found.c.toUpperCase())) {
+    const isGenericCIDLabel = /^[A-Z]\d{2}(\.\d+)?\s*[—–-]\s*[^—–\n]+$/i.test(oldDoenca) && oldDoenca.length < 90;
+    if (!oldDoenca || oldDoenca === "Conforme queixa relatada" || isGenericCIDLabel) {
       $("doencaMotivo").value = rotulo;
       state.doencaMotivo = rotulo;
       state.aux.doencaMotivo = rotulo;
@@ -4580,6 +4647,440 @@ async function syncToRegistry(){
     return false;
   }
 }
+
+/* =========================================================
+   PREENCHIMENTO INTELIGENTE COM IA (ANOTAÇÕES / SISTEMA)
+   ========================================================= */
+function abrirModalPreenchimentoIA() {
+  const modal = $("modalPreenchimentoIA");
+  if (!modal) {
+    console.error("Modal modalPreenchimentoIA não encontrado no DOM!");
+    return;
+  }
+  modal.classList.add("show");
+  modal.style.display = "flex";
+  const loading = $("aiPreencherLoading");
+  if (loading) loading.style.display = "none";
+  const btn = $("btnProcessarPreenchimentoIA");
+  if (btn) btn.disabled = false;
+  setTimeout(() => { $("txtPreenchimentoIABruto")?.focus(); }, 150);
+}
+
+function fecharModalPreenchimentoIA() {
+  const modal = $("modalPreenchimentoIA");
+  if (modal) {
+    modal.classList.remove("show");
+    modal.style.display = "none";
+  }
+  const loading = $("aiPreencherLoading");
+  if (loading) loading.style.display = "none";
+  const btn = $("btnProcessarPreenchimentoIA");
+  if (btn) btn.disabled = false;
+}
+
+window.abrirModalPreenchimentoIA = abrirModalPreenchimentoIA;
+window.fecharModalPreenchimentoIA = fecharModalPreenchimentoIA;
+
+async function executarPreenchimentoIA() {
+  const txt = ($("txtPreenchimentoIABruto")?.value || "").trim();
+  if (!txt) {
+    alert("Por favor, cole as anotações do médico ou os dados do atendimento no campo de texto.");
+    return;
+  }
+  const loading = $("aiPreencherLoading");
+  const btn = $("btnProcessarPreenchimentoIA");
+  if (loading) loading.style.display = "flex";
+  if (btn) btn.disabled = true;
+
+  try {
+    let res;
+    if (window.AmbientalAPI?.ai?.preencherFicha) {
+      res = await AmbientalAPI.ai.preencherFicha({
+        texto_bruto: txt,
+        atendimento: state.atendimento || $("atd")?.value || ""
+      });
+    } else {
+      const r = await (window.AmbientalAuth ? window.AmbientalAuth.authFetch : fetch)("/api/ai/preencher-ficha", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ texto_bruto: txt, atendimento: state.atendimento || $("atd")?.value || "" })
+      });
+      res = await r.json();
+      if (!r.ok) throw new Error(res?.detail || res?.error?.message || "Falha ao processar texto com IA.");
+    }
+    const dados = res?.dados || res;
+    if (!dados || typeof dados !== "object") {
+      throw new Error("A IA não retornou os dados estruturados esperados.");
+    }
+    aplicarPreenchimentoIAResultado(dados);
+    fecharModalPreenchimentoIA();
+    toast("✨ Ficha preenchida pela IA com sucesso em modo Rascunho! Revise antes de finalizar.");
+  } catch (err) {
+    console.error("Erro no preenchimento com IA:", err);
+    alert("Não foi possível preencher com IA: " + (err.message || "Erro de conexão com o servidor."));
+  } finally {
+    if (loading) loading.style.display = "none";
+    if (btn) btn.disabled = false;
+  }
+}
+
+function aplicarPreenchimentoIAResultado(dados) {
+  if (!dados) return;
+  if (!state.aux) state.aux = {};
+
+  // Travar autoSave temporariamente durante o preenchimento em lote para evitar race conditions / wipes
+  const prevAutoSaving = typeof __isAutoSaving !== "undefined" ? __isAutoSaving : false;
+  window.__isAutoSaving = true;
+  window.__isBulkApplyingIA = true;
+
+  try {
+    // 1. Status do atendimento
+    state.workflowStatus = "RASCUNHO";
+    state.finalizado = false;
+
+    // Helper para converter data para YYYY-MM-DD (compatível com input[type="date"])
+    const toIsoDate = (dStr) => {
+      if (!dStr) return "";
+      const s = String(dStr).trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+      const m = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
+      if (m) {
+        return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+      }
+      return s;
+    };
+
+    // Helper para formatar CPF
+    const toFormattedCpf = (cStr) => {
+      const clean = String(cStr || "").replace(/\D/g, "");
+      if (clean.length === 11 && typeof formatCPF === "function") {
+        return formatCPF(clean);
+      }
+      return cStr || "";
+    };
+
+    // Helper para normalizar unidade de tempo
+    const toTempoUnidade = (uStr) => {
+      const s = String(uStr || "").trim().toLowerCase();
+      if (/^m/i.test(s)) return "Meses";
+      if (/^d/i.test(s)) return "Dias";
+      return "Anos";
+    };
+
+    // 2. Normalização de Dados Principais
+    state.nomePaciente = dados.nome_paciente || "";
+    state.cpfPaciente = toFormattedCpf(dados.cpf_paciente);
+    state.cargo = dados.cargo || "";
+    state.tempoCargo = dados.tempo_cargo !== undefined && dados.tempo_cargo !== null ? String(dados.tempo_cargo) : "";
+    state.tempoUnidade = toTempoUnidade(dados.tempo_unidade);
+    state.idade = dados.idade !== undefined && dados.idade !== null ? String(dados.idade) : "";
+    state.sexo = dados.sexo || "Feminino";
+    state.readaptado = dados.readaptado || "Não";
+    state.alteracaoMed = dados.alteracao_med || "Não";
+    state.outrasDoencas = dados.outras_doencas || "Não";
+    state.psicoterapia = !!dados.psicoterapia;
+    state.fisioterapia = !!dados.fisioterapia;
+
+    state.cid = dados.cid || "";
+    state.exameFisicoTipo = dados.exame_fisico_tipo || "Outros";
+    state.exameMentalResultado = dados.exame_mental_resultado || "";
+    state.exameFisicoDescricao = dados.exame_fisico_descricao || "";
+
+    const sistolica = dados.pressao_sistolica && dados.pressao_sistolica !== "Aferida" ? String(dados.pressao_sistolica) : "120";
+    const diastolica = dados.pressao_diastolica && dados.pressao_diastolica !== "Aferida" ? String(dados.pressao_diastolica) : "80";
+    const pulso = dados.pulso && dados.pulso !== "Aferido" ? String(dados.pulso) : "80";
+    state.pressaoSistolica = sistolica;
+    state.pressaoDiastolica = diastolica;
+    state.pulso = pulso;
+    if (dados.altura) state.altura = dados.altura;
+    if (dados.peso) state.peso = dados.peso;
+
+    state.limitacaoFuncional = dados.limitacao_funcional || "Sim";
+    state.limitacaoRol = dados.limitacao_rol || "Sim";
+    state.capacidade = dados.capacidade || "Capacidade parcial e temporariamente prejudicada";
+    state.parecer = dados.parecer || "FAVORÁVEL";
+    state.justificativa = dados.justificativa || "";
+
+    // Subtipo e Resultado do Exame Físico "Outros"
+    const parecerFavoravel = String(state.parecer).toUpperCase().includes("FAVOR");
+    let subtipoOutros = dados.outros_subtipo || "Exame Físico Geral";
+    if (subtipoOutros.toLowerCase() === "outros" || subtipoOutros.toLowerCase() === "none") {
+      subtipoOutros = "Exame Físico Geral";
+    }
+    const resultadoOutros = dados.outros_resultado || (parecerFavoravel ? "Alterado" : "Normal");
+    state.outrosSubtipo = subtipoOutros;
+    state.outrosResultado = resultadoOutros;
+
+    // Medicações e Condições
+    if (Array.isArray(dados.medications)) {
+      state.medications = dados.medications.map(m => ({
+        medicamento: m.medicamento || "",
+        dosagem: m.dosagem || "",
+        frequencia: m.frequencia || "",
+        observacao: m.observacao || ""
+      }));
+    }
+    if (Array.isArray(dados.conditions)) {
+      state.conditions = dados.conditions.map(c => ({
+        nome: c.nome || "",
+        tratamento: c.tratamento || ""
+      }));
+    }
+
+    const isoDoc = toIsoDate(dados.data_documento);
+    const isoNasc = toIsoDate(dados.data_nascimento);
+    const isoAltMed = toIsoDate(dados.data_alteracao_med);
+
+    // 3. Atualizar state.aux completo
+    Object.assign(state.aux, {
+      nomePaciente: state.nomePaciente,
+      cpfPaciente: state.cpfPaciente,
+      rgPaciente: dados.rg_paciente || "",
+      dataNascimento: isoNasc,
+      cargo: state.cargo,
+      tempoCargo: state.tempoCargo,
+      tempoUnidade: state.tempoUnidade,
+      idade: state.idade,
+      sexo: state.sexo,
+      readaptado: state.readaptado,
+      atividadesReadaptado: dados.atividades_readaptado || "",
+      doencaMotivo: dados.doenca_motivo || "",
+      inicioTratamento: dados.inicio_tratamento || "",
+      freqConsultas: dados.freq_consultas || "",
+      sintomasLimitacao: dados.sintomas_limitacao || "",
+      alteracaoMed: state.alteracaoMed,
+      dataAlteracaoMed: isoAltMed,
+      obsAlteracaoMed: dados.obs_alteracao_med || "",
+      psicoterapia: state.psicoterapia,
+      fisioterapia: state.fisioterapia,
+      obsTerapias: dados.obs_terapias || "",
+      outrasDoencas: state.outrasDoencas,
+      historicoPregresso: dados.historico_pregresso || "",
+      cid: state.cid,
+      crmCro: dados.crm_cro || "",
+      nomeMedicoAssistente: dados.nome_medico_assistente || "",
+      dataDocumento: isoDoc,
+      diasSolicitados: dados.dias_solicitados || "",
+      obsDocumentos: dados.obs_documentos || "",
+      exameFisicoTipo: state.exameFisicoTipo,
+      exameMentalResultado: state.exameMentalResultado,
+      exameFisicoDescricao: state.exameFisicoDescricao,
+      outrosSubtipo: state.outrosSubtipo,
+      areaExameClinico: state.outrosSubtipo,
+      outrosResultado: state.outrosResultado,
+      resultadoAvaliacao: state.outrosResultado,
+      pressaoSistolica: state.pressaoSistolica,
+      pressaoDiastolica: state.pressaoDiastolica,
+      pulso: state.pulso,
+      altura: state.altura || "",
+      peso: state.peso || "",
+      limitacaoFuncional: state.limitacaoFuncional,
+      limitacaoRol: state.limitacaoRol,
+      descLimitacao: dados.desc_limitacao || "",
+      atividadesComprometidas: dados.atividades_comprometidas || "",
+      capacidade: state.capacidade,
+      parecer: state.parecer,
+      justificativa: state.justificativa
+    });
+
+    // 4. Atualizar Quesitos
+    if (typeof QuesitoService !== "undefined" && Array.isArray(dados.quesitos)) {
+      dados.quesitos.forEach((q, idx) => {
+        QuesitoService.set(idx, q.resposta || "Sim");
+      });
+      state.quesitos = QuesitoService.get();
+    }
+
+    // 5. Preencher DOM diretamente (sem disparar eventos reativos intermediários)
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el && val !== undefined && val !== null) {
+        el.value = val;
+      }
+    };
+    const setCheck = (id, checked) => {
+      const el = document.getElementById(id);
+      if (el) el.checked = !!checked;
+    };
+    const setRadioDirect = (name, val) => {
+      document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+        r.checked = (r.value === val);
+      });
+    };
+
+    // Bloco 1 - Identificação
+    setVal("nomePaciente", state.nomePaciente);
+    setVal("agilNomePaciente", state.nomePaciente);
+    setVal("cpfPaciente", state.cpfPaciente);
+    setVal("agilCpfPaciente", state.cpfPaciente);
+    setVal("cargo", state.cargo);
+    setVal("agilCargo", state.cargo);
+    setVal("tempoCargo", state.tempoCargo);
+    setVal("agilTempoCargo", state.tempoCargo);
+    setVal("tempoUnidade", state.tempoUnidade);
+    setVal("agilTempoUnidade", state.tempoUnidade);
+    setVal("idade", state.idade);
+    setVal("agilIdade", state.idade);
+    setRadioDirect("readaptado", state.readaptado);
+    setRadioDirect("agilReadaptado", state.readaptado);
+    if (typeof syncAgilReadaptado === "function") syncAgilReadaptado(state.readaptado);
+    if (dados.atividades_readaptado) {
+      setVal("atividadesReadaptado", dados.atividades_readaptado);
+      setVal("agilAtividadesReadaptado", dados.atividades_readaptado);
+    }
+
+    // Bloco 2 - Queixa e Antecedentes
+    setVal("doencaMotivo", dados.doenca_motivo);
+    setVal("agilDoencaMotivo", dados.doenca_motivo);
+    setVal("inicioTratamento", dados.inicio_tratamento);
+    setVal("agilInicioTratamento", dados.inicio_tratamento);
+    setVal("freqConsultas", dados.freq_consultas);
+    setVal("agilFreqConsultas", dados.freq_consultas);
+    setVal("sintomasLimitacao", dados.sintomas_limitacao);
+    setVal("agilSintomasLimitacao", dados.sintomas_limitacao);
+    setRadioDirect("alteracaoMed", state.alteracaoMed);
+    setRadioDirect("agilAlteracaoMed", state.alteracaoMed);
+    setVal("dataAlteracaoMed", isoAltMed);
+    setVal("agilDataAlteracaoMed", isoAltMed);
+    setVal("obsAlteracaoMed", dados.obs_alteracao_med);
+    setVal("agilObsAlteracaoMed", dados.obs_alteracao_med);
+    setCheck("psicoterapia", state.psicoterapia);
+    setCheck("agilPsicoterapia", state.psicoterapia);
+    setCheck("fisioterapia", state.fisioterapia);
+    setCheck("agilFisioterapia", state.fisioterapia);
+    setVal("obsTerapias", dados.obs_terapias);
+    setVal("agilObsTerapias", dados.obs_terapias);
+    setRadioDirect("outrasDoencas", state.outrasDoencas);
+    setRadioDirect("agilOutrasDoencas", state.outrasDoencas);
+    setVal("historicoPregresso", dados.historico_pregresso);
+    setVal("agilHistoricoPregresso", dados.historico_pregresso);
+
+    // Bloco 3 - Atestado e Exame
+    setVal("cid", state.cid);
+    setVal("agilCid", state.cid);
+    if (state.cid) {
+      const f = typeof findCID === "function" ? findCID(state.cid) : null;
+      const badge = $("agilCidBadge");
+      if (badge && f) {
+        badge.style.display = "inline-flex";
+        badge.innerHTML = `<strong>${esc(f.c)}</strong> — ${esc(f.n)}`;
+      }
+    }
+    setVal("crmCro", dados.crm_cro);
+    setVal("agilCrmCro", dados.crm_cro);
+    setVal("dataDocumento", isoDoc);
+    setVal("agilDataDocumento", isoDoc);
+    setVal("diasSolicitados", dados.dias_solicitados);
+    setVal("agilDiasSolicitados", dados.dias_solicitados);
+    setVal("obsDocumentos", dados.obs_documentos);
+
+    // Abrir painel do atestado se houver dados
+    if (typeof toggleAtestadoAssistente === "function") {
+      toggleAtestadoAssistente(true);
+    }
+    if (typeof calcularDatasAtestado === "function") {
+      calcularDatasAtestado();
+    }
+
+    // Sinais vitais
+    setVal("pressaoSistolica", state.pressaoSistolica);
+    setVal("agilPressaoSistolica", state.pressaoSistolica);
+    setVal("pressaoDiastolica", state.pressaoDiastolica);
+    setVal("agilPressaoDiastolica", state.pressaoDiastolica);
+    setVal("pulso", state.pulso);
+    setVal("agilPulso", state.pulso);
+    if (state.altura) {
+      setVal("altura", state.altura);
+      setVal("agilAltura", state.altura);
+    }
+    if (state.peso) {
+      setVal("peso", state.peso);
+      setVal("agilPeso", state.peso);
+    }
+    const isPadraoVitals = (state.pressaoSistolica === "120" && state.pressaoDiastolica === "80" && state.pulso === "80");
+    setCheck("agilVitalsPadraoCheck", isPadraoVitals);
+
+    // Exame Físico / Mental
+    setVal("exameFisicoTipo", state.exameFisicoTipo);
+    setVal("agilExameFisicoTipo", state.exameFisicoTipo);
+    setVal("exameFisicoDescricao", state.exameFisicoDescricao);
+    setVal("agilExameFisicoDescricao", state.exameFisicoDescricao);
+
+    // Configurar Tipo de Exame e subseletores
+    try {
+      if (typeof onAgilExameTipoChange === "function") {
+        onAgilExameTipoChange(state.exameFisicoTipo);
+      }
+    } catch (e) {
+      console.warn("onAgilExameTipoChange:", e);
+    }
+    if (state.exameFisicoTipo === "Outros") {
+      if (typeof renderOutrosUI === "function") renderOutrosUI();
+    } else if (state.exameFisicoTipo === "Exame Mental") {
+      const btnNormal = $("btnAgilMentalNormal");
+      const btnAlterado = $("btnAgilMentalAlterado");
+      if (btnNormal) btnNormal.classList.toggle("selected-normal", state.exameMentalResultado === "Normal");
+      if (btnAlterado) btnAlterado.classList.toggle("selected-alterado", state.exameMentalResultado === "Alterado");
+    }
+
+    // Bloco 4 - Conclusão e Parecer
+    setRadioDirect("limitacaoFuncional", state.limitacaoFuncional);
+    setRadioDirect("agilLimitacaoFuncional", state.limitacaoFuncional);
+    setRadioDirect("limitacaoRol", state.limitacaoRol);
+    setRadioDirect("agilLimitacaoRol", state.limitacaoRol);
+    setVal("descLimitacao", dados.desc_limitacao);
+    setVal("agilDescLimitacao", dados.desc_limitacao);
+    setVal("atividadesComprometidas", dados.atividades_comprometidas);
+    setRadioDirect("capacidade", state.capacidade);
+    setRadioDirect("parecer", state.parecer);
+    setVal("justificativa", state.justificativa);
+    setVal("agilJustificativa", state.justificativa);
+
+    // 6. Re-renderizar componentes dinâmicos
+    if (typeof renderMedications === "function") renderMedications();
+    if (typeof renderConditions === "function") renderConditions();
+    if (typeof renderQuesitos === "function") renderQuesitos();
+    if (typeof renderSecondaryCIDs === "function") renderSecondaryCIDs();
+    if (typeof togglePanelsOnly === "function") togglePanelsOnly();
+    if (typeof syncExtendedToAgil === "function") syncExtendedToAgil();
+
+    // 7. Salvaguarda final para doencaMotivo e exameFisicoDescricao
+    if (dados.doenca_motivo) {
+      state.doencaMotivo = dados.doenca_motivo;
+      state.aux.doencaMotivo = dados.doenca_motivo;
+      if ($("doencaMotivo")) $("doencaMotivo").value = dados.doenca_motivo;
+      if ($("agilDoencaMotivo")) $("agilDoencaMotivo").value = dados.doenca_motivo;
+    }
+    if (state.exameFisicoDescricao) {
+      if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = state.exameFisicoDescricao;
+      if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = state.exameFisicoDescricao;
+    }
+
+    // 8. Se for Outros, reforçar o destaque do chip e resultado selecionado
+    if (state.exameFisicoTipo === "Outros" && typeof renderOutrosUI === "function") {
+      renderOutrosUI();
+    }
+
+    // 9. Atualizar contadores do e-SISLA e progresso ágil
+    if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
+    if (typeof atualizarContadorEsisla === "function") {
+      ["nomePaciente", "cpfPaciente", "cargo", "doencaMotivo", "sintomasLimitacao", "crmCro", "diasSolicitados", "exameFisicoDescricao", "justificativa"].forEach(k => {
+        atualizarContadorEsisla(k);
+        atualizarContadorEsisla("agil" + k.charAt(0).toUpperCase() + k.slice(1));
+      });
+    }
+
+  } finally {
+    window.__isAutoSaving = prevAutoSaving;
+    window.__isBulkApplyingIA = false;
+  }
+
+  if (typeof autoSave === "function") autoSave();
+  toast("✨ Ficha preenchida com sucesso pela IA no Modo Rascunho!");
+}
+window.executarPreenchimentoIA = executarPreenchimentoIA;
+window.aplicarPreenchimentoIAResultado = aplicarPreenchimentoIAResultado;
+
 function openManagement() {
     if (currentProfile && currentProfile.perfil === "Médico") window.location.href = "/gestao-medicos.html";
     else window.location.href = "/gestao";
@@ -5615,6 +6116,7 @@ async function init(){
    try {
      const _c = JSON.parse(sessionStorage.getItem("ambiental.auth.profile") || localStorage.getItem("ambiental.auth.profile") || "null");
      if (_c?.profile) currentProfile = _c.profile;
+     else if (_c && (_c.id || _c.nome || _c.email)) currentProfile = _c;
    } catch(_) {}
  }
  if (currentProfile) applyProfessionalDefaults(currentProfile);
@@ -5748,6 +6250,17 @@ async function init(){
  if(typeof initEsislaCharCounters === "function") initEsislaCharCounters();
  if(typeof verificarCoerenciaPericial === "function") verificarCoerenciaPericial();
  if(typeof verificarRegraJuntaMedica === "function") verificarRegraJuntaMedica();
+
+ // Se o médico estiver configurado para o Modo IA e estiver iniciando um atendimento
+ if (currentProfile?.modo_atendimento === "ia" && !openDocumentOnLoad && !state.finalizado) {
+   if (isNew || !recordId || (!state.cid && !state.parecer)) {
+     setTimeout(() => {
+       if (typeof abrirModalPreenchimentoIA === "function") {
+         abrirModalPreenchimentoIA();
+       }
+     }, 450);
+   }
+ }
 }
 init().catch(e=>{console.error("Falha na inicialização:",e);toast("Erro ao iniciar o sistema.");});
 
@@ -6006,6 +6519,7 @@ DADOS_OSTEOMUSCULAR.joelhos = DADOS_OSTEOMUSCULAR.joelho_direito;
 DADOS_OSTEOMUSCULAR.tornozelos = DADOS_OSTEOMUSCULAR.tornozelo_direito;
 
 const TEXTO_OSTEO_NORMAL_EXAME = "Aparelho Osteomuscular e Tecido Conjuntivo com trofismo e tônus musculares preservados globalmente, ausência de edemas, deformidades articulares ou cicatrizes patológicas. Mobilidade ativa e passiva preservadas em coluna vertebral (cervical e lombar) e articulações periféricas (ombros, cotovelos, punhos, mãos, quadris, joelhos e tornozelos). Testes ortopédicos especiais negativos bilateralmente. Marcha típica sem claudicação.";
+const TEXTO_OSTEO_NORMAL = TEXTO_OSTEO_NORMAL_EXAME;
 const TEXTO_OSTEO_NORMAL_LIMITACAO = "Do ponto de vista médico não se observa limitações físicas funcionais incapacitantes relacionadas ao aparelho osteomuscular.";
 const TEXTO_OSTEO_NORMAL_JUSTIFICATIVA = "Capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações de ordem osteomuscular incapacitantes para as atribuições rotineiras do cargo atual.";
 
@@ -7072,8 +7586,10 @@ function onAgilExameTipoChange(val) {
     state.osteomuscularRegioes = {};
     if (typeof updateOsteoUI === "function") updateOsteoUI();
     const cur = state.exameFisicoDescricao || "";
-    const temGeralCur = cur.includes("EXAME FÍSICO DO AP.RESPIRATÓRIO:") || cur.includes("Bom do estado geral");
-    if (cur === TEXTO_EXAME_MENTAL_NORMAL || cur === TEXTO_EXAME_MENTAL_ALTERADO || cur === TEXTO_OSTEO_NORMAL || cur.includes("Trapézios sem contraturas") || cur.includes("mobilidade ativa e passiva normais") || (temGeralCur && (cur.includes("Nível de consciência:") || cur.includes("Apresenta-se consciente") || cur.includes("Apresentas-e consciente") || cur.includes("mobilidade ativa")))) {
+    const isMentalNorm = typeof TEXTO_EXAME_MENTAL_NORMAL !== "undefined" && cur === TEXTO_EXAME_MENTAL_NORMAL;
+    const isMentalAlt = typeof TEXTO_EXAME_MENTAL_ALTERADO !== "undefined" && cur === TEXTO_EXAME_MENTAL_ALTERADO;
+    const isOsteoNorm = (typeof TEXTO_OSTEO_NORMAL !== "undefined" && cur === TEXTO_OSTEO_NORMAL) || (typeof TEXTO_OSTEO_NORMAL_EXAME !== "undefined" && cur === TEXTO_OSTEO_NORMAL_EXAME);
+    if (!window.__isBulkApplyingIA && (isMentalNorm || isMentalAlt || isOsteoNorm || cur.includes("Trapézios sem contraturas") || cur.includes("mobilidade ativa e passiva normais") || (temGeralCur && (cur.includes("Nível de consciência:") || cur.includes("Apresenta-se consciente") || cur.includes("Apresentas-e consciente") || cur.includes("mobilidade ativa"))))) {
       const resetVal = temGeralCur ? TEXTO_EXAME_FISICO_GERAL_PADRAO : "";
       state.exameFisicoDescricao = resetVal;
       if (!state.aux) state.aux = {};
@@ -7239,8 +7755,8 @@ function onAgilCidInput(val) {
     badge.innerHTML = `<strong>${esc(exact.c)}</strong> — ${esc(exact.n)}`;
     const rotulo = `${exact.c} — ${exact.n}`;
     const oldDoenca = String(state.aux?.doencaMotivo || state.doencaMotivo || "").trim();
-    const isOldCID = /^[A-Z]\d{2}(\.\d+)?\s*[—–-]/i.test(oldDoenca);
-    if (!oldDoenca || oldDoenca === "Conforme queixa relatada" || isOldCID || !oldDoenca.toUpperCase().startsWith(exact.c.toUpperCase())) {
+    const isGenericCIDLabel = /^[A-Z]\d{2}(\.\d+)?\s*[—–-]\s*[^—–\n]+$/i.test(oldDoenca) && oldDoenca.length < 90;
+    if (!oldDoenca || oldDoenca === "Conforme queixa relatada" || isGenericCIDLabel) {
       state.aux.doencaMotivo = rotulo;
       state.doencaMotivo = rotulo;
       if ($("doencaMotivo")) $("doencaMotivo").value = rotulo;
@@ -7273,8 +7789,8 @@ function selectAgilCID(code) {
   if (found && found.n && !found.n.includes("Apoio")) {
     const rotulo = `${found.c} — ${found.n}`;
     const oldDoenca = String(state.aux?.doencaMotivo || state.doencaMotivo || "").trim();
-    const isOldCID = /^[A-Z]\d{2}(\.\d+)?\s*[—–-]/i.test(oldDoenca);
-    if (!oldDoenca || oldDoenca === "Conforme queixa relatada" || isOldCID || !oldDoenca.toUpperCase().startsWith(found.c.toUpperCase())) {
+    const isGenericCIDLabel = /^[A-Z]\d{2}(\.\d+)?\s*[—–-]\s*[^—–\n]+$/i.test(oldDoenca) && oldDoenca.length < 90;
+    if (!oldDoenca || oldDoenca === "Conforme queixa relatada" || isGenericCIDLabel) {
       state.doencaMotivo = rotulo;
       state.aux.doencaMotivo = rotulo;
       if ($("doencaMotivo")) $("doencaMotivo").value = rotulo;

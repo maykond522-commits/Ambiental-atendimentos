@@ -20,6 +20,7 @@ import requests
 from datetime import datetime, timezone
 from io import BytesIO
 from typing import Any, Literal
+import uuid
 
 from services.atendimento_service import pagination as service_pagination, list_filters as service_list_filters, build_where
 from services.observability import install as install_observability, metrics_snapshot, current_request_id
@@ -147,6 +148,20 @@ def _safe_error_message(exc: Exception) -> str:
 
 _AUTH_CACHE: dict[str, dict[str, Any]] = {}
 _AUTH_CACHE_LOCK = threading.Lock()
+
+_MEDICOS_CACHE: dict[str, dict[str, Any]] = {}
+_MEDICOS_CACHE_LOCK = threading.Lock()
+
+def _invalidate_medicos_cache():
+    with _MEDICOS_CACHE_LOCK:
+        _MEDICOS_CACHE.clear()
+
+_STATS_CACHE: dict[str, dict[str, Any]] = {}
+_STATS_CACHE_LOCK = threading.Lock()
+
+def _invalidate_stats_cache():
+    with _STATS_CACHE_LOCK:
+        _STATS_CACHE.clear()
 
 def _decode_jwt_payload_unverified(token: str) -> dict[str, Any] | None:
     try:
@@ -2297,7 +2312,7 @@ def guard():
         "/gerar-justificativa","/analisar-coerencia","/resumir-caso","/revisar-texto","/revisar-preenchimento","/gerar-relatorio-final",
         "/api/gerar-justificativa","/api/analisar-coerencia","/api/resumir-caso","/api/revisar-texto","/api/revisar-preenchimento","/api/gerar-relatorio-final",
         "/api/ai/justificativa","/api/ai/revisao","/api/ai/coerencia","/api/ai/documento","/api/ai/preenchimento","/api/ai/esisla",
-        "/api/ai/preencher-ficha",
+        "/api/ai/preencher-ficha","/api/ai/refinar-ficha-esisla",
     }
     if request.method=="POST" and request.path in ai_paths:
         if request.content_length and request.content_length>MAX_BODY_BYTES: return _error("VALIDATION_ERROR","Payload excede o limite permitido.",False,413)
@@ -2613,6 +2628,9 @@ def _clean_queixa_duracao_text(text: str) -> str:
     t = re.sub(r",\s*" + intro_direct + r"[\.\;]", ".", t)
     t = re.sub(r"^\s*" + intro_direct + r"[\.,]?\s*", "", t)
     t = re.sub(r"\b" + intro_direct, "", t)
+    t = re.sub(r"\s*Exames apresentados:\s*(?:Aus[êeē]ncia|N[ãa]o foram|Sem exames)[^\n\r]*[\.\,]?", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"\s*Aus[êeē]ncia de exames complementares[^\n\r]*[\.\,]?", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"\s*N[ãa]o foram apresentados exames complementares[^\n\r]*[\.\,]?", "", t, flags=re.IGNORECASE)
     t = re.sub(r"\s{2,}", " ", t)
     t = re.sub(r"\.\s*\.", ".", t)
     t = re.sub(r",\s*,+", ",", t)
@@ -2620,6 +2638,156 @@ def _clean_queixa_duracao_text(text: str) -> str:
     t = re.sub(r"\.\s*,", ".", t)
     t = re.sub(r"\.\s*([a-zà-ú])", lambda m: ". " + m.group(1).upper(), t)
     return t.strip()
+
+def _sanitizar_texto_portugues_esisla(texto: str) -> str:
+    if not texto:
+        return ""
+    t = str(texto)
+
+    # 1. Mapeamento sistemático de mácrons para acentos oficiais brasileiros
+    substituicoes_especificas = [
+        (r"\bsist[ēe]mico\b", "sistêmico"),
+        (r"\bsist[ēe]mica\b", "sistêmica"),
+        (r"\bsist[ēe]micos\b", "sistêmicos"),
+        (r"\bsist[ēe]micas\b", "sistêmicas"),
+        (r"\bcr[ōo]nico\b", "crônico"),
+        (r"\bcr[ōo]nica\b", "crônica"),
+        (r"\bcr[ōo]nicos\b", "crônicos"),
+        (r"\bcr[ōo]nicas\b", "crônicas"),
+        (r"\b[Aa]us[ēe]ncia\b", lambda m: "Ausência" if m.group(0)[0].isupper() else "ausência"),
+        (r"\b[Aa]us[ēe]ncias\b", lambda m: "Ausências" if m.group(0)[0].isupper() else "ausências"),
+        (r"\b[Pp]r[ēe]vio\b", lambda m: "Prévio" if m.group(0)[0].isupper() else "prévio"),
+        (r"\b[Pp]r[ēe]via\b", lambda m: "Prévia" if m.group(0)[0].isupper() else "prévia"),
+        (r"\b[Pp]r[ēe]vios\b", lambda m: "Prévios" if m.group(0)[0].isupper() else "prévios"),
+        (r"\b[Pp]r[ēe]vias\b", lambda m: "Prévias" if m.group(0)[0].isupper() else "prévias"),
+        (r"\b[Ee]vid[ēe]ncia\b", lambda m: "Evidência" if m.group(0)[0].isupper() else "evidência"),
+        (r"\b[Ee]vid[ēe]ncias\b", lambda m: "Evidências" if m.group(0)[0].isupper() else "evidências"),
+        (r"\b[Ff]requ[ēe]ncia\b", lambda m: "Frequência" if m.group(0)[0].isupper() else "frequência"),
+        (r"\b[Cc]onsequ[ēe]ncia\b", lambda m: "Consequência" if m.group(0)[0].isupper() else "consequência"),
+        (r"\b[Pp]erman[ēe]ncia\b", lambda m: "Permanência" if m.group(0)[0].isupper() else "permanência"),
+        (r"\b[Tt]end[ēe]ncia\b", lambda m: "Tendência" if m.group(0)[0].isupper() else "tendência"),
+        (r"\b[Uu]rg[ēe]ncia\b", lambda m: "Urgência" if m.group(0)[0].isupper() else "urgência"),
+        (r"\b[Ee]merg[ēe]ncia\b", lambda m: "Emergência" if m.group(0)[0].isupper() else "emergência"),
+        (r"\b[Ee]xperi[ēe]ncia\b", lambda m: "Experiência" if m.group(0)[0].isupper() else "experiência"),
+        (r"\b[Cc]ompet[ēe]ncia\b", lambda m: "Competência" if m.group(0)[0].isupper() else "competência"),
+        (r"\b[Ss]equ[ēe]la\b", lambda m: "Sequela" if m.group(0)[0].isupper() else "sequela"),
+        (r"\b[Ss]equ[ēe]las\b", lambda m: "Sequelas" if m.group(0)[0].isupper() else "sequelas"),
+    ]
+    for pattern, repl in substituicoes_especificas:
+        t = re.sub(pattern, repl, t)
+
+    # Mácrons residuais
+    macron_map = {
+        'ē': 'ê', 'ō': 'ô', 'ā': 'á', 'ī': 'í', 'ū': 'ú',
+        'Ē': 'Ê', 'Ō': 'Ô', 'Ā': 'Á', 'Ī': 'Í', 'Ū': 'Ú',
+    }
+    for m_char, r_char in macron_map.items():
+        t = t.replace(m_char, r_char)
+
+    # 2. Correção de vocabulário médico-pericial com preservação de caixa
+    def _corrigir_palavra(texto_alvo: str, padrao: str, forma_correta: str) -> str:
+        def repl(m):
+            orig = m.group(0)
+            if orig.isupper():
+                return forma_correta.upper()
+            if orig[0].isupper():
+                return forma_correta[0].upper() + forma_correta[1:].lower()
+            return forma_correta.lower()
+        return re.sub(rf"\b{padrao}\b", repl, texto_alvo, flags=re.IGNORECASE)
+
+    palavras_a_corrigir = [
+        ("clinico", "clínico"),
+        ("clinica", "clínica"),
+        ("clinicos", "clínicos"),
+        ("clinicas", "clínicas"),
+        ("compativel", "compatível"),
+        ("compativeis", "compatíveis"),
+        ("sindrome", "síndrome"),
+        ("sindromes", "síndromes"),
+        ("periodo", "período"),
+        ("periodos", "períodos"),
+        ("imprescindivel", "imprescindível"),
+        ("imprescindiveis", "imprescindíveis"),
+        ("fisica", "física"),
+        ("fisico", "físico"),
+        ("fisicas", "físicas"),
+        ("fisicos", "físicos"),
+        ("pericia", "perícia"),
+        ("pericias", "perícias"),
+        ("inicio", "início"),
+        ("inicios", "inícios"),
+        ("historico", "histórico"),
+        ("historicos", "históricos"),
+        ("propria", "própria"),
+        ("proprio", "próprio"),
+        ("proprias", "próprias"),
+        ("proprios", "próprios"),
+        ("temporaria", "temporária"),
+        ("temporario", "temporário"),
+        ("temporarias", "temporárias"),
+        ("temporarios", "temporários"),
+        ("transitoria", "transitória"),
+        ("transitorio", "transitório"),
+        ("transitorias", "transitórias"),
+        ("transitorios", "transitórios"),
+        ("remedio", "remédio"),
+        ("remedios", "remédios"),
+        ("medica", "médica"),
+        ("medico", "médico"),
+        ("medicos", "médicos"),
+        ("medicas", "médicas"),
+        ("declaracao", "declaração"),
+        ("declaracoes", "declarações"),
+        ("avaliacao", "avaliação"),
+        ("avaliacoes", "avaliações"),
+        ("saude", "saúde"),
+        ("diaria", "diária"),
+        ("diarias", "diárias"),
+        ("necessaria", "necessária"),
+        ("necessario", "necessário"),
+        ("necessarias", "necessárias"),
+        ("necessarios", "necessários"),
+        ("relatorio", "relatório"),
+        ("relatorios", "relatórios"),
+        ("observacao", "observação"),
+        ("observacoes", "observações"),
+        ("apresentacao", "apresentação"),
+        ("apresentacoes", "apresentações"),
+        ("ausencia", "ausência"),
+        ("ausencias", "ausências"),
+    ]
+    for padrao, forma in palavras_a_corrigir:
+        t = _corrigir_palavra(t, padrao, forma)
+
+    return t
+
+def _desduplicar_e_limpar_queixa_esisla(texto: str) -> str:
+    if not texto:
+        return ""
+    t = str(texto)
+    m_alt = re.search(
+        r'(\nDescrição das Alterações (?:Clínicas|Médicas) encontradas e Relato dos Exames Complementares:?\s*\n)(.*?)(\n\s*\(\*\)\s*Descrição da\(s\)\s*Limitação|\Z)',
+        t,
+        re.DOTALL | re.IGNORECASE
+    )
+    b_alt = m_alt.group(2).strip() if m_alt else ""
+
+    m_queixa = re.search(
+        r"(\(\*\)\s*Queixa e Dura[çc][ãa]o:?\s*\n)(.*?)(\n\s*Antecedentes Mórbidos)",
+        t,
+        re.DOTALL | re.IGNORECASE
+    )
+    if m_queixa:
+        h1, b_q, h2 = m_queixa.groups()
+        if b_alt and len(b_alt) > 15 and b_alt in b_q:
+            b_q = b_q.replace(b_alt, "")
+        b_q = re.sub(r"[\r\n\s]*Exames apresentados:\s*(?:Aus[êe]ncia|N[ãa]o foram|Sem exames)[^\n\r]*(\.|\n|$)?", "", b_q, flags=re.IGNORECASE)
+        b_q = re.sub(r"[\r\n\s]*Exames apresentados:\s*$", "", b_q, flags=re.MULTILINE | re.IGNORECASE)
+        b_q = re.sub(r"[\r\n\s]*Aus[êe]ncia de exames complementares[^\n\r]*(\.|\n|$)?", "", b_q, flags=re.IGNORECASE)
+        b_q = re.sub(r"[\r\n\s]*N[ãa]o foram apresentados exames complementares[^\n\r]*(\.|\n|$)?", "", b_q, flags=re.IGNORECASE)
+        b_q = re.sub(r"\n{2,}", "\n\n", b_q).strip()
+        t = t[:m_queixa.start()] + h1 + b_q + "\n\n" + h2 + t[m_queixa.end():]
+    return t
 
 def _clean_esisla_text(text: str) -> str:
     text = str(text or "").strip()
@@ -2780,6 +2948,8 @@ def _clean_esisla_text(text: str) -> str:
         text = text[:m_just.start()] + h1 + b_clean + "\n\n" + h2 + text[m_just.end():]
 
     text = re.sub(r"\n{3,}", "\n\n", text)
+    text = _sanitizar_texto_portugues_esisla(text)
+    text = _desduplicar_e_limpar_queixa_esisla(text)
 
     return text
 
@@ -3126,6 +3296,187 @@ def api_ai_esisla():
             return _error("VALIDATION_ERROR", str(exc), False, 400)
         return _provider_error(exc)
 
+def _remover_capslock_excessivo_esisla(texto: str) -> str:
+    if not texto:
+        return ""
+    
+    siglas_preservar = {
+        "CID", "CID10", "CID-10", "DPME", "LTS", "CRM", "CRO", "SUS", "SP", "RG", "CPF",
+        "SIM", "NÃO", "NAO", "MMHG", "BPM", "CAT", "HDA", "AP", "FAVORÁVEL", "FAVORAVEL", "CONTRÁRIO", "CONTRARIO"
+    }
+
+    conectivos = {"de", "da", "do", "das", "dos", "e", "em", "para", "com", "por", "a", "o", "as", "os", "na", "no"}
+
+    acentos_cargos = {
+        "organizacao": "organização", "educacao": "educação", "basica": "básica",
+        "tecnico": "técnico", "tecnica": "técnica", "pedagogico": "pedagógico",
+        "pedagogica": "pedagógica", "medico": "médico", "medica": "médica",
+        "secretario": "secretário", "secretaria": "secretária", "publico": "público",
+        "publica": "pública", "policia": "polícia", "judiciario": "judiciário",
+        "transito": "trânsito", "gestao": "gestão", "direcao": "direção",
+        "operacao": "operação", "insonia": "insônia", "ansiedade": "ansiedade",
+        "transtorno": "transtorno", "panico": "pânico", "depressao": "depressão",
+        "medicacao": "medicação", "avaliacao": "avaliação", "funcao": "função",
+        "psicologico": "psicológico", "psicologa": "psicóloga", "clinico": "clínico",
+        "clinica": "clínica", "periodo": "período", "fisico": "físico", "fisica": "física"
+    }
+
+    def _ajustar_palavra_cargo(p: str) -> str:
+        clean = re.sub(r'[^a-zA-Z0-9áéíóúâêôãõçÁÉÍÓÚÂÊÔÃÕÇ]', '', p)
+        if clean.upper() in siglas_preservar:
+            return p
+        low = clean.lower()
+        if low in conectivos:
+            corrigido = low
+        else:
+            corrigido = acentos_cargos.get(low, low)
+            corrigido = corrigido.capitalize()
+        return re.sub(re.escape(clean), corrigido, p, count=1, flags=re.IGNORECASE)
+
+    # 1. Sequência de duas ou mais palavras em maiúsculas (ex: "AGENTE DE ORGANIZACAO ESCOLAR")
+    def _sub_caps_seq(m):
+        full = m.group(0)
+        upper_f = full.upper()
+        if any(h in upper_f for h in ["QUEIXA E DURAÇÃO", "ANTECEDENTES MÓRBIDOS", "ATESTADO", "EXAME FÍSICO", "PARECER MÉDICO", "RESPOSTA AOS QUESITOS", "JUSTIFICATIVA", "LIMITAÇÃO"]):
+            return full
+        palavras = full.split()
+        novas = [_ajustar_palavra_cargo(w) for w in palavras]
+        return " ".join(novas)
+
+    padrao_seq = re.compile(r'\b[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{3,}(?:\s+(?:[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{1,}|[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{3,}))+\b')
+    texto = padrao_seq.sub(_sub_caps_seq, texto)
+
+    # 2. Palavras isoladas em maiúsculas (5+ letras) que não sejam siglas
+    linhas = texto.splitlines()
+    linhas_novas = []
+    for linha in linhas:
+        stripped = linha.strip()
+        if stripped.startswith("(*)") or stripped.startswith("PARECER:") or stripped.startswith("Parecer:") or stripped.startswith("CID"):
+            linhas_novas.append(linha)
+            continue
+        
+        def _sub_single(m):
+            w = m.group(0)
+            if w.upper() in siglas_preservar:
+                return w
+            low = w.lower()
+            corrigido = acentos_cargos.get(low, low)
+            return corrigido.capitalize()
+
+        nova_linha = re.sub(r'\b[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{5,}\b', _sub_single, linha)
+        linhas_novas.append(nova_linha)
+
+    return "\n".join(linhas_novas)
+
+def _refinar_ficha_esisla_deterministica(texto: str) -> str:
+    if not texto:
+        return ""
+    lines = texto.splitlines()
+    cleaned = []
+    prev_line = None
+    for line in lines:
+        stripped = line.strip()
+        if stripped and stripped == prev_line:
+            continue
+        clean_text = line
+        clean_text = re.sub(r'\b(\w+)\s*,\s*\1\b', r'\1', clean_text, flags=re.IGNORECASE)
+        clean_text = re.sub(r'(relatou não ser readaptado\.?)\s*\1', r'\1', clean_text, flags=re.IGNORECASE)
+        cleaned.append(clean_text)
+        prev_line = stripped
+    res = "\n".join(cleaned).strip()
+    res = _sanitizar_texto_portugues_esisla(res)
+    res = _desduplicar_e_limpar_queixa_esisla(res)
+    res = _remover_capslock_excessivo_esisla(res)
+    return res
+
+@app.post("/api/ai/refinar-ficha-esisla")
+def api_ai_refinar_ficha_esisla():
+    try:
+        body = _json_body()
+        ficha_original = str(body.get("ficha_esisla") or body.get("texto_ficha") or body.get("texto") or "").strip()
+        if not ficha_original or len(ficha_original) < 30:
+            return _error("VALIDATION_ERROR", "Envie o texto da ficha e-SISLA a ser refinada.", False, 400)
+
+        system_instruction = (
+            "Você é um Perito Médico Sênior Especialista em DPME e e-SISLA (Estado de São Paulo), com vasta experiência em perícias médicas administrativas e licenças de saúde.\n"
+            "Sua missão é aperfeiçoar a redação da ficha pericial e-SISLA sem alterar nada dos dados clínicos, deixando os campos mais robustos, removendo palavras em CAPSLOCK (especialmente em cargos) e ajustando com perfeição o português.\n\n"
+            "Diretrizes obrigatórias de aprimoramento (Padrão Sênior DPME / e-SISLA):\n"
+            "1. FIDELIDADE FÁTICA E DADOS INTACTOS: Não altere, não invente e não remova nenhum diagnóstico, queixa relatada, tempo de função, medicamento, dose, tempo concedido, parecer, data ou CID. Mantenha 100% da verdade clínica original fornecida.\n"
+            "2. REMOÇÃO OBRIGATÓRIA DE CAPSLOCK: Converta rigorosamente todas as palavras em caixa alta excessiva no corpo do texto — especialmente cargos públicos, funções, nomes de órgãos e queixas — para a capitalização normal e elegante em português (exemplo: 'AGENTE DE ORGANIZACAO ESCOLAR' deve ser obrigatoriamente convertido para 'Agente de Organização Escolar'; 'PROFESSOR DE EDUCACAO BASICA' para 'Professor de Educação Básica'). Nunca deixe cargos ou trechos gritando em maiúsculas. Mantenha em maiúsculas apenas siglas oficiais essenciais (CID, DPME, LTS, CRM, CRO, SUS, SP, RG, CPF) e os valores literais de parecer/quesitos (FAVORÁVEL, CONTRÁRIO, SIM, NÃO).\n"
+            "3. AJUSTE IMPECÁVEL DO PORTUGUÊS: Efetue revisão gramatical e ortográfica rigorosa oficial do Brasil. Aplique todas as acentuações faltantes (organização, insônia, medicação, depressivo, clínico, crônico, período, físico, perícia, etc.), pontuação precisa e concordância verbal e nominal culta.\n"
+            "4. ROBUSTEZ TÉCNICA DOS CAMPOS: Deixe a redação dos campos mais encorpada, robusta, técnica e formalmente elegante, eliminando trechos telegráficos, simplórios ou truncados, mantendo coerência com o cargo público exercido e o quadro clínico.\n"
+            "5. PRESERVAÇÃO DA ESTRUTURA OFICIAL E-SISLA: Mantenha rigorosamente a divisão e seções oficiais da ficha e-SISLA:\n"
+            "   - Identificação do Servidor e Vínculo\n"
+            "   - (*) Queixa e Duração: (voMedico.parRlCat)\n"
+            "   - Antecedentes Mórbidos: (voMedico.parRlAp)\n"
+            "   - Atestado/Relatório e Exames Complementares: (voMedico.parRlHda) [manter 'Em anexo.']\n"
+            "   - (*) Exame Físico Geral: (voMedico.parRlExApres)\n"
+            "   - Descrição das Alterações Clínicas e Exames Complementares\n"
+            "   - (*) Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)\n"
+            "   - (*) Parecer Médico: (FAVORÁVEL / CONTRÁRIO)\n"
+            "   - (*) Resposta aos quesitos: (1, 2, 3)\n"
+            "   - (*) Justificativa Parecer Médico\n"
+            "   - Biometria e Sinais Vitais (Sistólica, Diastólica, Pulso, Altura, Peso)\n"
+            "   - CRM Médico Assistente, Nome, Data da Perícia, CIDs e Dias Concedidos\n"
+            "6. Retorne APENAS o texto completo da ficha e-SISLA aprimorada e robusta, sem introduções e sem cercas markdown."
+        )
+
+        prompt = (
+            "Aprimore a ficha pericial e-SISLA abaixo: mantenha 100% dos dados originais sem alterar fatos, torne os campos mais robustos e técnicos, remova palavras em CAPSLOCK (especialmente em cargos como 'AGENTE DE ORGANIZACAO ESCOLAR' -> 'Agente de Organização Escolar') e ajuste com perfeição o português:\n\n"
+            f"--- FICHA E-SISLA ATUAL ---\n{ficha_original}\n--- FIM DA FICHA ---"
+        )
+
+        ficha_otimizada = None
+        models = [GEMINI_MODEL] + GEMINI_FALLBACK_MODELS
+        try:
+            client = _client()
+            for m in models:
+                try:
+                    response = client.models.generate_content(
+                        model=m,
+                        contents=[prompt],
+                        config=types.GenerateContentConfig(
+                            system_instruction=system_instruction,
+                            temperature=0.2,
+                        )
+                    )
+                    t = (response.text or "").strip()
+                    if t:
+                        ficha_otimizada = t
+                        break
+                except Exception as m_err:
+                    app.logger.warning("Falha ao refinar com modelo %s: %s", m, m_err)
+                    continue
+        except Exception as client_err:
+            app.logger.warning("Cliente Gemini indisponível para refinamento: %s", client_err)
+
+        if ficha_otimizada:
+            if ficha_otimizada.startswith("```"):
+                lines = ficha_otimizada.split("\n")
+                if lines[0].startswith("```"): lines = lines[1:]
+                if lines and lines[-1].startswith("```"): lines = lines[:-1]
+                ficha_otimizada = "\n".join(lines).strip()
+            ficha_otimizada = _sanitizar_texto_portugues_esisla(ficha_otimizada)
+            ficha_otimizada = _desduplicar_e_limpar_queixa_esisla(ficha_otimizada)
+            ficha_otimizada = _refinar_ficha_esisla_deterministica(ficha_otimizada)
+        else:
+            ficha_otimizada = _refinar_ficha_esisla_deterministica(ficha_original)
+
+        return _ok({
+            "ficha_esisla_otimizada": ficha_otimizada,
+            "texto_otimizado": ficha_otimizada,
+            "tamanho_original": len(ficha_original),
+            "tamanho_otimizado": len(ficha_otimizada),
+            "melhorias_aplicadas": [
+                "Revisão ortográfica e terminologia médico-pericial formal",
+                "Eliminação de duplicidades e campos redundantes",
+                "Reestruturação nos padrões oficiais do e-SISLA / DPME"
+            ]
+        })
+    except Exception as exc:
+        app.logger.error("Erro ao refinar ficha e-SISLA com IA: %s", exc)
+        return _error("AI_ERROR", f"Falha ao reestruturar ficha com IA: {str(exc)}", True, 500)
+
 @app.post("/api/gerar-justificativa")
 @app.post("/gerar-justificativa")
 def gerar_justificativa():
@@ -3323,6 +3674,856 @@ def api_ai_preencher_ficha():
             return jsonify({"error": "invalid_request", "detail": str(exc)}), 400
         return _provider_error(exc)
 
+def parse_esisla_text(text: str) -> dict:
+    data = {}
+    if not text:
+        return data
+
+    # 1. Protocolo / Número
+    m = re.search(r'(?:Protocolo|N[úu\ufffd]mero):\s*([0-9]+)', text, re.I)
+    if m: data['protocolo'] = m.group(1).strip()
+
+    # 2. CPF, RG e Nome Completo
+    # Formato padrão e-SISLA
+    m = re.search(r'CPF:\s*([0-9\s\-]+?)(?:RG:|Nome Completo|Nasc|Data|$)', text, re.I)
+    if m:
+        raw_cpf = re.sub(r'\D', '', m.group(1))
+        if len(raw_cpf) == 11:
+            data['cpf_paciente'] = f"{raw_cpf[:3]}.{raw_cpf[3:6]}.{raw_cpf[6:9]}-{raw_cpf[9:]}"
+        elif raw_cpf:
+            data['cpf_paciente'] = m.group(1).strip()
+
+    m = re.search(r'RG:\s*([0-9\.\-\s]+?)(?:Nome Completo|Data|NI|Nasc|Sexo|$)', text, re.I)
+    if m:
+        clean_rg = re.sub(r'[^0-9A-Za-z]', '', m.group(1))
+        if clean_rg:
+            data['rg_paciente'] = clean_rg
+
+    m = re.search(r'Nome(?:\s+Completo)?:\s*([^\n\r]+)', text, re.I)
+    if m:
+        val_nome = m.group(1).strip()
+        if not re.match(r'^(?:CPF|RG)\b', val_nome, re.I):
+            val_nome = re.split(r'\s+CPF:\s*', val_nome, flags=re.I)[0].strip()
+            data['nome_paciente'] = re.sub(r'\s+', ' ', val_nome).strip()
+
+    # Formato GPM (onde Nome, CPF e RG vêm juntos na linha: NOME_COMPLETO 11DIGITOS_CPF RG)
+    if not data.get('nome_paciente') or not data.get('cpf_paciente'):
+        m_gpm_p = re.search(r'^([A-Z\s]{4,}?)\s+(\d{11})\s+(\d{7,10}[0-9X]?)$', text, re.M)
+        if m_gpm_p:
+            nome, cpf, rg = m_gpm_p.groups()
+            data['nome_paciente'] = re.sub(r'\s+', ' ', nome).strip()
+            data['cpf_paciente'] = f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
+            data['rg_paciente'] = rg.strip()
+
+    # 3. Data de Nascimento e Idade
+    m = re.search(r'(?:Data de Nascimento|Nasc\.?):\s*(\d{2}/\d{2}/\d{4})', text, re.I)
+    if m:
+        data['data_nascimento'] = m.group(1)
+    else:
+        m_sn = re.search(r'(FEMININO|MASCULINO)\s*(\d{2}/\d{2}/\d{4})', text, re.I)
+        if m_sn:
+            data['sexo'] = 'Feminino' if m_sn.group(1).upper() == 'FEMININO' else 'Masculino'
+            data['data_nascimento'] = m_sn.group(2)
+
+    if data.get('data_nascimento'):
+        try:
+            dt = datetime.strptime(data['data_nascimento'], "%d/%m/%Y")
+            today = datetime.now()
+            age = today.year - dt.year - ((today.month, today.day) < (dt.month, dt.day))
+            if 0 < age < 120:
+                data['idade'] = str(age)
+        except Exception:
+            pass
+
+    # 4. NI
+    m = re.search(r'NI:\s*([0-9]+)', text, re.I)
+    if m:
+        data['ni'] = m.group(1).strip()
+    elif data.get('nome_paciente'):
+        m_ni = re.search(r'NI:[\s\S]*?\n(\d{6,10})\s*\n' + re.escape(data['nome_paciente']), text)
+        if m_ni:
+            data['ni'] = m_ni.group(1).strip()
+
+    # 5. Sexo
+    if not data.get('sexo'):
+        primeiro_nome = (data.get('nome_paciente') or '').split()[0].upper() if data.get('nome_paciente') else ''
+        if re.search(r'Sexo:\s*(?:Feminino\s+)?Masculino\b', text, re.I):
+            if primeiro_nome.endswith(('A', 'E', 'IS', 'EL')) and primeiro_nome not in ('ANTONIO', 'JOSE', 'FELIPE', 'ALEXANDRE', 'JORGE'):
+                data['sexo'] = 'Feminino'
+            else:
+                data['sexo'] = 'Masculino'
+        elif re.search(r'Sexo:\s*Feminino\b', text, re.I):
+            data['sexo'] = 'Feminino'
+        else:
+            data['sexo'] = 'Masculino'
+
+    # 6. Órgão, UA, Município, Regime Jurídico, Cargo
+    m = re.search(r'[ÓO\ufffd]rg[ãa\ufffd]?o:\s*([^\n\r]+)', text, re.I)
+    if m and m.group(1).strip() and not m.group(1).strip().startswith(('UA:', 'Endere')):
+        data['orgao'] = re.sub(r'\s+', ' ', m.group(1)).strip()
+
+    m = re.search(r'UA:\s*([^\n\r]+)', text, re.I)
+    if m and m.group(1).strip() and not m.group(1).strip().startswith(('Endere', 'CEP')):
+        data['unidade'] = re.sub(r'\s+', ' ', m.group(1)).strip()
+
+    m = re.search(r'Munic[íi\ufffd]?pio:\s*([^\n\r]+)', text, re.I)
+    if m and m.group(1).strip() and not m.group(1).strip().startswith(('Bairro', 'Regime')):
+        raw_mun = re.sub(r'\s+', ' ', m.group(1)).strip()
+        raw_mun = re.split(r'\s+Regime', raw_mun, flags=re.I)[0].strip()
+        data['municipio'] = raw_mun
+
+    m = re.search(r'Regime Jur[íi\ufffd]?dico:\s*([^\n\r]+)', text, re.I)
+    if m and m.group(1).strip() and not m.group(1).strip().startswith(('Cargo', 'Ingresso')):
+        raw_reg = re.sub(r'\s+', ' ', m.group(1)).strip()
+        raw_reg = re.split(r'\s+Cargo', raw_reg, flags=re.I)[0].strip()
+        data['regime_juridico'] = raw_reg
+
+    m = re.search(r'Cargo(?:\/Fun[çc\ufffd]?[ãa\ufffd]?o)?:\s*([^\n\r]+)', text, re.I)
+    if m and m.group(1).strip() and not m.group(1).strip().startswith(('Ingresso', 'Situa')):
+        raw_cargo = re.sub(r'\s+', ' ', m.group(1).strip())
+        raw_cargo = re.split(r'\s+Situa', raw_cargo, flags=re.I)[0].strip()
+        cargo_clean = re.sub(r'^\d+\s+', '', raw_cargo)
+        data['cargo'] = cargo_clean or raw_cargo
+        data['cargo_codigo'] = raw_cargo
+
+    # Formato GPM (bloco Dados Funcionais com colunas verticais)
+    sec_func = re.search(r'Dados Funcionais\s*([\s\S]*?)Readaptado:', text)
+    if sec_func:
+        s_func = sec_func.group(1)
+        val_lines = [l.strip() for l in s_func.splitlines() if l.strip() and not l.endswith(':') and not any(k in l for k in ['Ingresso:', 'Cargo/Fun', 'Regime Jur'])]
+        for vl in val_lines:
+            if not data.get('unidade') and re.match(r'^\d{8,16}\s*-', vl):
+                data['unidade'] = vl
+            elif not data.get('orgao') and re.match(r'^\d{4,6}\s*-', vl):
+                data['orgao'] = vl
+            elif (not data.get('cargo') or not data.get('regime_juridico')) and re.search(r'(AUT[ÁA]RQUICO|CLT|EFETIVO|ESTATUT[ÁA]RIO|LEI\s*500\/74)\b', vl, re.I):
+                m_cr = re.search(r'(AUT[ÁA]RQUICO|CLT|EFETIVO|ESTATUT[ÁA]RIO|LEI\s*500\/74)\b', vl, re.I)
+                data['regime_juridico'] = m_cr.group(1).strip()
+                c_nom = vl[:m_cr.start()].strip()
+                if c_nom:
+                    data['cargo'] = c_nom
+                    data['cargo_codigo'] = c_nom
+            elif not data.get('municipio') and vl.isalpha() and vl.isupper():
+                data['municipio'] = vl
+
+    # 7. Situação
+    m = re.search(r'Situa[çc\ufffd]?[ãa\ufffd]?o:\s*([^\n\r]+)', text, re.I)
+    if m:
+        raw_sit = re.sub(r'\s+', ' ', m.group(1)).strip()
+        raw_sit = re.split(r'\s+Readapta', raw_sit, flags=re.I)[0].strip()
+        data['situacao'] = raw_sit
+
+    # 8. Readaptação
+    m_readap_sim_nao = re.search(r'Readaptad[oa]:\s*([A-Za-z]+)', text, re.I)
+    m_cid_readap = re.search(r'Readapta[çc\ufffd]?[ãa\ufffd]?o CID1:\s*([A-Za-z]\d{2,3}(?:\.\d+)?)', text, re.I)
+    if m_cid_readap and m_cid_readap.group(1):
+        data['readaptado'] = 'Sim'
+        data['readaptacao_cid1'] = m_cid_readap.group(1).strip().upper()
+    elif m_readap_sim_nao:
+        val_rn = m_readap_sim_nao.group(1).strip().upper()
+        data['readaptado'] = 'Sim' if val_rn in ('SIM', 'S') else 'Não'
+    else:
+        data['readaptado'] = 'Não'
+
+    # 9. CRM Médico Assistente
+    m = re.search(r'CRM\s*(?:M[ée\ufffd]?dico)?:\s*([0-9a-zA-Z\/\-]+)', text, re.I)
+    if m: data['crm_cro'] = m.group(1).strip()
+
+    # 10. Nome Médico Assistente
+    m = re.search(r'CRM[^\n\r]*?Nome:\s*([^\n\r]+)', text, re.I)
+    if not m:
+        m = re.search(r'Nome do M[ée\ufffd]?dico:\s*([^\n\r]+)', text, re.I)
+    if m:
+        raw_nm = re.sub(r'\s+', ' ', m.group(1)).strip()
+        raw_nm = re.split(r'\s+CID', raw_nm, flags=re.I)[0].strip()
+        data['nome_medico_assistente'] = raw_nm
+
+    # 11. CID 10
+    m = re.search(r'CID(?: 10)?:\s*([A-Za-z][0-9]{2,3}(?:\.[0-9]+)?)', text, re.I)
+    if m:
+        cid_code = m.group(1).strip().upper()
+        if len(cid_code) == 4 and '.' not in cid_code:
+            cid_code = f"{cid_code[:3]}.{cid_code[3:]}"
+        data['cid'] = cid_code
+        cid_info = get_cid_info(cid_code)
+        if cid_info and cid_info.get("nome"):
+            data['cid_descricao'] = cid_info["nome"]
+        # Regra pericial: NÃO preencher 'doenca_motivo' com o CID para periciado titular.
+        # Mantém limpo para que o médico perito relate os sintomas/tratamento reais.
+        data['doenca_motivo'] = ""
+
+    # 12. Nº Dias
+    m = re.search(r'(?:N[ºo°\ufffd]?\s*)?Dias:\s*(\d+)', text, re.I)
+    if not m:
+        m = re.search(r'(\d+)\s*Dias:', text, re.I)
+    if m:
+        data['dias_solicitados'] = m.group(1).strip()
+        data['dias_concedidos'] = m.group(1).strip()
+
+    # 13. Data de emissão do atestado
+    m = re.search(r'Data\s+(?:de\s+)?emiss[ãa\ufffd]?o\s+(?:do\s+)?atestado:\s*(\d{2}/\d{2}/\d{4})', text, re.I)
+    if m:
+        data['data_documento_br'] = m.group(1).strip()
+        try:
+            d, mo, y = m.group(1).split('/')
+            data['data_documento'] = f"{y}-{mo}-{d}"
+        except Exception:
+            data['data_documento'] = m.group(1).strip()
+
+    # 14. Motivo Perícia
+    m = re.search(r'Motivo:\s*([^\n\r]+)', text, re.I)
+    if m:
+        raw_mot = re.sub(r'\s+', ' ', m.group(1)).strip()
+        raw_mot = re.split(r'\s+Local', raw_mot, flags=re.I)[0].strip()
+        data['motivo_pericia'] = raw_mot
+
+    # 15. Tipo Perícia
+    m = re.search(r'Tipo:\s*([^\n\r]+)', text, re.I)
+    if m:
+        raw_tip = re.sub(r'\s+', ' ', m.group(1)).strip()
+        if not raw_tip or 'Pessoa' in raw_tip:
+            m_tip_next = re.search(r'Pessoa a ser periciada:\s*\n([^\n\r]+)', text, re.I)
+            if m_tip_next:
+                raw_tip = m_tip_next.group(1).strip()
+        data['tipo_pericia'] = raw_tip
+
+    # 16. Finalidade
+    m = re.search(r'Finalidade:\s*([^\n\r]+)', text, re.I)
+    if m: data['finalidade'] = re.sub(r'\s+', ' ', m.group(1)).strip()
+
+    # 17. Data Expedição
+    m = re.search(r'Data Expedi[çc\ufffd]?[ãa\ufffd]?o:\s*(\d{2}/\d{2}/\d{4})', text, re.I)
+    if m: data['data_expedicao'] = m.group(1).strip()
+
+    # 18. Última Licença
+    m = re.search(r'[ÚU\ufffd]?ltima Licen[çc\ufffd]?a:\s*(\d+)?.*?In[íi\ufffd]?cio:\s*(\d{2}/\d{2}/\d{4})\s*Fim:\s*(\d{2}/\d{2}/\d{4})', text, re.I)
+    if m:
+        data['ultima_licenca_dias'] = m.group(1) or ""
+        data['ultima_licenca_inicio'] = m.group(2)
+        data['ultima_licenca_fim'] = m.group(3)
+
+    # 19. Pessoa da Perícia (detecta se é acompanhante de familiar/filhos)
+    m = re.search(r'(?:Pessoa|Pessoa a ser periciada):\s*([^\n\r]+)', text, re.I)
+    raw_pessoa = re.sub(r'\s+', ' ', m.group(1)).strip() if m else ""
+    if not raw_pessoa or raw_pessoa.upper() in ('A PEDIDO', 'CONVOCACAO'):
+        m_p_nome = re.search(r'Pessoa a ser periciada:[\s\S]*?Nome:\s*([^\n\r]+)', text, re.I)
+        if m_p_nome:
+            raw_pessoa = m_p_nome.group(1).strip()
+
+    if raw_pessoa:
+        data['pessoa'] = raw_pessoa
+
+    is_acompanhante = False
+    upper_p = raw_pessoa.upper()
+    if upper_p and not upper_p.startswith("O PROP") and upper_p not in ("PROPRIO", "PRÓPRIO"):
+        is_acompanhante = True
+    elif re.search(r'atestado\s+acompanhante\b', text, re.I):
+        is_acompanhante = True
+
+    data['is_acompanhante'] = is_acompanhante
+    if is_acompanhante:
+        data['tipo_atendimento_pericia'] = 'ACOMPANHANTE'
+        dep_m = re.search(r'\(([^)]+)\)', raw_pessoa)
+        if dep_m:
+            nome_dep = dep_m.group(1).strip()
+        else:
+            nome_dep = re.sub(r'^(?:FILHOS|FILHO|CONJUGE|CÔNJUGE|PAIS|PAI|MÃE|MAE|OUTROS)\s*[:\-]?\s*', '', raw_pessoa, flags=re.I).strip()
+        data['nome_dependente'] = nome_dep
+
+        # Se havia um CID do atestado do dependente no PDF diferente de Z763, armazena como secundário
+        cid_original = data.get('cid', '')
+        if cid_original and cid_original not in ('Z763', 'Z76.3'):
+            data['cid_original'] = cid_original
+            data['cids_secundarios'] = [{'cid': cid_original, 'descricao': f"Patologia do dependente {nome_dep}".strip()}]
+
+        # Conforme diretriz oficial DPME / e-SISLA: Para perícia de acompanhante, o primeiro CID SEMPRE é Z763 (Z76.3)
+        data['cid'] = 'Z763'
+        data['cid_descricao'] = 'Pessoa em boa saúde acompanhando pessoa doente'
+        dep_str = f" do(a) dependente {nome_dep}" if nome_dep else ""
+        data['doenca_motivo'] = f"Acompanhamento e assistência ao tratamento de saúde{dep_str} (CID Z76.3), nos termos do art. 199 da Lei Estadual nº 10.261/68."
+
+    return data
+
+@app.post("/api/esisla/parse-pdf")
+def api_esisla_parse_pdf():
+    try:
+        raw_text = ""
+        file_bytes = None
+        filename = ""
+        mimetype = ""
+
+        if "file" in request.files or "pdf" in request.files:
+            f = request.files.get("file") or request.files.get("pdf")
+            filename = f.filename or "documento.pdf"
+            file_bytes = f.read()
+            mimetype = f.mimetype or "application/pdf"
+        elif request.is_json:
+            b = request.get_json(silent=True) or {}
+            raw_text = str(b.get("texto") or b.get("text") or "").strip()
+            b64 = str(b.get("pdf_base64") or b.get("base64") or "").strip()
+            if b64:
+                import base64
+                if "," in b64:
+                    b64 = b64.split(",", 1)[1]
+                file_bytes = base64.b64decode(b64)
+                mimetype = b.get("mimetype", "application/pdf")
+
+        # Se temos arquivo binário PDF, extrair estritamente da primeira página (página 0) onde estão todos os dados
+        if file_bytes:
+            try:
+                import pypdf
+                reader = pypdf.PdfReader(BytesIO(file_bytes))
+                if reader.pages:
+                    raw_text = (reader.pages[0].extract_text() or "").strip()
+            except Exception as e:
+                app.logger.warning("pypdf extraction error: %s", e)
+
+        if not raw_text and not file_bytes:
+            return _error("VALIDATION_ERROR", "Envie o arquivo PDF ou o texto da Consulta Perícia Licença do e-SISLA.", False, 400)
+
+        dados = parse_esisla_text(raw_text)
+
+        # Fallback multimodal Gemini se faltar dados chave e tivermos arquivo binário
+        if (not dados.get("nome_paciente") or not dados.get("cpf_paciente")) and file_bytes:
+            try:
+                client = _client()
+                prompt = (
+                    "Extraia todos os dados do formulário Consulta Perícia Licença do e-SISLA / DPME em anexo. "
+                    "Preencha rigorosamente conforme os campos do documento: Protocolo, CPF, RG, Nome Completo, "
+                    "Data de Nascimento, Idade, Sexo, NI, Órgão, UA, Município, Regime Jurídico, Cargo, Situação, "
+                    "Readaptação (Sim ou Não), CRM Médico, Nome do Médico Assistente, CID 10, Nº Dias, Data de emissão do atestado."
+                )
+                config = types.GenerateContentConfig(
+                    system_instruction="Você é um assistente pericial especializado na extração exata de documentos e-SISLA.",
+                    temperature=0.0,
+                    response_mime_type="application/json",
+                )
+                models = [GEMINI_MODEL] + GEMINI_FALLBACK_MODELS
+                for m in models:
+                    try:
+                        resp = client.models.generate_content(
+                            model=m,
+                            contents=[types.Part.from_bytes(data=file_bytes, mime_type=mimetype or "application/pdf"), prompt],
+                            config=config
+                        )
+                        if resp.text:
+                            ai_dict = json.loads(resp.text)
+                            for k, v in ai_dict.items():
+                                if v and not dados.get(k):
+                                    dados[k] = str(v)
+                        break
+                    except Exception:
+                        continue
+            except Exception as ai_err:
+                app.logger.warning("Gemini multimodal fallback error: %s", ai_err)
+
+        if not dados.get("nome_paciente") and not dados.get("cpf_paciente") and not dados.get("protocolo"):
+            return _error("PARSE_ERROR", "Não foi possível identificar os campos do e-SISLA no arquivo enviado. Verifique se o documento é uma Consulta Perícia Licença.", False, 422)
+
+        return _ok({"dados": dados, "arquivo": filename, "tamanho": len(file_bytes) if file_bytes else len(raw_text)})
+    except Exception as exc:
+        app.logger.error("Erro ao processar e-SISLA: %s", exc)
+        return _error("INTERNAL_ERROR", f"Falha ao processar arquivo e-SISLA: {str(exc)}", False, 500)
+
+@app.post("/api/esisla/criar-atendimento")
+def api_esisla_criar_atendimento():
+    try:
+        b = _json_body()
+        dados = b.get("dados") or b
+        if not dados or not isinstance(dados, dict):
+            return _error("VALIDATION_ERROR", "Dados do e-SISLA não fornecidos.", False, 400)
+
+        medico_nome = str(b.get("medico_nome") or request.user_name or "Médico Perito").strip()
+        medico_crm = str(b.get("medico_crm") or getattr(request, "user_crm", "") or "").strip()
+        medico_id = str(b.get("medico_id") or request.user_id or "")
+
+        rid = str(uuid.uuid4())
+        now = _utc_now()
+        dt_atd = now[:10]
+
+        payload = {
+            "atendimento": rid,
+            "current": 1,
+            "finalizado": False,
+            "workflowStatus": "RASCUNHO",
+            "medico": medico_nome,
+            "nomePaciente": dados.get("nome_paciente", ""),
+            "cpfPaciente": dados.get("cpf_paciente", ""),
+            "cargo": dados.get("cargo", ""),
+            "idade": dados.get("idade", ""),
+            "readaptado": dados.get("readaptado", "Não"),
+            "cid": dados.get("cid", ""),
+            "crmCro": dados.get("crm_cro", "Em anexo"),
+            "dataDocumento": dados.get("data_documento", dt_atd),
+            "diasSolicitados": str(dados.get("dias_solicitados", "1")),
+            "diasConcedidos": str(dados.get("dias_solicitados", "1")),
+            "doencaMotivo": dados.get("doenca_motivo") if (dados.get("tipo_atendimento_pericia") == "ACOMPANHANTE" or dados.get("is_acompanhante")) else "",
+            "exameFisicoTipo": "",
+            "exameFisicoDescricao": "",
+            "parecer": "",
+            "justificativa": "",
+            "isAcompanhante": bool(dados.get("is_acompanhante")),
+            "nomeDependente": dados.get("nome_dependente", ""),
+            "pessoa": dados.get("pessoa", "O PROPRIO"),
+            "cidsSecundarios": dados.get("cids_secundarios", []),
+            "aux": {
+                "protocolo": dados.get("protocolo", ""),
+                "agenda_protocolo": dados.get("protocolo", ""),
+                "nomePaciente": dados.get("nome_paciente", ""),
+                "cpfPaciente": dados.get("cpf_paciente", ""),
+                "rg": dados.get("rg_paciente", ""),
+                "dataNascimento": dados.get("data_nascimento", ""),
+                "sexo": dados.get("sexo", "Masculino"),
+                "ni": dados.get("ni", ""),
+                "cargo": dados.get("cargo", ""),
+                "idade": dados.get("idade", ""),
+                "readaptado": dados.get("readaptado", "Não"),
+                "orgao": dados.get("orgao", ""),
+                "unidade": dados.get("unidade", ""),
+                "municipio": dados.get("municipio", ""),
+                "regimeJuridico": dados.get("regime_juridico", ""),
+                "situacao": dados.get("situacao", ""),
+                "crmResponsavel": medico_crm,
+                "medico": medico_nome,
+                "crmCro": dados.get("crm_cro", "Em anexo"),
+                "medicoAssistenteNome": dados.get("nome_medico_assistente", ""),
+                "cid": dados.get("cid", ""),
+                "dataDocumento": dados.get("data_documento", dt_atd),
+                "diasSolicitados": str(dados.get("dias_solicitados", "1")),
+                "diasConcedidos": str(dados.get("dias_solicitados", "1")),
+                "dataAtd": dt_atd,
+                "dataInicioAfastamento": dados.get("data_documento", dt_atd),
+                "motivoPericia": dados.get("motivo_pericia", "LTS - TRATAMENTO DE SAUDE"),
+                "tipoPericia": dados.get("tipo_pericia", "A PEDIDO"),
+                "finalidade": dados.get("finalidade", "INICIAL"),
+                "pessoa": dados.get("pessoa", "O PROPRIO"),
+                "is_acompanhante": bool(dados.get("is_acompanhante")),
+                "nome_dependente": dados.get("nome_dependente", ""),
+                "tipo_atendimento_pericia": dados.get("tipo_atendimento_pericia", "TITULAR"),
+                "cidsSecundarios": dados.get("cids_secundarios", []),
+                "ultimaLicencaDias": dados.get("ultima_licenca_dias", ""),
+                "ultimaLicencaInicio": dados.get("ultima_licenca_inicio", ""),
+                "ultimaLicencaFim": dados.get("ultima_licenca_fim", ""),
+                "dataExpedicao": dados.get("data_expedicao", ""),
+                "origemCriacao": "IMPORTACAO_ESISLA",
+                "exameFisicoTipo": "",
+                "exameFisicoDescricao": "",
+                "exameMentalResultado": "",
+                "outrosSubtipo": "",
+                "outrosResultado": "",
+                "justificativa": "",
+                "parecer": ""
+            }
+        }
+
+        db = get_db()
+        cur = db.cursor()
+        paciente_nome_db = dados.get("nome_paciente") or "Servidor Não Informado"
+        paciente_cpf_db = dados.get("cpf_paciente") or ""
+        cur.execute(
+            "INSERT INTO atendimentos(id, numero, payload_json, status, paciente_nome_hash, paciente_nome, paciente_cpf, medico, cid, unidade, completude, alertas, inconsistencias, criado_em, atualizado_em, finalizado_em, usuario_id, versao, atualizado_por) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            (rid, rid, json.dumps(payload, ensure_ascii=False), "RASCUNHO", _patient_hash(payload), paciente_nome_db, paciente_cpf_db, medico_nome, dados.get("cid", ""), dados.get("unidade", ""), 35.0, 0, 0, now, now, None, medico_id, 1, request.user_id)
+        )
+        _sync_child_tables(db, rid, payload)
+        _audit_record(db, rid, None, payload, "IMPORTACAO_ESISLA")
+        db.commit()
+        _invalidate_stats_cache()
+        cur.close()
+
+        return _ok({"id": rid, "atendimento": rid, "status": "RASCUNHO", "dados": dados, "payload": payload}, 201)
+    except Exception as exc:
+        app.logger.error("Erro ao criar atendimento via e-SISLA: %s", exc)
+        return _error("INTERNAL_ERROR", f"Falha ao criar atendimento: {str(exc)}", False, 500)
+
+@app.post("/api/esisla/vincular-agenda-batch")
+def api_esisla_vincular_agenda_batch():
+    try:
+        eff = _get_effective_user()
+        if eff["role"] not in {"Médico", "Administrador"} and getattr(request, "user_role", None) not in {"Médico", "Administrador"}:
+            return _error("PERMISSION_DENIED", "Apenas médicos e administradores podem vincular arquivos e-SISLA à agenda.", False, 403)
+
+        medico_id = str(
+            request.form.get("medico_id") or 
+            request.args.get("medico_id") or 
+            eff["id"] or 
+            ""
+        ).strip()
+        
+        data_str = str(
+            request.form.get("data") or 
+            request.args.get("data") or 
+            datetime.now().strftime("%Y-%m-%d")
+        ).strip()
+
+        db = get_db()
+        cur = db.cursor()
+
+        # Obter dados do médico
+        cur.execute("SELECT id, nome, crm FROM usuarios WHERE id = %s", (medico_id,))
+        med_row = cur.fetchone()
+        medico_nome = med_row["nome"] if med_row else (eff.get("nome") or "Médico Perito")
+        medico_crm = (med_row["crm"] if med_row else (eff.get("crm") or "")) or ""
+
+        # Obter arquivos enviados
+        uploaded_files = request.files.getlist("files") or request.files.getlist("file") or request.files.getlist("pdfs")
+        if not uploaded_files:
+            cur.close()
+            return _error("VALIDATION_ERROR", "Nenhum arquivo PDF enviado para vinculação.", False, 400)
+
+        # Buscar agendamentos desta data para este médico
+        cur.execute("""
+            SELECT a.id, a.medico_id, a.data::text AS data, a.hora, a.status, a.tipo, a.protocolo,
+                   a.ni, a.nome_periciado, a.compareceu, a.observacao, a.seq,
+                   a.atendimento_id,
+                   atd.id AS atd_existente_id, atd.numero AS atd_existente_numero, atd.status AS atd_status,
+                   atd.payload_json
+              FROM agendas a
+              LEFT JOIN atendimentos atd ON (atd.numero = a.protocolo OR atd.id = a.atendimento_id)
+             WHERE a.medico_id = %s AND a.data = %s
+             ORDER BY a.hora ASC, a.id ASC
+        """, (medico_id, data_str))
+        agenda_rows = [dict(r) for r in cur.fetchall()]
+
+        import pypdf
+        import unicodedata
+
+        def _norm(txt):
+            if not txt: return ""
+            n = unicodedata.normalize('NFKD', str(txt))
+            n = "".join(c for c in n if not unicodedata.combining(c))
+            n = re.sub(r'[^A-Za-z0-9\s]', ' ', n)
+            return re.sub(r'\s+', ' ', n).strip().upper()
+
+        def _match_names(n1, n2):
+            s1 = _norm(n1)
+            s2 = _norm(n2)
+            if not s1 or not s2: return False
+            if s1 == s2: return True
+            if len(s1) >= 6 and (s1 in s2 or s2 in s1): return True
+            toks1 = [t for t in s1.split() if len(t) > 2]
+            toks2 = [t for t in s2.split() if len(t) > 2]
+            if toks1 and toks2:
+                if toks1[0] == toks2[0]:
+                    if len(toks1) > 1 and len(toks2) > 1 and toks1[-1] == toks2[-1]:
+                        return True
+                    overlap = len(set(toks1).intersection(set(toks2))) / min(len(toks1), len(toks2))
+                    if overlap >= 0.75:
+                        return True
+            return False
+
+        resultados = []
+        vinculados_count = 0
+        nao_encontrados_count = 0
+        used_agenda_ids = set()
+        now = _utc_now()
+        dt_atd = data_str or now[:10]
+
+        for file_item in uploaded_files:
+            fname = file_item.filename or "documento.pdf"
+            file_bytes = file_item.read()
+            if not file_bytes:
+                continue
+
+            # Extração de texto (estritamente da 1ª página onde estão os dados)
+            raw_text = ""
+            try:
+                reader = pypdf.PdfReader(BytesIO(file_bytes))
+                if reader.pages:
+                    raw_text = (reader.pages[0].extract_text() or "").strip()
+            except Exception as e:
+                app.logger.warning("Erro pypdf no arquivo %s: %s", fname, e)
+
+            dados = parse_esisla_text(raw_text) if raw_text else {}
+
+            # Se campos principais não foram encontrados e temos IA disponível
+            if (not dados.get("nome_paciente") or not dados.get("cpf_paciente")) and file_bytes:
+                try:
+                    client = _client()
+                    prompt = (
+                        "Extraia os dados deste formulário do e-SISLA: Nome Completo, CPF, RG, Protocolo, NI, "
+                        "Data de Nascimento, Idade, Sexo, Órgão, UA, Município, Regime Jurídico, Cargo, Situação, "
+                        "Readaptação, CRM Médico, Nome do Médico Assistente, CID 10, Nº Dias, Data de emissão do atestado, Pessoa."
+                    )
+                    config = types.GenerateContentConfig(
+                        temperature=0.0,
+                        response_mime_type="application/json"
+                    )
+                    models = [GEMINI_MODEL] + GEMINI_FALLBACK_MODELS
+                    for m in models:
+                        try:
+                            resp = client.models.generate_content(
+                                model=m,
+                                contents=[types.Part.from_bytes(data=file_bytes, mime_type="application/pdf"), prompt],
+                                config=config
+                            )
+                            if resp.text:
+                                ai_dict = json.loads(resp.text)
+                                for k, v in ai_dict.items():
+                                    if v and not dados.get(k):
+                                        dados[k] = str(v)
+                            break
+                        except Exception:
+                            continue
+                except Exception as ai_err:
+                    app.logger.warning("Fallback IA e-SISLA batch: %s", ai_err)
+
+            nome_titular = dados.get("nome_paciente", "")
+            nome_dep = dados.get("nome_dependente", "")
+            protocolo = dados.get("protocolo", "")
+            ni = dados.get("ni", "")
+
+            # Localizar agendamento correspondente
+            matched_agenda = None
+            # 1. Match por protocolo se existir
+            if protocolo:
+                for ag in agenda_rows:
+                    if ag["id"] not in used_agenda_ids and ag.get("protocolo") and ag["protocolo"] == protocolo:
+                        matched_agenda = ag
+                        break
+
+            # 2. Match por NI se existir
+            if not matched_agenda and ni:
+                for ag in agenda_rows:
+                    if ag["id"] not in used_agenda_ids and ag.get("ni") and ag["ni"] == ni:
+                        matched_agenda = ag
+                        break
+
+            # 3. Match por Nome do Titular ou Dependente
+            if not matched_agenda and nome_titular:
+                for ag in agenda_rows:
+                    if ag["id"] not in used_agenda_ids:
+                        ag_nome = ag.get("nome_periciado", "")
+                        if _match_names(nome_titular, ag_nome) or (nome_dep and _match_names(nome_dep, ag_nome)):
+                            matched_agenda = ag
+                            break
+
+            campos_adiantados = []
+            if dados.get("cpf_paciente"): campos_adiantados.append("CPF")
+            if dados.get("rg_paciente"): campos_adiantados.append("RG")
+            if dados.get("data_nascimento"): campos_adiantados.append("Nascimento")
+            if dados.get("orgao"): campos_adiantados.append("Órgão")
+            if dados.get("unidade"): campos_adiantados.append("UA")
+            if dados.get("cargo"): campos_adiantados.append("Cargo")
+            if dados.get("regime_juridico"): campos_adiantados.append("Regime")
+            if dados.get("cid"): campos_adiantados.append(f"CID {dados['cid']}")
+            if dados.get("dias_solicitados"): campos_adiantados.append(f"{dados['dias_solicitados']} dias")
+            if dados.get("nome_medico_assistente"): campos_adiantados.append("Médico Assistente")
+            if dados.get("is_acompanhante"): campos_adiantados.append("Acompanhante")
+
+            if matched_agenda:
+                used_agenda_ids.add(matched_agenda["id"])
+                vinculados_count += 1
+                atd_id = matched_agenda.get("atendimento_id") or matched_agenda.get("atd_existente_id")
+
+                if atd_id:
+                    # Atualizar atendimento existente preservando exame físico/parecer caso já digitados
+                    cur.execute("SELECT payload_json FROM atendimentos WHERE id = %s", (atd_id,))
+                    row_atd = cur.fetchone()
+                    existing_payload = {}
+                    if row_atd and row_atd["payload_json"]:
+                        try:
+                            existing_payload = json.loads(row_atd["payload_json"]) if isinstance(row_atd["payload_json"], str) else dict(row_atd["payload_json"])
+                        except Exception:
+                            existing_payload = {}
+
+                    # Mesclar campos
+                    if not existing_payload.get("nomePaciente") or existing_payload["nomePaciente"] == "Não informado":
+                        existing_payload["nomePaciente"] = dados.get("nome_paciente") or matched_agenda["nome_periciado"]
+                    if not existing_payload.get("cpfPaciente") and dados.get("cpf_paciente"):
+                        existing_payload["cpfPaciente"] = dados["cpf_paciente"]
+                    if not existing_payload.get("cargo") and dados.get("cargo"):
+                        existing_payload["cargo"] = dados["cargo"]
+                    if not existing_payload.get("idade") and dados.get("idade"):
+                        existing_payload["idade"] = dados["idade"]
+                    if not existing_payload.get("cid") and dados.get("cid"):
+                        existing_payload["cid"] = dados["cid"]
+                    if not existing_payload.get("diasSolicitados") and dados.get("dias_solicitados"):
+                        existing_payload["diasSolicitados"] = str(dados["dias_solicitados"])
+                    if not existing_payload.get("diasConcedidos") and dados.get("dias_solicitados"):
+                        existing_payload["diasConcedidos"] = str(dados["dias_solicitados"])
+                    if not existing_payload.get("doencaMotivo") and (dados.get("tipo_atendimento_pericia") == "ACOMPANHANTE" or dados.get("is_acompanhante")) and dados.get("doenca_motivo"):
+                        existing_payload["doencaMotivo"] = dados["doenca_motivo"]
+
+                    if "aux" not in existing_payload or not isinstance(existing_payload["aux"], dict):
+                        existing_payload["aux"] = {}
+                    aux = existing_payload["aux"]
+                    for k_esisla, v_esisla in dados.items():
+                        if v_esisla and not aux.get(k_esisla):
+                            aux[k_esisla] = v_esisla
+                    aux["cpfPaciente"] = dados.get("cpf_paciente") or aux.get("cpfPaciente", "")
+                    aux["rg"] = dados.get("rg_paciente") or aux.get("rg", "")
+                    aux["orgao"] = dados.get("orgao") or aux.get("orgao", "")
+                    aux["unidade"] = dados.get("unidade") or aux.get("unidade", "")
+                    aux["municipio"] = dados.get("municipio") or aux.get("municipio", "")
+                    aux["regimeJuridico"] = dados.get("regime_juridico") or aux.get("regimeJuridico", "")
+                    aux["cargo"] = dados.get("cargo") or aux.get("cargo", "")
+                    aux["protocolo"] = dados.get("protocolo") or aux.get("protocolo", "")
+                    aux["ni"] = dados.get("ni") or aux.get("ni", "")
+                    aux["origemCriacao"] = "IMPORTACAO_ESISLA_AGENDA_BATCH"
+
+                    cur.execute("""
+                        UPDATE atendimentos
+                           SET payload_json = %s,
+                               paciente_cpf = COALESCE(NULLIF(%s, ''), paciente_cpf),
+                               cid = COALESCE(NULLIF(%s, ''), cid),
+                               unidade = COALESCE(NULLIF(%s, ''), unidade),
+                               atualizado_em = %s,
+                               atualizado_por = %s
+                         WHERE id = %s
+                    """, (
+                        json.dumps(existing_payload, ensure_ascii=False),
+                        dados.get("cpf_paciente") or "",
+                        dados.get("cid") or "",
+                        dados.get("unidade") or "",
+                        now,
+                        request.user_id,
+                        atd_id
+                    ))
+                    cur.execute("""
+                        UPDATE agendas
+                           SET atendimento_id = %s,
+                               protocolo = COALESCE(NULLIF(protocolo, ''), %s),
+                               ni = COALESCE(NULLIF(ni, ''), %s),
+                               atualizado_em = %s
+                         WHERE id = %s
+                    """, (atd_id, dados.get("protocolo") or "", dados.get("ni") or "", now, matched_agenda["id"]))
+
+                else:
+                    # Criar novo atendimento rascunho com todos os campos da ficha e-SISLA pré-preenchidos
+                    rid = str(uuid.uuid4())
+                    new_payload = {
+                        "atendimento": rid,
+                        "current": 1,
+                        "finalizado": False,
+                        "workflowStatus": "RASCUNHO",
+                        "medico": medico_nome,
+                        "nomePaciente": dados.get("nome_paciente") or matched_agenda["nome_periciado"],
+                        "cpfPaciente": dados.get("cpf_paciente", ""),
+                        "cargo": dados.get("cargo", ""),
+                        "idade": dados.get("idade", ""),
+                        "readaptado": dados.get("readaptado", "Não"),
+                        "cid": dados.get("cid", ""),
+                        "crmCro": dados.get("crm_cro", "Em anexo"),
+                        "dataDocumento": dados.get("data_documento", dt_atd),
+                        "diasSolicitados": str(dados.get("dias_solicitados", "1")),
+                        "diasConcedidos": str(dados.get("dias_solicitados", "1")),
+                        "doencaMotivo": dados.get("doenca_motivo") if (dados.get("tipo_atendimento_pericia") == "ACOMPANHANTE" or dados.get("is_acompanhante")) else "",
+                        "exameFisicoTipo": "",
+                        "exameFisicoDescricao": "",
+                        "parecer": "",
+                        "justificativa": "",
+                        "isAcompanhante": bool(dados.get("is_acompanhante")),
+                        "nomeDependente": dados.get("nome_dependente", ""),
+                        "pessoa": dados.get("pessoa", "O PROPRIO"),
+                        "cidsSecundarios": dados.get("cids_secundarios", []),
+                        "aux": {
+                            "protocolo": dados.get("protocolo") or matched_agenda.get("protocolo", ""),
+                            "agenda_protocolo": dados.get("protocolo") or matched_agenda.get("protocolo", ""),
+                            "nomePaciente": dados.get("nome_paciente") or matched_agenda["nome_periciado"],
+                            "cpfPaciente": dados.get("cpf_paciente", ""),
+                            "rg": dados.get("rg_paciente", ""),
+                            "dataNascimento": dados.get("data_nascimento", ""),
+                            "sexo": dados.get("sexo", "Masculino"),
+                            "ni": dados.get("ni") or matched_agenda.get("ni", ""),
+                            "cargo": dados.get("cargo", ""),
+                            "idade": dados.get("idade", ""),
+                            "readaptado": dados.get("readaptado", "Não"),
+                            "orgao": dados.get("orgao", ""),
+                            "unidade": dados.get("unidade", ""),
+                            "municipio": dados.get("municipio", ""),
+                            "regimeJuridico": dados.get("regime_juridico", ""),
+                            "situacao": dados.get("situacao", ""),
+                            "crmResponsavel": medico_crm,
+                            "medico": medico_nome,
+                            "crmCro": dados.get("crm_cro", "Em anexo"),
+                            "medicoAssistenteNome": dados.get("nome_medico_assistente", ""),
+                            "cid": dados.get("cid", ""),
+                            "dataDocumento": dados.get("data_documento", dt_atd),
+                            "diasSolicitados": str(dados.get("dias_solicitados", "1")),
+                            "diasConcedidos": str(dados.get("dias_solicitados", "1")),
+                            "dataAtd": dt_atd,
+                            "dataInicioAfastamento": dados.get("data_documento", dt_atd),
+                            "motivoPericia": dados.get("motivo_pericia", "LTS - TRATAMENTO DE SAUDE"),
+                            "tipoPericia": dados.get("tipo_pericia", "A PEDIDO"),
+                            "finalidade": dados.get("finalidade", "INICIAL"),
+                            "pessoa": dados.get("pessoa", "O PROPRIO"),
+                            "is_acompanhante": bool(dados.get("is_acompanhante")),
+                            "nome_dependente": dados.get("nome_dependente", ""),
+                            "tipo_atendimento_pericia": dados.get("tipo_atendimento_pericia", "TITULAR"),
+                            "cidsSecundarios": dados.get("cids_secundarios", []),
+                            "ultimaLicencaDias": dados.get("ultima_licenca_dias", ""),
+                            "ultimaLicencaInicio": dados.get("ultima_licenca_inicio", ""),
+                            "ultimaLicencaFim": dados.get("ultima_licenca_fim", ""),
+                            "dataExpedicao": dados.get("data_expedicao", ""),
+                            "origemCriacao": "IMPORTACAO_ESISLA_AGENDA_BATCH",
+                            "exameFisicoTipo": "",
+                            "exameFisicoDescricao": "",
+                            "exameMentalResultado": "",
+                            "outrosSubtipo": "",
+                            "outrosResultado": "",
+                            "justificativa": "",
+                            "parecer": ""
+                        }
+                    }
+
+                    paciente_nome_db = dados.get("nome_paciente") or matched_agenda["nome_periciado"]
+                    paciente_cpf_db = dados.get("cpf_paciente") or ""
+                    cur.execute(
+                        "INSERT INTO atendimentos(id, numero, payload_json, status, paciente_nome_hash, paciente_nome, paciente_cpf, medico, cid, unidade, completude, alertas, inconsistencias, criado_em, atualizado_em, finalizado_em, usuario_id, versao, atualizado_por) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                        (rid, rid, json.dumps(new_payload, ensure_ascii=False), "RASCUNHO", _patient_hash(new_payload), paciente_nome_db, paciente_cpf_db, medico_nome, dados.get("cid", ""), dados.get("unidade", ""), 40.0, 0, 0, now, now, None, medico_id, 1, request.user_id)
+                    )
+                    _sync_child_tables(db, rid, new_payload)
+                    _audit_record(db, rid, None, new_payload, "IMPORTACAO_ESISLA_AGENDA_BATCH")
+
+                    cur.execute("""
+                        UPDATE agendas
+                           SET atendimento_id = %s,
+                               protocolo = COALESCE(NULLIF(protocolo, ''), %s),
+                               ni = COALESCE(NULLIF(ni, ''), %s),
+                               atualizado_em = %s
+                         WHERE id = %s
+                    """, (rid, dados.get("protocolo") or "", dados.get("ni") or "", now, matched_agenda["id"]))
+                    atd_id = rid
+
+                resultados.append({
+                    "arquivo": fname,
+                    "status": "vinculado",
+                    "agenda_id": matched_agenda["id"],
+                    "hora": matched_agenda["hora"],
+                    "periciado": matched_agenda["nome_periciado"],
+                    "protocolo": dados.get("protocolo") or matched_agenda.get("protocolo", ""),
+                    "atendimento_id": atd_id,
+                    "campos_adiantados": campos_adiantados,
+                    "mensagem": f"Vinculado com sucesso ao horário {matched_agenda['hora']}."
+                })
+            else:
+                nao_encontrados_count += 1
+                resultados.append({
+                    "arquivo": fname,
+                    "status": "nao_encontrado",
+                    "periciado": nome_titular or "Nome não identificado",
+                    "nome_dependente": nome_dep,
+                    "protocolo": protocolo,
+                    "mensagem": "Nenhum agendamento desta data corresponde a este colaborador."
+                })
+
+        db.commit()
+        _invalidate_stats_cache()
+        cur.close()
+
+        return _ok({
+            "total_arquivos": len(uploaded_files),
+            "total_vinculados": vinculados_count,
+            "total_nao_encontrados": nao_encontrados_count,
+            "data": data_str,
+            "medico_id": medico_id,
+            "medico_nome": medico_nome,
+            "itens": resultados
+        })
+    except Exception as exc:
+        app.logger.error("Erro ao vincular lote de e-SISLA à agenda: %s", exc)
+        return _error("INTERNAL_ERROR", f"Falha ao vincular arquivos e-SISLA à agenda: {str(exc)}", False, 500)
+
 @app.post("/api/ai/transcribe")
 def api_ai_transcribe():
     try:
@@ -3404,6 +4605,12 @@ def _supabase_admin_request(method: str, path: str, payload: dict[str, Any] | No
 def api_admin_medicos():
     denied = _require_admin()
     if denied: return denied
+    now = time.time()
+    with _MEDICOS_CACHE_LOCK:
+        entry = _MEDICOS_CACHE.get("all")
+        if entry and entry.get("expires", 0) > now:
+            return _ok({"items": entry.get("items", [])})
+
     db = get_db(); cur = db.cursor()
     cur.execute("""
         SELECT u.id, u.nome, u.crm, u.email, COALESCE(u.modo_atendimento, 'agil') AS modo_atendimento, u.ativo, u.criado_em,
@@ -3416,6 +4623,35 @@ def api_admin_medicos():
          ORDER BY u.ativo DESC, u.nome ASC
     """)
     rows = cur.fetchall(); cur.close()
+    with _MEDICOS_CACHE_LOCK:
+        _MEDICOS_CACHE["all"] = {"items": rows, "expires": now + 25.0}
+    return _ok({"items": rows})
+
+@app.get("/api/admin/medicos/lista-impersonate")
+def api_admin_medicos_lista_impersonate():
+    denied = _require_admin()
+    if denied: return denied
+    now = time.time()
+    with _MEDICOS_CACHE_LOCK:
+        entry = _MEDICOS_CACHE.get("impersonate")
+        if entry and entry.get("expires", 0) > now:
+            return _ok({"items": entry.get("items", [])})
+
+    db = get_db(); cur = db.cursor()
+    cur.execute("""
+        SELECT u.id, u.nome, u.crm, u.email, COALESCE(u.modo_atendimento, 'agil') AS modo_atendimento,
+               COUNT(a.id) AS total_atendimentos,
+               COUNT(a.id) FILTER (WHERE a.status='RASCUNHO') AS rascunhos,
+               COUNT(a.id) FILTER (WHERE a.status='FINALIZADO') AS finalizados
+          FROM usuarios u
+          LEFT JOIN atendimentos a ON a.usuario_id = u.id
+         WHERE u.perfil = 'Médico' AND u.ativo = 1
+         GROUP BY u.id, u.nome, u.crm, u.email, u.modo_atendimento
+         ORDER BY u.nome ASC
+    """)
+    rows = cur.fetchall(); cur.close()
+    with _MEDICOS_CACHE_LOCK:
+        _MEDICOS_CACHE["impersonate"] = {"items": rows, "expires": now + 25.0}
     return _ok({"items": rows})
 
 @app.post("/api/admin/medicos")
@@ -3460,6 +4696,7 @@ def api_admin_criar_medico():
         try:
             cur.execute("""INSERT INTO usuarios (id,nome,perfil,ativo,criado_em,crm,email,modo_atendimento) VALUES (%s,%s,'Médico',1,%s,%s,%s,%s)""", (user_id, nome, _utc_now(), crm, email, modo_atendimento))
             db.commit()
+            _invalidate_medicos_cache()
         except Exception:
             db.rollback()
             try:
@@ -3488,14 +4725,17 @@ def api_admin_remover_medico(user_id):
         cur.close(); return _error("NOT_FOUND", "Conta médica não encontrada.", False, 404)
     cur.execute("UPDATE usuarios SET ativo=0 WHERE id=%s", (user_id,))
     db.commit()
+    _invalidate_medicos_cache()
     try:
         response, data = _supabase_admin_request("DELETE", f"/auth/v1/admin/users/{urllib.parse.quote(user_id, safe='')}")
         if response.status_code >= 300 and response.status_code != 404:
             cur.execute("UPDATE usuarios SET ativo=1 WHERE id=%s", (user_id,)); db.commit()
+            _invalidate_medicos_cache()
             detail = data.get("msg") or data.get("message") or "Não foi possível remover a conta no Authentication."
             cur.close(); return _error("AUTH_DELETE_FAILED", str(detail), False, 502)
     except Exception as exc:
         cur.execute("UPDATE usuarios SET ativo=1 WHERE id=%s", (user_id,)); db.commit(); cur.close()
+        _invalidate_medicos_cache()
         return _error("AUTH_ADMIN_NOT_CONFIGURED", _safe_error_message(exc), False, 503)
     cur.close()
     return _ok({"id": user_id, "removed": True})
@@ -3530,6 +4770,11 @@ def api_admin_editar_medico(user_id):
         if cur.fetchone():
             cur.close(); return _error("DUPLICATE_CRM", "Já existe outro médico com este CRM/CRO.", False, 409)
 
+        if email:
+            cur.execute("SELECT id FROM usuarios WHERE LOWER(COALESCE(email,'')) = LOWER(%s) AND id <> %s LIMIT 1", (email, user_id))
+            if cur.fetchone():
+                cur.close(); return _error("DUPLICATE_EMAIL", "Já existe outro usuário com este e-mail cadastrado.", False, 409)
+
         existing_email = row.get("email") or ""
         if email:
             email_final = email
@@ -3541,14 +4786,20 @@ def api_admin_editar_medico(user_id):
             
         cur.execute("UPDATE usuarios SET nome=%s, crm=%s, email=%s, modo_atendimento=%s WHERE id=%s", (nome, crm, email_final, modo_atendimento, user_id))
         db.commit()
+        _invalidate_medicos_cache()
         cur.close()
         
         try:
-            _supabase_admin_request("PUT", f"/auth/v1/admin/users/{urllib.parse.quote(user_id, safe='')}", {
+            auth_body = {
                 "user_metadata": {"name": nome, "full_name": nome, "crm": crm, "perfil": "Médico", "modo_atendimento": modo_atendimento}
-            })
-        except Exception:
-            app.logger.warning("Não foi possível sincronizar metadados do médico no Supabase Auth.")
+            }
+            if email and email != existing_email:
+                auth_body["email"] = email_final
+                auth_body["email_confirm"] = True
+
+            _supabase_admin_request("PUT", f"/auth/v1/admin/users/{urllib.parse.quote(user_id, safe='')}", auth_body)
+        except Exception as auth_err:
+            app.logger.warning("Não foi possível sincronizar metadados/e-mail do médico no Supabase Auth: %s", auth_err)
             
         return _ok({"id": user_id, "nome": nome, "crm": crm, "email": email_final, "modo_atendimento": modo_atendimento, "atualizado": True})
     except Exception as exc:
@@ -3570,6 +4821,7 @@ def api_admin_toggle_status_medico(user_id):
     novo_status = 0 if int(row.get("ativo") or 0) == 1 else 1
     cur.execute("UPDATE usuarios SET ativo=%s WHERE id=%s", (novo_status, user_id))
     db.commit()
+    _invalidate_medicos_cache()
     cur.close()
     return _ok({"id": user_id, "ativo": novo_status, "mensagem": "Acesso ativado com sucesso." if novo_status == 1 else "Acesso suspenso com sucesso."})
 
@@ -3728,10 +4980,11 @@ def api_admin_excluir_agenda_item(agenda_id):
 
 @app.get("/api/medico/agenda")
 def api_medico_agenda():
-    if request.user_role not in {"Médico", "Administrador"}:
+    eff = _get_effective_user()
+    if eff["role"] not in {"Médico", "Administrador"} and request.user_role not in {"Médico", "Administrador"}:
         return _error("PERMISSION_DENIED", "Seu perfil não possui acesso à agenda médica.", False, 403)
         
-    medico_id = request.user_id
+    medico_id = eff["id"]
     if request.user_role == "Administrador" and request.args.get("medico_id"):
         medico_id = request.args.get("medico_id").strip()
         
@@ -3756,11 +5009,13 @@ def api_medico_agenda():
         "data": data_str,
         "itens": [dict(r) for r in rows],
         "total": len(rows),
+        "medico_id": str(medico_id)
     })
 
 @app.patch("/api/medico/agenda/<int:agenda_id>/status")
 def api_medico_atualizar_status_agenda(agenda_id):
-    if request.user_role not in {"Médico", "Administrador"}:
+    eff = _get_effective_user()
+    if eff["role"] not in {"Médico", "Administrador"} and request.user_role not in {"Médico", "Administrador"}:
         return _error("PERMISSION_DENIED", "Acesso restrito.", False, 403)
     body = _json_body()
     novo_status = str(body.get("status") or "").strip()[:60]
@@ -3770,7 +5025,7 @@ def api_medico_atualizar_status_agenda(agenda_id):
     row = cur.fetchone()
     if not row:
         cur.close(); return _error("NOT_FOUND", "Agendamento não encontrado.", False, 404)
-    if request.user_role == "Médico" and str(row["medico_id"]) != str(request.user_id):
+    if eff["role"] == "Médico" and not eff.get("is_impersonating") and str(row["medico_id"]) != str(eff["id"]):
         cur.close(); return _error("PERMISSION_DENIED", "Acesso restrito aos seus próprios agendamentos.", False, 403)
     
     cur.execute("""
@@ -3896,6 +5151,48 @@ def api_auth_resolve_identifier():
         app.logger.exception("api_auth_resolve_identifier")
         return _error("INTERNAL_ERROR", _safe_error_message(exc), False, 500)
 
+def _get_effective_user():
+    impersonate_id = (request.headers.get("X-Impersonate-Medico-Id") or request.args.get("impersonate_medico_id") or request.args.get("medico_id") or "").strip()
+    if not impersonate_id:
+        try:
+            b = request.get_json(silent=True)
+            if isinstance(b, dict):
+                impersonate_id = str(b.get("impersonate_medico_id") or b.get("medico_id") or "").strip()
+        except Exception:
+            pass
+    if getattr(request, "user_role", None) == "Administrador" and impersonate_id:
+        try:
+            db = get_db()
+            cur = db.cursor()
+            cur.execute("SELECT id, nome, crm, email, COALESCE(modo_atendimento, 'agil') AS modo_atendimento FROM usuarios WHERE id=%s AND perfil='Médico'", (impersonate_id,))
+            medico_row = cur.fetchone()
+            cur.close()
+            if medico_row:
+                return {
+                    "id": str(medico_row["id"]),
+                    "role": "Médico",
+                    "nome": medico_row["nome"],
+                    "crm": medico_row["crm"] or "",
+                    "email": medico_row["email"],
+                    "modo_atendimento": medico_row.get("modo_atendimento") or "agil",
+                    "is_impersonating": True,
+                    "real_user_id": request.user_id,
+                    "real_user_role": request.user_role
+                }
+        except Exception:
+            pass
+    return {
+        "id": getattr(request, "user_id", ""),
+        "role": getattr(request, "user_role", ""),
+        "nome": getattr(request, "user_name", ""),
+        "crm": getattr(request, "user_crm", ""),
+        "email": getattr(request, "user_email", ""),
+        "modo_atendimento": getattr(request, "user_modo_atendimento", "agil"),
+        "is_impersonating": False,
+        "real_user_id": getattr(request, "user_id", ""),
+        "real_user_role": getattr(request, "user_role", "")
+    }
+
 @app.get("/api/atendimentos")
 def api_list_atendimentos():
     denied = _require_permission("view")
@@ -3904,8 +5201,9 @@ def api_list_atendimentos():
 
     page, page_size, offset = service_pagination(request.args)
 
+    eff = _get_effective_user()
     db = get_db()
-    clauses, params = service_list_filters(request.args, role=request.user_role, user_id=request.user_id)
+    clauses, params = service_list_filters(request.args, role=eff["role"], user_id=eff["id"])
     where = build_where(clauses)
 
     cur = db.cursor()
@@ -3989,87 +5287,101 @@ def api_list_atendimentos():
             },
         })
 
-    # Estatísticas agregadas diretamente no PostgreSQL com alto desempenho
-    stat_where = " WHERE usuario_id=%s" if request.user_role == "Médico" else ""
-    stat_params = [request.user_id] if request.user_role == "Médico" else []
-    today_prefix = _utc_now()[:10]
+    stat_key = f"{request.user_role}:{request.user_id if request.user_role == 'Médico' else 'all'}"
+    now_ts = time.time()
+    cached_stats = None
+    with _STATS_CACHE_LOCK:
+        s_entry = _STATS_CACHE.get(stat_key)
+        if s_entry and s_entry.get("expires", 0) > now_ts:
+            cached_stats = s_entry.get("stats")
 
-    cur.execute(
-        f"""
-        SELECT
-            COUNT(*) AS total,
-            COUNT(*) FILTER (WHERE status = 'RASCUNHO') AS rascunhos,
-            COUNT(*) FILTER (WHERE status = 'EM_REVISÃO') AS revisao,
-            COUNT(*) FILTER (WHERE status = 'FINALIZADO') AS finalizados,
-            COUNT(*) FILTER (WHERE status = 'ARQUIVADO') AS arquivados,
-            COUNT(*) FILTER (WHERE alertas > 0 OR inconsistencias > 0 OR completude < 100) AS pendentes,
-            COALESCE(SUM(alertas), 0) AS alertas,
-            COALESCE(SUM(inconsistencias), 0) AS inconsistencias,
-            COUNT(*) FILTER (WHERE atualizado_em LIKE %s) AS atualizados_recentes,
-            COUNT(*) FILTER (WHERE UPPER(COALESCE(payload_json->>'parecer', '')) = 'FAVORÁVEL') AS favoraveis,
-            COUNT(*) FILTER (WHERE UPPER(COALESCE(payload_json->>'parecer', '')) = 'CONTRÁRIO') AS contrarios,
-            ROUND(COALESCE(AVG(completude), 0)::numeric, 1) AS completude_media
-        FROM atendimentos
-        {stat_where}
-        """,
-        [f"{today_prefix}%"] + stat_params,
-    )
-    srow = cur.fetchone() or {}
+    if cached_stats is not None:
+        stats = cached_stats
+        cur.close()
+    else:
+        # Estatísticas agregadas diretamente no PostgreSQL com alto desempenho
+        stat_where = " WHERE usuario_id=%s" if request.user_role == "Médico" else ""
+        stat_params = [request.user_id] if request.user_role == "Médico" else []
+        today_prefix = _utc_now()[:10]
 
-    total_count = int(srow.get("total") or 0)
-    finalizados = int(srow.get("finalizados") or 0)
-    favoraveis = int(srow.get("favoraveis") or 0)
-    contrarios = int(srow.get("contrarios") or 0)
-    parecer_nao_def = max(0, total_count - favoraveis - contrarios)
+        cur.execute(
+            f"""
+            SELECT
+                COUNT(*) AS total,
+                COUNT(*) FILTER (WHERE status = 'RASCUNHO') AS rascunhos,
+                COUNT(*) FILTER (WHERE status = 'EM_REVISÃO') AS revisao,
+                COUNT(*) FILTER (WHERE status = 'FINALIZADO') AS finalizados,
+                COUNT(*) FILTER (WHERE status = 'ARQUIVADO') AS arquivados,
+                COUNT(*) FILTER (WHERE alertas > 0 OR inconsistencias > 0 OR completude < 100) AS pendentes,
+                COALESCE(SUM(alertas), 0) AS alertas,
+                COALESCE(SUM(inconsistencias), 0) AS inconsistencias,
+                COUNT(*) FILTER (WHERE atualizado_em LIKE %s) AS atualizados_recentes,
+                COUNT(*) FILTER (WHERE UPPER(COALESCE(payload_json->>'parecer', '')) = 'FAVORÁVEL') AS favoraveis,
+                COUNT(*) FILTER (WHERE UPPER(COALESCE(payload_json->>'parecer', '')) = 'CONTRÁRIO') AS contrarios,
+                ROUND(COALESCE(AVG(completude), 0)::numeric, 1) AS completude_media
+            FROM atendimentos
+            {stat_where}
+            """,
+            [f"{today_prefix}%"] + stat_params,
+        )
+        srow = cur.fetchone() or {}
 
-    cur.execute(
-        f"""
-        SELECT
-            COALESCE(NULLIF(TRIM(medico), ''), 'Não identificado') AS medico,
-            COUNT(*) AS total,
-            COUNT(*) FILTER (WHERE status = 'FINALIZADO') AS finalizados,
-            COUNT(*) FILTER (WHERE UPPER(COALESCE(payload_json->>'parecer', '')) = 'FAVORÁVEL') AS favoraveis,
-            COUNT(*) FILTER (WHERE UPPER(COALESCE(payload_json->>'parecer', '')) = 'CONTRÁRIO') AS contrarios
-        FROM atendimentos
-        {stat_where}
-        GROUP BY COALESCE(NULLIF(TRIM(medico), ''), 'Não identificado')
-        ORDER BY total DESC, medico ASC
-        LIMIT 12
-        """,
-        stat_params,
-    )
-    doc_rows = cur.fetchall() or []
-    cur.close()
+        total_count = int(srow.get("total") or 0)
+        finalizados = int(srow.get("finalizados") or 0)
+        favoraveis = int(srow.get("favoraveis") or 0)
+        contrarios = int(srow.get("contrarios") or 0)
+        parecer_nao_def = max(0, total_count - favoraveis - contrarios)
 
-    por_medico = [
-        {
-            "medico": d["medico"],
-            "total": int(d["total"] or 0),
-            "finalizados": int(d["finalizados"] or 0),
-            "favoraveis": int(d["favoraveis"] or 0),
-            "contrarios": int(d["contrarios"] or 0),
+        cur.execute(
+            f"""
+            SELECT
+                COALESCE(NULLIF(TRIM(medico), ''), 'Não identificado') AS medico,
+                COUNT(*) AS total,
+                COUNT(*) FILTER (WHERE status = 'FINALIZADO') AS finalizados,
+                COUNT(*) FILTER (WHERE UPPER(COALESCE(payload_json->>'parecer', '')) = 'FAVORÁVEL') AS favoraveis,
+                COUNT(*) FILTER (WHERE UPPER(COALESCE(payload_json->>'parecer', '')) = 'CONTRÁRIO') AS contrarios
+            FROM atendimentos
+            {stat_where}
+            GROUP BY COALESCE(NULLIF(TRIM(medico), ''), 'Não identificado')
+            ORDER BY total DESC, medico ASC
+            LIMIT 12
+            """,
+            stat_params,
+        )
+        doc_rows = cur.fetchall() or []
+        cur.close()
+
+        por_medico = [
+            {
+                "medico": d["medico"],
+                "total": int(d["total"] or 0),
+                "finalizados": int(d["finalizados"] or 0),
+                "favoraveis": int(d["favoraveis"] or 0),
+                "contrarios": int(d["contrarios"] or 0),
+            }
+            for d in doc_rows
+        ]
+
+        stats = {
+            "total": total_count,
+            "rascunhos": int(srow.get("rascunhos") or 0),
+            "revisao": int(srow.get("revisao") or 0),
+            "pendentes": int(srow.get("pendentes") or 0),
+            "finalizados": finalizados,
+            "arquivados": int(srow.get("arquivados") or 0),
+            "alertas": int(srow.get("alertas") or 0),
+            "inconsistencias": int(srow.get("inconsistencias") or 0),
+            "atualizados_recentes": int(srow.get("atualizados_recentes") or 0),
+            "favoraveis": favoraveis,
+            "contrarios": contrarios,
+            "pareceres_nao_definidos": parecer_nao_def,
+            "completude_media": float(srow.get("completude_media") or 0.0),
+            "taxa_finalizacao": round((finalizados / total_count) * 100, 1) if total_count else 0.0,
+            "medicos_ativos_na_gestao": len([d for d in por_medico if d["medico"] != "Não identificado"]),
+            "por_medico": por_medico,
         }
-        for d in doc_rows
-    ]
-
-    stats = {
-        "total": total_count,
-        "rascunhos": int(srow.get("rascunhos") or 0),
-        "revisao": int(srow.get("revisao") or 0),
-        "pendentes": int(srow.get("pendentes") or 0),
-        "finalizados": finalizados,
-        "arquivados": int(srow.get("arquivados") or 0),
-        "alertas": int(srow.get("alertas") or 0),
-        "inconsistencias": int(srow.get("inconsistencias") or 0),
-        "atualizados_recentes": int(srow.get("atualizados_recentes") or 0),
-        "favoraveis": favoraveis,
-        "contrarios": contrarios,
-        "pareceres_nao_definidos": parecer_nao_def,
-        "completude_media": float(srow.get("completude_media") or 0.0),
-        "taxa_finalizacao": round((finalizados / total_count) * 100, 1) if total_count else 0.0,
-        "medicos_ativos_na_gestao": len([d for d in por_medico if d["medico"] != "Não identificado"]),
-        "por_medico": por_medico,
-    }
+        with _STATS_CACHE_LOCK:
+            _STATS_CACHE[stat_key] = {"stats": stats, "expires": now_ts + 20.0}
     pages = (total + page_size - 1) // page_size if total else 0
     return _ok({
         "items": items,
@@ -4151,11 +5463,21 @@ def api_save_atendimento(rid=None):
         if not isinstance(payload.get("aux"), dict):
             payload["aux"] = {}
 
+        eff = _get_effective_user()
         if request.user_role == "Médico":
             cur.execute("SELECT nome, crm FROM usuarios WHERE id=%s", (request.user_id,))
             medico_db = cur.fetchone()
             nome_medico = str((medico_db.get("nome") if medico_db else None) or request.user_name or "").strip()
             crm_medico = str((medico_db.get("crm") if medico_db else None) or "").strip()
+            assinatura_profissional = f"{nome_medico} - CRM: {crm_medico}" if crm_medico else nome_medico
+            payload["medico"] = assinatura_profissional
+            payload["aux"]["crmResponsavel"] = crm_medico
+            payload["aux"]["medicoResponsavel"] = nome_medico
+        elif eff.get("is_impersonating") and eff.get("role") == "Médico":
+            cur.execute("SELECT nome, crm FROM usuarios WHERE id=%s", (eff.get("id"),))
+            medico_db = cur.fetchone()
+            nome_medico = str((medico_db.get("nome") if medico_db else None) or eff.get("nome") or "").strip()
+            crm_medico = str((medico_db.get("crm") if medico_db else None) or eff.get("crm") or "").strip()
             assinatura_profissional = f"{nome_medico} - CRM: {crm_medico}" if crm_medico else nome_medico
             payload["medico"] = assinatura_profissional
             payload["aux"]["crmResponsavel"] = crm_medico
@@ -4218,20 +5540,22 @@ def api_save_atendimento(rid=None):
                 cur.close()
                 return _error("VERSION_CONFLICT", "Este atendimento foi alterado durante o salvamento. Recarregue a versão mais recente antes de continuar.", True, 409)
             real_id = oldrow["id"]
-            # Não permite que um médico aproprie um atendimento sem proprietário
-            # por este endpoint; registros sem dono permanecem inacessíveis ao perfil Médico.
-            if not oldrow.get("usuario_id") and request.user_role != "Médico":
+            if eff.get("is_impersonating"):
+                cur.execute("UPDATE atendimentos SET usuario_id=%s, medico=%s WHERE id=%s", (eff.get("id"), str(payload.get("medico") or ""), real_id))
+            elif not oldrow.get("usuario_id") and request.user_role != "Médico":
                 cur.execute("UPDATE atendimentos SET usuario_id=%s WHERE id=%s", (request.user_id, real_id))
         else:
             real_id = rid
+            owner_id = eff.get("id") if eff.get("is_impersonating") else request.user_id
             cur.execute(
                 "INSERT INTO atendimentos(id, numero, payload_json, status, paciente_nome_hash, paciente_nome, paciente_cpf, medico, cid, unidade, completude, alertas, inconsistencias, criado_em, atualizado_em, finalizado_em, usuario_id, versao, atualizado_por) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                (real_id, number, json.dumps(payload, ensure_ascii=False), status, _patient_hash(payload), paciente_nome_db, paciente_cpf_db, str(payload.get("medico") or ""), str(a.get("cid") or ""), str(a.get("unidade") or ""), completeness, int(len(payload.get("aiAlertas") or [])), int(len(payload.get("inconsistencias") or [])), now, now, payload.get("finalizadoEm") or None, request.user_id, 1, request.user_id)
+                (real_id, number, json.dumps(payload, ensure_ascii=False), status, _patient_hash(payload), paciente_nome_db, paciente_cpf_db, str(payload.get("medico") or ""), str(a.get("cid") or ""), str(a.get("unidade") or ""), completeness, int(len(payload.get("aiAlertas") or [])), int(len(payload.get("inconsistencias") or [])), now, now, payload.get("finalizadoEm") or None, owner_id, 1, request.user_id)
             )
 
         _sync_child_tables(db, real_id, payload)
         _audit_record(db, real_id, old, payload, "MANUAL")
         db.commit()
+        _invalidate_stats_cache()
         saved_version = 1 if oldrow is None else int(oldrow.get("versao") or 1) + 1
         cur.close()
         return _ok({"id": real_id, "atendimento": number, "status": status, "completude": completeness, "atualizado_em": now, "versao": saved_version}, 201 if oldrow is None else 200)
@@ -4335,15 +5659,29 @@ def api_state_transition(rid):
     next_version = int(r.get("versao") or 1) + 1
     p = r["payload_json"] if isinstance(r["payload_json"], dict) else json.loads(r["payload_json"])
     old=p.copy()
+    eff = _get_effective_user()
     p["workflowStatus"]=target; p["finalizado"]=(target=="FINALIZADO")
     if target=="FINALIZADO": p["finalizadoEm"]=now
     if target in {"RASCUNHO","EM_REVISÃO","REABERTO"} and current=="FINALIZADO": p["finalizado"]=False
-    history=p.setdefault("statusHistory",[]); history.append({"data":now,"usuario":request.user_name,"anterior":current,"novo":target,"motivo":motivo})
-    cur.execute("UPDATE atendimentos SET status=%s, payload_json=%s, atualizado_em=%s, finalizado_em=%s, versao=%s, atualizado_por=%s WHERE id=%s", (target, json.dumps(p, ensure_ascii=False), now, now if target=="FINALIZADO" else r["finalizado_em"], next_version, request.user_id, r["id"]))
+    if eff.get("is_impersonating") and eff.get("role") == "Médico":
+        med_nome = eff.get("nome") or ""
+        med_crm = eff.get("crm") or ""
+        assinatura = f"{med_nome} - CRM: {med_crm}" if med_crm else med_nome
+        p["medico"] = assinatura
+        if not isinstance(p.get("aux"), dict): p["aux"] = {}
+        p["aux"]["medicoResponsavel"] = med_nome
+        p["aux"]["crmResponsavel"] = med_crm
+    usuario_transicao = f"{eff.get('nome')} (Admin: {request.user_name})" if eff.get("is_impersonating") else request.user_name
+    history=p.setdefault("statusHistory",[]); history.append({"data":now,"usuario":usuario_transicao,"anterior":current,"novo":target,"motivo":motivo})
+    if eff.get("is_impersonating") and eff.get("role") == "Médico":
+        cur.execute("UPDATE atendimentos SET status=%s, payload_json=%s, medico=%s, usuario_id=%s, atualizado_em=%s, finalizado_em=%s, versao=%s, atualizado_por=%s WHERE id=%s", (target, json.dumps(p, ensure_ascii=False), str(p.get("medico") or ""), eff.get("id"), now, now if target=="FINALIZADO" else r["finalizado_em"], next_version, request.user_id, r["id"]))
+    else:
+        cur.execute("UPDATE atendimentos SET status=%s, payload_json=%s, atualizado_em=%s, finalizado_em=%s, versao=%s, atualizado_por=%s WHERE id=%s", (target, json.dumps(p, ensure_ascii=False), now, now if target=="FINALIZADO" else r["finalizado_em"], next_version, request.user_id, r["id"]))
     cur.execute("INSERT INTO historico_atendimento(atendimento_id, usuario_id, usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em) VALUES(%s, %s, %s, %s, %s, %s, %s, %s)", (r["id"], getattr(request, "user_id", None), request.user_name, "workflowStatus", current, target, "WORKFLOW", now))
     if motivo:
         cur.execute("INSERT INTO historico_atendimento(atendimento_id, usuario_id, usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em) VALUES(%s, %s, %s, %s, %s, %s, %s, %s)", (r["id"], getattr(request, "user_id", None), request.user_name, "motivo_transicao", motivo, "", "WORKFLOW", now))
     db.commit()
+    _invalidate_stats_cache()
     cur.close()
     return _ok({"status":target,"atualizado_em":now,"changed":True,"payload":p,"versao":next_version})
 
@@ -4371,6 +5709,7 @@ def api_delete_atendimento(rid):
     cur.execute("UPDATE atendimentos SET status='ARQUIVADO', payload_json=%s, atualizado_em=%s, versao=%s, atualizado_por=%s WHERE id=%s", (json.dumps(p, ensure_ascii=False), now, next_version, request.user_id, r["id"]))
     cur.execute("INSERT INTO historico_atendimento(atendimento_id, usuario_id, usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em) VALUES(%s, %s, %s, %s, %s, %s, %s, %s)", (r["id"], getattr(request, "user_id", None), request.user_name, "workflowStatus", current, "ARQUIVADO", "WORKFLOW", now))
     db.commit()
+    _invalidate_stats_cache()
     cur.close()
     return _ok({"status":"ARQUIVADO","atualizado_em":now,"versao":next_version})
 
@@ -4389,6 +5728,7 @@ def api_admin_purge_atendimento(rid):
     real_id = row["id"]
     cur.execute("DELETE FROM atendimentos WHERE id=%s", (real_id,))
     db.commit()
+    _invalidate_stats_cache()
     cur.close()
     return _ok({"deleted": True, "id": real_id, "mensagem": "Atendimento excluído permanentemente do banco de dados."})
 
@@ -4415,6 +5755,7 @@ def api_admin_batch_purge_atendimentos():
         cur.execute("DELETE FROM atendimentos WHERE id = ANY(%s)", (real_ids,))
         deleted_count = cur.rowcount
         db.commit()
+        _invalidate_stats_cache()
     cur.close()
     return _ok({
         "deleted": True,
@@ -4446,13 +5787,15 @@ def api_history(rid):
 
 @app.get("/api/medico/atendimentos")
 def api_medico_atendimentos():
-    if request.user_role not in {"Médico", "Administrador"}:
+    eff = _get_effective_user()
+    if eff["role"] not in {"Médico", "Administrador"} and request.user_role not in {"Médico", "Administrador"}:
         return _error("PERMISSION_DENIED", "Seu perfil não possui acesso ao Portal Médico.", False, 403)
     return api_list_atendimentos()
 
 @app.get("/api/medico/dashboard")
 def api_medico_dashboard():
-    if request.user_role not in {"Médico", "Administrador"}:
+    eff = _get_effective_user()
+    if eff["role"] not in {"Médico", "Administrador"} and request.user_role not in {"Médico", "Administrador"}:
         return _error("PERMISSION_DENIED", "Seu perfil não possui acesso ao Portal Médico.", False, 403)
     return api_dashboard()
 
@@ -4462,12 +5805,13 @@ def api_dashboard():
     if denied:
         return denied
 
+    eff = _get_effective_user()
     db = get_db()
     today = datetime.now().strftime("%Y-%m-%d")
     cur = db.cursor()
-    scoped = request.user_role == "Médico"
+    scoped = eff["role"] == "Médico"
     owner_clause = " WHERE usuario_id=%s" if scoped else ""
-    owner_args = (request.user_id,) if scoped else ()
+    owner_args = (eff["id"],) if scoped else ()
 
     def fetch_val(q, p=()):
         cur.execute(q, p)
@@ -4497,7 +5841,7 @@ def api_dashboard():
 
     # Distribuição global/individual por status.
     if scoped:
-        cur.execute("SELECT status, COUNT(*) AS total FROM atendimentos WHERE usuario_id=%s GROUP BY status ORDER BY total DESC", (request.user_id,))
+        cur.execute("SELECT status, COUNT(*) AS total FROM atendimentos WHERE usuario_id=%s GROUP BY status ORDER BY total DESC", (eff["id"],))
     else:
         cur.execute("SELECT status, COUNT(*) AS total FROM atendimentos GROUP BY status ORDER BY total DESC")
     status = [dict(x) for x in cur.fetchall()]
@@ -4518,7 +5862,7 @@ def api_dashboard():
 
     # Próximos registros e pendências: apenas metadados essenciais.
     upcoming_where = "WHERE usuario_id=%s AND " if scoped else "WHERE "
-    upcoming_params = (request.user_id,) if scoped else ()
+    upcoming_params = (eff["id"],) if scoped else ()
     cur.execute(
         f"""
         SELECT id, numero, status, medico, unidade, completude, alertas, inconsistencias,
@@ -4538,7 +5882,7 @@ def api_dashboard():
     upcoming = [dict(x) for x in cur.fetchall()]
 
     pending_where = "WHERE usuario_id=%s AND " if scoped else "WHERE "
-    pending_params = (request.user_id,) if scoped else ()
+    pending_params = (eff["id"],) if scoped else ()
     cur.execute(
         f"""
         SELECT id, numero, status, completude, alertas, inconsistencias, atualizado_em

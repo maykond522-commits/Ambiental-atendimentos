@@ -3,235 +3,1263 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Contas médicas — Ambiental</title>
+<title>Gestão de Médicos e Acesso Pericial — Ambiental · LTS</title>
 <link rel="stylesheet" href="/global.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="/auth.js"></script>
 <script src="/api.js"></script>
 <script src="/utils.js"></script>
 <style>
-:root{--nav:#062d62;--blue:#0756a8;--blue2:#0b67b9;--green:#00c95a;--ink:#12365b;--muted:#71859b;--line:#dfe8f1;--bg:#f4f8fb;--danger:#c03645;--dangerBg:#fff5f6}
-*{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at 5% 0%,rgba(7,86,168,.09),transparent 30%),linear-gradient(180deg,#f8fbfe,#eef4f8);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink)}
-.shell{min-height:100vh;display:grid;grid-template-columns:252px minmax(0,1fr)}
-.side{background:linear-gradient(180deg,#05295a,#073f87 62%,#062f67);color:#fff;padding:18px 14px;display:flex;flex-direction:column;box-shadow:12px 0 34px rgba(8,40,78,.15)}
-.brand{display:flex;gap:10px;align-items:center;padding:4px 6px 20px;border-bottom:1px solid rgba(255,255,255,.12)}.brand img{width:40px;height:40px;background:#fff;border-radius:11px;padding:4px}.brand b{display:block;font-size:14px}.brand span{display:block;font-size:10px;opacity:.72}
-.nav-title{font-size:9px;letter-spacing:.13em;text-transform:uppercase;opacity:.58;font-weight:900;margin:20px 8px 8px}.nav a{display:flex;align-items:center;gap:9px;color:#fff;text-decoration:none;padding:11px 10px;border-radius:11px;font-size:11px;font-weight:900;margin:4px 0;transition:.18s}.nav a.active,.nav a:hover{background:rgba(255,255,255,.13);transform:translateX(2px)}.spacer{flex:1}.user{padding:12px 10px;border:1px solid rgba(255,255,255,.12);border-radius:13px;background:rgba(255,255,255,.07);font-size:11px}.user small{display:block;opacity:.62;margin-top:2px}
-main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.88);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}.topin{padding:18px 30px;display:flex;justify-content:space-between;gap:20px;align-items:center}.crumb{font-size:10px;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.08em}.title{font-size:28px;font-weight:950;margin:5px 0}.subtitle{margin:0;color:var(--muted);font-size:12px}.content{padding:28px 30px 36px;max-width:1380px}
-.hero{background:linear-gradient(135deg,#073f87,#0b67b9);color:#fff;padding:24px;border-radius:22px;box-shadow:0 18px 34px rgba(7,63,135,.18);display:flex;justify-content:space-between;align-items:center;gap:20px;animation:rise .45s ease both}.hero h2{margin:0 0 7px;font-size:22px}.hero p{margin:0;color:rgba(255,255,255,.78);font-size:12px;max-width:760px;line-height:1.55}.hero-stat{text-align:right}.hero-stat b{display:block;font-size:28px}.hero-stat span{font-size:10px;opacity:.74}
-.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}.stat{background:#fff;border:1px solid var(--line);border-radius:18px;padding:17px 18px;box-shadow:0 10px 26px rgba(26,60,95,.06);animation:rise .55s ease both}.stat small{display:block;font-size:9px;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.08em}.stat b{display:block;font-size:25px;margin-top:7px}.stat span{display:block;color:var(--muted);font-size:10px;margin-top:4px}
-.workspace{display:grid;grid-template-columns:minmax(330px,390px) minmax(0,1fr);gap:18px;align-items:start}.panel{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 12px 30px rgba(26,60,95,.06);overflow:hidden;animation:rise .65s ease both}.panelhead{padding:17px 19px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}.panelhead strong{font-size:14px}.panelhead span{font-size:9px;color:var(--muted);font-weight:900}.panelbody{padding:19px}
-.form-grid{display:grid;gap:13px}.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:10px;font-weight:950;color:#506982}.field input{width:100%;padding:12px 13px;border:1px solid #cfdae6;border-radius:11px;outline:none;background:#fbfdff;color:#173654;font:inherit;font-size:12px;transition:.18s}.field input:focus{border-color:#78aadd;box-shadow:0 0 0 4px rgba(7,86,168,.08);background:#fff}.hint{font-size:9px;color:var(--muted);line-height:1.45}.requirements{display:grid;gap:8px;margin-top:12px;padding:12px;border-radius:13px;background:#f6f9fc;border:1px solid #e7eef5}.req{display:flex;gap:8px;align-items:flex-start;font-size:9px;color:#5e748b}.req i{width:7px;height:7px;border-radius:999px;background:var(--green);margin-top:3px;flex:0 0 auto}
-.actions{display:flex;gap:8px;margin-top:18px}.primary,.secondary,.danger{border:0;border-radius:11px;padding:11px 14px;font-weight:950;font-size:10px;cursor:pointer;transition:.18s}.primary{background:var(--green);color:#06381d;box-shadow:0 9px 20px rgba(0,201,90,.22)}.primary:hover{transform:translateY(-1px);filter:saturate(1.05)}.secondary{background:#fff;color:#35516d;border:1px solid var(--line)}.secondary:hover{background:#f8fbfd}.primary:disabled,.secondary:disabled,.danger:disabled{opacity:.55;cursor:not-allowed;transform:none}.danger{background:var(--dangerBg);color:var(--danger);border:1px solid #f0cbd0}.danger:hover{background:#fff0f2}
-.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:760px}.table th,.table td{padding:13px 14px;border-bottom:1px solid #edf2f6;text-align:left;font-size:11px;vertical-align:middle}.table th{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#71849a;background:#fbfcfe}.med{font-weight:950}.sub{font-size:10px;color:var(--muted);margin-top:3px}.badge{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;background:#e9f9f0;color:#08793b;font-weight:950;font-size:9px}.badge.off{background:#f2f4f7;color:#7a8794}.empty{padding:40px;text-align:center;color:var(--muted);font-size:12px}.list-tools{display:flex;gap:8px;align-items:center}.search{padding:9px 11px;border:1px solid var(--line);border-radius:10px;outline:none;font-size:10px;width:180px}.search:focus{border-color:#78aadd;box-shadow:0 0 0 3px rgba(7,86,168,.08)}
-.btn-group{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
-.btn-sm{padding:6px 9px;font-size:10px;font-weight:800;border-radius:8px;border:1px solid var(--line);cursor:pointer;background:#fff;color:var(--ink);transition:.15s}
-.btn-sm:hover{background:#f4f8fb;border-color:#b9cfdf}
-.btn-sm.primary{background:var(--blue);color:#fff;border-color:transparent}
-.btn-sm.primary:hover{background:var(--blue2)}
-.btn-sm.warning{background:#fff8e6;color:#9e6a00;border-color:#fae09c}
-.btn-sm.warning:hover{background:#fff1cc}
-.btn-sm.success{background:#eaf8ef;color:#0e7b44;border-color:#b5e8c8}
-.btn-sm.success:hover{background:#dcf3e4}
-.btn-sm.danger{background:var(--dangerBg);color:var(--danger);border-color:#f0cbd0}
-.btn-sm.danger:hover{background:#ffe6e9}
-.modal-overlay{position:fixed;inset:0;background:rgba(6,45,98,.45);backdrop-filter:blur(8px);z-index:150;display:grid;place-items:center;padding:16px;opacity:0;visibility:hidden;transition:.25s ease}
-.modal-overlay.open{opacity:1;visibility:visible}
-.modal-card{background:#fff;border-radius:20px;box-shadow:0 24px 60px rgba(6,45,98,.2);width:min(460px,100%);max-height:92vh;display:flex;flex-direction:column;overflow:hidden;animation:rise .3s ease both;transition:width .22s ease}
-.modal-card.modal-lg{width:min(840px,100%)}
-.modal-tabs{display:flex;gap:4px;padding:10px 20px 0;background:#f8fafc;border-bottom:1px solid var(--line)}
-.modal-tab{border:0;background:transparent;padding:10px 16px;font-size:11px;font-weight:800;color:var(--muted);cursor:pointer;border-bottom:2.5px solid transparent;border-radius:8px 8px 0 0;transition:.15s}
-.modal-tab:hover{color:var(--ink);background:rgba(7,86,168,.05)}
-.modal-tab.active{color:var(--blue);border-bottom-color:var(--blue);background:#fff;font-weight:900}
-.agenda-preview-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:10px}
-.agenda-preview-table th,.agenda-preview-table td{padding:8px 10px;border-bottom:1px solid #edf2f6;text-align:left;vertical-align:middle}
-.agenda-preview-table th{background:#f8fafc;color:var(--muted);font-size:9.5px;text-transform:uppercase;letter-spacing:.05em}
-.agenda-preview-table tr:hover td{background:#fbfdff}
-.modal-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
-.modal-head h3{margin:0;font-size:15px;color:var(--ink)}
-.modal-close{border:0;background:transparent;font-size:18px;cursor:pointer;color:var(--muted);padding:4px 8px;border-radius:8px}
-.modal-close:hover{background:#f1f5f9;color:var(--ink)}
-.modal-body{padding:20px;overflow-y:auto;max-height:calc(92vh - 120px)}
-.notice{padding:12px 14px;border-radius:12px;background:#eff8ff;border:1px solid #d7e9f8;color:#47667f;font-size:10px;line-height:1.5;margin-bottom:14px}
-.loadingbar{height:2px;position:fixed;top:0;left:0;right:0;z-index:100;background:linear-gradient(90deg,transparent,#00c95a,#0756a8,transparent);background-size:200% 100%;animation:shimmer 1.2s linear infinite}
-.admin-boot-loader{position:fixed;inset:0;z-index:110;background:radial-gradient(circle at 50% 10%,rgba(7,86,168,.12),transparent 38%),linear-gradient(145deg,#eef4f9,#f9fbfd);display:grid;place-items:center;padding:24px;transition:opacity .38s ease,visibility .38s ease}
-.admin-boot-loader.hide{opacity:0;visibility:hidden;pointer-events:none}
-.admin-boot-card{width:min(430px,100%);padding:34px;border:1px solid #e2eaf2;border-radius:26px;background:rgba(255,255,255,.92);backdrop-filter:blur(16px);box-shadow:0 30px 90px rgba(8,40,78,.18);text-align:center}
-.admin-boot-brand{display:flex;align-items:center;justify-content:center;gap:9px;color:var(--blue);font-size:11px;font-weight:950;letter-spacing:.1em}
-.admin-boot-brand img{width:34px;height:34px;border-radius:10px;background:#fff;padding:3px;border:1px solid #e6edf4}
-.admin-boot-spinner{width:78px;height:78px;margin:24px auto 16px;border-radius:50%;border:5px solid #e7eef5;border-top-color:var(--green);border-right-color:var(--blue);animation:spin 1.05s linear infinite;box-shadow:0 0 0 9px rgba(7,63,135,.04)}
-.admin-boot-card h3{margin:0;color:var(--ink);font-size:18px}.admin-boot-card p{margin:7px 0 18px;color:var(--muted);font-size:12px}
-.admin-boot-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.admin-boot-step{padding:9px 6px;border-radius:10px;background:#f3f7fa;color:#8191a2;font-size:9px;font-weight:950;text-transform:uppercase;letter-spacing:.05em}
-.admin-boot-step.active{background:#e8f2ff;color:var(--blue)}.admin-boot-step.done{background:#e9f8f0;color:#08793b}
-.admin-boot-progress{height:6px;background:#edf2f6;border-radius:999px;overflow:hidden}.admin-boot-progress span{display:block;width:8%;height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:999px;transition:width .5s ease}
-.toast-region{position:fixed;right:18px;bottom:18px;z-index:160;display:grid;gap:8px}
-.toastx{background:#0e2f52;color:#fff;padding:12px 14px;border-radius:11px;box-shadow:0 14px 34px rgba(4,29,53,.22);font-size:10px;font-weight:800;animation:toastin .2s ease both;max-width:340px}
-@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-@keyframes toastin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
-@keyframes spin{to{transform:rotate(360deg)}}
-@media(max-width:980px){.workspace{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.hero{flex-direction:column;align-items:flex-start}.hero-stat{text-align:left}.content{padding:20px 16px}.topin{padding:16px}.search{width:140px}}
-@media(max-width:800px){.shell{grid-template-columns:1fr}.side{display:none}}
+:root {
+  --nav: #06264e;
+  --nav-hover: #0c3568;
+  --blue: #0284c7;
+  --blue-hover: #0369a1;
+  --blue-dark: #07478f;
+  --green: #10b981;
+  --green-dark: #047857;
+  --green-bg: #ecfdf5;
+  --ink: #0f2744;
+  --ink-secondary: #334e68;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
+  --bg: #f8fafc;
+  --card-bg: #ffffff;
+  --danger: #ef4444;
+  --danger-bg: #fef2f2;
+  --warning: #f59e0b;
+  --warning-bg: #fffbeb;
+  --shadow-sm: 0 1px 3px rgba(15, 39, 68, 0.05);
+  --shadow-md: 0 6px 18px rgba(15, 39, 68, 0.06);
+  --shadow-lg: 0 16px 36px rgba(15, 39, 68, 0.09);
+  --shadow-xl: 0 24px 60px rgba(15, 39, 68, 0.12);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: radial-gradient(circle at 10% 0%, rgba(2, 132, 199, 0.07), transparent 35%),
+              radial-gradient(circle at 90% 20%, rgba(16, 185, 129, 0.05), transparent 30%),
+              linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+.shell { min-height: 100vh; display: grid; grid-template-columns: 260px minmax(0, 1fr); }
+
+/* SIDEBAR */
+.side {
+  background: linear-gradient(180deg, #062244 0%, #082d5a 50%, #051b36 100%);
+  color: #fff;
+  padding: 22px 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 12px 0 36px rgba(6, 34, 68, 0.22);
+  z-index: 10;
+}
+.brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 4px 6px 22px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+.brand img {
+  width: 42px;
+  height: 42px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.brand b { display: block; font-size: 14.5px; font-weight: 900; letter-spacing: -0.01em; }
+.brand span { display: block; font-size: 10.5px; opacity: 0.75; margin-top: 1px; }
+
+.nav-title {
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  font-weight: 900;
+  margin: 22px 10px 8px;
+}
+.nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #e2e8f0;
+  text-decoration: none;
+  padding: 12px 12px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  font-weight: 800;
+  margin: 3px 0;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.nav a svg { width: 16px; height: 16px; stroke-width: 2; opacity: 0.85; }
+.nav a.active, .nav a:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  transform: translateX(3px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.nav a.active {
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.38), rgba(2, 132, 199, 0.18));
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.25);
+}
+.spacer { flex: 1; }
+.user {
+  padding: 14px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 11.5px;
+  backdrop-filter: blur(8px);
+}
+.user b { display: block; font-size: 12px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user small { display: block; color: #cbd5e1; margin-top: 3px; font-size: 10px; }
+
+/* TOPBAR */
+main { min-width: 0; }
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 2px 10px rgba(15, 39, 68, 0.03);
+}
+.topin {
+  padding: 18px 34px;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+}
+.crumb {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.crumb-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--blue); }
+.title {
+  font-size: 26px;
+  font-weight: 950;
+  margin: 4px 0 2px;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #082d5a, #0369a1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.subtitle { margin: 0; color: var(--muted); font-size: 12px; }
+
+.top-badge-admin {
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #e0f2fe, #f0f9ff);
+  border: 1px solid #bae6fd;
+  color: #0369a1;
+  font-size: 11px;
+  font-weight: 850;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  box-shadow: var(--shadow-sm);
+}
+
+.content { padding: 26px 34px 40px; max-width: 1420px; }
+
+/* ACESSO PERICIAL HERO CARD */
+.impersonate-hero-card {
+  background: linear-gradient(135deg, #062349 0%, #083468 60%, #052c5c 100%);
+  color: #fff;
+  padding: 16px 22px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 24px rgba(6, 35, 73, 0.14);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+  animation: rise 0.45s ease both;
+}
+.impersonate-hero-card::after {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.15), transparent 70%);
+  pointer-events: none;
+}
+.impersonate-hero-left {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  min-width: 280px;
+  flex: 1;
+}
+.impersonate-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  backdrop-filter: blur(8px);
+}
+.impersonate-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7dd3fc;
+  margin-bottom: 3px;
+}
+.impersonate-hero-card h2 {
+  margin: 0 0 2px;
+  font-size: 16.5px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+.impersonate-hero-card p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 11.5px;
+  line-height: 1.45;
+  max-width: 540px;
+}
+.impersonate-hero-right {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  padding: 12px 14px;
+  backdrop-filter: blur(10px);
+  min-width: 340px;
+  flex-shrink: 0;
+}
+.impersonate-hero-right label {
+  display: block;
+  font-size: 10px;
+  font-weight: 900;
+  color: #bae6fd;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+.impersonate-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.impersonate-select {
+  flex: 1;
+  background: #051b36;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+  outline: none;
+  transition: all 0.2s ease;
+}
+.impersonate-select:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
+}
+.btn-impersonate-action {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+.btn-impersonate-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+  filter: brightness(1.05);
+}
+.quick-doc-chips {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.doc-chip {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #f0f9ff;
+  border-radius: 8px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.doc-chip:hover {
+  background: #fff;
+  color: #07478f;
+  transform: translateY(-1px);
+}
+
+/* STATS */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.stat {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px 18px;
+  box-shadow: 0 1px 3px rgba(15, 39, 68, 0.04);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: rise 0.5s ease both;
+  position: relative;
+  overflow: hidden;
+}
+.stat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(15, 39, 68, 0.07);
+  border-color: #cbd5e1;
+}
+.stat-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.stat small {
+  font-size: 9.5px;
+  color: var(--muted);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.stat-ico {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  background: #f1f5f9;
+}
+.stat b {
+  display: block;
+  font-size: 24px;
+  font-weight: 900;
+  margin-top: 8px;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.stat span {
+  display: block;
+  color: var(--muted);
+  font-size: 10.5px;
+  margin-top: 2px;
+  font-weight: 600;
+}
+
+/* WORKSPACE: FULL WIDTH CLEAN ARCHITECTURE */
+.workspace {
+  display: block;
+  width: 100%;
+}
+.panel {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  animation: rise 0.6s ease both;
+  transition: border-color 0.2s ease;
+  width: 100%;
+}
+.panelhead {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: #fafcff;
+}
+.panelhead strong {
+  font-size: 14.5px;
+  font-weight: 900;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.panelhead span.tag {
+  font-size: 9.5px;
+  color: var(--blue-dark);
+  background: #e0f2fe;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+.panelbody { padding: 22px; }
+
+/* FORMS */
+.form-grid { display: grid; gap: 14px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label {
+  font-size: 10.5px;
+  font-weight: 950;
+  color: #334e68;
+  letter-spacing: 0.02em;
+}
+.field input, .field select, .field textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #cfdae6;
+  border-radius: 12px;
+  outline: none;
+  background: #fbfdff;
+  color: #102a43;
+  font: inherit;
+  font-size: 12.5px;
+  transition: all 0.2s ease;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.12);
+  background: #fff;
+}
+.hint { font-size: 10px; color: var(--muted); line-height: 1.45; }
+.requirements {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+.req { display: flex; gap: 8px; align-items: flex-start; font-size: 10.5px; color: #475569; }
+.req i {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--green);
+  margin-top: 4px;
+  flex: 0 0 auto;
+}
+
+/* BUTTONS */
+.actions { display: flex; gap: 10px; margin-top: 20px; }
+.primary, .secondary, .danger, .btn-action-hero {
+  border: 0;
+  border-radius: 12px;
+  padding: 11px 16px;
+  font-weight: 950;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.primary {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(16, 185, 129, 0.25);
+}
+.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(16, 185, 129, 0.35);
+}
+.secondary {
+  background: #fff;
+  color: #334e68;
+  border: 1px solid var(--line);
+}
+.secondary:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+.danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid #fecaca;
+}
+.danger:hover { background: #fee2e2; }
+.primary:disabled, .secondary:disabled, .danger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* TABLE */
+.table-wrap { overflow-x: auto; width: 100%; }
+.table { width: 100%; border-collapse: collapse; min-width: 920px; }
+.table th, .table td {
+  padding: 11px 13px;
+  border-bottom: 1px solid #f1f5f9;
+  text-align: left;
+  font-size: 12px;
+  vertical-align: middle;
+}
+.table th {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  background: #f8fafc;
+  font-weight: 900;
+  border-bottom: 1.5px solid #e2e8f0;
+  white-space: nowrap;
+}
+.table tr {
+  transition: background 0.15s ease;
+}
+.table tbody tr:hover {
+  background: #f8fbff;
+}
+
+/* DOCTOR AVATAR PILL */
+.doctor-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.doctor-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0284c7, #075985);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 900;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  box-shadow: 0 3px 8px rgba(2, 132, 199, 0.2);
+}
+.med-title { font-weight: 900; color: #0f172a; font-size: 12px; }
+.med-sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+/* BADGES */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--green-bg);
+  color: var(--green-dark);
+  font-weight: 900;
+  font-size: 9.5px;
+  white-space: nowrap;
+}
+.badge.off {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* PULSE DOT */
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+  animation: pulseGreen 2s infinite;
+}
+.pulse-dot.off {
+  background: #94a3b8;
+  animation: none;
+  box-shadow: none;
+}
+
+@keyframes pulseGreen {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* ACTIONS IN TABLE */
+.btn-group { display: flex; gap: 5px; align-items: center; flex-wrap: nowrap; }
+.btn-sm {
+  padding: 5px 9px;
+  font-size: 10.5px;
+  font-weight: 850;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  background: #fff;
+  color: var(--ink);
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.btn-sm:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+.btn-sm.impersonate-btn {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.28);
+  font-weight: 900;
+}
+.btn-sm.impersonate-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.42);
+  filter: brightness(1.06);
+}
+.btn-sm.primary {
+  background: #07478f;
+  color: #fff;
+  border-color: transparent;
+}
+.btn-sm.primary:hover { background: #0a5bc0; }
+.btn-sm.warning {
+  background: var(--warning-bg);
+  color: #b45309;
+  border-color: #fde68a;
+}
+.btn-sm.warning:hover { background: #fef3c7; }
+.btn-sm.success {
+  background: var(--green-bg);
+  color: #047857;
+  border-color: #a7f3d0;
+}
+.btn-sm.success:hover { background: #d1fae5; }
+.btn-sm.danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-color: #fecaca;
+}
+.btn-sm.danger:hover { background: #fee2e2; }
+
+/* MODALS */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 38, 78, 0.55);
+  backdrop-filter: blur(10px);
+  z-index: 150;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.25s ease;
+}
+.modal-overlay.open { opacity: 1; visibility: visible; }
+.modal-card {
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 30px 80px rgba(6, 38, 78, 0.25);
+  width: min(500px, 100%);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: rise 0.3s ease both;
+  transition: width 0.22s ease;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+.modal-card.modal-lg { width: min(880px, 100%); }
+.modal-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 22px 0;
+  background: #f8fafc;
+  border-bottom: 1.5px solid var(--line);
+}
+.modal-tab {
+  border: 0;
+  background: transparent;
+  padding: 11px 18px;
+  font-size: 11.5px;
+  font-weight: 850;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2.5px solid transparent;
+  border-radius: 10px 10px 0 0;
+  transition: all 0.15s ease;
+}
+.modal-tab:hover { color: var(--ink); background: rgba(2, 132, 199, 0.05); }
+.modal-tab.active {
+  color: var(--blue-dark);
+  border-bottom-color: var(--blue);
+  background: #fff;
+  font-weight: 950;
+}
+.modal-head {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fafcff;
+}
+.modal-head h3 { margin: 0; font-size: 16px; font-weight: 950; color: var(--ink); }
+.modal-close {
+  border: 0;
+  background: transparent;
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+.modal-close:hover { background: #f1f5f9; color: var(--ink); }
+.modal-body { padding: 24px; overflow-y: auto; max-height: calc(92vh - 120px); }
+
+/* AGENDA PREVIEW */
+.agenda-preview-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 8px; }
+.agenda-preview-table th, .agenda-preview-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  text-align: left;
+  vertical-align: middle;
+}
+.agenda-preview-table th {
+  background: #f8fafc;
+  color: var(--muted);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 900;
+}
+.agenda-preview-table tr:hover td { background: #f8fbff; }
+
+/* NOTICE */
+.notice {
+  padding: 13px 16px;
+  border-radius: 14px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  color: #0369a1;
+  font-size: 11px;
+  line-height: 1.5;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+/* BOOT LOADER */
+.loadingbar {
+  height: 3px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: linear-gradient(90deg, transparent, #10b981, #0284c7, transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s linear infinite;
+}
+.admin-boot-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  background: radial-gradient(circle at 50% 10%, rgba(2, 132, 199, 0.14), transparent 40%),
+              linear-gradient(145deg, #eef4f9, #f9fbfd);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  transition: opacity 0.38s ease, visibility 0.38s ease;
+}
+.admin-boot-loader.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+.admin-boot-card {
+  width: min(430px, 100%);
+  padding: 34px;
+  border: 1px solid #e2eaf2;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 30px 90px rgba(8, 40, 78, 0.18);
+  text-align: center;
+}
+.admin-boot-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--blue-dark);
+  font-size: 11.5px;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+}
+.admin-boot-brand img {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: #fff;
+  padding: 3px;
+  border: 1px solid #e6edf4;
+}
+.admin-boot-spinner {
+  width: 76px;
+  height: 76px;
+  margin: 24px auto 16px;
+  border-radius: 50%;
+  border: 5px solid #e2e8f0;
+  border-top-color: var(--green);
+  border-right-color: var(--blue);
+  animation: spin 1.05s linear infinite;
+  box-shadow: 0 0 0 9px rgba(2, 132, 199, 0.05);
+}
+.admin-boot-card h3 { margin: 0; color: var(--ink); font-size: 18px; font-weight: 950; }
+.admin-boot-card p { margin: 8px 0 18px; color: var(--muted); font-size: 12px; }
+.admin-boot-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.admin-boot-step {
+  padding: 9px 6px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 9.5px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.admin-boot-step.active { background: #e0f2fe; color: var(--blue-dark); }
+.admin-boot-step.done { background: var(--green-bg); color: var(--green-dark); }
+.admin-boot-progress { height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+.admin-boot-progress span {
+  display: block;
+  width: 8%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue), var(--green));
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+
+.toast-region { position: fixed; right: 20px; bottom: 20px; z-index: 160; display: grid; gap: 8px; }
+.toastx {
+  background: #082d5a;
+  color: #fff;
+  padding: 13px 18px;
+  border-radius: 14px;
+  box-shadow: 0 16px 36px rgba(4, 29, 53, 0.28);
+  font-size: 11px;
+  font-weight: 850;
+  animation: toastin 0.22s ease both;
+  max-width: 380px;
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes toastin {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media(max-width: 1080px) {
+  .impersonate-hero-card { grid-template-columns: 1fr; }
+  .workspace { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+}
+@media(max-width: 800px) {
+  .shell { grid-template-columns: 1fr; }
+  .side { display: none; }
+  .topin { padding: 16px 20px; }
+  .content { padding: 18px 20px; }
+  .stats { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
-<div id="adminBootLoader" class="admin-boot-loader" aria-live="polite" aria-busy="true"><div class="admin-boot-card"><div class="admin-boot-brand"><img src="/logo.png" alt=""><span>AMBIENTAL · LTS</span></div><div class="admin-boot-spinner"></div><h3 id="adminBootTitle">Preparando gestão de profissionais</h3><p id="adminBootText">Conectando ao cadastro médico seguro…</p><div class="admin-boot-steps"><span class="admin-boot-step active" id="abStep1">Sessão</span><span class="admin-boot-step" id="abStep2">Contas</span><span class="admin-boot-step" id="abStep3">Pronto</span></div><div class="admin-boot-progress"><span id="abProgress"></span></div></div></div>
-<div id="loadingbar" class="loadingbar" hidden></div>
-<div class="shell">
-<aside class="side">
-  <div class="brand"><img src="/logo.png" alt="Ambiental"><div><b>Ambiental</b><span>Gestão administrativa</span></div></div>
-  <div class="nav-title">Administração</div>
-  <nav class="nav">
-    <a href="/gestao">Dashboard</a>
-    <a class="active" href="/gestao-medicos-admin.html">Contas médicas</a>
-    <a href="/gestao#atendimentos">Buscar atendimento</a>
-    <a href="/gestao#historico">Histórico</a>
-  </nav>
-  <div class="spacer"></div>
-  <div class="user"><div id="who">Administrador</div><small>Gerenciamento de contas médicas</small></div>
-</aside>
-<main>
-<header class="top"><div class="topin"><div><div class="crumb">Administração / Contas médicas</div><div class="title">Central de contas médicas</div><p class="subtitle">Um espaço dedicado para cadastrar, editar, redefinir senhas e gerenciar acessos de médicos.</p></div></div></header>
-<section class="content">
-  <section class="hero">
-    <div><h2>Gestão de profissionais</h2><p>Cadastre um médico uma única vez. O sistema sincroniza a conta com o Authentication e registra nome, CRM/CRO e perfil em <b>usuarios</b>. Você pode editar os dados, suspender acessos temporariamente ou redefinir a senha a qualquer momento.</p></div>
-    <div class="hero-stat"><b id="count">—</b><span>médicos cadastrados</span></div>
-  </section>
-
-  <section class="stats">
-    <article class="stat"><small>Contas ativas</small><b id="activeCount">—</b><span>Acessos disponíveis para login</span></article>
-    <article class="stat"><small>Atendimentos realizados</small><b id="attendanceCount">—</b><span>Total vinculado aos profissionais</span></article>
-    <article class="stat"><small>Finalizados</small><b id="finishedCount">—</b><span>Atendimentos já concluídos</span></article>
-  </section>
-
-  <section class="workspace">
-    <div class="panel" id="createPanel">
-      <div class="panelhead"><strong>Adicionar novo médico</strong><span>CADASTRO SEGURO</span></div>
-      <div class="panelbody">
-        <div class="notice">Preencha os dados abaixo para criar o acesso. A senha inicial é enviada ao Authentication do Supabase e vinculada ao perfil <b>Médico</b>.</div>
-        <form id="createForm" novalidate>
-          <div class="form-grid">
-            <div class="field"><label for="nome">Nome completo</label><input id="nome" name="nome" required minlength="3" autocomplete="name" placeholder="Ex.: Dra. Maria Silva"></div>
-            <div class="field"><label for="email">E-mail corporativo <small style="color:var(--muted);font-weight:400">(opcional)</small></label><input id="email" name="email" type="email" autocomplete="email" placeholder="medico@empresa.com.br (opcional)"></div>
-            <div class="field"><label for="crm">CRM/CRO</label><input id="crm" name="crm" required placeholder="Ex.: CRM 123456 / UF"></div>
-            <div class="field"><label for="senha">Senha inicial</label><input id="senha" name="senha" type="password" required minlength="8" autocomplete="new-password" placeholder="Mínimo de 8 caracteres"><div class="hint">A senha é usada somente para criação da conta no Authentication.</div></div>
-            <div class="field" style="grid-column: 1 / -1;">
-              <label style="margin-bottom:6px">Modo de Atendimento Padrão</label>
-              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px">
-                <label style="border:1px solid #cbe2f8;background:#f0f7ff;border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;align-items:flex-start;gap:8px">
-                  <input type="radio" name="modo_atendimento" value="agil" id="createModoAgil" checked style="margin-top:2px;accent-color:var(--blue)">
-                  <div>
-                    <strong style="display:block;font-size:12px;color:var(--ink)">⚡ Modo Ágil</strong>
-                    <small style="color:var(--muted);font-size:11px;line-height:1.35;display:block">Modelo de atendimento facilitado para médicos com dificuldades.</small>
-                  </div>
-                </label>
-                <label style="border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;align-items:flex-start;gap:8px">
-                  <input type="radio" name="modo_atendimento" value="extenso" id="createModoExtenso" style="margin-top:2px;accent-color:var(--blue)">
-                  <div>
-                    <strong style="display:block;font-size:12px;color:var(--ink)">📋 Modo Extenso</strong>
-                    <small style="color:var(--muted);font-size:11px;line-height:1.35;display:block">Médico com experiencia e com facilidade em realizar os atendimentos.</small>
-                  </div>
-                </label>
-                <label style="border:1px solid #c7d2fe;background:#f5f3ff;border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;align-items:flex-start;gap:8px">
-                  <input type="radio" name="modo_atendimento" value="ia" id="createModoIA" style="margin-top:2px;accent-color:#4f46e5">
-                  <div>
-                    <strong style="display:block;font-size:12px;color:#4338ca">✨ Modo IA</strong>
-                    <small style="color:var(--muted);font-size:11px;line-height:1.35;display:block">Abre automaticamente a importação inteligente por IA ao iniciar o atendimento.</small>
-                  </div>
-                </label>
-              </div>
-            </div>
-          </div>
-          <div class="requirements"><div class="req"><i></i><span>O perfil será criado automaticamente como <b>Médico</b>.</span></div><div class="req"><i></i><span>O CRM fica vinculado ao mesmo UUID do usuário autenticado.</span></div><div class="req"><i></i><span>Atendimentos existentes não são excluídos ao remover o acesso.</span></div></div>
-          <div class="actions"><button class="primary" id="createBtn" type="submit">Criar conta médica</button><button class="secondary" type="button" id="clearBtn">Limpar</button></div>
-        </form>
-      </div>
+<div id="adminBootLoader" class="admin-boot-loader" aria-live="polite" aria-busy="true">
+  <div class="admin-boot-card">
+    <div class="admin-boot-brand">
+      <img src="/logo.png" alt="Ambiental">
+      <span>AMBIENTAL · LTS</span>
     </div>
-
-    <div class="panel">
-      <div class="panelhead"><strong>Médicos cadastrados</strong><div class="list-tools"><input id="search" class="search" placeholder="Buscar por nome ou CRM"><span id="sync">Carregando…</span></div></div>
-      <div class="table-wrap">
-        <table class="table"><thead><tr><th>Médico</th><th>CRM/CRO</th><th>Modo</th><th>Atendimentos</th><th>Status</th><th>Cadastro</th><th>Ações</th></tr></thead><tbody id="tbody"></tbody></table>
-      </div>
-      <div class="empty" id="empty" hidden>Nenhum médico encontrado.</div>
+    <div class="admin-boot-spinner"></div>
+    <h3 id="adminBootTitle">Preparando gestão de profissionais</h3>
+    <p id="adminBootText">Conectando ao cadastro médico seguro…</p>
+    <div class="admin-boot-steps">
+      <span class="admin-boot-step active" id="abStep1">Sessão</span>
+      <span class="admin-boot-step" id="abStep2">Contas</span>
+      <span class="admin-boot-step" id="abStep3">Pronto</span>
     </div>
-  </section>
-</section>
-</main>
+    <div class="admin-boot-progress"><span id="abProgress"></span></div>
+  </div>
 </div>
 
-<!-- Modal Edição de Médico -->
+<div id="loadingbar" class="loadingbar" hidden></div>
+
+<div class="shell">
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <div class="brand">
+      <img src="/logo.png" alt="Ambiental">
+      <div>
+        <b>Ambiental · LTS</b>
+        <span>Gestão administrativa</span>
+      </div>
+    </div>
+    <div class="nav-title">Navegação</div>
+    <nav class="nav">
+      <a href="/gestao">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span>Dashboard de Atendimentos</span>
+      </a>
+      <a class="active" href="/gestao-medicos-admin.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM16 3.5a4 4 0 0 1 0 7.8M19 14a4 4 0 0 1 2 3.5V21"/></svg>
+        <span>Gestão de Médicos</span>
+      </a>
+      <a href="/gestao#atendimentos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/><path d="M7 8h10M7 12h7M7 16h5"/></svg>
+        <span>Buscar atendimento</span>
+      </a>
+      <a href="/gestao#historico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5M12 7v5l3 2"/></svg>
+        <span>Histórico de auditoria</span>
+      </a>
+    </nav>
+    <div class="spacer"></div>
+    <div class="user">
+      <b id="who">Administrador</b>
+      <small>Contas médicas e acesso pericial</small>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main>
+    <header class="top">
+      <div class="topin">
+        <div>
+          <div class="crumb"><span class="crumb-dot"></span> Administração / Gestão de Médicos</div>
+          <div class="title">Contas Médicas & Acesso Pericial</div>
+          <p class="subtitle">Gerenciamento seguro de credenciais, e-mails de acesso, agendas periciais e impersonate administrativo.</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button type="button" class="primary" onclick="openCreateModal()" style="padding:9px 16px;border-radius:12px;box-shadow:0 4px 14px rgba(16,185,129,0.3);font-size:11.5px">
+            <span>➕</span> <span>Adicionar Médico</span>
+          </button>
+          <div class="top-badge-admin">
+            <span>🛡️</span> <span>Administrador</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="content">
+      <!-- HERO: ACESSO PERICIAL ADMINISTRATIVO (IMPERSONATE) -->
+      <section class="impersonate-hero-card">
+        <div class="impersonate-hero-left">
+          <div class="impersonate-icon-box">🩺</div>
+          <div>
+            <div class="impersonate-badge"><span>⚡</span> Acesso Pericial Administrativo</div>
+            <h2>Entrar no Portal do Médico</h2>
+            <p>Acesse com 1 clique a conta e a agenda pericial do dia de qualquer profissional. No portal médico você pode importar e-SISLA em lote e acompanhar atendimentos como se fosse o perito.</p>
+          </div>
+        </div>
+        <div class="impersonate-hero-right">
+          <label for="selectImpersonateQuick">Acesso Rápido — Entrar como Médico:</label>
+          <div class="impersonate-input-row">
+            <select id="selectImpersonateQuick" class="impersonate-select" onchange="onQuickSelectChange(this.value)">
+              <option value="">Selecione o médico para entrar...</option>
+            </select>
+            <button type="button" class="btn-impersonate-action" onclick="entrarComoMedicoSelecionadoTop()" title="Acessar o portal médico como Dr(a). selecionado">
+              <span>Entrar</span> <span>→</span>
+            </button>
+          </div>
+          <div id="quickDoctorsChips" class="quick-doc-chips">
+            <!-- Gerado dinamicamente com médicos ativos -->
+          </div>
+        </div>
+      </section>
+
+      <!-- METRIC CARDS -->
+      <section class="stats">
+        <article class="stat">
+          <div class="stat-top">
+            <small>Médicos Cadastrados</small>
+            <div class="stat-ico">🩺</div>
+          </div>
+          <b id="count">—</b>
+          <span>Total registrado na base</span>
+        </article>
+
+        <article class="stat">
+          <div class="stat-top">
+            <small>Contas Ativas</small>
+            <div class="stat-ico" style="background:#ecfdf5;color:#059669">●</div>
+          </div>
+          <b id="activeCount">—</b>
+          <span>Disponíveis para login</span>
+        </article>
+
+        <article class="stat">
+          <div class="stat-top">
+            <small>Atendimentos Realizados</small>
+            <div class="stat-ico" style="background:#f0f9ff;color:#0284c7">📋</div>
+          </div>
+          <b id="attendanceCount">—</b>
+          <span>Total vinculado aos médicos</span>
+        </article>
+
+        <article class="stat">
+          <div class="stat-top">
+            <small>Laudos Finalizados</small>
+            <div class="stat-ico" style="background:#ecfdf5;color:#047857">✓</div>
+          </div>
+          <b id="finishedCount">—</b>
+          <span>Concluídos com parecer</span>
+        </article>
+      </section>
+
+      <!-- WORKSPACE: LISTAGEM DE MÉDICOS (100% LARGURA) -->
+      <section class="workspace">
+        <div class="panel">
+          <div class="panelhead">
+            <div style="display:flex;align-items:center;gap:10px">
+              <strong><span>👥</span> Médicos Cadastrados</strong>
+              <span class="badge" id="tableDocsCountBadge" style="background:#e0f2fe;color:#0369a1;font-weight:800">0 cadastrados</span>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <input id="search" class="search" placeholder="🔍 Buscar por nome, CRM ou e-mail..." style="padding:8px 14px;border:1px solid var(--line);border-radius:10px;font-size:11.5px;outline:none;width:240px;background:#f8fafc">
+              <span id="sync" style="font-size:10.5px;color:var(--muted);font-weight:700">Carregando…</span>
+              <button type="button" class="primary" onclick="openCreateModal()" style="padding:8px 14px;border-radius:10px;font-size:11px">
+                <span>➕</span> <span>Adicionar Médico</span>
+              </button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Médico</th>
+                  <th>CRM/CRO</th>
+                  <th>Modo</th>
+                  <th>Produção</th>
+                  <th>Status</th>
+                  <th>Acesso & Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tbody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="empty" hidden style="padding:40px;text-align:center;color:var(--muted)">Nenhum médico encontrado com os filtros atuais.</div>
+        </div>
+      </section>
+    </section>
+  </main>
+</div>
+
+<!-- Modal: Adicionar Novo Médico -->
+<div id="createModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="createModalTitle">
+  <div class="modal-card modal-lg" id="createPanel">
+    <div class="modal-head">
+      <div>
+        <h3 id="createModalTitle">➕ Adicionar Novo Médico Perito</h3>
+        <span style="font-size:11px;color:var(--muted);margin-top:2px;display:block">Cadastro de credenciais e configuração do modo de atendimento no Authentication</span>
+      </div>
+      <button type="button" class="modal-close" onclick="closeCreateModal()" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-body" style="padding:22px">
+      <div class="notice">
+        <span>ℹ️</span>
+        <div>Preencha os dados do médico. As credenciais são sincronizadas no <b>Authentication</b> e associadas ao perfil <b>Médico</b>.</div>
+      </div>
+      <form id="createForm" novalidate>
+        <div class="form-grid">
+          <div class="field">
+            <label for="nome">Nome Completo</label>
+            <input id="nome" name="nome" required minlength="3" autocomplete="name" placeholder="Ex.: Dr. Roberto Santos">
+          </div>
+
+          <div class="field">
+            <label for="email">E-mail Corporativo / Login <small style="color:var(--muted);font-weight:400">(opcional)</small></label>
+            <input id="email" name="email" type="email" autocomplete="email" placeholder="medico@empresa.com.br">
+          </div>
+
+          <div class="field">
+            <label for="crm">CRM/CRO e UF</label>
+            <input id="crm" name="crm" required placeholder="Ex.: CRM 123456 / SP">
+          </div>
+
+          <div class="field">
+            <label for="senha">Senha Inicial de Acesso</label>
+            <input id="senha" name="senha" type="password" required minlength="8" autocomplete="new-password" placeholder="Mínimo de 8 caracteres">
+            <div class="hint">Usada para criação da conta no Authentication.</div>
+          </div>
+
+          <div class="field">
+            <label style="margin-bottom:6px">Modo de Atendimento Padrão</label>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">
+              <label style="border:1.5px solid #bae6fd;background:#f0f9ff;border-radius:12px;padding:10px 12px;cursor:pointer;display:flex;align-items:flex-start;gap:10px">
+                <input type="radio" name="modo_atendimento" value="agil" id="createModoAgil" checked style="margin-top:2px;accent-color:var(--blue)">
+                <div>
+                  <strong style="display:block;font-size:12px;color:var(--ink)">⚡ Modo Ágil</strong>
+                  <small style="color:var(--muted);font-size:10.5px;line-height:1.35;display:block">Modelo de atendimento facilitado para médicos com dificuldades.</small>
+                </div>
+              </label>
+
+              <label style="border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:10px 12px;cursor:pointer;display:flex;align-items:flex-start;gap:10px">
+                <input type="radio" name="modo_atendimento" value="extenso" id="createModoExtenso" style="margin-top:2px;accent-color:var(--blue)">
+                <div>
+                  <strong style="display:block;font-size:12px;color:var(--ink)">📋 Modo Extenso</strong>
+                  <small style="color:var(--muted);font-size:10.5px;line-height:1.35;display:block">Médico com experiencia e com facilidade em realizar os atendimentos.</small>
+                </div>
+              </label>
+
+              <label style="border:1.5px solid #c7d2fe;background:#f5f3ff;border-radius:12px;padding:10px 12px;cursor:pointer;display:flex;align-items:flex-start;gap:10px">
+                <input type="radio" name="modo_atendimento" value="ia" id="createModoIA" style="margin-top:2px;accent-color:#4f46e5">
+                <div>
+                  <strong style="display:block;font-size:12px;color:#4338ca">✨ Modo IA</strong>
+                  <small style="color:var(--muted);font-size:10.5px;line-height:1.35;display:block">Abre automaticamente a importação inteligente por IA.</small>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="requirements">
+          <div class="req"><i></i><span>Perfil vinculado como <b>Médico Perito</b> no banco de dados.</span></div>
+          <div class="req"><i></i><span>CRM/CRO vinculado ao mesmo ID do usuário autenticado.</span></div>
+        </div>
+
+        <div class="actions" style="justify-content:flex-end;margin-top:16px">
+          <button class="secondary" type="button" id="clearBtn" onclick="$('createForm').reset()">Limpar</button>
+          <button class="secondary" type="button" onclick="closeCreateModal()">Cancelar</button>
+          <button class="primary" id="createBtn" type="submit">Criar Conta Médica</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Edição de Médico & Agenda -->
 <div id="editModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
   <div class="modal-card" id="editModalCard">
     <div class="modal-head">
-      <h3 id="editModalTitle">Editar dados do médico</h3>
+      <h3 id="editModalTitle">Gerenciar Profissional de Saúde</h3>
       <button type="button" class="modal-close" onclick="closeEditModal()" aria-label="Fechar">✕</button>
     </div>
     <div class="modal-tabs">
-      <button type="button" class="modal-tab active" id="tabBtnEditDados" onclick="switchEditModalTab('dados')">👤 Dados Cadastrais</button>
-      <button type="button" class="modal-tab" id="tabBtnEditAgenda" onclick="switchEditModalTab('agenda')">📅 Incluir e Gerenciar Agendas</button>
+      <button type="button" class="modal-tab active" id="tabBtnEditDados" onclick="switchEditModalTab('dados')">👤 Dados Cadastrais & E-mail</button>
+      <button type="button" class="modal-tab" id="tabBtnEditAgenda" onclick="switchEditModalTab('agenda')">📅 Incluir & Gerenciar Agendas</button>
     </div>
     <div class="modal-body">
-      <!-- Aba 1: Dados Cadastrais -->
+      <!-- Aba 1: Dados Cadastrais & E-mail -->
       <div id="tabContentEditDados">
         <form id="editForm" novalidate>
           <input type="hidden" id="editId">
           <div class="form-grid">
             <div class="field">
-              <label for="editNome">Nome completo</label>
+              <label for="editNome">Nome Completo</label>
               <input id="editNome" required minlength="3" placeholder="Ex.: Dr. Roberto Santos">
             </div>
+
             <div class="field">
-              <label for="editCrm">CRM/CRO</label>
+              <label for="editCrm">CRM/CRO e UF</label>
               <input id="editCrm" required minlength="3" placeholder="Ex.: CRM 123456 / SP">
             </div>
+
+            <div class="field" style="grid-column: 1 / -1;">
+              <label for="editEmail">E-mail Corporativo / Login da Conta</label>
+              <input id="editEmail" type="email" placeholder="medico@empresa.com.br" autocomplete="email">
+              <div class="hint">E-mail vinculado ao acesso do médico. Ao alterar, as credenciais no Authentication são atualizadas para permitir login imediato.</div>
+            </div>
+
             <div class="field" style="grid-column: 1 / -1;">
               <label style="margin-bottom:6px">Modo de Atendimento</label>
-              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px">
-                <label style="border:1px solid #cbe2f8;background:#f0f7ff;border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;align-items:flex-start;gap:8px">
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px">
+                <label style="border:1.5px solid #bae6fd;background:#f0f9ff;border-radius:12px;padding:10px 12px;cursor:pointer;display:flex;align-items:flex-start;gap:8px">
                   <input type="radio" name="editModoAtendimento" value="agil" id="editModoAgil" checked style="margin-top:2px;accent-color:var(--blue)">
                   <div>
                     <strong style="display:block;font-size:12px;color:var(--ink)">⚡ Modo Ágil</strong>
-                    <small style="color:var(--muted);font-size:11px;line-height:1.35;display:block">Modelo de atendimento facilitado para médicos com dificuldades.</small>
+                    <small style="color:var(--muted);font-size:10.5px;line-height:1.35;display:block">Modelo de atendimento facilitado para médicos com dificuldades.</small>
                   </div>
                 </label>
-                <label style="border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;align-items:flex-start;gap:8px">
+                <label style="border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:10px 12px;cursor:pointer;display:flex;align-items:flex-start;gap:8px">
                   <input type="radio" name="editModoAtendimento" value="extenso" id="editModoExtenso" style="margin-top:2px;accent-color:var(--blue)">
                   <div>
                     <strong style="display:block;font-size:12px;color:var(--ink)">📋 Modo Extenso</strong>
-                    <small style="color:var(--muted);font-size:11px;line-height:1.35;display:block">Médico com experiencia e com facilidade em realizar os atendimentos.</small>
+                    <small style="color:var(--muted);font-size:10.5px;line-height:1.35;display:block">Médico com experiencia e com facilidade em realizar os atendimentos.</small>
                   </div>
                 </label>
-                <label style="border:1px solid #c7d2fe;background:#f5f3ff;border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;align-items:flex-start;gap:8px">
+                <label style="border:1.5px solid #c7d2fe;background:#f5f3ff;border-radius:12px;padding:10px 12px;cursor:pointer;display:flex;align-items:flex-start;gap:8px">
                   <input type="radio" name="editModoAtendimento" value="ia" id="editModoIA" style="margin-top:2px;accent-color:#4f46e5">
                   <div>
                     <strong style="display:block;font-size:12px;color:#4338ca">✨ Modo IA</strong>
-                    <small style="color:var(--muted);font-size:11px;line-height:1.35;display:block">Abre automaticamente a importação inteligente por IA ao iniciar o atendimento.</small>
+                    <small style="color:var(--muted);font-size:10.5px;line-height:1.35;display:block">Abre automaticamente a importação inteligente por IA.</small>
                   </div>
                 </label>
               </div>
             </div>
           </div>
-          <div class="hint" style="margin-top:10px">As alterações serão sincronizadas com o Authentication e com a tabela de usuários.</div>
-          <div class="actions" style="margin-top:20px;justify-content:flex-end">
+
+          <div class="actions" style="margin-top:22px;justify-content:flex-end">
             <button type="button" class="secondary" onclick="closeEditModal()">Cancelar</button>
-            <button type="submit" class="primary" id="saveEditBtn">Salvar alterações</button>
+            <button type="submit" class="primary" id="saveEditBtn">Salvar Alterações</button>
           </div>
         </form>
       </div>
 
       <!-- Aba 2: Incluir e Gerenciar Agendas -->
       <div id="tabContentEditAgenda" hidden>
-        <div class="notice" style="background:#f0f7ff;border-color:#cbe2f8;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-          <div><strong>Médico Selecionado:</strong> <span id="agendaDocName">—</span> <span class="sub" id="agendaDocCrm"></span></div>
+        <div class="notice" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+          <div><strong>Médico Selecionado:</strong> <span id="agendaDocName">—</span> <span id="agendaDocCrm" style="color:var(--muted);font-weight:700"></span></div>
           <span class="badge" style="background:#e0f2fe;color:#0369a1">Gestão de Agenda Pericial</span>
         </div>
 
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap;background:#fbfcfe;border:1px solid var(--line);border-radius:12px;padding:10px 14px">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <label for="agendaDataInput" style="font-size:11px;font-weight:800;color:var(--ink)">Data da Agenda:</label>
-            <input type="date" id="agendaDataInput" class="search" style="width:145px;font-weight:700">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap;background:#fbfcfe;border:1px solid var(--line);border-radius:14px;padding:12px 16px">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <label for="agendaDataInput" style="font-size:11.5px;font-weight:900;color:var(--ink)">Data da Agenda:</label>
+            <input type="date" id="agendaDataInput" style="padding:7px 10px;border:1px solid var(--line);border-radius:10px;font-weight:700;font-size:12px">
             <button type="button" class="btn-sm primary" id="btnConsultarAgendaDia">🔄 Carregar Dia</button>
           </div>
           <div style="display:flex;gap:6px">
@@ -239,39 +1267,39 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
           </div>
         </div>
 
-        <div style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:16px">
+        <div style="background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
             <div>
-              <strong style="font-size:12px;color:var(--ink)">📥 Incluir Agendamentos da Planilha</strong>
-              <p class="hint" style="margin:2px 0 0">Cole as linhas copiadas do Excel (Ctrl+C / Ctrl+V) ou selecione o arquivo (.xlsx, .csv).<br>Colunas: <b>Status, Hora, Tipo, Protocolo, NI, Nome do Periciado, Compareceu, Obs / Assinatura, Seq</b></p>
+              <strong style="font-size:12.5px;color:var(--ink)">📥 Importar Agendamentos da Planilha</strong>
+              <p class="hint" style="margin:3px 0 0">Cole as linhas copiadas do Excel (Ctrl+C / Ctrl+V) ou selecione o arquivo (.xlsx, .csv).<br>Colunas: <b>Status, Hora, Tipo, Protocolo, NI, Nome do Periciado, Compareceu, Obs / Assinatura, Seq</b></p>
             </div>
             <button type="button" class="btn-sm" id="btnExemploPlanilha" title="Preencher com exemplo de teste" style="flex-shrink:0">Exemplo</button>
           </div>
-          <textarea id="agendaPasteInput" rows="4" style="width:100%;border:1px solid #cfdae6;border-radius:10px;padding:10px;font-size:11px;font-family:Consolas,monospace;resize:vertical;background:#fbfdff" placeholder="Cole aqui os dados da planilha do Excel (com colunas Status, Hora, Tipo, Protocolo, NI, Nome do Periciado...)..."></textarea>
+          <textarea id="agendaPasteInput" rows="4" style="width:100%;border:1px solid #cfdae6;border-radius:12px;padding:10px 12px;font-size:11.5px;font-family:Consolas,monospace;resize:vertical;background:#fbfdff" placeholder="Cole aqui os dados copiados da planilha do Excel..."></textarea>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;flex-wrap:wrap;gap:8px">
             <div style="display:flex;align-items:center;gap:8px">
               <input type="file" id="agendaFileInput" accept=".csv,.xlsx,.xls,.tsv,.txt" style="display:none">
               <button type="button" class="btn-sm" id="btnTriggerFile">📁 Selecionar Arquivo (.xlsx / .csv)</button>
-              <span id="agendaFileFeedback" style="font-size:10px;color:var(--muted)"></span>
+              <span id="agendaFileFeedback" style="font-size:10.5px;color:var(--muted)"></span>
             </div>
-            <button type="button" class="primary" id="btnProcessarPlanilha" style="padding:9px 16px">⚡ Processar Planilha</button>
+            <button type="button" class="primary" id="btnProcessarPlanilha" style="padding:9px 18px">⚡ Processar Planilha</button>
           </div>
         </div>
 
-        <div id="agendaPreviewArea" style="display:none;background:#fbfcfe;border:1px solid #b5d5f5;border-radius:14px;padding:14px;margin-bottom:16px">
+        <div id="agendaPreviewArea" style="display:none;background:#f8fbff;border:1px solid #bae6fd;border-radius:16px;padding:16px;margin-bottom:16px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <div><strong style="font-size:12px;color:var(--blue)">✨ Pré-visualização da Planilha</strong> <span class="badge" id="previewCountBadge" style="background:#eaf8ef;color:#0e7b44;margin-left:6px">0 periciados</span></div>
-            <span style="font-size:10px;color:var(--muted)">Revise antes de gravar</span>
+            <div><strong style="font-size:12.5px;color:var(--blue-dark)">✨ Pré-visualização da Planilha</strong> <span class="badge" id="previewCountBadge" style="margin-left:6px">0 periciados</span></div>
+            <span style="font-size:10.5px;color:var(--muted)">Revise antes de gravar na base</span>
           </div>
-          <div class="table-wrap" style="max-height:220px;border:1px solid var(--line);border-radius:10px;background:#fff">
+          <div class="table-wrap" style="max-height:220px;border:1px solid var(--line);border-radius:12px;background:#fff">
             <table class="agenda-preview-table">
               <thead><tr><th>Hora</th><th>Tipo</th><th>Protocolo</th><th>NI</th><th>Nome do Periciado</th><th>Compareceu</th><th>Obs</th></tr></thead>
               <tbody id="agendaPreviewTbody"></tbody>
             </table>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:10px">
-            <label style="font-size:11px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer">
-              <input type="checkbox" id="checkSubstituirAgenda" checked> Substituir agendamentos existentes desta data
+            <label style="font-size:11.5px;font-weight:800;display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" id="checkSubstituirAgenda" checked style="accent-color:var(--blue)"> Substituir agendamentos existentes desta data
             </label>
             <div style="display:flex;gap:8px">
               <button type="button" class="btn-sm" id="btnDescartarPreview">Descartar</button>
@@ -280,18 +1308,18 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
           </div>
         </div>
 
-        <div id="agendaCurrentSection" style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px">
+        <div id="agendaCurrentSection" style="background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <div><strong style="font-size:12px;color:var(--ink)">📋 Agendamentos Gravados na Base</strong> <span class="counter-badge" id="currentAgendaCountBadge" style="font-size:10px;margin-left:6px">0 gravados</span></div>
-            <span id="agendaCurrentDateLabel" style="font-size:10px;color:var(--muted);font-weight:700"></span>
+            <div><strong style="font-size:12.5px;color:var(--ink)">📋 Agendamentos Gravados na Base</strong> <span class="badge" id="currentAgendaCountBadge" style="margin-left:6px;background:#e0f2fe;color:#0369a1">0 gravados</span></div>
+            <span id="agendaCurrentDateLabel" style="font-size:10.5px;color:var(--muted);font-weight:800"></span>
           </div>
-          <div class="table-wrap" style="max-height:260px;border:1px solid var(--line);border-radius:10px;background:#fff">
+          <div class="table-wrap" style="max-height:260px;border:1px solid var(--line);border-radius:12px;background:#fff">
             <table class="agenda-preview-table">
               <thead><tr><th>Hora</th><th>Tipo</th><th>Protocolo</th><th>NI</th><th>Nome do Periciado</th><th>Status</th><th>Ações</th></tr></thead>
               <tbody id="agendaCurrentTbody"></tbody>
             </table>
           </div>
-          <div class="empty" id="agendaCurrentEmpty" style="padding:24px" hidden>Nenhum agendamento gravado para esta data.</div>
+          <div class="empty" id="agendaCurrentEmpty" style="padding:24px;text-align:center;color:var(--muted)" hidden>Nenhum agendamento gravado para esta data.</div>
         </div>
       </div>
     </div>
@@ -302,27 +1330,27 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
 <div id="pwdModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="pwdModalTitle">
   <div class="modal-card">
     <div class="modal-head">
-      <h3 id="pwdModalTitle">Redefinir senha de acesso</h3>
+      <h3 id="pwdModalTitle">Redefinir Senha de Acesso</h3>
       <button type="button" class="modal-close" onclick="closePwdModal()" aria-label="Fechar">✕</button>
     </div>
     <div class="modal-body">
-      <p id="pwdTargetDoctor" style="font-size:11px;color:var(--muted);margin:0 0 14px 0"></p>
+      <p id="pwdTargetDoctor" style="font-size:11.5px;color:var(--muted);margin:0 0 16px 0;line-height:1.45"></p>
       <form id="pwdForm" novalidate>
         <input type="hidden" id="pwdId">
         <div class="form-grid">
           <div class="field">
-            <label for="newPwd">Nova senha</label>
+            <label for="newPwd">Nova Senha</label>
             <input id="newPwd" type="password" required minlength="8" placeholder="Mínimo de 8 caracteres" autocomplete="new-password">
           </div>
           <div class="field">
-            <label for="confirmPwd">Confirmar nova senha</label>
+            <label for="confirmPwd">Confirmar Nova Senha</label>
             <input id="confirmPwd" type="password" required minlength="8" placeholder="Repita a nova senha" autocomplete="new-password">
           </div>
         </div>
-        <div class="hint" style="margin-top:10px">A nova senha terá efeito imediato para o próximo login do profissional.</div>
-        <div class="actions" style="margin-top:20px;justify-content:flex-end">
+        <div class="hint" style="margin-top:12px">A nova senha terá efeito imediato para o próximo login do profissional.</div>
+        <div class="actions" style="margin-top:22px;justify-content:flex-end">
           <button type="button" class="secondary" onclick="closePwdModal()">Cancelar</button>
-          <button type="submit" class="primary" id="savePwdBtn">Redefinir senha</button>
+          <button type="submit" class="primary" id="savePwdBtn">Redefinir Senha</button>
         </div>
       </form>
     </div>
@@ -330,89 +1358,217 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
 </div>
 
 <div class="toast-region" id="toasts" aria-live="polite"></div>
-<script>
-(async()=>{
-  const $=id=>document.getElementById(id); let rows=[]; let filtered=[];
-  const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  const fmt=d=>d?new Date(d).toLocaleDateString('pt-BR'):'—';
-  const moneyless=v=>Number(v||0);
-  const toast=(message)=>{const el=document.createElement('div');el.className='toastx';el.textContent=message;$('toasts').appendChild(el);setTimeout(()=>el.remove(),3600)};
-  const busy=(on)=>{ $('loadingbar').hidden=!on; document.body.setAttribute('aria-busy',on?'true':'false'); };
 
-  const render=()=>{
-    $('count').textContent=rows.length;
-    $('activeCount').textContent=rows.filter(r=>Number(r.ativo)===1).length;
-    $('attendanceCount').textContent=rows.reduce((s,r)=>s+moneyless(r.total_atendimentos),0);
-    $('finishedCount').textContent=rows.reduce((s,r)=>s+moneyless(r.finalizados),0);
-    const q=$('search').value.trim().toLowerCase();
-    filtered=rows.filter(r=>!q||`${r.nome||''} ${r.crm||''}`.toLowerCase().includes(q));
-    $('empty').hidden=filtered.length>0;
-    $('tbody').innerHTML=filtered.map(r=>{
+<script>
+(async () => {
+  const $ = id => document.getElementById(id);
+  let rows = [];
+  let filtered = [];
+
+  const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+  const fmt = d => d ? new Date(d).toLocaleDateString('pt-BR') : '—';
+  const moneyless = v => Number(v || 0);
+  
+  const toast = (message) => {
+    const el = document.createElement('div');
+    el.className = 'toastx';
+    el.textContent = message;
+    $('toasts').appendChild(el);
+    setTimeout(() => el.remove(), 3800);
+  };
+
+  const busy = (on) => {
+    $('loadingbar').hidden = !on;
+    document.body.setAttribute('aria-busy', on ? 'true' : 'false');
+  };
+
+  function getInitials(name) {
+    if (!name) return 'DR';
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
+  /* ACESSO PERICIAL (IMPERSONATE) */
+  window.entrarComoMedico = function(medicoId, nome, crm) {
+    if (!medicoId) {
+      toast('Selecione um médico para acessar o portal com seu login.');
+      return;
+    }
+    const r = rows.find(m => String(m.id) === String(medicoId));
+    const nomeFinal = nome || r?.nome || `Médico ID ${medicoId}`;
+    const crmFinal = crm || r?.crm || '';
+
+    sessionStorage.setItem('ambiental.impersonate_medico_id', String(medicoId));
+    sessionStorage.setItem('ambiental.impersonate_medico_nome', nomeFinal);
+    sessionStorage.setItem('ambiental.impersonate_medico_crm', crmFinal);
+
+    toast(`Entrando como ${nomeFinal}…`);
+    setTimeout(() => {
+      location.href = `/gestao_medicos.html?impersonate_medico_id=${encodeURIComponent(medicoId)}`;
+    }, 250);
+  };
+
+  window.entrarComoMedicoSelecionadoTop = function() {
+    const val = $('selectImpersonateQuick')?.value;
+    if (!val) {
+      toast('Por favor, selecione um médico na lista para entrar.');
+      return;
+    }
+    const r = rows.find(m => String(m.id) === String(val));
+    entrarComoMedico(val, r?.nome, r?.crm);
+  };
+
+  window.onQuickSelectChange = function(val) {
+    // Pode disparar ou aguardar clique no botão
+  };
+
+  const updateQuickImpersonateUI = () => {
+    const sel = $('selectImpersonateQuick');
+    const chips = $('quickDoctorsChips');
+    if (!sel || !chips) return;
+
+    const activeDocs = rows.filter(r => Number(r.ativo) === 1);
+    
+    sel.innerHTML = '<option value="">Selecione o médico para entrar...</option>' + 
+      activeDocs.map(d => `<option value="${d.id}">${esc(d.nome)} (${d.crm ? 'CRM ' + d.crm : 'Sem CRM'})</option>`).join('');
+
+    chips.innerHTML = activeDocs.slice(0, 5).map(d => {
+      const parts = d.nome.trim().split(/\s+/);
+      let shortName = parts[0] || d.nome;
+      if (parts.length >= 2 && /^(dr\.|dra\.|doutor|doutora)$/i.test(parts[0])) {
+        shortName = `${parts[0]} ${parts[1]}`;
+      }
+      return `
+        <button type="button" class="doc-chip" onclick="entrarComoMedico('${d.id}', '${esc(d.nome)}', '${esc(d.crm || '')}')" title="Acessar portal médico como Dr(a). ${esc(d.nome)}">
+          <span style="font-size:11px">🩺</span> <span>${esc(shortName)}</span> <span style="opacity:0.75">→</span>
+        </button>
+      `;
+    }).join('');
+  };
+
+  const render = () => {
+    $('count').textContent = rows.length;
+    $('activeCount').textContent = rows.filter(r => Number(r.ativo) === 1).length;
+    $('attendanceCount').textContent = rows.reduce((s, r) => s + moneyless(r.total_atendimentos), 0);
+    $('finishedCount').textContent = rows.reduce((s, r) => s + moneyless(r.finalizados), 0);
+    if ($('tableDocsCountBadge')) {
+      $('tableDocsCountBadge').textContent = `${rows.length} ${rows.length === 1 ? 'cadastrado' : 'cadastrados'}`;
+    }
+
+    updateQuickImpersonateUI();
+
+    const q = $('search').value.trim().toLowerCase();
+    filtered = rows.filter(r => !q || `${r.nome || ''} ${r.crm || ''} ${r.email || ''}`.toLowerCase().includes(q));
+    $('empty').hidden = filtered.length > 0;
+
+    $('tbody').innerHTML = filtered.map(r => {
       const isActive = Number(r.ativo) === 1;
       const mode = (r.modo_atendimento || 'agil').toLowerCase();
-      let modeBadge = '<span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;font-weight:700">⚡ Ágil</span>';
+      let modeBadge = '<span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;font-weight:800">⚡ Ágil</span>';
       if (mode === 'extenso') {
-        modeBadge = '<span class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-weight:700">📋 Extenso</span>';
+        modeBadge = '<span class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-weight:800">📋 Extenso</span>';
       } else if (mode === 'ia') {
-        modeBadge = '<span class="badge" style="background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;font-weight:700">✨ Modo IA</span>';
+        modeBadge = '<span class="badge" style="background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;font-weight:800">✨ Modo IA</span>';
       }
+
+      const initials = getInitials(r.nome);
+
       return `<tr>
         <td>
-          <div class="med">${esc(r.nome)}</div>
-          <div class="sub">ID: ${esc(r.id)} ${r.email ? `· ${esc(r.email)}` : ''}</div>
+          <div class="doctor-cell">
+            <div class="doctor-avatar">${initials}</div>
+            <div>
+              <div class="med-title">${esc(r.nome)}</div>
+              <div class="med-sub">ID: ${esc(r.id)} ${r.email ? `· <span style="color:#0284c7;font-weight:700">${esc(r.email)}</span>` : '<span style="color:#94a3b8">(sem e-mail)</span>'}</div>
+            </div>
+          </div>
         </td>
-        <td>${esc(r.crm||'—')}</td>
+        <td><strong style="color:var(--ink);letter-spacing:0.02em">${esc(r.crm || '—')}</strong></td>
+        <td>${modeBadge}</td>
         <td>
-          ${modeBadge}
+          <b>${moneyless(r.total_atendimentos)}</b>
+          <span style="font-size:10.5px;color:var(--muted);display:block">${moneyless(r.finalizados)} finalizados</span>
         </td>
-        <td><b>${moneyless(r.total_atendimentos)}</b> <span class="sub">(${moneyless(r.finalizados)} finalizados)</span></td>
-        <td><span class="badge ${isActive?'':'off'}">● ${isActive?'Ativo':'Inativo/Suspenso'}</span></td>
-        <td>${fmt(r.criado_em)}</td>
+        <td>
+          <span class="badge ${isActive ? '' : 'off'}">
+            <span class="pulse-dot ${isActive ? '' : 'off'}"></span>
+            ${isActive ? 'Ativo' : 'Suspenso'}
+          </span>
+        </td>
         <td>
           <div class="btn-group">
-            <button class="btn-sm" data-edit="${esc(r.id)}" title="Editar nome, CRM e modo">Editar</button>
+            <button class="btn-sm impersonate-btn" onclick="entrarComoMedico('${r.id}', '${esc(r.nome)}', '${esc(r.crm || '')}')" title="Acessar o portal médico como Dr(a). ${esc(r.nome)}">
+              <span>🩺 Entrar</span> <span>→</span>
+            </button>
             <button class="btn-sm primary" data-agenda="${esc(r.id)}" title="Incluir e gerenciar agendas">📅 Agenda</button>
-            <button class="btn-sm ${isActive?'warning':'success'}" data-toggle="${esc(r.id)}" title="${isActive?'Suspender acesso':'Reativar acesso'}">
+            <button class="btn-sm" data-edit="${esc(r.id)}" title="Editar nome, CRM, e-mail e modo">✏️ Editar</button>
+            <button class="btn-sm ${isActive ? 'warning' : 'success'}" data-toggle="${esc(r.id)}" title="${isActive ? 'Suspender acesso' : 'Reativar acesso'}">
               ${isActive ? 'Suspender' : 'Reativar'}
             </button>
-            <button class="btn-sm" data-pwd="${esc(r.id)}" title="Redefinir senha">Senha</button>
-            <button class="btn-sm danger" data-remove="${esc(r.id)}" title="Excluir conta médica">Excluir</button>
+            <button class="btn-sm" data-pwd="${esc(r.id)}" title="Redefinir senha">🔑 Senha</button>
+            <button class="btn-sm danger" data-remove="${esc(r.id)}" title="Excluir conta médica">🗑️</button>
           </div>
         </td>
       </tr>`;
     }).join('');
 
-    document.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>openEditDoctor(b.dataset.edit)));
-    document.querySelectorAll('[data-agenda]').forEach(b=>b.addEventListener('click',()=>openAgendaDoctor(b.dataset.agenda)));
-    document.querySelectorAll('[data-toggle]').forEach(b=>b.addEventListener('click',()=>toggleDoctorStatus(b.dataset.toggle)));
-    document.querySelectorAll('[data-pwd]').forEach(b=>b.addEventListener('click',()=>openPwdDoctor(b.dataset.pwd)));
-    document.querySelectorAll('[data-remove]').forEach(b=>b.addEventListener('click',()=>removeDoctor(b.dataset.remove)));
+    document.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openEditDoctor(b.dataset.edit)));
+    document.querySelectorAll('[data-agenda]').forEach(b => b.addEventListener('click', () => openAgendaDoctor(b.dataset.agenda)));
+    document.querySelectorAll('[data-toggle]').forEach(b => b.addEventListener('click', () => toggleDoctorStatus(b.dataset.toggle)));
+    document.querySelectorAll('[data-pwd]').forEach(b => b.addEventListener('click', () => openPwdDoctor(b.dataset.pwd)));
+    document.querySelectorAll('[data-remove]').forEach(b => b.addEventListener('click', () => removeDoctor(b.dataset.remove)));
   };
 
-  function setBoot(step,title,text,progress){const ids=['abStep1','abStep2','abStep3'];ids.forEach((id,i)=>{const el=$(id);if(!el)return;const n=i+1;el.classList.toggle('active',n===step);el.classList.toggle('done',n<step);});if($('adminBootTitle'))$('adminBootTitle').textContent=title;if($('adminBootText'))$('adminBootText').textContent=text;if($('abProgress'))$('abProgress').style.width=progress+'%';}
+  function setBoot(step, title, text, progress) {
+    const ids = ['abStep1', 'abStep2', 'abStep3'];
+    ids.forEach((id, i) => {
+      const el = $(id);
+      if (!el) return;
+      const n = i + 1;
+      el.classList.toggle('active', n === step);
+      el.classList.toggle('done', n < step);
+    });
+    if ($('adminBootTitle')) $('adminBootTitle').textContent = title;
+    if ($('adminBootText')) $('adminBootText').textContent = text;
+    if ($('abProgress')) $('abProgress').style.width = progress + '%';
+  }
 
-  async function load(){
-    $('sync').textContent='Sincronizando…';
-    setBoot(2,'Carregando profissionais','Buscando contas médicas e vínculos de atendimento…',58);
-    try{
-      const res=await AmbientalAuth.authFetch('/api/admin/medicos');
-      const data=await res.json();
-      if(!res.ok)throw new Error(data?.error?.message||'Não foi possível carregar os médicos.');
-      rows=data.data?.items||[];
+  function dismissBootLoader() {
+    const loader = $('adminBootLoader');
+    if (!loader || loader.classList.contains('hide')) return;
+    loader.classList.add('hide');
+    loader.setAttribute('aria-busy', 'false');
+    setTimeout(() => loader.remove(), 80);
+  }
+
+  async function load() {
+    $('sync').textContent = 'Sincronizando…';
+    if (!rows.length) {
+      setBoot(2, 'Carregando profissionais', 'Buscando contas médicas e vínculos de atendimento…', 58);
+    }
+    try {
+      const res = await AmbientalAuth.authFetch('/api/admin/medicos');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error?.message || 'Não foi possível carregar os médicos.');
+      rows = data.data?.items || [];
+      try {
+        sessionStorage.setItem('ambiental.admin.medicos_cache', JSON.stringify({ items: rows, ts: Date.now() }));
+      } catch(_) {}
       render();
-      $('sync').textContent='Atualizado agora';
-      setBoot(3,'Sala pronta','Contas médicas carregadas. Gestão liberada.',100);
-      setTimeout(()=>{$('adminBootLoader')?.classList.add('hide');$('adminBootLoader')?.setAttribute('aria-busy','false');setTimeout(()=>$('adminBootLoader')?.remove(),420)},500);
-    }catch(e){
-      $('sync').textContent='Erro';
-      setBoot(3,'Não foi possível carregar','Verifique a conexão com o servidor e tente novamente.',100);
+      $('sync').textContent = 'Atualizado agora';
+      setBoot(3, 'Sala pronta', 'Contas médicas carregadas. Gestão liberada.', 100);
+      dismissBootLoader();
+    } catch(e) {
+      $('sync').textContent = 'Erro';
+      setBoot(3, 'Não foi possível carregar', 'Verifique a conexão com o servidor e tente novamente.', 100);
       toast(e.message);
     }
   }
 
   const todayYMD = () => {
     const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
 
   let activeAgendaDoctorId = null;
@@ -441,6 +1597,7 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
     $('editId').value = r.id;
     $('editNome').value = r.nome || '';
     $('editCrm').value = r.crm || '';
+    $('editEmail').value = r.email || '';
     const mode = (r.modo_atendimento || 'agil').toLowerCase();
     if (mode === 'extenso') $('editModoExtenso').checked = true;
     else if (mode === 'ia') $('editModoIA').checked = true;
@@ -487,154 +1644,72 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
     $('newPwd').focus();
   };
 
+  window.closePwdModal = function() {
+    $('pwdModal').classList.remove('open');
+    $('pwdForm').reset();
+  };
+
   function discardPreview() {
     currentParsedAgendaItems = [];
     $('agendaPreviewArea').style.display = 'none';
     $('agendaPreviewTbody').innerHTML = '';
   }
 
-  function parseAgendaCsvText(rawText) {
-    if (!rawText || !rawText.trim()) return [];
-    const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    if (!lines.length) return [];
-
-    const firstLine = lines[0];
-    let delimiter = '\t';
-    if (firstLine.includes('\t')) delimiter = '\t';
-    else if (firstLine.split(';').length >= 3) delimiter = ';';
-    else delimiter = ',';
-
-    const lowerFirst = firstLine.toLowerCase();
-    const hasHeader = lowerFirst.includes('hora') || lowerFirst.includes('protocolo') || lowerFirst.includes('periciado') || lowerFirst.includes('nome');
-    
-    let colMap = { hora: 1, tipo: 2, protocolo: 3, ni: 4, nome: 5, compareceu: 6, obs: 7, seq: 8, status: 0 };
-    let startIdx = 0;
-
-    if (hasHeader) {
-      startIdx = 1;
-      const headerCols = firstLine.split(delimiter).map(c => c.trim().toLowerCase().replace(/["']/g, ''));
-      headerCols.forEach((col, idx) => {
-        if (col.includes('hora')) colMap.hora = idx;
-        else if (col.includes('protocolo')) colMap.protocolo = idx;
-        else if (col.includes('nome') || col.includes('periciado')) colMap.nome = idx;
-        else if (col === 'ni' || col.includes('identifica')) colMap.ni = idx;
-        else if (col.includes('tipo')) colMap.tipo = idx;
-        else if (col.includes('status')) colMap.status = idx;
-        else if (col.includes('compareceu')) colMap.compareceu = idx;
-        else if (col.includes('obs') || col.includes('assinatura')) colMap.obs = idx;
-        else if (col.includes('seq')) colMap.seq = idx;
-      });
-    }
-
-    const items = [];
-    for (let i = startIdx; i < lines.length; i++) {
-      const line = lines[i];
-      if (!line) continue;
-      const parts = line.split(delimiter).map(p => p.trim().replace(/^["']|["']$/g, ''));
-      if (parts.length < 2) continue;
-
-      const rawNome = (parts[colMap.nome] || '').trim();
-      const rawProtocolo = (parts[colMap.protocolo] || '').trim();
-      if (!rawNome && !rawProtocolo) continue;
-
-      let compareceu = (parts[colMap.compareceu] || '').trim();
-      if (/^[.\/:\s]+$/.test(compareceu)) compareceu = '';
-
-      let obs = (parts[colMap.obs] || '').trim();
-      if (/^[.\/:\s]+$/.test(obs)) obs = '';
-
-      let rawHora = (parts[colMap.hora] || '').trim();
-      if (/^\d{1,2}:\d{2}/.test(rawHora)) {
-        const hp = rawHora.split(':');
-        rawHora = `${hp[0].padStart(2, '0')}:${hp[1].slice(0, 2)}`;
-      }
-
-      let rawStatus = (parts[colMap.status] || '').trim();
-      if (rawStatus === '(   )' || rawStatus === '()' || !rawStatus) rawStatus = 'Agendado';
-
-      items.push({
-        hora: rawHora || '08:00',
-        tipo: (parts[colMap.tipo] || 'LICENC').trim(),
-        protocolo: rawProtocolo,
-        ni: (parts[colMap.ni] || '').trim(),
-        nome_periciado: rawNome,
-        compareceu: compareceu,
-        observacao: obs,
-        seq: (parts[colMap.seq] || '').trim(),
-        status: rawStatus
-      });
-    }
-
-    items.sort((a, b) => (a.hora || '').localeCompare(b.hora || ''));
-    return items;
-  }
-
-  function renderPreview(items) {
-    currentParsedAgendaItems = items;
-    if (!items.length) {
-      discardPreview();
-      toast('Nenhum agendamento válido encontrado no texto informado.');
-      return;
-    }
-    $('previewCountBadge').textContent = `${items.length} periciado(s) identificado(s)`;
-    $('agendaPreviewTbody').innerHTML = items.map(it => `
-      <tr>
-        <td><b>${esc(it.hora)}</b></td>
-        <td><span class="badge">${esc(it.tipo)}</span></td>
-        <td><code>${esc(it.protocolo || '—')}</code></td>
-        <td>${esc(it.ni || '—')}</td>
-        <td><strong>${esc(it.nome_periciado)}</strong></td>
-        <td>${esc(it.compareceu || '—')}</td>
-        <td><small class="sub">${esc(it.observacao || '—')}</small></td>
-      </tr>
-    `).join('');
-    $('agendaPreviewArea').style.display = 'block';
-  }
+  $('btnDescartarPreview').onclick = discardPreview;
 
   async function loadDoctorAgendasForSelectedDate() {
     if (!activeAgendaDoctorId) return;
-    const date = $('agendaDataInput').value || todayYMD();
-    $('agendaCurrentDateLabel').textContent = `Data: ${date}`;
-    $('agendaCurrentTbody').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:16px;color:var(--muted)">Carregando agendamentos…</td></tr>';
-    $('agendaCurrentEmpty').hidden = true;
+    const dataStr = $('agendaDataInput').value || todayYMD();
+    $('agendaCurrentDateLabel').textContent = `Data: ${dataStr}`;
     try {
-      const res = await AmbientalAPI.admin.getAgendas(activeAgendaDoctorId, { data: date });
-      currentSavedAgendaItems = Array.isArray(res?.items) ? res.items : [];
-      $('currentAgendaCountBadge').textContent = `${currentSavedAgendaItems.length} gravado(s)`;
-      if (!currentSavedAgendaItems.length) {
-        $('agendaCurrentTbody').innerHTML = '';
-        $('agendaCurrentEmpty').hidden = false;
-        return;
-      }
-      $('agendaCurrentEmpty').hidden = true;
-      $('agendaCurrentTbody').innerHTML = currentSavedAgendaItems.map(it => `
-        <tr>
-          <td><b style="color:var(--blue)">${esc(it.hora)}</b></td>
-          <td><span class="badge">${esc(it.tipo || 'LICENC')}</span></td>
-          <td><code>${esc(it.protocolo || '—')}</code></td>
-          <td>${esc(it.ni || '—')}</td>
-          <td>
-            <strong>${esc(it.nome_periciado)}</strong>
-            ${it.atd_status ? `<span class="badge success" style="margin-left:6px">Atendido (${esc(it.atd_status)})</span>` : ''}
-          </td>
-          <td><span class="badge ${it.status === 'Agendado' ? '' : 'off'}">${esc(it.status || 'Agendado')}</span></td>
-          <td>
-            <button type="button" class="btn-sm danger" onclick="deleteIndividualAgenda(${it.id})" title="Excluir este agendamento">Excluir</button>
-          </td>
-        </tr>
-      `).join('');
+      busy(true);
+      const res = await AmbientalAPI.admin.getDoctorAgendas(activeAgendaDoctorId, dataStr);
+      currentSavedAgendaItems = res?.data?.items || [];
+      renderCurrentSavedAgendas();
     } catch(err) {
-      $('agendaCurrentTbody').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--danger)">Erro: ${esc(err.message)}</td></tr>`;
-      toast(err.message || 'Erro ao carregar agendamentos salvos.');
+      toast(err.message || 'Erro ao carregar agendamentos gravados.');
+    } finally {
+      busy(false);
     }
   }
 
-  window.deleteIndividualAgenda = async function(agendaId) {
-    if (!confirm('Deseja excluir este agendamento da agenda?')) return;
-    busy(true);
+  function renderCurrentSavedAgendas() {
+    const tbody = $('agendaCurrentTbody');
+    const empty = $('agendaCurrentEmpty');
+    const badge = $('currentAgendaCountBadge');
+    badge.textContent = `${currentSavedAgendaItems.length} gravados`;
+
+    if (!currentSavedAgendaItems.length) {
+      tbody.innerHTML = '';
+      empty.hidden = false;
+      return;
+    }
+    empty.hidden = true;
+    tbody.innerHTML = currentSavedAgendaItems.map(item => `
+      <tr data-agenda="${item.id}">
+        <td><strong>${esc(item.hora)}</strong></td>
+        <td><span class="badge" style="background:#e0f2fe;color:#0369a1">${esc(item.tipo || 'LICENC')}</span></td>
+        <td><code>${esc(item.protocolo || '—')}</code></td>
+        <td>${esc(item.ni || '—')}</td>
+        <td><b>${esc(item.nome_periciado)}</b></td>
+        <td>
+          <span class="badge ${item.atendimento_id ? '' : 'off'}">
+            ${item.atendimento_id ? '✓ Atendido' : (item.compareceu ? 'Compareceu' : 'Agendado')}
+          </span>
+        </td>
+        <td>
+          <button type="button" class="btn-sm danger" onclick="deleteIndividualAgenda(${item.id})" title="Excluir agendamento">Excluir</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  window.deleteIndividualAgenda = window.deleteSingleAgenda = async function(agendaId) {
+    if (!confirm('Deseja realmente remover este agendamento?')) return;
     try {
-      await AmbientalAPI.admin.deleteAgenda(agendaId);
-      toast('Agendamento excluído com sucesso.');
+      busy(true);
+      await (AmbientalAPI.admin.deleteAgenda ? AmbientalAPI.admin.deleteAgenda(agendaId) : AmbientalAPI.admin.deleteSingleAgenda(agendaId));
+      toast('Agendamento excluído.');
       await loadDoctorAgendasForSelectedDate();
     } catch(err) {
       toast(err.message || 'Erro ao excluir agendamento.');
@@ -643,54 +1718,171 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
     }
   };
 
-  $('btnConsultarAgendaDia').addEventListener('click', loadDoctorAgendasForSelectedDate);
-  $('agendaDataInput').addEventListener('change', loadDoctorAgendasForSelectedDate);
+  $('btnConsultarAgendaDia').onclick = loadDoctorAgendasForSelectedDate;
+  $('agendaDataInput').onchange = loadDoctorAgendasForSelectedDate;
 
-  $('btnLimparAgendaDia').addEventListener('click', async () => {
+  $('btnLimparAgendaDia').onclick = async () => {
     if (!activeAgendaDoctorId) return;
-    const date = $('agendaDataInput').value || todayYMD();
-    const ok = confirm(`Deseja realmente excluir TODOS os agendamentos cadastrados para o dia ${date}?\n\nEsta ação removerá todos os horários cadastrados deste médico nesta data.`);
-    if (!ok) return;
-    busy(true);
+    const dataStr = $('agendaDataInput').value || todayYMD();
+    if (!confirm(`Atenção: Deseja apagar TODOS os agendamentos do dia ${dataStr} para este médico?`)) return;
     try {
-      const res = await AmbientalAPI.admin.clearAgendas(activeAgendaDoctorId, date);
-      toast(res?.mensagem || 'Agenda do dia limpa com sucesso.');
+      busy(true);
+      const res = await AmbientalAPI.admin.deleteDoctorAgendas(activeAgendaDoctorId, dataStr);
+      toast(`Removidos ${res?.data?.deleted_count || 0} agendamentos.`);
       await loadDoctorAgendasForSelectedDate();
     } catch(err) {
-      toast(err.message || 'Erro ao limpar agendamentos do dia.');
+      toast(err.message || 'Erro ao limpar agenda do dia.');
     } finally {
       busy(false);
     }
-  });
+  };
 
-  $('btnProcessarPlanilha').addEventListener('click', () => {
-    const text = $('agendaPasteInput').value;
-    if (!text.trim()) {
-      toast('Cole os dados da planilha ou carregue um arquivo para processar.');
+  /* PARSER DA PLANILHA (TSV / EXCEL) */
+  function parseAgendaCsvText(rawText) {
+    return parseExcelSpreadsheet(rawText);
+  }
+
+  function parseExcelSpreadsheet(rawText) {
+    const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const parsed = [];
+    for (const line of lines) {
+      const parts = line.split('\t').map(p => p.trim());
+      if (parts.length < 2) continue;
+      if (parts.some(p => /^(STATUS|HORA|TIPO|PROTOCOLO|NOME DO PERICIADO)$/i.test(p))) continue;
+
+      let hora = '', tipo = '', protocolo = '', ni = '', nome = '', comp = '', obs = '', seq = '', status = '';
+      if (parts.length >= 6) {
+        status = parts[0] || '';
+        hora = parts[1] || '';
+        tipo = parts[2] || '';
+        protocolo = parts[3] || '';
+        ni = parts[4] || '';
+        nome = parts[5] || '';
+        comp = parts[6] || '';
+        obs = parts[7] || '';
+        seq = parts[8] || '';
+      } else {
+        hora = parts[0] || '';
+        tipo = parts[1] || '';
+        protocolo = parts[2] || '';
+        nome = parts[3] || '';
+      }
+
+      const horaMatch = hora.match(/\b([01]?\d|2[0-3]):[0-5]\d\b/);
+      if (horaMatch) hora = horaMatch[0];
+
+      if (nome && nome.length >= 3) {
+        parsed.push({
+          status,
+          hora: hora || '08:00',
+          tipo: tipo || 'LICENC',
+          protocolo: protocolo || '',
+          ni: ni || '',
+          nome_periciado: nome,
+          compareceu: comp || '',
+          observacao: obs || '',
+          seq: seq || ''
+        });
+      }
+    }
+    return parsed;
+  }
+
+  $('btnExemploPlanilha').onclick = () => {
+    $('agendaPasteInput').value = 
+`Agendado\t08:00\tLICENC\t1029384\t987654\tMARIA APARECIDA DA SILVA\tSIM\tLaudo anexado\t1
+Agendado\t08:30\tLICENC\t1029385\t987655\tJOAO CARLOS PEREIRA\t\t\t2
+Agendado\t09:00\tLICENC\t1029386\t987656\tANA PAULA DE SOUZA\tSIM\tAtestado digital\t3`;
+    toast('Exemplo preenchido. Clique em "Processar Planilha".');
+  };
+
+  async function ensureXlsx() {
+    if (window.XLSX) return window.XLSX;
+    $('agendaFileFeedback').textContent = 'Carregando biblioteca de planilhas…';
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+      s.onload = () => resolve(window.XLSX);
+      s.onerror = () => reject(new Error('Falha ao carregar biblioteca Excel'));
+      document.head.appendChild(s);
+    });
+  }
+
+  $('btnTriggerFile').onclick = () => $('agendaFileInput').click();
+
+  $('agendaFileInput').onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    $('agendaFileFeedback').textContent = `Lendo ${file.name}…`;
+
+    try {
+      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        await ensureXlsx();
+        const data = await file.arrayBuffer();
+        const workbook = window.XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const tsv = window.XLSX.utils.sheet_to_csv(sheet, { FS: '\t' });
+        $('agendaPasteInput').value = tsv;
+        $('agendaFileFeedback').textContent = `✓ ${file.name} convertido com sucesso!`;
+      } else {
+        const text = await file.text();
+        $('agendaPasteInput').value = text;
+        $('agendaFileFeedback').textContent = `✓ ${file.name} carregado!`;
+      }
+      $('btnProcessarPlanilha').click();
+    } catch(err) {
+      toast('Erro ao ler arquivo da planilha: ' + err.message);
+      $('agendaFileFeedback').textContent = 'Erro ao ler arquivo.';
+    }
+  };
+
+  $('btnProcessarPlanilha').onclick = () => {
+    const raw = $('agendaPasteInput').value.trim();
+    if (!raw) {
+      toast('Cole os dados do Excel ou selecione um arquivo.');
       return;
     }
-    const items = parseAgendaCsvText(text);
-    renderPreview(items);
-  });
+    const items = parseExcelSpreadsheet(raw);
+    if (!items.length) {
+      toast('Nenhum agendamento reconhecido no formato padrão.');
+      return;
+    }
+    currentParsedAgendaItems = items;
+    $('previewCountBadge').textContent = `${items.length} periciado(s)`;
+    $('agendaPreviewArea').style.display = 'block';
+    $('agendaPreviewTbody').innerHTML = items.map(it => `
+      <tr>
+        <td><strong>${esc(it.hora)}</strong></td>
+        <td><span class="badge" style="background:#e0f2fe;color:#0369a1">${esc(it.tipo)}</span></td>
+        <td><code>${esc(it.protocolo || '—')}</code></td>
+        <td>${esc(it.ni || '—')}</td>
+        <td><b>${esc(it.nome_periciado)}</b></td>
+        <td>${esc(it.compareceu || '—')}</td>
+        <td><small>${esc(it.observacao || '—')}</small></td>
+      </tr>
+    `).join('');
+    toast(`${items.length} agendamentos extraídos. Revise e clique em "Gravar Agendamentos".`);
+  };
 
-  $('btnDescartarPreview').addEventListener('click', discardPreview);
-
-  $('btnSalvarAgenda').addEventListener('click', async () => {
-    if (!activeAgendaDoctorId) { toast('Médico não identificado.'); return; }
-    const date = $('agendaDataInput').value;
-    if (!date) { toast('Selecione uma data para a agenda.'); return; }
-    if (!currentParsedAgendaItems.length) { toast('Nenhum agendamento pré-visualizado para gravar.'); return; }
+  $('btnSalvarAgenda').onclick = async () => {
+    if (!activeAgendaDoctorId) return;
+    if (!currentParsedAgendaItems.length) {
+      toast('Nenhum agendamento para gravar.');
+      return;
+    }
+    const dataStr = $('agendaDataInput').value || todayYMD();
+    const replaceExisting = $('checkSubstituirAgenda').checked;
 
     const btn = $('btnSalvarAgenda');
     btn.disabled = true; btn.textContent = 'Gravando…'; busy(true);
     try {
-      const payload = {
-        data: date,
+      const res = await AmbientalAPI.admin.saveDoctorAgendas(activeAgendaDoctorId, {
+        data: dataStr,
         itens: currentParsedAgendaItems,
-        substituir: $('checkSubstituirAgenda').checked
-      };
-      const res = await AmbientalAPI.admin.saveAgendas(activeAgendaDoctorId, payload);
-      toast(res?.mensagem || `${currentParsedAgendaItems.length} agendamento(s) salvo(s) com sucesso!`);
+        substituir_existentes: replaceExisting
+      });
+      toast(`Sucesso! ${res?.data?.saved_count || currentParsedAgendaItems.length} agendamentos gravados.`);
       discardPreview();
       $('agendaPasteInput').value = '';
       await loadDoctorAgendasForSelectedDate();
@@ -699,152 +1891,121 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
     } finally {
       btn.disabled = false; btn.textContent = '💾 Gravar Agendamentos'; busy(false);
     }
-  });
-
-  $('btnTriggerFile').addEventListener('click', () => $('agendaFileInput').click());
-
-  $('agendaFileInput').addEventListener('change', async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    $('agendaFileFeedback').textContent = `Lendo ${file.name}…`;
-    try {
-      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-        if (typeof XLSX !== 'undefined') {
-          const data = await file.arrayBuffer();
-          const workbook = XLSX.read(data, { type: 'array' });
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
-          const csv = XLSX.utils.sheet_to_csv(worksheet, { FS: '\t' });
-          $('agendaPasteInput').value = csv;
-          $('agendaFileFeedback').textContent = `✓ ${file.name} carregado`;
-          renderPreview(parseAgendaCsvText(csv));
-        } else {
-          throw new Error('Biblioteca de leitura de planilhas indisponível.');
-        }
-      } else {
-        const text = await file.text();
-        $('agendaPasteInput').value = text;
-        $('agendaFileFeedback').textContent = `✓ ${file.name} carregado`;
-        renderPreview(parseAgendaCsvText(text));
-      }
-    } catch(err) {
-      $('agendaFileFeedback').textContent = `Erro ao ler arquivo: ${err.message}`;
-      toast(`Erro ao ler arquivo: ${err.message}`);
-    }
-  });
-
-  $('btnExemploPlanilha').addEventListener('click', () => {
-    const sample = `Status\tHora\tTipo\tProtocolo\tNI\tNome do Periciado\tCompareceu\tObs / Assinatura\tSeq / Pessoa\n(   )\t09:00\tLICENC\t954380200\t1331159\tCARLOS EDUARDO FIUZA ANDRADE\t..../..../........:......\t............................\t1\n(   )\t09:10\tLICENC\t954380475\t1521632\tALANA GABRIELE DA SILVA\t..../..../........:......\t............................\t1\n(   )\t09:10\tLICENC\t954380780\t1318087\tDANILLA CUNHA DOS SANTOS\t..../..../........:......\t............................\t1\n(   )\t09:10\tLICENC\t954380814\t1273023\tPAULO ANDRE MICHELAO PENASSO\t..../..../........:......\t...........................\t1`;
-    $('agendaPasteInput').value = sample;
-    renderPreview(parseAgendaCsvText(sample));
-  });
-
-  window.closePwdModal = function() {
-    $('pwdModal').classList.remove('open');
-    $('pwdForm').reset();
   };
 
+  /* TOGGLE STATUS */
   async function toggleDoctorStatus(id) {
     const r = rows.find(x => String(x.id) === String(id));
     if (!r) return;
-    const isAct = Number(r.ativo) === 1;
-    const action = isAct ? 'suspender' : 'reativar';
-    const ok = confirm(`Deseja realmente ${action} o acesso de ${r.nome}?\n\n${isAct ? 'O médico não poderá realizar login enquanto estiver suspenso.' : 'O médico poderá voltar a acessar o sistema.'}`);
-    if (!ok) return;
+    const willActivate = Number(r.ativo) !== 1;
+    const msg = willActivate ? `Reativar o acesso de ${r.nome}?` : `Suspender o acesso de ${r.nome}? O médico não conseguirá fazer login até ser reativado.`;
+    if (!confirm(msg)) return;
     busy(true);
     try {
-      const res = await AmbientalAPI.admin.toggleStatus(id);
-      toast(res?.data?.mensagem || res?.mensagem || `Status de ${r.nome} atualizado.`);
+      await (AmbientalAPI.admin.toggleStatus ? AmbientalAPI.admin.toggleStatus(id) : AmbientalAPI.admin.updateMedicoStatus(id, willActivate));
+      toast(willActivate ? 'Médico reativado.' : 'Acesso suspenso.');
       await load();
     } catch(e) {
-      toast(e.message || 'Erro ao alterar status do médico.');
+      toast(e.message || 'Erro ao alterar status.');
     } finally {
       busy(false);
     }
   }
 
-  async function removeDoctor(id){
-    const r=rows.find(x=>String(x.id)===String(id));
-    if(!r)return;
-    const ok=confirm(`Excluir permanentemente a conta de ${r.nome}?\n\nO login no Authentication será revogado, mas os atendimentos e o histórico permanecerão preservados.`);
-    if(!ok)return;
+  /* REMOVER MÉDICO */
+  async function removeDoctor(id) {
+    const r = rows.find(x => String(x.id) === String(id));
+    if (!r) return;
+    if (!confirm(`Deseja realmente remover a conta de ${r.nome}?\n\nOs atendimentos já realizados por este médico não serão excluídos.`)) return;
     busy(true);
-    try{
-      const res=await AmbientalAuth.authFetch('/api/admin/medicos/'+encodeURIComponent(id),{method:'DELETE'});
-      const data=await res.json();
-      if(!res.ok)throw new Error(data?.error?.message||'Não foi possível remover a conta.');
-      toast('Conta médica excluída com sucesso.');
+    try {
+      await AmbientalAPI.admin.deleteMedico(id);
+      toast('Conta médica removida com sucesso.');
       await load();
-    }catch(e){
-      toast(e.message);
-    }finally{
+    } catch(e) {
+      toast(e.message || 'Erro ao excluir médico.');
+    } finally {
       busy(false);
     }
   }
 
-  $('search').addEventListener('input',render);
-  $('clearBtn').addEventListener('click',()=>{$('createForm').reset();$('nome').focus()});
-
-  $('createForm').addEventListener('submit',async e=>{
+  /* FORM CADASTRO DE NOVO MÉDICO */
+  $('createForm').addEventListener('submit', async e => {
     e.preventDefault();
-    const form=e.currentTarget;
-    if(!form.reportValidity())return;
-    const btn=$('createBtn');
-    btn.disabled=true;btn.textContent='Criando conta…';busy(true);
-    try{
-      const modo_atendimento = document.querySelector('input[name="modo_atendimento"]:checked')?.value || 'agil';
-      const emailVal = $('email').value.trim();
-      const payload = {
-        nome: $('nome').value.trim(),
-        email: emailVal ? emailVal.toLowerCase() : '',
-        crm: $('crm').value.trim(),
-        senha: $('senha').value,
-        modo_atendimento
-      };
-      const res=await AmbientalAuth.authFetch('/api/admin/medicos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-      const data=await res.json();
-      if(!res.ok)throw new Error(data?.error?.message||'Não foi possível criar a conta.');
-      form.reset();
-      if ($('createModoAgil')) $('createModoAgil').checked = true;
-      toast('Médico criado e sincronizado com o Authentication.');
+    const nome = $('nome').value.trim();
+    const email = $('email').value.trim();
+    const crm = $('crm').value.trim();
+    const senha = $('senha').value;
+    const modo_atendimento = document.querySelector('input[name="modo_atendimento"]:checked')?.value || 'agil';
+
+    if (nome.length < 3) { toast('Informe o nome completo do médico.'); return; }
+    if (crm.length < 3) { toast('Informe o CRM/CRO.'); return; }
+    if (senha.length < 8) { toast('A senha deve ter pelo menos 8 caracteres.'); return; }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('Informe um e-mail válido.'); return; }
+
+    const btn = $('createBtn');
+    btn.disabled = true; btn.textContent = 'Criando conta…'; busy(true);
+    try {
+      const res = await AmbientalAPI.admin.createMedico({ nome, email, crm, senha, modo_atendimento });
+      toast('Conta médica criada com sucesso!');
+      $('createForm').reset();
+      closeCreateModal();
       await load();
-      $('nome').focus();
-    }catch(e){
-      toast(e.message);
-    }finally{
-      btn.disabled=false;btn.textContent='Criar conta médica';busy(false);
+    } catch(err) {
+      toast(err.message || 'Erro ao criar conta médica.');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Criar Conta Médica'; busy(false);
     }
   });
 
+  /* MODAL NOVO MÉDICO */
+  window.openCreateModal = function() {
+    $('createModal')?.classList.add('open');
+    setTimeout(() => $('nome')?.focus(), 80);
+  };
+
+  window.closeCreateModal = function() {
+    $('createModal')?.classList.remove('open');
+  };
+
+  $('clearBtn').onclick = () => $('createForm').reset();
+
+  /* FORM EDIÇÃO DE DADOS E E-MAIL */
   $('editForm').addEventListener('submit', async e => {
     e.preventDefault();
     const id = $('editId').value;
     const nome = $('editNome').value.trim();
     const crm = $('editCrm').value.trim();
+    const email = $('editEmail').value.trim();
     const modo_atendimento = document.querySelector('input[name="editModoAtendimento"]:checked')?.value || 'agil';
+
     if (nome.length < 3) { toast('Informe o nome completo.'); return; }
     if (crm.length < 3) { toast('Informe o CRM/CRO.'); return; }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('Informe um e-mail válido.'); return; }
+
     const btn = $('saveEditBtn');
     btn.disabled = true; btn.textContent = 'Salvando…'; busy(true);
     try {
-      const res = await AmbientalAPI.admin.updateMedico(id, { nome, crm, modo_atendimento });
-      toast('Dados do médico atualizados com sucesso.');
+      await AmbientalAPI.admin.updateMedico(id, { nome, crm, email: email, modo_atendimento });
+      toast('Dados cadastrais e e-mail do médico atualizados com sucesso.');
       closeEditModal();
       await load();
     } catch(err) {
       toast(err.message || 'Erro ao salvar alterações.');
     } finally {
-      btn.disabled = false; btn.textContent = 'Salvar alterações'; busy(false);
+      btn.disabled = false; btn.textContent = 'Salvar Alterações'; busy(false);
     }
   });
 
+  /* FORM REDEFINIÇÃO DE SENHA */
   $('pwdForm').addEventListener('submit', async e => {
     e.preventDefault();
     const id = $('pwdId').value;
     const senha = $('newPwd').value;
     const confirmSenha = $('confirmPwd').value;
     if (senha.length < 8) { toast('A nova senha deve ter no mínimo 8 caracteres.'); return; }
-    if (senha !== confirmSenha) { toast('As senhas não coincidem. Digite novamente.'); return; }
+    if (senha !== confirmSenha) { toast('As senhas não coincidem.'); return; }
+
     const btn = $('savePwdBtn');
     btn.disabled = true; btn.textContent = 'Redefinindo…'; busy(true);
     try {
@@ -854,16 +2015,22 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
     } catch(err) {
       toast(err.message || 'Erro ao redefinir senha.');
     } finally {
-      btn.disabled = false; btn.textContent = 'Redefinir senha'; busy(false);
+      btn.disabled = false; btn.textContent = 'Redefinir Senha'; busy(false);
     }
   });
 
-  // Fechar modals com ESC ou clique fora
+  $('search').oninput = render;
+
+  /* ESC & CLIQUE FORA */
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
+      closeCreateModal();
       closeEditModal();
       closePwdModal();
     }
+  });
+  $('createModal')?.addEventListener('click', e => {
+    if (e.target === $('createModal')) closeCreateModal();
   });
   $('editModal').addEventListener('click', e => {
     if (e.target === $('editModal')) closeEditModal();
@@ -872,18 +2039,32 @@ main{min-width:0}.top{position:sticky;top:0;z-index:20;background:rgba(255,255,2
     if (e.target === $('pwdModal')) closePwdModal();
   });
 
-  try{
-    setBoot(1,'Validando acesso','Confirmando sua sessão administrativa segura…',24);
-    const profile=await AmbientalAuth.requireAuth({area:'gestao'});
-    if(profile?.perfil!=='Administrador'){
+  try {
+    try {
+      const cachedRaw = sessionStorage.getItem('ambiental.admin.medicos_cache');
+      if (cachedRaw) {
+        const parsed = JSON.parse(cachedRaw);
+        if (Array.isArray(parsed?.items) && parsed.items.length > 0) {
+          rows = parsed.items;
+          render();
+          dismissBootLoader();
+        }
+      }
+    } catch (_) {}
+
+    if (!rows.length) {
+      setBoot(1, 'Validando acesso', 'Confirmando sessão administrativa segura…', 24);
+    }
+    const profile = await AmbientalAuth.requireAuth({ area: 'gestao' });
+    if (profile?.perfil !== 'Administrador') {
       location.replace('/acesso-negado.html?area=gestao-medicos-admin');
       return;
     }
-    $('who').textContent=profile.nome||profile.email||'Administrador';
+    $('who').textContent = profile.nome || profile.email || 'Administrador';
     await load();
-  }catch(e){
-    if(e.message!=='AUTH_REQUIRED'&&e.message!=='PERMISSION_DENIED'){
-      setBoot(3,'Falha ao iniciar','Não foi possível preparar a gestão de profissionais.',100);
+  } catch(e) {
+    if (e.message !== 'AUTH_REQUIRED' && e.message !== 'PERMISSION_DENIED') {
+      setBoot(3, 'Falha ao iniciar', 'Não foi possível preparar a gestão de profissionais.', 100);
       toast('Não foi possível iniciar a gestão de contas médicas.');
     }
   }

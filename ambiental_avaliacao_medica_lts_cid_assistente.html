@@ -1865,9 +1865,40 @@ body:not(.mode-agil-active) #containerModoAgil {
             Cole as anotações do médico (WhatsApp/bloco de notas) e/ou dados copiados da tela do e-SISLA. A IA preenche a ficha inteira de modo técnico e estruturado (em modo rascunho, sem finalizar).
           </span>
         </div>
-        <button type="button" class="btn btn-primary btn-sm" onclick="abrirModalPreenchimentoIA()" style="font-weight:800;background:#2563EB;border-color:#1D4ED8;padding:8px 14px;font-size:12px;display:flex;align-items:center;gap:6px">
-          <span>✨</span> Colar Texto e Preencher
-        </button>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn btn-outline btn-sm" onclick="abrirModalPreenchimentoIA(); setTimeout(()=>document.getElementById('fileEsislaModalInput')?.click(), 250);" style="font-weight:700;background:#fff;border-color:#2563EB;color:#1D4ED8;padding:8px 14px;font-size:12px;display:flex;align-items:center;gap:6px" title="Importar PDF da Consulta Perícia Licença do e-SISLA">
+            <span>📄</span> Importar PDF e-SISLA
+          </button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="abrirModalPreenchimentoIA()" style="font-weight:800;background:#2563EB;border-color:#1D4ED8;padding:8px 14px;font-size:12px;display:flex;align-items:center;gap:6px">
+            <span>✨</span> Colar Texto e Preencher
+          </button>
+        </div>
+      </div>
+
+      <!-- Banner Informativo: Perícia de Acompanhante / Familiar (Art. 199 Lei 10.261/68) -->
+      <div id="bannerAcompanhantePericia" style="display:none;background:linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);border:2px solid #F59E0B;border-radius:14px;padding:14px 18px;margin-bottom:18px;box-shadow:0 3px 10px rgba(245,158,11,0.12)">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div style="display:flex;align-items:flex-start;gap:10px">
+            <span style="font-size:26px">👥</span>
+            <div>
+              <strong style="color:#92400E;font-size:14px;display:flex;align-items:center;gap:6px">
+                Perícia de Acompanhante de Familiar / Dependente (Artigo 199 da Lei Estadual nº 10.261/1968)
+              </strong>
+              <div style="font-size:12px;color:#78350F;margin-top:4px;line-height:1.5">
+                <span id="bannerAcompanhanteDependenteTexto">Dependente em tratamento: <strong>—</strong></span> · 
+                <span>CID Principal Oficial do Servidor: <strong class="badge" style="background:#FEF3C7;color:#92400E;font-size:11px;font-weight:900">Z76.3 (Z763)</strong> — Pessoa em boa saúde acompanhando pessoa doente</span>
+              </div>
+              <div style="font-size:11.5px;color:#92400E;margin-top:4px;opacity:0.9">
+                ℹ️ O servidor público periciado encontra-se hígido e assintomático. O exame clínico e a fundamentação referem-se à necessidade de assistência indispensável ao familiar enfermo.
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <button type="button" class="btn btn-sm btn-outline" onclick="aplicarModeloTextoAcompanhante()" style="background:#fff;border-color:#D97706;color:#B45309;font-weight:800;padding:6px 12px" title="Inserir redação padrão de exame clínico, quesitos e parecer de acompanhante">
+              ⚡ Usar Modelos de Acompanhante
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Bloco 01 — Identificação do Atendimento & Colaborador -->
@@ -3407,6 +3438,15 @@ body:not(.mode-agil-active) #containerModoAgil {
   </div>
 </div>
 
+<!-- OVERLAY DE DRAG & DROP GLOBAL PARA PDF DO E-SISLA -->
+<div id="esislaGlobalDragOverlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.78);backdrop-filter:blur(4px);z-index:999999;flex-direction:column;align-items:center;justify-content:center;color:#fff;pointer-events:none">
+  <div style="background:#fff;color:#0F172A;padding:36px 44px;border-radius:20px;border:3px dashed #0284C7;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);max-width:520px">
+    <div style="font-size:54px;margin-bottom:12px">📄</div>
+    <h2 style="font-size:20px;font-weight:800;color:#0369A1;margin:0 0 8px 0">Solte o PDF do e-SISLA aqui</h2>
+    <p style="font-size:13.5px;color:#475569;margin:0">Os dados do colaborador, cargo, órgão, histórico e atestado do assistente serão extraídos e aplicados automaticamente na ficha.</p>
+  </div>
+</div>
+
 <!-- MODAL: PREENCHIMENTO INTELIGENTE COM IA (ANOTAÇÕES / SISTEMA) -->
 <div class="modal-backdrop" id="modalPreenchimentoIA" style="z-index:99999" onclick="if(event.target===this)fecharModalPreenchimentoIA()">
   <div class="modal" style="width:min(820px,100%);max-height:92vh">
@@ -3423,6 +3463,21 @@ body:not(.mode-agil-active) #containerModoAgil {
     <div class="modal-body" style="padding:22px;display:flex;flex-direction:column;gap:14px">
       <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:12px 14px;color:#1E3A8A;font-size:12px;line-height:1.5">
         💡 <strong>Como funciona:</strong> Cole abaixo qualquer texto que você recebeu do médico ou copiou da tela do e-SISLA (inclusive textos mistos, fragmentados ou com abreviações). A IA analisará todo o conteúdo, extrairá os dados cadastrais, estruturará a queixa pericial, atestado, propedêutica e justificativa oficial (em modo <strong>Rascunho</strong>, permitindo que você revise e edite antes de finalizar).
+      </div>
+
+      <!-- Dropzone do PDF e-SISLA no Modal de Preenchimento -->
+      <div id="dropzoneEsislaModal" style="border:2px dashed #3B82F6;background:#F0F9FF;border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;transition:all 0.2s" onclick="document.getElementById('fileEsislaModalInput')?.click()">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:28px">📄</span>
+          <div>
+            <strong style="color:#0369A1;font-size:13px;display:block">Importar PDF do e-SISLA (Consulta Perícia Licença)</strong>
+            <span style="color:#0284C7;font-size:11.5px">Arraste o arquivo PDF aqui ou clique para selecionar. A ficha preenche instantaneamente!</span>
+          </div>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" style="font-weight:700;white-space:nowrap;background:#0284C7;border-color:#0369A1">
+          Selecionar PDF
+        </button>
+        <input type="file" id="fileEsislaModalInput" accept=".pdf,application/pdf" style="display:none" onchange="if(this.files[0])processarArquivoEsislaNaTela(this.files[0])">
       </div>
 
       <div>
@@ -3477,20 +3532,86 @@ function applyProfessionalDefaults(profile){
 const authReady = AmbientalAuth.requireAuth({area:'atendimento'}).then(async profile=>{
   currentProfile = profile;
   accessToken = await AmbientalAuth.getAccessToken().catch(()=>null);
-  applyProfessionalDefaults(profile);
+  
+  // Tratamento de Impersonação Médica pelo Administrador
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const impId = sessionStorage.getItem('ambiental.impersonate_medico_id') || urlParams.get('medico_id') || urlParams.get('impersonate_medico_id');
+    if (impId) {
+      sessionStorage.setItem('ambiental.impersonate_medico_id', impId);
+      if (profile.perfil === 'Administrador' || profile.perfilOriginal === 'Administrador') {
+        let docNome = sessionStorage.getItem('ambiental.impersonate_medico_nome');
+        let docCrm = sessionStorage.getItem('ambiental.impersonate_medico_crm');
+        if (!docNome) {
+          try {
+            const listRes = await fetch('/api/admin/medicos/lista-impersonate', {
+              headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' }
+            }).then(r => r.json()).catch(() => null);
+            const items = listRes?.data?.items || listRes?.items || [];
+            const found = items.find(m => String(m.id) === String(impId));
+            if (found) {
+              docNome = found.nome;
+              docCrm = found.crm || '';
+              sessionStorage.setItem('ambiental.impersonate_medico_nome', docNome);
+              sessionStorage.setItem('ambiental.impersonate_medico_crm', docCrm);
+            }
+          } catch(_) {}
+        }
+        currentProfile = {
+          ...profile,
+          id: impId,
+          nome: docNome || profile.nome,
+          crm: docCrm || '',
+          perfil: 'Médico',
+          perfilOriginal: 'Administrador',
+          is_impersonating: true,
+          real_user_id: profile.id,
+          real_user_name: profile.nome
+        };
+      }
+    }
+  } catch(e) {
+    console.warn('Erro ao processar impersonate no atendimento:', e);
+  }
+
+  applyProfessionalDefaults(currentProfile);
   const title = document.querySelector('.brand-title');
   if(title) title.textContent = 'AVALIAÇÃO MÉDICA PERICIAL — LTS';
   const hdr = document.querySelector('.header-actions');
   if(hdr && !document.getElementById('headerUser')){
     const el=document.createElement('div');el.id='headerUser';el.className='header-user';
     el.innerHTML='<span class="header-session-dot"></span><span><b></b><small></small></span><button type="button">Sair</button>';
-    el.querySelector('b').textContent=profile.nome||profile.email||'Usuário';
-    el.querySelector('small').textContent=profile.perfil||'Perfil';
+    if (currentProfile.is_impersonating) {
+      el.querySelector('b').textContent = `Dr(a). ${currentProfile.nome}`;
+      el.querySelector('small').textContent = `${currentProfile.crm ? 'CRM: ' + currentProfile.crm : 'Médico'} (Acesso Admin)`;
+      el.style.background = '#F0F9FF';
+      el.style.borderColor = '#0284C7';
+    } else {
+      el.querySelector('b').textContent=profile.nome||profile.email||'Usuário';
+      el.querySelector('small').textContent=profile.perfil||'Perfil';
+    }
     el.querySelector('button').addEventListener('click',()=>AmbientalAuth.logout());
     hdr.prepend(el);
   }
+
+  if (currentProfile?.is_impersonating && !document.getElementById('appImpersonateBanner')) {
+    const banner = document.createElement('div');
+    banner.id = 'appImpersonateBanner';
+    banner.style.cssText = 'background:linear-gradient(90deg, #0369A1, #0284C7);color:#fff;padding:8px 16px;font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:9999;box-shadow:0 2px 8px rgba(2,132,199,0.25);';
+    banner.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="background:rgba(255,255,255,0.22);padding:2px 8px;border-radius:6px;font-size:10px;text-transform:uppercase;letter-spacing:0.5px">Modo Administrativo</span>
+        <span>Atuando em nome de Dr(a). <strong>${currentProfile.nome}</strong> (${currentProfile.crm ? 'CRM: ' + currentProfile.crm : 'Sem CRM'}). O atendimento e laudo serão finalizados com este médico.</span>
+      </div>
+      <button type="button" onclick="finalizeGoBack()" style="background:#fff;color:#0369A1;border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;transition:transform .15s">
+        Voltar ao Portal Médico ➔
+      </button>
+    `;
+    document.body.prepend(banner);
+  }
+
   document.getElementById('authLoading')?.remove();
-  return profile;
+  return currentProfile;
 }).catch(e=>{
   document.getElementById('authLoading')?.remove();
   if(e?.message!=='AUTH_REQUIRED'&&e?.message!=='PERMISSION_DENIED') console.error('Falha ao validar sessão.', e);
@@ -3937,13 +4058,20 @@ async function deleteAtendimento() {
         
         toast("Atendimento excluído com sucesso!");
         
-        // Redireciona para a central após o arquivamento
-        setTimeout(() => { location.href = "/gestao"; }, 1500);
+        // Redireciona para a central ou portal médico após o arquivamento
+        setTimeout(() => { openManagement(); }, 1500);
         
     } catch (e) {
         toast(e.message || "Erro ao excluir o atendimento.");
         if(btn) { btn.disabled = false; btn.textContent = "Excluir"; }
     }
+}
+
+function isGenericCIDLabel(txt) {
+  if (!txt || typeof txt !== "string") return false;
+  const t = txt.trim();
+  if (state?.isAcompanhante || state?.aux?.isAcompanhante || t.toLowerCase().includes("199") || t.toLowerCase().includes("acompanh") || t.includes(".") || t.length > 70) return false;
+  return /^[A-Z]\d{2}(\.\d+)?\s*[—–-]\s*[A-Za-zÀ-ÿ\s]+$/i.test(t);
 }
 
 function selectCID(code){
@@ -3960,8 +4088,7 @@ function selectCID(code){
   if (found && found.n && !found.n.includes("Apoio")) {
     const rotulo = `${found.c} — ${found.n}`;
     const oldDoenca = String(state.aux?.doencaMotivo || state.doencaMotivo || $("doencaMotivo")?.value || "").trim();
-    const isGenericCIDLabel = /^[A-Z]\d{2}(\.\d+)?\s*[—–-]\s*[^—–\n]+$/i.test(oldDoenca) && oldDoenca.length < 90;
-    if (!oldDoenca || oldDoenca === "Conforme queixa relatada" || isGenericCIDLabel) {
+    if (!oldDoenca || oldDoenca === "Conforme queixa relatada" || isGenericCIDLabel(oldDoenca)) {
       $("doencaMotivo").value = rotulo;
       state.doencaMotivo = rotulo;
       state.aux.doencaMotivo = rotulo;
@@ -4610,7 +4737,7 @@ function applyState(){
   $("exameFisicoTipo") && ($("exameFisicoTipo").value=state.exameFisicoTipo||"");
   $("exameFisicoDescricao") && ($("exameFisicoDescricao").value=state.exameFisicoDescricao||"");
   $("alteracoesClinicasExames") && ($("alteracoesClinicasExames").value=state.alteracoesClinicasExames||"");
-  togglePanelsOnly(); updateLimitacaoStatus(); renderMedications();renderConditions();renderDocumentRecords();if(typeof ensureDefaultQuesitos==="function")ensureDefaultQuesitos();renderQuesitos();renderExam();renderSecondaryCIDs();renderParecerHint();applyFinalizedLock(); if($("cid").value)renderCIDAssist(findCID($("cid").value)||null); syncExtendedToAgil();
+  togglePanelsOnly(); updateLimitacaoStatus(); renderMedications();renderConditions();renderDocumentRecords();if(typeof ensureDefaultQuesitos==="function")ensureDefaultQuesitos();renderQuesitos();renderExam();renderSecondaryCIDs();renderParecerHint();applyFinalizedLock(); if($("cid").value)renderCIDAssist(findCID($("cid").value)||null); syncExtendedToAgil(); if(typeof atualizarBannerAcompanhante==="function")atualizarBannerAcompanhante();
   if (currentAttendanceMode === "agil") {
     document.body.classList.add("mode-agil-active");
   } else {
@@ -4723,6 +4850,423 @@ async function executarPreenchimentoIA() {
     if (btn) btn.disabled = false;
   }
 }
+
+/* =========================================================
+   IMPORTAÇÃO DIRETA DE CONSULTA E-SISLA (PDF / DADOS)
+   ========================================================= */
+function aplicarDadosEsisla(dados) {
+  if (!dados) return;
+  if (!state.aux) state.aux = {};
+
+  const prevAutoSaving = typeof __isAutoSaving !== "undefined" ? __isAutoSaving : false;
+  window.__isAutoSaving = true;
+  window.__isBulkApplyingIA = true;
+
+  try {
+    state.workflowStatus = "RASCUNHO";
+    state.finalizado = false;
+
+    const toIsoDate = (dStr) => {
+      if (!dStr) return "";
+      const s = String(dStr).trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+      const m = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
+      if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+      return s;
+    };
+
+    const toFormattedCpf = (cStr) => {
+      const clean = String(cStr || "").replace(/\D/g, "");
+      if (clean.length === 11 && typeof formatCPF === "function") return formatCPF(clean);
+      return cStr || "";
+    };
+
+    // 1. Identificação
+    if (dados.nome_paciente) {
+      state.nomePaciente = dados.nome_paciente;
+      state.aux.nomePaciente = dados.nome_paciente;
+      if ($("nomePaciente")) $("nomePaciente").value = dados.nome_paciente;
+      if ($("agilNomePaciente")) $("agilNomePaciente").value = dados.nome_paciente;
+    }
+
+    if (dados.cpf_paciente) {
+      const formattedCpf = toFormattedCpf(dados.cpf_paciente);
+      state.cpfPaciente = formattedCpf;
+      state.aux.cpfPaciente = formattedCpf;
+      if ($("cpfPaciente")) $("cpfPaciente").value = formattedCpf;
+      if ($("agilCpfPaciente")) $("agilCpfPaciente").value = formattedCpf;
+    }
+
+    if (dados.rg_paciente) state.aux.rg = dados.rg_paciente;
+    if (dados.data_nascimento) state.aux.dataNascimento = dados.data_nascimento;
+    if (dados.sexo) state.aux.sexo = dados.sexo;
+    if (dados.ni) state.aux.ni = dados.ni;
+
+    if (dados.cargo) {
+      state.cargo = dados.cargo;
+      state.aux.cargo = dados.cargo;
+      if ($("cargo")) $("cargo").value = dados.cargo;
+      if ($("agilCargo")) $("agilCargo").value = dados.cargo;
+    }
+
+    if (dados.idade) {
+      state.idade = String(dados.idade);
+      state.aux.idade = String(dados.idade);
+      if ($("idade")) $("idade").value = dados.idade;
+      if ($("agilIdade")) $("agilIdade").value = dados.idade;
+    }
+
+    if (dados.readaptado) {
+      const rVal = dados.readaptado.toLowerCase().includes("sim") ? "Sim" : "Não";
+      state.readaptado = rVal;
+      state.aux.readaptado = rVal;
+      setRadio("readaptado", rVal);
+      setRadio("agilReadaptado", rVal);
+      if ($("readaptadoPanel")) $("readaptadoPanel").classList.toggle("hidden", rVal !== "Sim");
+      if ($("agilReadaptadoPanel")) $("agilReadaptadoPanel").classList.toggle("hidden", rVal !== "Sim");
+    }
+
+    // 2. Funcional & Órgão
+    if (dados.orgao) state.aux.orgao = dados.orgao;
+    if (dados.unidade) { state.aux.unidade = dados.unidade; state.aux.ua = dados.unidade; }
+    if (dados.municipio) state.aux.municipio = dados.municipio;
+    if (dados.regime_juridico) state.aux.regimeJuridico = dados.regime_juridico;
+    if (dados.situacao) state.aux.situacao = dados.situacao;
+    if (dados.protocolo) { state.aux.protocolo = dados.protocolo; state.aux.agenda_protocolo = dados.protocolo; }
+
+    // 3. CID e Acompanhante / Familiar (Art. 199 Lei Estadual 10.261/68)
+    const isAcomp = !!(dados.is_acompanhante || (dados.pessoa && !dados.pessoa.toUpperCase().includes("PRÓPRIO") && !dados.pessoa.toUpperCase().includes("PROPRIO")));
+    if (isAcomp) {
+      state.isAcompanhante = true;
+      state.aux.isAcompanhante = true;
+      state.pessoa = dados.pessoa || "";
+      state.aux.pessoa = dados.pessoa || "";
+      state.nomeDependente = dados.nome_dependente || "";
+      state.aux.nomeDependente = dados.nome_dependente || "";
+
+      // O primeiro CID de perícia de acompanhante no e-SISLA é SEMPRE Z763
+      const cidAcomp = "Z763";
+      state.cid = cidAcomp;
+      state.aux.cid = cidAcomp;
+      if ($("cid")) $("cid").value = cidAcomp;
+      if ($("agilCid")) $("agilCid").value = cidAcomp;
+      if (typeof selectAgilCID === "function") selectAgilCID(cidAcomp);
+      else if (typeof selectCID === "function") selectCID(cidAcomp);
+
+      // Preserva a enfermidade do familiar nos CIDs secundários
+      if (Array.isArray(dados.cids_secundarios) && dados.cids_secundarios.length > 0) {
+        state.cidsSecundarios = [...dados.cids_secundarios];
+      } else if (dados.cid && dados.cid !== "Z763") {
+        state.cidsSecundarios = [{ cid: dados.cid, descricao: dados.cid_descricao || '' }];
+      }
+
+      state.doencaMotivo = `Perícia de acompanhante de familiar enfermo (Art. 199 da Lei Estadual nº 10.261/68) — Dependente: ${dados.nome_dependente || "Familiar"}`;
+      state.aux.doencaMotivo = state.doencaMotivo;
+      if ($("doencaMotivo")) $("doencaMotivo").value = state.doencaMotivo;
+      if ($("agilDoencaMotivo")) $("agilDoencaMotivo").value = state.doencaMotivo;
+
+      if (typeof atualizarBannerAcompanhante === "function") atualizarBannerAcompanhante();
+    } else {
+      state.isAcompanhante = false;
+      state.aux.isAcompanhante = false;
+      if (typeof atualizarBannerAcompanhante === "function") atualizarBannerAcompanhante();
+
+      if (dados.cid) {
+        state.cid = dados.cid;
+        state.aux.cid = dados.cid;
+        if ($("cid")) $("cid").value = dados.cid;
+        if ($("agilCid")) $("agilCid").value = dados.cid;
+        if (typeof selectAgilCID === "function") selectAgilCID(dados.cid);
+        else if (typeof selectCID === "function") selectCID(dados.cid);
+      }
+    }
+
+    if (dados.crm_cro) {
+      state.aux.crmCro = dados.crm_cro;
+      if ($("crmCro")) $("crmCro").value = dados.crm_cro;
+      if ($("agilCrmCro")) $("agilCrmCro").value = dados.crm_cro;
+    }
+
+    if (dados.nome_medico_assistente) state.aux.medicoAssistenteNome = dados.nome_medico_assistente;
+
+    const isoDoc = toIsoDate(dados.data_documento || dados.data_documento_br);
+    if (isoDoc) {
+      state.aux.dataDocumento = isoDoc;
+      if ($("dataDocumento")) $("dataDocumento").value = isoDoc;
+      if ($("agilDataDocumento")) $("agilDataDocumento").value = isoDoc;
+    }
+
+    if (dados.dias_solicitados) {
+      const diasVal = String(dados.dias_solicitados);
+      state.aux.diasSolicitados = diasVal;
+      state.aux.diasConcedidos = diasVal;
+      if ($("diasSolicitados")) $("diasSolicitados").value = diasVal;
+      if ($("agilDiasSolicitados")) $("agilDiasSolicitados").value = diasVal;
+    }
+
+    // Abrir o subpainel de atestado do assistente e calcular as datas
+    const chk = $("agilCheckAtestadoAssistente");
+    if (chk) {
+      chk.checked = true;
+      if (typeof toggleAtestadoAssistente === "function") toggleAtestadoAssistente(true);
+      if (typeof calcularDatasAtestado === "function") calcularDatasAtestado();
+    }
+
+    // 4. Histórico de licença e motivo
+    if (dados.motivo_pericia) state.aux.motivoPericia = dados.motivo_pericia;
+    if (dados.tipo_pericia) state.aux.tipoPericia = dados.tipo_pericia;
+    if (dados.finalidade) state.aux.finalidade = dados.finalidade;
+    if (dados.ultima_licenca_dias) state.aux.ultimaLicencaDias = dados.ultima_licenca_dias;
+    if (dados.ultima_licenca_inicio) state.aux.ultimaLicencaInicio = dados.ultima_licenca_inicio;
+    if (dados.ultima_licenca_fim) state.aux.ultimaLicencaFim = dados.ultima_licenca_fim;
+
+    // Doença motivo (apenas para acompanhante art. 199; para periciado titular, mantém limpo para o relato clínico)
+    if (isAcomp && dados.doenca_motivo) {
+      state.doencaMotivo = dados.doenca_motivo;
+      state.aux.doencaMotivo = dados.doenca_motivo;
+      if ($("doencaMotivo")) $("doencaMotivo").value = dados.doenca_motivo;
+      if ($("agilDoencaMotivo")) $("agilDoencaMotivo").value = dados.doenca_motivo;
+    }
+
+    // 5. Limpar rigorosamente campos clínicos e parecer para não preencher apenas ao jogar o PDF
+    state.exameFisicoTipo = "";
+    state.exameFisicoDescricao = "";
+    state.exameMentalResultado = "";
+    state.alteracoesClinicasExames = "";
+    state.limitacoes = "";
+    state.descLimitacao = "";
+    state.outrosSubtipo = "";
+    state.outrosResultado = "";
+    state.areaExameClinico = "";
+    state.parecer = "";
+    state.justificativa = "";
+    if (state.aux) {
+      state.aux.exameFisicoTipo = "";
+      state.aux.exameFisicoDescricao = "";
+      state.aux.exameMentalResultado = "";
+      state.aux.alteracoesClinicasExames = "";
+      state.aux.descLimitacao = "";
+      state.aux.outrosSubtipo = "";
+      state.aux.outrosResultado = "";
+      state.aux.parecer = "";
+      state.aux.justificativa = "";
+    }
+    if ($("exameFisicoTipo")) $("exameFisicoTipo").value = "";
+    if ($("agilExameFisicoTipo")) $("agilExameFisicoTipo").value = "";
+    if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = "";
+    if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = "";
+    if ($("exameMentalResultado")) $("exameMentalResultado").value = "";
+    if ($("agilExameMentalResultado")) $("agilExameMentalResultado").value = "";
+    if ($("outrosSubtipo")) $("outrosSubtipo").value = "";
+    if ($("agilOutrosSubtipo")) $("agilOutrosSubtipo").value = "";
+    if ($("justificativa")) $("justificativa").value = "";
+    if ($("agilJustificativa")) $("agilJustificativa").value = "";
+    if ($("parecer")) $("parecer").value = "";
+    if ($("agilParecer")) $("agilParecer").value = "";
+    if ($("agilOutrosSelector")) $("agilOutrosSelector").style.display = "none";
+    if ($("agilMentalWrap")) $("agilMentalWrap").style.display = "none";
+    if ($("agilOsteoWrap")) $("agilOsteoWrap").style.display = "none";
+    if ($("agilOutrosWrap")) $("agilOutrosWrap").style.display = "none";
+    if ($("btnIaJustificativa")) $("btnIaJustificativa").style.display = "none";
+
+    syncExtendedToAgil();
+    applyState();
+    autoSave();
+  } finally {
+    window.__isAutoSaving = prevAutoSaving;
+    window.__isBulkApplyingIA = false;
+  }
+}
+
+function atualizarBannerAcompanhante() {
+  const b = $("bannerAcompanhantePericia");
+  const isAcomp = !!(state.isAcompanhante || state.aux?.isAcompanhante || state.cid === "Z763" || state.aux?.cid === "Z763");
+  if (!b) return;
+  if (isAcomp) {
+    b.style.display = "block";
+    const txt = $("bannerAcompanhanteDependenteTexto");
+    const depNome = state.nomeDependente || state.aux?.nomeDependente || state.pessoa || "Familiar";
+    if (txt) {
+      txt.innerHTML = `Dependente em tratamento: <strong>${esc(depNome)}</strong>`;
+    }
+  } else {
+    b.style.display = "none";
+  }
+}
+
+function aplicarModeloTextoAcompanhante() {
+  const depNome = state.nomeDependente || state.aux?.nomeDependente || state.pessoa || "familiar dependente";
+  
+  // 1. Exame físico geral padrão para servidor hígido acompanhante
+  const efTexto = "Servidor(a) em bom estado geral, lúcido(a), orientado(a) no tempo e espaço, eupneico(a), corado(a), hidratado(a), acianótico(a), sem sinais de descompensação clínica ou alterações psicomotoras. Exame físico geral sem anormalidades incapacitantes, encontrando-se apto(a) física e psiquicamente para exercer os cuidados e assistência necessária ao familiar.";
+  
+  state.exameFisicoTipo = "Outros";
+  state.outrosSubtipo = "Exame Físico Geral";
+  state.outrosResultado = "Normal";
+  state.exameFisicoDescricao = efTexto;
+  if (!state.aux) state.aux = {};
+  state.aux.exameFisicoTipo = "Outros";
+  state.aux.outrosSubtipo = "Exame Físico Geral";
+  state.aux.outrosResultado = "Normal";
+  state.aux.exameFisicoDescricao = efTexto;
+
+  if ($("agilExameFisicoTipo")) $("agilExameFisicoTipo").value = "Outros";
+  if ($("exameFisicoTipo")) $("exameFisicoTipo").value = "Outros";
+  if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = efTexto;
+  if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = efTexto;
+  
+  if (typeof renderOutrosUI === "function") renderOutrosUI();
+
+  // 2. Parecer e Justificativa DPME
+  const justTexto = `Perícia médica oficial para acompanhamento de familiar/dependente enfermo, com fundamento jurídico no Artigo 199 da Lei Estadual nº 10.261/1968. Comprovada a necessidade de assistência direta e indispensável ao(à) dependente ${depNome}, que se encontra sob cuidados médicos documentados em relatório assistencial anexado aos autos. O(A) servidor(a) encontra-se em plenas condições de saúde (CID Z76.3). Parecer favorável à concessão de licença por motivo de doença em pessoa da família pelo período solicitado.`;
+  
+  state.parecer = "FAVORÁVEL";
+  state.justificativa = justTexto;
+  state.aux.parecer = "FAVORÁVEL";
+  state.aux.justificativa = justTexto;
+
+  if ($("parecer")) $("parecer").value = "FAVORÁVEL";
+  if ($("agilParecer")) $("agilParecer").value = "FAVORÁVEL";
+  setRadio("parecer", "FAVORÁVEL");
+  if ($("justificativa")) $("justificativa").value = justTexto;
+  if ($("agilJustificativa")) $("agilJustificativa").value = justTexto;
+
+  // 3. Respostas aos quesitos e limitações (Lei 10.261/68 - Acompanhante)
+  state.quesitos = [
+    { numero: 1, pergunta: "1) Há doença(s) ou seqüela(s) decorrente(s) de acidente de trabalho?", resposta: "Sim" },
+    { numero: 2, pergunta: "2) A(s) doença(s) ou seqüela(s) determina(m) limitação funcional?", resposta: "Não" },
+    { numero: 3, pergunta: "3) A(s) limitação(ões) impede(m) o exercício das funções habituais do cargo?", resposta: "Sim" }
+  ];
+  state.limitacaoFuncional = "Não";
+  state.limitacaoRol = "Não";
+  setRadio("limitacaoFuncional", "Não");
+  setRadio("limitacaoRol", "Não");
+  const limTexto = `Servidor(a) hígido(a), sem limitação funcional própria. Necessidade de afastamento temporário decorrente da assistência imprescindível ao(à) dependente ${depNome} sob tratamento (art. 199 da Lei Estadual nº 10.261/68).`;
+  state.descLimitacao = limTexto;
+  state.aux.descLimitacao = limTexto;
+  if ($("descLimitacao")) $("descLimitacao").value = limTexto;
+  if (typeof renderQuesitos === "function") renderQuesitos();
+
+  autoSave();
+  toast("✅ Modelos de laudo pericial para acompanhante aplicados com sucesso!");
+}
+
+window.aplicarDadosEsisla = aplicarDadosEsisla;
+
+window.processarArquivoEsislaNaTela = async function(file) {
+  if (!file) return;
+  const loading = $("aiPreencherLoading");
+  if (loading) {
+    loading.style.display = "flex";
+    const strong = loading.querySelector("strong");
+    if (strong) strong.textContent = "Lendo e processando arquivo PDF do e-SISLA...";
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    let res;
+    if (window.AmbientalAPI?.esisla?.parsePdf) {
+      res = await AmbientalAPI.esisla.parsePdf(formData);
+    } else {
+      const r = await (window.AmbientalAuth ? window.AmbientalAuth.authFetch : fetch)("/api/esisla/parse-pdf", {
+        method: "POST", body: formData
+      });
+      res = await r.json();
+      if (!r.ok) throw new Error(res?.error?.message || res?.detail || "Erro ao processar arquivo do e-SISLA.");
+    }
+
+    const dados = res.data?.dados || res.dados;
+    if (!dados) throw new Error("Nenhum dado retornado do documento.");
+
+    aplicarDadosEsisla(dados);
+    fecharModalPreenchimentoIA();
+    toast(`📄 e-SISLA importado: ${dados.nome_paciente || 'Colaborador'} (CID ${dados.cid || '—'})`);
+  } catch (err) {
+    alert(err.message || "Não foi possível importar o arquivo do e-SISLA.");
+  } finally {
+    if (loading) loading.style.display = "none";
+  }
+};
+
+// Setup global window drag-and-drop para arquivos PDF do e-SISLA
+(function setupEsislaWindowDrop() {
+  let dragCounter = 0;
+  const getOverlay = () => document.getElementById("esislaGlobalDragOverlay");
+
+  window.addEventListener("dragenter", (e) => {
+    if (e.dataTransfer && e.dataTransfer.types && Array.from(e.dataTransfer.types).includes("Files")) {
+      dragCounter++;
+      const ov = getOverlay();
+      if (ov) ov.style.display = "flex";
+    }
+  });
+
+  window.addEventListener("dragleave", (e) => {
+    dragCounter--;
+    if (dragCounter <= 0) {
+      dragCounter = 0;
+      const ov = getOverlay();
+      if (ov) ov.style.display = "none";
+    }
+  });
+
+  window.addEventListener("dragover", (e) => {
+    e.preventDefault();
+  });
+
+  window.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dragCounter = 0;
+    const ov = getOverlay();
+    if (ov) ov.style.display = "none";
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf") {
+        if (typeof window.processarArquivoEsislaNaTela === "function") {
+          window.processarArquivoEsislaNaTela(file);
+        }
+      }
+    }
+  });
+
+  const wireDropzone = () => {
+    const dz = document.getElementById("dropzoneEsislaModal");
+    if (dz && !dz.__wired) {
+      dz.__wired = true;
+      dz.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dz.style.background = "#E0F2FE";
+        dz.style.borderColor = "#0284C7";
+      });
+      dz.addEventListener("dragleave", () => {
+        dz.style.background = "#F0F9FF";
+        dz.style.borderColor = "#3B82F6";
+      });
+      dz.addEventListener("drop", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dz.style.background = "#F0F9FF";
+        dz.style.borderColor = "#3B82F6";
+        const files = e.dataTransfer?.files;
+        if (files && files.length > 0) {
+          if (typeof window.processarArquivoEsislaNaTela === "function") {
+            window.processarArquivoEsislaNaTela(files[0]);
+          }
+        }
+      });
+    }
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", wireDropzone);
+  } else {
+    wireDropzone();
+  }
+})();
 
 function aplicarPreenchimentoIAResultado(dados) {
   if (!dados) return;
@@ -4929,9 +5473,14 @@ function aplicarPreenchimentoIAResultado(dados) {
       setVal("agilAtividadesReadaptado", dados.atividades_readaptado);
     }
 
-    // Bloco 2 - Queixa e Antecedentes
-    setVal("doencaMotivo", dados.doenca_motivo);
-    setVal("agilDoencaMotivo", dados.doenca_motivo);
+    // Bloco 2 - Queixa e Antecedentes (apenas acompanhante recebe texto padrão art. 199; titular fica livre)
+    if (dados.tipo_atendimento_pericia === "ACOMPANHANTE" && dados.doenca_motivo) {
+      setVal("doencaMotivo", dados.doenca_motivo);
+      setVal("agilDoencaMotivo", dados.doenca_motivo);
+    } else if (state.doencaMotivo && !isGenericCIDLabel(state.doencaMotivo)) {
+      setVal("doencaMotivo", state.doencaMotivo);
+      setVal("agilDoencaMotivo", state.doencaMotivo);
+    }
     setVal("inicioTratamento", dados.inicio_tratamento);
     setVal("agilInicioTratamento", dados.inicio_tratamento);
     setVal("freqConsultas", dados.freq_consultas);
@@ -5044,8 +5593,8 @@ function aplicarPreenchimentoIAResultado(dados) {
     if (typeof togglePanelsOnly === "function") togglePanelsOnly();
     if (typeof syncExtendedToAgil === "function") syncExtendedToAgil();
 
-    // 7. Salvaguarda final para doencaMotivo e exameFisicoDescricao
-    if (dados.doenca_motivo) {
+    // 7. Salvaguarda final para doencaMotivo (apenas acompanhante) e exameFisicoDescricao
+    if (dados.tipo_atendimento_pericia === "ACOMPANHANTE" && dados.doenca_motivo) {
       state.doencaMotivo = dados.doenca_motivo;
       state.aux.doencaMotivo = dados.doenca_motivo;
       if ($("doencaMotivo")) $("doencaMotivo").value = dados.doenca_motivo;
@@ -5082,7 +5631,12 @@ window.executarPreenchimentoIA = executarPreenchimentoIA;
 window.aplicarPreenchimentoIAResultado = aplicarPreenchimentoIAResultado;
 
 function openManagement() {
-    if (currentProfile && currentProfile.perfil === "Médico") window.location.href = "/gestao-medicos.html";
+    const impId = (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('ambiental.impersonate_medico_id') : null) || new URLSearchParams(location.search).get('medico_id') || new URLSearchParams(location.search).get('impersonate_medico_id');
+    if (impId) {
+        window.location.href = `/gestao_medicos.html?impersonate_medico_id=${encodeURIComponent(impId)}`;
+        return;
+    }
+    if (currentProfile && currentProfile.perfil === "Médico") window.location.href = "/gestao_medicos.html";
     else window.location.href = "/gestao";
 }
 function workflowStatus(){return String(state.workflowStatus||(state.finalizado?"FINALIZADO":"RASCUNHO")).toUpperCase();}
@@ -5989,7 +6543,18 @@ function closeFinalizeDialog(){$("finalizeOverlay")?.classList.remove("open");}
 function openFinalizeProgress(){const o=$("finalizeProgressOverlay");if(!o)return;o.classList.remove("success");o.classList.add("open");o.setAttribute("aria-hidden","false");$("finalizeProgressTitle").textContent="Finalizando atendimento";$("finalizeProgressSubtitle").textContent="Salvando os dados e registrando a finalização com segurança.";$("fpStepSave").className="finalize-progress-step active";$("fpStepFinalize").className="finalize-progress-step";$("fpStepDone").className="finalize-progress-step";}
 function setFinalizeProgress(stage,title,subtitle){const t=$("finalizeProgressTitle"),sub=$("finalizeProgressSubtitle");if(t)t.textContent=title;if(sub)sub.textContent=subtitle;const map={save:"fpStepSave",finalize:"fpStepFinalize",done:"fpStepDone"};Object.entries(map).forEach(([key,id])=>{const el=$(id);if(!el)return;el.className="finalize-progress-step "+(key===stage?"active":(["save","finalize","done"].indexOf(key)<["save","finalize","done"].indexOf(stage)?"done":""));});}
 function closeFinalizeProgress(){const o=$("finalizeProgressOverlay");if(!o)return;o.classList.remove("open","success");o.setAttribute("aria-hidden","true");}
-function finalizeGoBack(){if(currentProfile&&currentProfile.perfil==="Médico"){window.location.href="/gestao-medicos.html";}else{window.location.href="/gestao";}}
+function finalizeGoBack(){
+    const impId = (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('ambiental.impersonate_medico_id') : null) || new URLSearchParams(location.search).get('medico_id') || new URLSearchParams(location.search).get('impersonate_medico_id');
+    if (impId) {
+        window.location.href = `/gestao_medicos.html?impersonate_medico_id=${encodeURIComponent(impId)}`;
+        return;
+    }
+    if (currentProfile && currentProfile.perfil === "Médico") {
+        window.location.href = "/gestao_medicos.html";
+    } else {
+        window.location.href = "/gestao";
+    }
+}
 async function confirmFinalize(){const btn=$("confirmFinalizeBtn");if(btn)btn.disabled=true;let progressOpened=false;try{if(isFinalizedReadOnly()){closeFinalizeDialog();return;}const validation=ValidationEngine.get();if(!validation.valid){closeFinalizeDialog();renderReview();toast("Há bloqueios críticos.");return;}closeFinalizeDialog();openFinalizeProgress();progressOpened=true;syncState();
 if(!state.atendimento){
   state.atendimento=generateId();
@@ -7608,10 +8173,20 @@ function onAgilExameTipoChange(val) {
 }
 
 function renderOutrosUI() {
+  const outrosWrap = $("agilOutrosSelector");
+  if (outrosWrap && (state.exameFisicoTipo === "Outros" || state.aux?.exameFisicoTipo === "Outros" || $("agilExameFisicoTipo")?.value === "Outros")) {
+    outrosWrap.style.display = "block";
+    const btnIaJust = $("btnAgilJustificativaIA");
+    if (btnIaJust) btnIaJust.style.display = "inline-flex";
+  }
+
+  const normTarget = String(state.outrosSubtipo || state.aux?.outrosSubtipo || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
   const chips = document.querySelectorAll("#agilOutrosChips .outros-chip-btn");
   chips.forEach(btn => {
-    const subtipo = btn.dataset.subtipo;
-    if (subtipo === state.outrosSubtipo) {
+    const subtipo = btn.dataset.subtipo || "";
+    const normSub = subtipo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+    const match = subtipo === state.outrosSubtipo || (normTarget && (normSub === normTarget || normSub.includes(normTarget) || normTarget.includes(normSub)));
+    if (match) {
       btn.classList.add("selected-chip");
     } else {
       btn.classList.remove("selected-chip");
@@ -7625,6 +8200,19 @@ function renderOutrosUI() {
     if (tit) tit.textContent = `Resultado da avaliação (${state.outrosSubtipo}):`;
   } else {
     if (resWrap) resWrap.style.display = "none";
+  }
+
+  if (!state.outrosResultado && !state.aux?.outrosResultado) {
+    const p = String(state.parecer || state.aux?.parecer || $("agilParecer")?.value || $("parecer")?.value || "").toUpperCase();
+    if (p === "FAVORÁVEL" || p === "FAVORAVEL") {
+      state.outrosResultado = "Alterado";
+      if (!state.aux) state.aux = {};
+      state.aux.outrosResultado = "Alterado";
+    } else if (p === "CONTRÁRIO" || p === "CONTRARIO") {
+      state.outrosResultado = "Normal";
+      if (!state.aux) state.aux = {};
+      state.aux.outrosResultado = "Normal";
+    }
   }
 
   const btnNorm = $("btnAgilOutrosNormal");
@@ -7754,9 +8342,8 @@ function onAgilCidInput(val) {
     badge.style.display = "inline-flex";
     badge.innerHTML = `<strong>${esc(exact.c)}</strong> — ${esc(exact.n)}`;
     const rotulo = `${exact.c} — ${exact.n}`;
-    const oldDoenca = String(state.aux?.doencaMotivo || state.doencaMotivo || "").trim();
-    const isGenericCIDLabel = /^[A-Z]\d{2}(\.\d+)?\s*[—–-]\s*[^—–\n]+$/i.test(oldDoenca) && oldDoenca.length < 90;
-    if (!oldDoenca || oldDoenca === "Conforme queixa relatada" || isGenericCIDLabel) {
+    const oldDoenca = String(state.aux?.doencaMotivo || state.doencaMotivo || $("doencaMotivo")?.value || $("agilDoencaMotivo")?.value || "").trim();
+    if (!oldDoenca || oldDoenca === "Conforme queixa relatada" || isGenericCIDLabel(oldDoenca)) {
       state.aux.doencaMotivo = rotulo;
       state.doencaMotivo = rotulo;
       if ($("doencaMotivo")) $("doencaMotivo").value = rotulo;
@@ -7786,18 +8373,7 @@ function selectAgilCID(code) {
     badge.innerHTML = `<strong>${esc(found.c)}</strong> — ${esc(found.n)}`;
   }
   
-  if (found && found.n && !found.n.includes("Apoio")) {
-    const rotulo = `${found.c} — ${found.n}`;
-    const oldDoenca = String(state.aux?.doencaMotivo || state.doencaMotivo || "").trim();
-    const isGenericCIDLabel = /^[A-Z]\d{2}(\.\d+)?\s*[—–-]\s*[^—–\n]+$/i.test(oldDoenca) && oldDoenca.length < 90;
-    if (!oldDoenca || oldDoenca === "Conforme queixa relatada" || isGenericCIDLabel) {
-      state.doencaMotivo = rotulo;
-      state.aux.doencaMotivo = rotulo;
-      if ($("doencaMotivo")) $("doencaMotivo").value = rotulo;
-      if ($("agilDoencaMotivo")) $("agilDoencaMotivo").value = rotulo;
-    }
-  }
-  
+  // Não preencher agilDoencaMotivo com o CID; o perito relata os sintomas reais
   autoSave();
   toast(`CID ${cleanCode}${found?.n ? ' (' + found.n + ')' : ''} selecionado.`);
 }
@@ -8122,6 +8698,39 @@ function gerarNarrativaQueixaMelhoriaContinua(st, v) {
   const rawQ = (aux.queixaDuracao || v.queixaDuracao || $("agilDoencaMotivo")?.value || "").trim();
   if (rawQ.length > 180 && (rawQ.toLowerCase().includes("servidor") || rawQ.toLowerCase().includes("ocupante") || rawQ.toLowerCase().includes("relata"))) {
     return cleanQueixaDuracao(rawQ, aux.dataAtd || st.aux?.dataAtd || $("dataAtd")?.value);
+  }
+
+  const isAcomp = !!(st.isAcompanhante || aux.isAcompanhante || cidVal === "Z763" || cidVal === "Z76.3");
+  if (isAcomp) {
+    const depNome = aux.nomeDependente || st.nomeDependente || st.pessoa || "familiar dependente";
+    const sexo = (st.sexo || v.sexo || "").toLowerCase();
+    const isFem = sexo === "f" || sexo === "feminino";
+    let ident = isFem ? "Servidora" : "Servidor";
+    if (idade) ident += ` de ${idade} anos`;
+    if (readap) {
+      ident += `, relatou ser ${isFem ? 'readaptada' : 'readaptado'}${ativReadap ? `, exercendo atualmente as atividades de ${ativReadap}` : ""}`;
+    } else {
+      ident += `, relatou não ser ${isFem ? 'readaptada' : 'readaptado'}`;
+    }
+    if (cargo) {
+      const cargoFormatado = cargo.trim().replace(/^é\s+/i, '');
+      if (tempoCargo) {
+        ident += `, é ${cargoFormatado} há ${tempoCargo} ${unidadeTempo.toLowerCase()}`;
+      } else {
+        ident += `, é ${cargoFormatado}`;
+      }
+    }
+    ident += `, comparece a perícia médica oficial para fins de acompanhamento de familiar/dependente enfermo (${depNome}), com fundamento jurídico no Artigo 199 da Lei Estadual nº 10.261/1968 (CID Z76.3 — Pessoa em boa saúde acompanhando pessoa doente).`;
+    
+    let acompPartes = [ident];
+    acompPartes.push(`Informa prestar assistência direta, contínua e indispensável aos cuidados e acompanhamento em saúde de ${depNome}, impossibilitando a conciliação com as atribuições funcionais habituais durante o período.`);
+    acompPartes.push("O(A) servidor(a) encontra-se em plenas condições de higidez física e mental, sem incapacidade laborativa própria.");
+    if (medsStr) {
+      acompPartes.push(`Em uso de medicação de rotina: ${medsStr}.`);
+    } else {
+      acompPartes.push("Negou uso regular de medicações.");
+    }
+    return acompPartes.join(" ");
   }
   
   let partes = [];
@@ -10664,12 +11273,15 @@ function copiarLaudoEsislaAtendimento() {
 
   // Se houver relatos reais de exames complementares (não boilerplates nem "Em anexo"), integra em queixas conforme solicitado
   const altRaw = String(state.alteracoesClinicasExames || v.alteracoesClinicasExames || '').trim();
-  const cleanAltRaw = altRaw.replace(/^(?:em\s+anexo\.?|não\s+foram\s+apresentados[^\n\r]*|nada\s+consta[^\n\r]*|sem\s+exames[^\n\r]*)\s*$/i, '').trim();
-  if (cleanAltRaw && !cleanAltRaw.toLowerCase().includes('em anexo') && !cleanAltRaw.toLowerCase().includes('não foram apresentados') && cleanAltRaw.length > 5) {
+  const cleanAltRaw = altRaw.replace(/^(?:em\s+anexo\.?|não\s+foram\s+apresentados[^\n\r]*|nao\s+foram\s+apresentados[^\n\r]*|aus[êeē]ncia\s+de\s+exames[^\n\r]*|nada\s+consta[^\n\r]*|sem\s+exames[^\n\r]*)\s*$/i, '').trim();
+  const isSemExamesRaw = /^(?:em\s+anexo\.?|não\s+foram\s+apresentados|nao\s+foram\s+apresentados|aus[êeē]ncia\s+de\s+exames|nada\s+consta|sem\s+exames|n[ãa]o\s+h[áa]\s+exames|n[ãa]o\s+apresentou)/i.test(cleanAltRaw) || /aus[êeē]ncia\s+de\s+exames/i.test(cleanAltRaw);
+  if (cleanAltRaw && !cleanAltRaw.toLowerCase().includes('em anexo') && !isSemExamesRaw && cleanAltRaw.length > 5) {
     if (!cat.includes(cleanAltRaw)) {
       cat = sanitizeText((cat ? cat + '\n\n' : '') + 'Exames apresentados: ' + cleanAltRaw, 2000);
     }
   }
+  cat = cat.replace(/Exames apresentados:\s*Aus[êeē]ncia[^\n\r]*[\.\,]?/gi, '').trim();
+  cat = cat.replace(/Exames apresentados:\s*N[ãa]o foram[^\n\r]*[\.\,]?/gi, '').trim();
 
   // 2. Antecedentes Mórbidos (max 2000)
   const apVal = (state.aux?.historicoPregresso || v.historicoPregresso || $("agilHistoricoPregresso")?.value || '').trim();

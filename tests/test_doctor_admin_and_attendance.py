@@ -3053,6 +3053,95 @@ def test_modo_ia_doctor_selection_and_auto_launch():
     assert 'abrirModalPreenchimentoIA()' in ATTENDANCE
 
 
+def test_esisla_pdf_import_and_attendance_flow():
+    from app import parse_esisla_text
+
+    # 1. Validação do parser determinístico do texto e-SISLA
+    sample_esisla_text = """
+    Protocolo: 954367680
+    CPF: 276203118  - 40 RG: 30192761    - 
+    Nome Completo: ANTONIO CARLOS RIGOLI JUNIOR
+    Data de Nascimento: 24/08/1975 NI: 1125424
+    Sexo:  Feminino  Masculino Readaptação Processo: /
+    Deficiente:  Sim  Não CID DEF:
+    Orgão: SECRETARIA DA ADMINISTRACAO PENITENCIARIA
+    UA: 000000000011433  C P P HORTOLANDIA
+    Município: HORTOLANDIA Regime Jurídico: EFETIVO
+    Cargo: 0005924  POLICIAL PENAL IV
+    Situação: ATIVO  EM EXERCICIO NORMAL DE TRABALHO
+    Readaptação:  Sim  Não
+    Readaptação CID1:  CID2:  Data: 
+    Possui Nexo:  Sim  Não            CID Nexo:  CID Nexo: 
+    Última Licença: 1    CID:    Início: 30/09/2026    Fim: 30/09/2026
+    Tipo: A PEDIDO
+    Finalidade: INICIAL
+    Motivo: LTS - TRATAMENTO DE SAUDE
+    CRM Médico: 249676
+    Nome do Médico: FREDERICO MARINO NETO
+    CID 10: A09
+    Nº Dias: 1  dias Data de emissão do atestado: 25/08/2026
+    """
+    parsed = parse_esisla_text(sample_esisla_text)
+    assert parsed["protocolo"] == "954367680"
+    assert parsed["cpf_paciente"] == "276.203.118-40"
+    assert parsed["rg_paciente"] == "30192761"
+    assert parsed["nome_paciente"] == "ANTONIO CARLOS RIGOLI JUNIOR"
+    assert parsed["data_nascimento"] == "24/08/1975"
+    assert parsed["sexo"] == "Masculino"
+    assert parsed["orgao"] == "SECRETARIA DA ADMINISTRACAO PENITENCIARIA"
+    assert parsed["unidade"] == "000000000011433 C P P HORTOLANDIA"
+    assert parsed["municipio"] == "HORTOLANDIA"
+    assert parsed["regime_juridico"] == "EFETIVO"
+    assert parsed["cargo"] == "POLICIAL PENAL IV"
+    assert parsed["situacao"] == "ATIVO EM EXERCICIO NORMAL DE TRABALHO"
+    assert parsed["readaptado"] == "Não"
+    assert parsed["crm_cro"] == "249676"
+    assert parsed["nome_medico_assistente"] == "FREDERICO MARINO NETO"
+    assert parsed["cid"] == "A09"
+    assert parsed["dias_solicitados"] == "1"
+    assert parsed["data_documento_br"] == "25/08/2026"
+    assert parsed["data_documento"] == "2026-08-25"
+    assert parsed["motivo_pericia"] == "LTS - TRATAMENTO DE SAUDE"
+    assert parsed["tipo_pericia"] == "A PEDIDO"
+    assert parsed["finalidade"] == "INICIAL"
+    assert parsed["ultima_licenca_dias"] == "1"
+    assert parsed["ultima_licenca_inicio"] == "30/09/2026"
+    assert parsed["ultima_licenca_fim"] == "30/09/2026"
+
+    # 2. Validação dos Endpoints Backend em app.py
+    assert '@app.post("/api/esisla/parse-pdf")' in APP
+    assert "def api_esisla_parse_pdf():" in APP
+    assert '@app.post("/api/esisla/criar-atendimento")' in APP
+    assert "def api_esisla_criar_atendimento():" in APP
+    assert '"workflowStatus": "RASCUNHO"' in APP
+    assert '"finalizado": False' in APP
+
+    # 3. Validação do Cliente JS em api.js
+    assert "esisla: {" in API_JS
+    assert "parsePdf:" in API_JS
+    assert "criarAtendimento:" in API_JS
+
+    # 4. Validação da Interface Gestão de Atendimentos (gestao_atendimentos.html)
+    assert 'Importar e-SISLA (PDF)' in GESTAO_ATENDIMENTOS
+    assert 'id="importarEsislaModal"' in GESTAO_ATENDIMENTOS
+    assert 'id="dropzoneEsislaGestao"' in GESTAO_ATENDIMENTOS
+    assert 'id="esislaMedicoPeritoSelect"' in GESTAO_ATENDIMENTOS
+    assert 'abrirModalImportarEsisla()' in GESTAO_ATENDIMENTOS
+    assert 'processarArquivoEsislaGestao' in GESTAO_ATENDIMENTOS
+    assert 'salvarAtendimentoEsislaFila()' in GESTAO_ATENDIMENTOS
+    assert 'abrirAtendimentoEsislaAgora()' in GESTAO_ATENDIMENTOS
+
+    # 5. Validação da Ficha Pericial (ambiental_avaliacao_medica_lts_cid_assistente.html)
+    assert 'Importar PDF e-SISLA' in ATTENDANCE
+    assert 'id="modalPreenchimentoIA"' in ATTENDANCE
+    assert 'id="dropzoneEsislaModal"' in ATTENDANCE
+    assert 'id="esislaGlobalDragOverlay"' in ATTENDANCE
+    assert 'setupEsislaWindowDrop()' in ATTENDANCE
+    assert 'aplicarDadosEsisla(dados)' in ATTENDANCE
+    assert 'processarArquivoEsislaNaTela' in ATTENDANCE
+
+
+
 
 
 

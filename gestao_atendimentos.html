@@ -257,109 +257,293 @@ body.admin-shell {
   background: linear-gradient(90deg, var(--blue) 0 70%, var(--green) 70% 100%);
 }
 .top-in {
-  max-width: 1440px;
+  max-width: 1480px;
   margin: auto;
-  padding: 12px 24px;
+  padding: 10px 24px;
   display: flex;
   align-items: center;
-  gap: 18px;
+  justify-content: space-between;
+  gap: 14px;
 }
 .brand {
   display: flex;
   align-items: center;
-  gap: 14px;
-  flex: 1;
+  gap: 12px;
+  flex-shrink: 0;
 }
-.brand strong {
-  display: block;
-  color: var(--blue);
-  font-size: 15px;
+.brand-logo-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: #fff;
+  border: 1.5px solid #E2E8F0;
+  padding: 3px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 10px rgba(7, 86, 168, 0.08);
+}
+.brand-logo-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.brand-titles {
+  display: flex;
+  flex-direction: column;
+}
+.brand-titles strong {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #0F3254;
+  font-size: 14.5px;
+  font-weight: 900;
+  letter-spacing: -.01em;
+}
+.brand-badge-tag {
+  font-size: 10px;
   font-weight: 800;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #EEF5FC;
+  color: #0756A8;
+  border: 1px solid #D6E6F7;
   letter-spacing: .02em;
 }
-.brand span {
+.brand-titles span {
   display: block;
-  color: var(--muted);
+  color: #64748B;
   font-size: 11px;
-  margin-top: 2px;
+  font-weight: 600;
+  margin-top: 1px;
 }
 
 .top-actions {
   display: flex;
-  gap: 10px;
   align-items: center;
-  flex-wrap: wrap;
+  gap: 8px;
+  flex-wrap: nowrap;
 }
+
+/* Impersonate Pill no Topo */
+.top-impersonate-pill {
+  display: inline-flex;
+  align-items: center;
+  background: #F0F7FF;
+  border: 1.5px solid #BAE0FD;
+  border-radius: 11px;
+  padding: 3px 4px 3px 10px;
+  gap: 6px;
+  box-shadow: 0 1px 4px rgba(7, 86, 168, 0.05);
+  transition: all .18s ease;
+}
+.top-impersonate-pill:focus-within {
+  border-color: #0284C7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+  background: #fff;
+}
+.top-impersonate-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #0369A1;
+  white-space: nowrap;
+  user-select: none;
+}
+.top-impersonate-select {
+  border: 1px solid transparent;
+  background: transparent;
+  color: #0F172A;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 6px;
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+  max-width: 170px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.top-impersonate-select:focus {
+  background: #fff;
+  border-color: #CBD5E1;
+}
+.top-impersonate-btn {
+  border: none;
+  background: linear-gradient(135deg, #0284C7, #0369A1);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 11px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.22);
+  transition: all .16s ease;
+}
+.top-impersonate-btn:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+/* Botão Importar e-SISLA */
+.top-btn-esisla {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 800;
+  background: #F0FDF4;
+  color: #15803D;
+  border: 1.5px solid #86EFAC;
+  padding: 7px 13px;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(22, 101, 52, 0.06);
+  transition: all .18s ease;
+}
+.top-btn-esisla:hover {
+  background: #DCFCE7;
+  border-color: #4ADE80;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(22, 101, 52, 0.12);
+}
+
+/* Botão Novo Atendimento */
 .top-new-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: linear-gradient(135deg, var(--blue), var(--blue-2)) !important;
+  background: linear-gradient(135deg, #0756A8 0%, #0B67B9 100%) !important;
   color: #fff !important;
   border: none !important;
-  padding: 8px 14px !important;
+  padding: 7px 14px !important;
   border-radius: 10px !important;
   font-size: 11.5px !important;
   font-weight: 800 !important;
-  box-shadow: 0 3px 10px rgba(7, 63, 135, 0.18) !important;
-  transition: all .16s ease !important;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(7, 86, 168, 0.22) !important;
+  transition: all .18s ease !important;
 }
 .top-new-btn:hover {
-  background: linear-gradient(135deg, var(--blue-2), #0a66c2) !important;
+  filter: brightness(1.08) !important;
   transform: translateY(-1px) !important;
-  box-shadow: 0 5px 15px rgba(7, 63, 135, 0.26) !important;
+  box-shadow: 0 4px 14px rgba(7, 86, 168, 0.32) !important;
 }
-.btn-emoji { font-size: 12px; }
-.session-chip {
-  display: flex;
+
+/* Chip de Sincronização / Ao Vivo */
+.sync-chip {
+  display: inline-flex;
   align-items: center;
-  gap: 9px;
-  background: #F7FAFC;
-  border: 1px solid #DFE7F0;
-  border-radius: 13px;
-  padding: 6px 8px 6px 10px;
-  min-width: 185px;
+  gap: 7px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 6px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition: all .16s ease;
 }
-.session-chip > span:nth-child(2) {
+.sync-chip:hover {
+  background: #F1F5F9;
+  border-color: #CBD5E1;
+}
+.sync-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+  flex-shrink: 0;
+}
+.sync-chip-info {
   display: flex;
   flex-direction: column;
   line-height: 1.15;
-  min-width: 0;
 }
-.session-chip b {
-  font-size: 11px;
-  color: #1E3650;
+.sync-chip-title {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #1E293B;
+}
+.sync-chip-sub {
+  font-size: 8.5px;
+  color: #64748B;
+  font-weight: 600;
+}
+.icon-btn-inline {
+  border: none;
+  background: transparent;
+  color: #64748B;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0 0 0 3px;
+  line-height: 1;
+}
+.sync-chip:hover .icon-btn-inline {
+  color: #0756A8;
+}
+
+/* Session Chip */
+.session-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 4px 6px 4px 10px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 130px;
-}
-.session-chip small {
-  font-size: 9px;
-  color: #6B7A8F;
-  margin-top: 3px;
 }
 .session-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: #00AE50;
   box-shadow: 0 0 0 3px rgba(0, 174, 80, 0.12);
-  flex: 0 0 auto;
+  flex-shrink: 0;
+}
+.session-chip-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  max-width: 140px;
+}
+.session-chip-meta b {
+  font-size: 10.5px;
+  color: #1E293B;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.session-chip-meta small {
+  font-size: 8.5px;
+  color: #64748B;
+  font-weight: 700;
 }
 .session-logout {
-  border: 0;
-  background: #fff;
-  color: #A13A3A;
-  border: 1px solid #E7CECE;
-  border-radius: 8px;
-  padding: 6px 8px;
+  border: 1px solid #FECACA;
+  background: #FEF2F2;
+  color: #B91C1C;
+  border-radius: 7px;
+  padding: 4px 8px;
   font-size: 10px;
   font-weight: 800;
   cursor: pointer;
-  transition: background .15s ease;
+  transition: all .15s ease;
 }
-.session-logout:hover { background: #FFF6F6; }
+.session-logout:hover {
+  background: #FEE2E2;
+  border-color: #F87171;
+}
 
 /* Botão ↻ Minimalista */
 .icon-btn {
@@ -1617,53 +1801,158 @@ body.modal-lock { overscroll-behavior: none; }
   min-height: 380px;
 }
 .esisla-editor-header {
-  background: #F4F7FB;
-  border-bottom: 1px solid #CFDBE7;
-  padding: 10px 14px;
+  background: #F8FAFD;
+  border-bottom: 1px solid #DFE8F2;
+  padding: 11px 18px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 800;
-  color: #64748B;
+  color: #475569;
   text-transform: uppercase;
   letter-spacing: .05em;
 }
 .esisla-editor-left { display: flex; align-items: center; gap: 10px; }
 .esisla-stats-chip {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  color: #627D98;
-  background: #EDF2F7;
-  padding: 3px 7px;
-  border-radius: 6px;
-  border: 1px solid #E2E8F0;
+  color: #0369A1;
+  background: #F0F9FF;
+  padding: 4px 9px;
+  border-radius: 7px;
+  border: 1px solid #BAE6FD;
   text-transform: none;
 }
 .btn-copy-mini {
   background: #FFFFFF;
   border: 1px solid #CFDBE7;
-  border-radius: 7px;
-  padding: 5px 10px;
-  font-size: 10.5px;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 11px;
   font-weight: 800;
   color: var(--blue);
   cursor: pointer;
-  transition: .15s;
+  transition: all .15s;
   display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 1px 3px rgba(15, 39, 68, 0.04);
+}
+.btn-copy-mini:hover { background: #EEF5FC; border-color: #93C5FD; transform: translateY(-1px); }
+.esisla-card-block {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 18px 22px;
+  box-shadow: 0 2px 8px rgba(15, 39, 68, 0.04);
+  transition: all .18s ease;
+  position: relative;
+}
+.esisla-card-block:hover {
+  border-color: #CBD5E1;
+  box-shadow: 0 4px 14px rgba(15, 39, 68, 0.07);
+}
+.esisla-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #F1F5F9;
+}
+.esisla-card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+.esisla-card-icon {
+  font-size: 15px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #F0F7FF;
+  border: 1px solid #E0F2FE;
+}
+.esisla-card-label {
+  font-weight: 800;
+  font-size: 12px;
+  color: #0F2744;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.esisla-card-sublabel {
+  font-size: 10.5px;
+  color: #64748B;
+  font-weight: 600;
+  margin-left: 4px;
+  text-transform: none;
+}
+.btn-copy-card-block {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 7px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+  transition: all .15s;
+  display: inline-flex;
   align-items: center;
   gap: 5px;
 }
-.btn-copy-mini:hover { background: #EEF5FC; border-color: #B9D0E6; }
+.btn-copy-card-block:hover {
+  background: #F0F9FF;
+  border-color: #BAE6FD;
+  color: #0284C7;
+}
+.esisla-card-body {
+  font-size: 13.5px;
+  color: #1E293B;
+  line-height: 1.7;
+  letter-spacing: -0.01em;
+  font-weight: 450;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.esisla-vital-card {
+  background: #F8FAFD;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #E2E8F0;
+  transition: border-color .15s;
+}
+.esisla-vital-card:hover {
+  border-color: #CBD5E1;
+}
+.esisla-vital-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  color: #64748B;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  margin-bottom: 4px;
+}
+.esisla-vital-val {
+  font-size: 14.5px;
+  color: #0F2744;
+  font-weight: 800;
+}
 .esisla-text {
   width: 100%;
   flex: 1 1 auto;
-  min-height: 320px;
+  min-height: 400px;
   resize: vertical;
   border: none;
-  padding: 16px 18px;
-  font: 12.5px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
-  color: #1B2B3D;
+  padding: 22px 26px;
+  font: 13.5px/1.8 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+  color: #0F172A;
   background: #FFFFFF;
   white-space: pre-wrap;
   outline: none;
@@ -1672,7 +1961,7 @@ body.modal-lock { overscroll-behavior: none; }
 .esisla-text:focus { background: #FAFCFF; }
 .esisla-text.locked, .esisla-text[readonly] {
   background: #F8FAFC !important;
-  color: #334155 !important;
+  color: #1E293B !important;
   cursor: default !important;
 }
 .esisla-text:not([readonly]) {
@@ -2051,10 +2340,36 @@ body.modal-lock { overscroll-behavior: none; }
 </aside>
 <div class="admin-main-shell">
 <header class="top"><div class="top-in">
-<div class="brand"><img src="/logo.png" alt="Logo Ambiental" style="width:42px;height:42px;object-fit:contain;background:#fff;border:1px solid #E6EDF5;border-radius:11px;padding:3px;box-shadow:0 5px 14px rgba(7,63,135,.08)"><div><strong>Ambiental — Avaliação Médica Pericial — LTS</strong><span>Central de Gestão de Atendimentos</span></div></div>
-<div class="top-actions"><button class="btn btn-primary top-new-btn" onclick="location.href='/app?novo=1'"><span>+ Novo atendimento</span></button><div class="sync-chip" id="syncChip" title="Sincronização em tempo real (atualiza a cada 25s ou ao clicar)" onclick="triggerRefresh(true)"><span class="sync-dot" id="syncDot"></span><div class="sync-chip-info"><span class="sync-chip-title" id="syncTitle">Ao vivo</span><small class="sync-chip-sub" id="syncSub">Atualizado agora</small></div><button class="icon-btn-inline" id="refreshBtn" type="button" title="Atualizar dados (↻)" aria-label="Atualizar dados agora" onclick="event.stopPropagation();triggerRefresh(true)">↻</button></div>
-<div class="session-chip" id="sessionChip" title="Sessão autenticada"><span class="session-dot"></span><span><b id="userName">Verificando...</b><small id="userRole">Sessão segura</small></span><button class="session-logout" id="logoutBtn" type="button">Sair</button></div>
-</div></div></header>
+  <div class="brand">
+    <div class="brand-logo-wrap">
+      <img src="/logo.png" alt="Logo Ambiental">
+    </div>
+    <div class="brand-titles">
+      <strong>Ambiental · LTS <span class="brand-badge-tag">Admin</span></strong>
+      <span>Gestão Administrativa de Atendimentos</span>
+    </div>
+  </div>
+
+  <div class="top-actions">
+    <div class="sync-chip" id="syncChip" title="Sincronização em tempo real (clique para forçar atualização)" onclick="triggerRefresh(true)">
+      <span class="sync-dot" id="syncDot"></span>
+      <div class="sync-chip-info">
+        <span class="sync-chip-title" id="syncTitle">Ao vivo</span>
+        <small class="sync-chip-sub" id="syncSub">Atualizado agora</small>
+      </div>
+      <button class="icon-btn-inline" id="refreshBtn" type="button" title="Atualizar dados agora" onclick="event.stopPropagation();triggerRefresh(true)">↻</button>
+    </div>
+
+    <div class="session-chip" id="sessionChip" title="Sessão autenticada">
+      <span class="session-dot"></span>
+      <div class="session-chip-meta">
+        <b id="userName">Verificando...</b>
+        <small id="userRole">Administrador</small>
+      </div>
+      <button class="session-logout" id="logoutBtn" type="button">Sair</button>
+    </div>
+  </div>
+</div></header>
 <main class="layout"><div class="admin-view active" id="view-dashboard"><div class="admin-welcome"><div><div class="admin-kicker"><span class="dot"></span> Gestão administrativa</div><div class="headline" style="margin:8px 0 0"><div><h1>Painel executivo de atendimentos</h1><p>Visão centralizada para localizar atendimentos médicos, acompanhar produtividade, pareceres, pendências e evolução do fluxo.</p></div></div></div><div class="admin-actions"><button class="admin-btn" type="button" onclick="clearFilters(true)"><span class="btn-emoji">🧹</span> <span>Limpar filtros</span></button><button class="admin-btn" type="button" onclick="focusSearch()"><span class="btn-emoji">🔍</span> <span>Buscar atendimento</span></button><button class="admin-btn primary" id="adminRefreshBtn" type="button" onclick="triggerRefresh()"><span class="refresh-ico">↻</span> <span>Atualizar</span></button></div></div>
 <section class="executive-strip" aria-label="Resumo executivo">
   <div class="exec-card"><div class="eyebrow">Central administrativa</div><h2>Visão geral dos atendimentos</h2><p>Acompanhe volume, andamento, pareceres e produção médica em um único painel, com acesso rápido à busca e ao histórico.</p><div class="exec-meta"><span class="exec-pill">Dados em tempo real</span><span class="exec-pill">Acompanhamento operacional</span><span class="exec-pill">Acesso administrativo</span></div></div>
@@ -2099,7 +2414,7 @@ body.modal-lock { overscroll-behavior: none; }
 <div class="notice">Fonte principal da Gestão: <strong>PostgreSQL/backend</strong>. O LocalStorage permanece como contingência local para rascunhos e recuperação no próprio navegador.</div></div></main></div>
 <div class="modal" id="detailModal"><div class="dialog detail-modal-dialog"><div class="dialog-head"><div><strong id="detailTitle">Atendimento</strong><span id="detailSub"></span></div><div class="esisla-toolbar"><button class="btn btn-outline" id="comprovanteDetailBtn" onclick="abrirComprovanteDoDetail()" style="font-weight:700">📄 Declaração</button><button class="btn btn-esisla" id="generateEsislaBtn">Gerar ficha eSisla</button><button class="btn" onclick="closeModal('detailModal')">Fechar</button></div></div><div id="detailBody" class="detail"></div><div class="dialog-foot"><button class="btn" id="openEvalBtn">Abrir atendimento</button><button class="btn" id="historyBtn">Histórico</button></div></div></div>
 <div class="modal" id="esislaModal">
-  <div class="dialog esisla-dialog-window" style="width:min(940px,100%)">
+  <div class="dialog esisla-dialog-window" style="width:min(1080px,96vw);max-width:1120px">
     
     <div class="dialog-head esisla-modal-head">
       <div class="esisla-head-info">
@@ -2155,7 +2470,7 @@ body.modal-lock { overscroll-behavior: none; }
             </div>
             <span class="esisla-stats-chip" id="esislaStatsChip">0 caracteres · 0 linhas</span>
             <span class="esisla-lock-chip" id="esislaLockChip" style="font-size:10px;font-weight:700;padding:3px 7px;border-radius:6px;background:#F1F5F9;color:#475569;border:1px solid #CBD5E1;display:inline-flex;align-items:center;gap:4px">
-              🔒 Visualização em Blocos
+              🗂️ Visualização em Blocos
             </span>
           </div>
           <div style="display:flex;align-items:center;gap:6px">
@@ -2168,26 +2483,30 @@ body.modal-lock { overscroll-behavior: none; }
             <button class="btn-copy-mini" type="button" onclick="abrirModalExtensaoEsisla()" style="color:#0369A1;font-weight:800" title="Instalar ou usar a Extensão Web do e-SISLA">
               🚀 Extensão
             </button>
-            <button class="btn-copy-mini" type="button" onclick="copyEsislaScript()" style="color:#0D542B;font-weight:700" title="Copiar script com o JSON para preencher no Console do e-Sisla (F12)">
-              ⚡ Script F12
+            <button class="btn-copy-mini" type="button" onclick="copyEsislaScript()" style="display:none" aria-hidden="true">⚡ Script F12</button>
+            <button class="btn-copy-mini" id="btnDesfazerRefinarIA" type="button" onclick="desfazerRefinamentoIA()" style="display:none;background:#FEF2F2;color:#991B1B;border:1px solid #FECACA;font-weight:700" title="Desfazer e restaurar a versão anterior da ficha">
+              ↩️ Desfazer IA
             </button>
           </div>
         </div>
-        <div id="esislaBlocosContainer" style="padding:16px;background:#F8FAFC;overflow-y:auto;flex:1 1 auto;max-height:560px;display:flex;flex-direction:column;gap:12px"></div>
-        <textarea id="esislaText" class="esisla-text locked" readonly spellcheck="false" aria-label="Ficha eSisla gerada" placeholder="Aguardando geração da ficha..." style="display:none" oninput="onEsislaTextInput()"></textarea>
+        <div id="esislaBlocosContainer" style="padding:20px;background:#F8FAFC;overflow-y:auto;flex:1 1 auto;max-height:65vh;min-height:380px;display:flex;flex-direction:column;gap:14px"></div>
+        <textarea id="esislaText" class="esisla-text locked" readonly spellcheck="false" aria-label="Ficha eSisla gerada" placeholder="Aguardando geração da ficha..." style="display:none;min-height:500px;font:13.5px/1.8 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;padding:22px 26px" oninput="onEsislaTextInput()"></textarea>
       </div>
     </div>
 
     <div class="dialog-foot esisla-modal-foot">
       <div class="esisla-foot-left">
-        <button class="btn btn-download-file" id="downloadEsislaBtn" onclick="downloadEsisla()">📥 Baixar (.txt)</button>
         <button class="btn btn-outline" id="regenerateEsislaBtn" onclick="generateEsisla(window.currentEsislaEnc, true)">🔄 Apagar Cache e Refazer</button>
+        <button class="btn btn-download-file" id="downloadEsislaBtn" style="display:none" onclick="downloadEsisla()" aria-hidden="true">📥 Baixar (.txt)</button>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn btn-primary" id="btnRefinarFichaIAFoot" type="button" onclick="refinarFichaEsislaIA()" style="background:linear-gradient(135deg, #4f46e5, #7c3aed);border:none;font-weight:800;display:inline-flex;align-items:center;gap:6px" title="Revisão gramatical, eliminação de duplicidades e estruturação robusta sênior">
+          <span>✨</span> Otimizar e Reestruturar com IA
+        </button>
         <button class="btn btn-outline" type="button" onclick="generateEsislaPDF()" style="color:#0F3254;font-weight:700">📄 Gerar PDF</button>
         <button class="btn btn-outline" type="button" onclick="abrirModalExtensaoEsisla()" style="border-color:#0284C7;color:#0369A1;font-weight:800;display:inline-flex;align-items:center;gap:6px" title="Preenchimento automático direto no e-SISLA via Extensão Web"><span style="font-size:15px">🚀</span> Extensão e-SISLA</button>
-        <button class="btn btn-outline" type="button" onclick="abrirModalBookmarkletEsisla()" style="border-color:#10B981;color:#047857;font-weight:700" title="Preencha o e-SISLA sem abrir o console F12 com 1 clique">⭐ Botão dos Favoritos (sem F12)</button>
-        <button class="btn btn-esisla btn-copy-hero" id="copyEsislaBtn" onclick="copyEsislaScript()">⚡ Script F12</button>
+        <button class="btn btn-outline" type="button" onclick="abrirModalBookmarkletEsisla()" style="display:none" aria-hidden="true">⭐ Botão dos Favoritos (sem F12)</button>
+        <button class="btn btn-esisla btn-copy-hero" id="copyEsislaBtn" style="display:none" onclick="copyEsislaScript()" aria-hidden="true">⚡ Script F12</button>
       </div>
     </div>
   </div>
@@ -2382,6 +2701,102 @@ body.modal-lock { overscroll-behavior: none; }
   </div>
 </div>
 
+<!-- MODAL: IMPORTAR CONSULTA E-SISLA (PDF) -->
+<div class="modal" id="importarEsislaModal">
+  <button id="btnTriggerModalEsisla" style="display:none" onclick="abrirModalImportarEsisla()"></button>
+  <div class="dialog" style="width:min(760px,100%)">
+    <div class="dialog-head" style="background:linear-gradient(135deg, #065F46, #059669);color:#fff">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:26px">📄</span>
+        <div>
+          <strong style="font-size:16px;color:#fff">Importar e-SISLA (PDF) — Consulta Perícia Licença</strong>
+          <span style="display:block;font-size:11px;color:#D1FAE5;margin-top:2px">Área Administrativa — Preenchimento instantâneo a partir do PDF oficial</span>
+        </div>
+      </div>
+      <button class="btn" onclick="closeModal('importarEsislaModal')" style="color:#fff;background:rgba(255,255,255,0.15)">Fechar</button>
+    </div>
+    <div class="dialog-body" style="padding:22px;display:flex;flex-direction:column;gap:16px">
+      <!-- Dropzone -->
+      <div id="dropzoneEsislaGestao" style="border:2.5px dashed #10B981;border-radius:14px;background:#F0FDF4;padding:26px 20px;text-align:center;cursor:pointer;transition:all 0.2s" onclick="document.getElementById('fileEsislaGestaoInput')?.click()">
+        <div style="font-size:38px;margin-bottom:8px">📥</div>
+        <strong style="color:#065F46;font-size:14.5px;display:block">Arraste e solte o PDF da Consulta Perícia Licença aqui</strong>
+        <span style="color:#047857;font-size:12px;display:block;margin-top:4px">ou clique para selecionar o arquivo no seu computador</span>
+        <button type="button" class="btn btn-primary btn-sm" style="margin-top:12px;background:#059669;border-color:#047857;font-weight:700">
+          Selecionar arquivo PDF
+        </button>
+        <input type="file" id="fileEsislaGestaoInput" accept=".pdf,application/pdf" style="display:none" onchange="if(this.files[0])processarArquivoEsislaGestao(this.files[0])">
+      </div>
+
+      <!-- Loading indicator -->
+      <div id="esislaGestaoLoading" style="display:none;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:14px;color:#1E3A8A;font-size:13px;align-items:center;gap:12px">
+        <span class="save-dot working" style="width:14px;height:14px;display:inline-block"></span>
+        <div>
+          <strong>Lendo e estruturando dados do PDF do e-SISLA...</strong>
+          <div style="font-size:11.5px;color:#2563EB;margin-top:2px">Extraindo identificação, cargo, vínculo funcional, CID e parecer do assistente.</div>
+        </div>
+      </div>
+
+      <!-- Preview card -->
+      <div id="esislaGestaoPreview" style="display:none;border:1.5px solid #CBD5E1;border-radius:12px;padding:16px;background:#F8FAFC">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid #E2E8F0;padding-bottom:8px">
+          <strong style="color:#0F3254;font-size:13.5px;display:flex;align-items:center;gap:6px">
+            <span>✓</span> Dados Identificados com Sucesso
+          </strong>
+          <span id="esislaPreviewProtocolo" class="badge" style="background:#E0F2FE;color:#0369A1;font-weight:800">Protocolo: —</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;font-size:12.5px">
+          <div style="background:#fff;border:1px solid #E2E8F0;border-radius:8px;padding:10px">
+            <span style="font-size:11px;color:#64748B;font-weight:700;display:block">COLABORADOR(A)</span>
+            <strong id="prevNome" style="color:#1E293B;display:block;font-size:13px">—</strong>
+            <div id="prevCpfRg" style="color:#475569;font-size:11.5px;margin-top:2px">—</div>
+            <div id="prevIdadeNasc" style="color:#475569;font-size:11.5px">—</div>
+          </div>
+
+          <div style="background:#fff;border:1px solid #E2E8F0;border-radius:8px;padding:10px">
+            <span style="font-size:11px;color:#64748B;font-weight:700;display:block">CARGO & VÍNCULO</span>
+            <strong id="prevCargo" style="color:#1E293B;display:block;font-size:13px">—</strong>
+            <div id="prevOrgao" style="color:#475569;font-size:11.5px;margin-top:2px">—</div>
+            <div id="prevUnidade" style="color:#475569;font-size:11.5px">—</div>
+          </div>
+
+          <div style="background:#fff;border:1px solid #E2E8F0;border-radius:8px;padding:10px;grid-column:1 / -1">
+            <span style="font-size:11px;color:#64748B;font-weight:700;display:block">ATESTADO DO MÉDICO ASSISTENTE</span>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+              <span id="prevCidPill" class="badge" style="background:#FEF3C7;color:#92400E;font-weight:800;font-size:12px">CID: —</span>
+              <strong id="prevCidDesc" style="color:#1E293B;font-size:12.5px">—</strong>
+            </div>
+            <div id="prevDiasData" style="color:#475569;font-size:11.5px;margin-top:4px">—</div>
+            <div id="prevMedicoAssistente" style="color:#475569;font-size:11.5px">—</div>
+          </div>
+        </div>
+
+        <!-- Seleção de Médico Perito -->
+        <div style="margin-top:14px;padding-top:12px;border-top:1px dashed #CBD5E1">
+          <label for="esislaMedicoPeritoSelect" style="display:block;font-size:12px;font-weight:700;color:#0F3254;margin-bottom:6px">
+            Atribuir ao Médico Perito:
+          </label>
+          <select id="esislaMedicoPeritoSelect" class="search" style="width:100%;font-weight:600">
+            <option value="">Carregando médicos...</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="dialog-foot" style="display:flex;justify-content:space-between;align-items:center">
+      <button type="button" class="btn" onclick="closeModal('importarEsislaModal')">Cancelar</button>
+      <div style="display:flex;gap:10px" id="esislaAcoesBotoes">
+        <button type="button" class="btn btn-outline" id="btnEsislaSalvarFila" onclick="salvarAtendimentoEsislaFila()" style="display:none;font-weight:700">
+          💾 Salvar Rascunho na Fila
+        </button>
+        <button type="button" class="btn btn-primary" id="btnEsislaAbrirAgora" onclick="abrirAtendimentoEsislaAgora()" style="display:none;font-weight:800;background:#059669;border-color:#047857">
+          ⚡ Iniciar Atendimento Agora →
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 let accessToken = null;
 let currentUserProfile = null;
@@ -2399,7 +2814,7 @@ const authReady = AmbientalAuth.requireAuth({area:'gestao'}).then(async profile=
     document.getElementById('authLoading')?.remove();
     throw error;
 });
-setTimeout(() => { document.getElementById('authLoading')?.remove(); }, 2000);
+setTimeout(() => { document.getElementById('authLoading')?.remove(); }, 300);
 
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); 
 const arr=v=>Array.isArray(v)?v:[]; 
@@ -2425,7 +2840,7 @@ function localStats(items){const count=s=>items.filter(r=>statusOf(r)===s).lengt
 function carregarLocalStorage(){localItems=lerLocalStorage();serverItems=mergeAtendimentos(serverItems.filter(r=>r.__source!=="local"),localItems);renderStats(localStats(serverItems));refresh();document.getElementById('empty').textContent=serverItems.length?'':'Nenhum atendimento salvo neste navegador.';toastLocalStorage();}
 function toastLocalStorage(){const el=document.getElementById('localCount');if(el)el.textContent=`${localItems.length} atendimento(s) local(is)`;}
 function setDataLoading(stage,title,text,progress){const overlay=document.getElementById('dataLoading');if(!overlay)return;const t=document.getElementById('dataLoadingTitle');const tx=document.getElementById('dataLoadingText');const bar=document.getElementById('loadingProgressBar');if(t)t.textContent=title;if(tx)tx.textContent=text;if(bar)bar.style.width=(progress||15)+'%';const map={session:'loadStep1',data:'loadStep2',stats:'loadStep3',ready:'loadStep4'};Object.entries(map).forEach(([k,id])=>{const el=document.getElementById(id);if(!el)return;el.classList.toggle('active',k===stage);el.classList.toggle('done',['session','data','stats','ready'].indexOf(k)<=['session','data','stats','ready'].indexOf(stage));});}
-function finishDataLoading(){setDataLoading('ready','Sala pronta','Dados carregados. A gestão está pronta para uso.',100);document.getElementById('dataLoading')?.classList.add('hide');document.documentElement.classList.remove('app-loading');document.body.classList.remove('app-loading');setTimeout(()=>document.getElementById('dataLoading')?.remove(),450);}
+function finishDataLoading(){setDataLoading('ready','Sala pronta','Dados carregados. A gestão está pronta para uso.',100);document.getElementById('authLoading')?.remove();const dl=document.getElementById('dataLoading');if(dl){dl.classList.add('hide');document.documentElement.classList.remove('app-loading');document.body.classList.remove('app-loading');setTimeout(()=>dl.remove(),80);}}
 
 async function fetchServer(){
     localItems=lerLocalStorage();let remote=[];
@@ -2444,7 +2859,7 @@ async function fetchServer(){
         if(fim)params.set('data_fim',fim);
         const q=document.getElementById('search').value.trim();if(q)params.set('q',q);
         
-        params.set('page','1');params.set('page_size','100');
+        params.set('page','1');params.set('page_size','40');
         const r=await AmbientalAuth.authFetch('/api/atendimentos?'+params.toString(),{
             cache:'no-store',
             headers: {'Authorization': `Bearer ${accessToken}`}
@@ -2454,6 +2869,9 @@ async function fetchServer(){
             remote=d.data.items||[];
             if(d.data.stats)renderStats(d.data.stats);
             window.lastFetchBackendSuccess = true;
+            try {
+                sessionStorage.setItem('ambiental.gestao.atendimentos_cache', JSON.stringify({ items: remote, stats: d.data.stats, ts: Date.now() }));
+            } catch(_) {}
         } else {
             window.lastFetchBackendSuccess = false;
         }
@@ -3029,12 +3447,15 @@ function renderEsislaBlocos(textoFicha) {
         || st.alteracoesClinicasExames || aux.alteracoesClinicasExames || '';
 
     // Se houver relatos reais de exames complementares (não boilerplates nem "Em anexo"), integra em queixas e não duplica em bloco isolado
-    const cleanAlt = String(alteracoes || '').replace(/^(?:em\s+anexo\.?|não\s+foram\s+apresentados[^\n\r]*|nada\s+consta[^\n\r]*|sem\s+exames[^\n\r]*)\s*$/i, '').trim();
-    if (cleanAlt && !cleanAlt.toLowerCase().includes('em anexo') && !cleanAlt.toLowerCase().includes('não foram apresentados') && cleanAlt.length > 5) {
+    const cleanAlt = String(alteracoes || '').replace(/^(?:em\s+anexo\.?|não\s+foram\s+apresentados[^\n\r]*|nao\s+foram\s+apresentados[^\n\r]*|aus[êeē]ncia\s+de\s+exames[^\n\r]*|nada\s+consta[^\n\r]*|sem\s+exames[^\n\r]*)\s*$/i, '').trim();
+    const isSemExames = /^(?:em\s+anexo\.?|não\s+foram\s+apresentados|nao\s+foram\s+apresentados|aus[êeē]ncia\s+de\s+exames|nada\s+consta|sem\s+exames|n[ãa]o\s+h[áa]\s+exames|n[ãa]o\s+apresentou)/i.test(cleanAlt) || /aus[êeē]ncia\s+de\s+exames/i.test(cleanAlt);
+    if (cleanAlt && !cleanAlt.toLowerCase().includes('em anexo') && !isSemExames && cleanAlt.length > 5) {
         if (!queixa.includes(cleanAlt)) {
             queixa = (queixa ? queixa + '\n\n' : '') + 'Exames apresentados: ' + cleanAlt;
         }
     }
+    queixa = queixa.replace(/Exames apresentados:\s*Aus[êeē]ncia[^\n\r]*[\.\,]?/gi, '').trim();
+    queixa = queixa.replace(/Exames apresentados:\s*N[ãa]o foram[^\n\r]*[\.\,]?/gi, '').trim();
 
     const sistemaEscolhido = detectarSistemaExameFisico(st, aux, str, st.cid || aux.cid);
     const sistemaNome = MAPA_NOMES_ESISLA[sistemaEscolhido] || (sistemaEscolhido === 'outro' ? 'Outros' : 'Aparelho Osteomuscular e Tecido Conjuntivo');
@@ -3207,166 +3628,379 @@ function renderEsislaBlocos(textoFicha) {
         justif = st.justificativa || aux.justificativa || st.agilJustificativa || aux.agilJustificativa || '';
     }
 
+    function removerCapslockExcessivoJs(texto) {
+        if (!texto) return '';
+        const siglasManter = new Set([
+            'CID', 'CRM', 'DPME', 'LTS', 'SUS', 'SP', 'RG', 'CPF', 'PA', 'BPM', 'MMHG',
+            'SIM', 'NÃO', 'NAO', 'FAVORÁVEL', 'FAVORAVEL', 'CONTRÁRIO', 'CONTRARIO', 'FIM'
+        ]);
+        const minusculas = new Set([
+            'de', 'da', 'do', 'das', 'dos', 'em', 'no', 'na', 'nos', 'nas',
+            'e', 'ou', 'para', 'por', 'com', 'sem', 'sob', 'sobre'
+        ]);
+        const mapaAcentos = {
+            'EDUCACAO': 'Educação',
+            'ORGANIZACAO': 'Organização',
+            'BASICA': 'Básica',
+            'TECNICO': 'Técnico',
+            'TECNICA': 'Técnica',
+            'PUBLICO': 'Público',
+            'PUBLICA': 'Pública',
+            'MEDICO': 'Médico',
+            'MEDICA': 'Médica',
+            'AGENTE': 'Agente',
+            'PROFESSOR': 'Professor',
+            'PROFESSORA': 'Professora',
+            'DIRETOR': 'Diretor',
+            'DIRETORA': 'Diretora',
+            'COORDENADOR': 'Coordenador',
+            'COORDENADORA': 'Coordenadora',
+            'SECRETARIO': 'Secretário',
+            'SECRETARIA': 'Secretária',
+            'OFICIAL': 'Oficial',
+            'ADMINISTRATIVO': 'Administrativo',
+            'ADMINISTRATIVA': 'Administrativa',
+            'AUXILIAR': 'Auxiliar',
+            'ESCOLAR': 'Escolar',
+            'SERVICOS': 'Serviços',
+            'GERAIS': 'Gerais',
+            'ESTADUAL': 'Estadual',
+            'MUNICIPAL': 'Municipal'
+        };
+
+        return String(texto).replace(/\b[A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ]{4,}\b(?:\s+[A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ]{2,}\b)*/g, function(fraseCaps) {
+            const palavras = fraseCaps.trim().split(/\s+/);
+            if (palavras.length === 1 && siglasManter.has(palavras[0])) {
+                return palavras[0];
+            }
+            return palavras.map((p, idx) => {
+                const pUpper = p.toUpperCase();
+                if (siglasManter.has(pUpper)) return pUpper;
+                if (mapaAcentos[pUpper]) {
+                    const acentuada = mapaAcentos[pUpper];
+                    return idx > 0 && minusculas.has(acentuada.toLowerCase()) ? acentuada.toLowerCase() : acentuada;
+                }
+                const low = p.toLowerCase();
+                if (idx > 0 && minusculas.has(low)) return low;
+                return low.charAt(0).toUpperCase() + low.slice(1);
+            }).join(' ');
+        });
+    }
+
+    window.copiarBlocoEsislaCard = function(btn, textoExtra) {
+        let raw = '';
+        if (typeof textoExtra === 'string' && textoExtra.trim()) {
+            raw = textoExtra;
+        } else if (btn) {
+            const card = btn.closest('.esisla-card-block');
+            const bodyEl = card ? card.querySelector('.esisla-card-body') : null;
+            if (bodyEl) {
+                raw = bodyEl.innerText || bodyEl.textContent || '';
+            }
+        }
+        const clean = String(raw).replace(/<br\s*[\/]?>/gi, '\n').replace(/<[^>]+>/g, '').trim();
+        if (!clean) return;
+        const feedback = () => {
+            if (!btn) return;
+            const orig = btn.innerHTML;
+            btn.innerHTML = '✓ Copiado';
+            btn.style.color = '#059669';
+            btn.style.borderColor = '#A7F3D0';
+            btn.style.background = '#ECFDF5';
+            setTimeout(() => {
+                btn.innerHTML = orig;
+                btn.style.color = '';
+                btn.style.borderColor = '';
+                btn.style.background = '';
+            }, 1800);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(clean).then(feedback).catch(() => {
+                fallbackCopy(clean, feedback);
+            });
+        } else {
+            fallbackCopy(clean, feedback);
+        }
+        function fallbackCopy(val, cb) {
+            const ta = document.createElement('textarea');
+            ta.value = val;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy'); if (cb) cb(); } catch(_) {}
+            document.body.removeChild(ta);
+        }
+    };
+
+    function sanitizePtBrEsisla(strVal) {
+        if (!strVal) return '';
+        let s = removerCapslockExcessivoJs(String(strVal));
+        const mapMacron = {
+            'ē': 'ê', 'ō': 'ô', 'ā': 'á', 'ī': 'í', 'ū': 'ú',
+            'Ē': 'Ê', 'Ō': 'Ô', 'Ā': 'Á', 'Ī': 'Í', 'Ū': 'Ú'
+        };
+        s = s.replace(/[ēōāīūĒŌĀĪŪ]/g, ch => mapMacron[ch] || ch);
+        s = s.replace(/\bsist[êe]mico\b/gi, m => m[0] === 'S' ? 'Sistêmico' : 'sistêmico');
+        s = s.replace(/\bsist[êe]mica\b/gi, m => m[0] === 'S' ? 'Sistêmica' : 'sistêmica');
+        s = s.replace(/\bsist[êe]micos\b/gi, m => m[0] === 'S' ? 'Sistêmicos' : 'sistêmicos');
+        s = s.replace(/\bsist[êe]micas\b/gi, m => m[0] === 'S' ? 'Sistêmicas' : 'sistêmicas');
+        s = s.replace(/\bcr[ôo]nico\b/gi, m => m[0] === 'C' ? 'Crônico' : 'crônico');
+        s = s.replace(/\bcr[ôo]nica\b/gi, m => m[0] === 'C' ? 'Crônica' : 'crônica');
+        s = s.replace(/\bcr[ôo]nicos\b/gi, m => m[0] === 'C' ? 'Crônicos' : 'crônicos');
+        s = s.replace(/\bcr[ôo]nicas\b/gi, m => m[0] === 'C' ? 'Crônicas' : 'crônicas');
+        s = s.replace(/\baus[êe]ncia\b/gi, m => m[0] === 'A' ? 'Ausência' : 'ausência');
+        s = s.replace(/\baus[êe]ncias\b/gi, m => m[0] === 'A' ? 'Ausências' : 'ausências');
+        s = s.replace(/\bpr[ée]vio\b/gi, m => m[0] === 'P' ? 'Prévio' : 'prévio');
+        s = s.replace(/\bpr[ée]via\b/gi, m => m[0] === 'P' ? 'Prévia' : 'prévia');
+        s = s.replace(/\bpr[ée]vios\b/gi, m => m[0] === 'P' ? 'Prévios' : 'prévios');
+        s = s.replace(/\bpr[ée]vias\b/gi, m => m[0] === 'P' ? 'Prévias' : 'prévias');
+        s = s.replace(/\bclinico\b/gi, m => m[0] === 'C' ? 'Clínico' : 'clínico');
+        s = s.replace(/\bclinica\b/gi, m => m[0] === 'C' ? 'Clínica' : 'clínica');
+        s = s.replace(/\bclinicos\b/gi, m => m[0] === 'C' ? 'Clínicos' : 'clínicos');
+        s = s.replace(/\bclinicas\b/gi, m => m[0] === 'C' ? 'Clínicas' : 'clínicas');
+        s = s.replace(/\bcompativel\b/gi, m => m[0] === 'C' ? 'Compatível' : 'compatível');
+        s = s.replace(/\bcompativeis\b/gi, m => m[0] === 'C' ? 'Compatíveis' : 'compatíveis');
+        s = s.replace(/\bsindrome\b/gi, m => m[0] === 'S' ? 'Síndrome' : 'síndrome');
+        s = s.replace(/\bsindromes\b/gi, m => m[0] === 'S' ? 'Síndromes' : 'síndromes');
+        s = s.replace(/\bperiodo\b/gi, m => m[0] === 'P' ? 'Período' : 'período');
+        s = s.replace(/\bperiodos\b/gi, m => m[0] === 'P' ? 'Períodos' : 'períodos');
+        s = s.replace(/\bimprescindivel\b/gi, m => m[0] === 'I' ? 'Imprescindível' : 'imprescindível');
+        s = s.replace(/\bfisica\b/gi, m => m[0] === 'F' ? 'Física' : 'física');
+        s = s.replace(/\bfisico\b/gi, m => m[0] === 'F' ? 'Físico' : 'físico');
+        s = s.replace(/\bfisicas\b/gi, m => m[0] === 'F' ? 'Físicas' : 'físicas');
+        s = s.replace(/\bfisicos\b/gi, m => m[0] === 'F' ? 'Físicos' : 'físicos');
+        s = s.replace(/\bpericia\b/gi, m => m[0] === 'P' ? 'Perícia' : 'perícia');
+        s = s.replace(/\bpericias\b/gi, m => m[0] === 'P' ? 'Perícias' : 'perícias');
+        s = s.replace(/\binicio\b/gi, m => m[0] === 'I' ? 'Início' : 'início');
+        s = s.replace(/\bhistorico\b/gi, m => m[0] === 'H' ? 'Histórico' : 'histórico');
+        return s;
+    }
+
     function escTxt(v) {
         if (!v) return '<span style="color:#94A3B8;font-style:italic">Não informado</span>';
-        return esc(v).replace(/\n/g, '<br>');
+        return esc(sanitizePtBrEsisla(v)).replace(/\n/g, '<br>');
     }
 
     function formatQuesito(label, txt) {
         const t = (txt || '').toLowerCase();
         const isSim = t.includes('sim');
         const isNao = t.includes('não') || t.includes('nao');
-        const badge = isSim ? '<span class="ans sim" style="font-size:10.5px;padding:2px 8px;border-radius:4px;background:#DEF7EC;color:#03543F;font-weight:700">SIM</span>' :
-                      isNao ? '<span class="ans nao" style="font-size:10.5px;padding:2px 8px;border-radius:4px;background:#FDE8E8;color:#9B1C1C;font-weight:700">NÃO</span>' :
-                      '<span style="font-size:10.5px;color:#64748B">—</span>';
-        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:7px;margin-bottom:6px">
-            <span style="font-size:11.5px;color:#334155;font-weight:600">${label}</span>
+        const badge = isSim ? '<span class="ans sim" style="font-size:11px;padding:3px 10px;border-radius:6px;background:#DEF7EC;color:#03543F;font-weight:800;border:1px solid #BCF0DA">SIM</span>' :
+                      isNao ? '<span class="ans nao" style="font-size:11px;padding:3px 10px;border-radius:6px;background:#FDE8E8;color:#9B1C1C;font-weight:800;border:1px solid #FBD5D5">NÃO</span>' :
+                      '<span style="font-size:11px;color:#64748B">—</span>';
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#F8FAFD;border:1px solid #E2E8F0;border-radius:8px;margin-bottom:8px">
+            <span style="font-size:12.5px;color:#334155;font-weight:600">${label}</span>
             <div>${badge}</div>
         </div>`;
     }
 
     const isFav = parecerTipo.toUpperCase().includes('FAVORÁVEL');
     const parecerBadge = isFav 
-        ? '<span style="display:inline-block;padding:3px 10px;border-radius:6px;background:#DEF7EC;color:#03543F;font-weight:800;font-size:11.5px">FAVORÁVEL</span>' 
-        : (isContra ? '<span style="display:inline-block;padding:3px 10px;border-radius:6px;background:#FDE8E8;color:#9B1C1C;font-weight:800;font-size:11.5px">CONTRÁRIO</span>' 
+        ? '<span style="display:inline-block;padding:4px 12px;border-radius:6px;background:#DEF7EC;color:#03543F;font-weight:800;font-size:12px;border:1px solid #BCF0DA">FAVORÁVEL</span>' 
+        : (isContra ? '<span style="display:inline-block;padding:4px 12px;border-radius:6px;background:#FDE8E8;color:#9B1C1C;font-weight:800;font-size:12px;border:1px solid #FBD5D5">CONTRÁRIO</span>' 
                     : escTxt(parecerTipo));
 
+    const resumoVitais = `Pressão: ${paSis || '—'}/${paDia || '—'} mmHg | Pulso: ${pulso || '—'} bpm | Altura: ${altFormat || '—'} m | Peso: ${pesoDigits || '—'} kg`;
+    const resumoParecer = `Parecer: ${parecerTipo || '—'} | Dias: ${dias || '0'} | Início: ${dtIni || '—'} | CID 10: ${cid || '—'}${cidDesc ? ' (' + cidDesc + ')' : ''}${medPerito ? ' | Perito: ' + medPerito : ''}`;
+    const resumoQuesitos = `1) Doença: ${q1} | 2) Limitação: ${q2} | 3) Impede função: ${q3}`;
+
     container.innerHTML = `
-        <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-                <span style="font-size:13px">🗣️</span>
-                <span style="font-weight:800;font-size:11.5px;color:#1E3A8A;text-transform:uppercase;letter-spacing:.03em">Queixa e Duração</span>
+        <div class="esisla-card-block">
+            <div class="esisla-card-header">
+                <div class="esisla-card-title">
+                    <span class="esisla-card-icon">🗣️</span>
+                    <div>
+                        <span class="esisla-card-label">Queixa e Duração</span>
+                        <span class="esisla-card-sublabel">Histórico da moléstia atual</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-copy-card-block" onclick="copiarBlocoEsislaCard(this)" title="Copiar este bloco">📋 Copiar</button>
             </div>
-            <div style="font-size:12px;color:#1E293B;line-height:1.6">${escTxt(queixa)}</div>
+            <div class="esisla-card-body">${escTxt(queixa)}</div>
         </div>
 
-        <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-                <span style="font-size:13px">📜</span>
-                <span style="font-weight:800;font-size:11.5px;color:#1E3A8A;text-transform:uppercase;letter-spacing:.03em">Antecedentes Mórbidos</span>
+        <div class="esisla-card-block">
+            <div class="esisla-card-header">
+                <div class="esisla-card-title">
+                    <span class="esisla-card-icon">📜</span>
+                    <div>
+                        <span class="esisla-card-label">Antecedentes Mórbidos</span>
+                        <span class="esisla-card-sublabel">Histórico patológico pregresso</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-copy-card-block" onclick="copiarBlocoEsislaCard(this)" title="Copiar este bloco">📋 Copiar</button>
             </div>
-            <div style="font-size:12px;color:#1E293B;line-height:1.6">${escTxt(antecedentes)}</div>
+            <div class="esisla-card-body">${escTxt(antecedentes)}</div>
         </div>
 
-        <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-                <span style="font-size:13px">📑</span>
-                <span style="font-weight:800;font-size:11.5px;color:#1E3A8A;text-transform:uppercase;letter-spacing:.03em">Atestados e Exames Complementares</span>
+        <div class="esisla-card-block">
+            <div class="esisla-card-header">
+                <div class="esisla-card-title">
+                    <span class="esisla-card-icon">📑</span>
+                    <div>
+                        <span class="esisla-card-label">Atestados e Exames Complementares</span>
+                        <span class="esisla-card-sublabel">Documentos anexados</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-copy-card-block" onclick="copiarBlocoEsislaCard(this)" title="Copiar este bloco">📋 Copiar</button>
             </div>
-            <div style="font-size:12px;color:#1E293B;line-height:1.6">${escTxt(atestado)}</div>
+            <div class="esisla-card-body">${escTxt(atestado)}</div>
         </div>
 
-        <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
-                <span style="font-size:13px">💓</span>
-                <span style="font-weight:800;font-size:11.5px;color:#1E3A8A;text-transform:uppercase;letter-spacing:.03em">Sinais Vitais e Biometria</span>
+        <div class="esisla-card-block">
+            <div class="esisla-card-header">
+                <div class="esisla-card-title">
+                    <span class="esisla-card-icon">💓</span>
+                    <div>
+                        <span class="esisla-card-label">Sinais Vitais e Biometria</span>
+                        <span class="esisla-card-sublabel">Medições físicas periciais</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-copy-card-block" onclick="copiarBlocoEsislaCard(this, '${esc(resumoVitais)}')" title="Copiar medições vitais">📋 Copiar</button>
             </div>
             <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px">
-                <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
-                    <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">Pressão Sistólica</span>
-                    <strong style="font-size:13px;color:#0F172A">${paSis ? paSis + ' mmHg' : '<span style="color:#94A3B8;font-weight:normal">Não inf.</span>'}</strong>
+                <div class="esisla-vital-card">
+                    <span class="esisla-vital-label">Pressão Sistólica</span>
+                    <strong style="font-size:13.5px;color:#0F172A">${paSis ? paSis + ' mmHg' : '<span style="color:#94A3B8;font-weight:normal">Não inf.</span>'}</strong>
                 </div>
-                <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
-                    <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">Pressão Diastólica</span>
-                    <strong style="font-size:13px;color:#0F172A">${paDia ? paDia + ' mmHg' : '<span style="color:#94A3B8;font-weight:normal">Não inf.</span>'}</strong>
+                <div class="esisla-vital-card">
+                    <span class="esisla-vital-label">Pressão Diastólica</span>
+                    <strong style="font-size:13.5px;color:#0F172A">${paDia ? paDia + ' mmHg' : '<span style="color:#94A3B8;font-weight:normal">Não inf.</span>'}</strong>
                 </div>
-                <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
-                    <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">Pulso</span>
-                    <strong style="font-size:13px;color:#0F172A">${pulso ? pulso + ' bpm' : '<span style="color:#94A3B8;font-weight:normal">Não inf.</span>'}</strong>
+                <div class="esisla-vital-card">
+                    <span class="esisla-vital-label">Pulso</span>
+                    <strong style="font-size:13.5px;color:#0F172A">${pulso ? pulso + ' bpm' : '<span style="color:#94A3B8;font-weight:normal">Não inf.</span>'}</strong>
                 </div>
-                <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
-                    <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">Altura</span>
-                    <strong style="font-size:13px;color:#0F172A">${altFormat ? altFormat + ' m' : '<span style="color:#94A3B8;font-weight:normal">Não inf.</span>'}</strong>
+                <div class="esisla-vital-card">
+                    <span class="esisla-vital-label">Altura</span>
+                    <strong style="font-size:13.5px;color:#0F172A">${altFormat ? altFormat + ' m' : '<span style="color:#94A3B8;font-weight:normal">Não inf.</span>'}</strong>
                 </div>
-                <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
-                    <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">Peso</span>
-                    <strong style="font-size:13px;color:#0F172A">${pesoDigits ? pesoDigits + ' kg' : '<span style="color:#94A3B8;font-weight:normal">Não inf.</span>'}</strong>
+                <div class="esisla-vital-card">
+                    <span class="esisla-vital-label">Peso</span>
+                    <strong style="font-size:13.5px;color:#0F172A">${pesoDigits ? pesoDigits + ' kg' : '<span style="color:#94A3B8;font-weight:normal">Não inf.</span>'}</strong>
                 </div>
             </div>
         </div>
 
-        <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-                <span style="font-size:13px">🩺</span>
-                <span style="font-weight:800;font-size:11.5px;color:#1E3A8A;text-transform:uppercase;letter-spacing:.03em">Exame Físico Geral</span>
+        <div class="esisla-card-block">
+            <div class="esisla-card-header">
+                <div class="esisla-card-title">
+                    <span class="esisla-card-icon">🩺</span>
+                    <div>
+                        <span class="esisla-card-label">Exame Físico Geral</span>
+                        <span class="esisla-card-sublabel">Avaliação pericial segmentar</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-copy-card-block" onclick="copiarBlocoEsislaCard(this)" title="Copiar este bloco">📋 Copiar</button>
             </div>
             ${sistemaNome ? `
-            <div style="margin-bottom:8px;display:flex;align-items:center;gap:6px">
-                <span style="font-size:11px;padding:3px 8px;border-radius:5px;background:#EFF6FF;color:#1D4ED8;font-weight:700;border:1px solid #BFDBFE">
+            <div style="margin-bottom:10px;display:flex;align-items:center;gap:6px">
+                <span style="font-size:11px;padding:3px 9px;border-radius:6px;background:#EFF6FF;color:#1D4ED8;font-weight:700;border:1px solid #BFDBFE">
                     ☑️ Checkbox e-SISLA: ${esc(sistemaNome)}
                 </span>
             </div>` : ''}
-            <div style="font-size:12px;color:#1E293B;line-height:1.6">${escTxt(exameFisicoLimpo)}</div>
+            <div class="esisla-card-body">${escTxt(exameFisicoLimpo)}</div>
         </div>
 
         ${alteracoes ? `
-        <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-                <span style="font-size:13px">🔬</span>
-                <span style="font-weight:800;font-size:11.5px;color:#1E3A8A;text-transform:uppercase;letter-spacing:.03em">Alterações Clínicas e Exames Complementares</span>
+        <div class="esisla-card-block">
+            <div class="esisla-card-header">
+                <div class="esisla-card-title">
+                    <span class="esisla-card-icon">🔬</span>
+                    <div>
+                        <span class="esisla-card-label">Alterações Clínicas e Exames Complementares</span>
+                        <span class="esisla-card-sublabel">Achados clínicos complementares</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-copy-card-block" onclick="copiarBlocoEsislaCard(this)" title="Copiar este bloco">📋 Copiar</button>
             </div>
-            <div style="font-size:12px;color:#1E293B;line-height:1.6">${escTxt(alteracoes)}</div>
+            <div class="esisla-card-body">${escTxt(alteracoes)}</div>
         </div>` : ''}
 
-        <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-                <span style="font-size:13px">⚠️</span>
-                <span style="font-weight:800;font-size:11.5px;color:#1E3A8A;text-transform:uppercase;letter-spacing:.03em">Limitações Físicas e Mentais</span>
+        <div class="esisla-card-block">
+            <div class="esisla-card-header">
+                <div class="esisla-card-title">
+                    <span class="esisla-card-icon">⚠️</span>
+                    <div>
+                        <span class="esisla-card-label">Limitações Físicas e Mentais</span>
+                        <span class="esisla-card-sublabel">Impacto laboral</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-copy-card-block" onclick="copiarBlocoEsislaCard(this)" title="Copiar este bloco">📋 Copiar</button>
             </div>
-            <div style="font-size:12px;color:#1E293B;line-height:1.6">${escTxt(limitacoes)}</div>
+            <div class="esisla-card-body">${escTxt(limitacoes)}</div>
         </div>
 
-        <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
-                <span style="font-size:13px">⚖️</span>
-                <span style="font-weight:800;font-size:11.5px;color:#1E3A8A;text-transform:uppercase;letter-spacing:.03em">Parecer Médico Pericial</span>
+        <div class="esisla-card-block">
+            <div class="esisla-card-header">
+                <div class="esisla-card-title">
+                    <span class="esisla-card-icon">⚖️</span>
+                    <div>
+                        <span class="esisla-card-label">Parecer Médico Pericial</span>
+                        <span class="esisla-card-sublabel">Decisão oficial conclusiva</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-copy-card-block" onclick="copiarBlocoEsislaCard(this, '${esc(resumoParecer)}')" title="Copiar parecer pericial">📋 Copiar</button>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:10px;margin-bottom:10px">
-                <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
-                    <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">Parecer Final</span>
-                    <div style="margin-top:3px">${parecerBadge}</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:10px">
+                <div class="esisla-vital-card">
+                    <span class="esisla-vital-label">Parecer Final</span>
+                    <div style="margin-top:4px">${parecerBadge}</div>
                 </div>
-                <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
-                    <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">Dias Concedidos</span>
-                    <strong style="font-size:13px;color:#0F172A">${dias ? dias + ' dia(s)' : '<span style="color:#94A3B8;font-weight:normal">0</span>'}</strong>
+                <div class="esisla-vital-card">
+                    <span class="esisla-vital-label">Dias Concedidos</span>
+                    <strong style="font-size:13.5px;color:#0F172A">${dias ? dias + ' dia(s)' : '<span style="color:#94A3B8;font-weight:normal">0</span>'}</strong>
                 </div>
-                <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
-                    <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">Data de Início</span>
-                    <strong style="font-size:13px;color:#0F172A">${escTxt(dtIni)}</strong>
+                <div class="esisla-vital-card">
+                    <span class="esisla-vital-label">Data de Início</span>
+                    <strong style="font-size:13.5px;color:#0F172A">${escTxt(dtIni)}</strong>
                 </div>
-                <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
-                    <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">CID 10 Principal</span>
-                    <strong style="font-size:13px;color:#0F172A">${escTxt(cid)} ${cidDesc ? '<small style="font-size:11px;font-weight:normal;color:#475569">(' + esc(cidDesc.length > 80 ? cidDesc.slice(0, 80) + '...' : cidDesc) + ')</small>' : ''}</strong>
+                <div class="esisla-vital-card">
+                    <span class="esisla-vital-label">CID 10 Principal</span>
+                    <strong style="font-size:13.5px;color:#0F172A">${escTxt(cid)} ${cidDesc ? '<small style="font-size:11px;font-weight:normal;color:#475569">(' + esc(cidDesc.length > 80 ? cidDesc.slice(0, 80) + '...' : cidDesc) + ')</small>' : ''}</strong>
                 </div>
                 ${cidSec ? `
-                <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
-                    <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">CID 10 Secundário</span>
-                    <strong style="font-size:13px;color:#0F172A">${escTxt(cidSec)} ${cidSecDesc ? '<small style="font-size:11px;font-weight:normal;color:#475569">(' + esc(cidSecDesc.length > 80 ? cidSecDesc.slice(0, 80) + '...' : cidSecDesc) + ')</small>' : ''}</strong>
+                <div class="esisla-vital-card">
+                    <span class="esisla-vital-label">CID 10 Secundário</span>
+                    <strong style="font-size:13.5px;color:#0F172A">${escTxt(cidSec)} ${cidSecDesc ? '<small style="font-size:11px;font-weight:normal;color:#475569">(' + esc(cidSecDesc.length > 80 ? cidSecDesc.slice(0, 80) + '...' : cidSecDesc) + ')</small>' : ''}</strong>
                 </div>` : ''}
                 ${medPerito ? `
-                <div style="background:#F8FAFC;padding:8px 10px;border-radius:8px;border:1px solid #E2E8F0">
-                    <span style="display:block;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase">Médico Perito / CRM</span>
-                    <strong style="font-size:12px;color:#0F172A">${esc(medPerito)} ${crmPerito ? '· CRM: ' + esc(crmPerito) : ''}</strong>
+                <div class="esisla-vital-card">
+                    <span class="esisla-vital-label">Médico Perito / CRM</span>
+                    <strong style="font-size:12.5px;color:#0F172A">${esc(medPerito)} ${crmPerito ? '· CRM: ' + esc(crmPerito) : ''}</strong>
                 </div>` : ''}
             </div>
         </div>
 
-        <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
-                <span style="font-size:13px">❓</span>
-                <span style="font-weight:800;font-size:11.5px;color:#1E3A8A;text-transform:uppercase;letter-spacing:.03em">Resposta aos Quesitos Oficiais</span>
+        <div class="esisla-card-block">
+            <div class="esisla-card-header">
+                <div class="esisla-card-title">
+                    <span class="esisla-card-icon">❓</span>
+                    <div>
+                        <span class="esisla-card-label">Resposta aos Quesitos Oficiais</span>
+                        <span class="esisla-card-sublabel">Tríade pericial DPME</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-copy-card-block" onclick="copiarBlocoEsislaCard(this, '${esc(resumoQuesitos)}')" title="Copiar quesitos">📋 Copiar</button>
             </div>
             ${formatQuesito('1) Há doença(s) ou sequela(s)?', q1)}
             ${formatQuesito('2) A(s) doença(s) ou sequela(s) determina(m) limitação?', q2)}
             ${formatQuesito('3) A(s) limitação(ões) impede(m) o exercício das funções?', q3)}
         </div>
 
-        <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-                <span style="font-size:13px">📝</span>
-                <span style="font-weight:800;font-size:11.5px;color:#1E3A8A;text-transform:uppercase;letter-spacing:.03em">Justificativa do Parecer Médico</span>
+        <div class="esisla-card-block">
+            <div class="esisla-card-header">
+                <div class="esisla-card-title">
+                    <span class="esisla-card-icon">📝</span>
+                    <div>
+                        <span class="esisla-card-label">Justificativa do Parecer Médico</span>
+                        <span class="esisla-card-sublabel">Fundamentação técnico-pericial</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-copy-card-block" onclick="copiarBlocoEsislaCard(this)" title="Copiar este bloco">📋 Copiar</button>
             </div>
-            <div style="font-size:12px;color:#1E293B;line-height:1.6">${escTxt(justif)}</div>
+            <div class="esisla-card-body">${escTxt(justif)}</div>
         </div>
     `;
 }
@@ -5593,7 +6227,43 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){const open=[...docu
 document.getElementById('esislaText')?.addEventListener('input', e => updateEsislaStats(e.target.value));
 document.getElementById('logoutBtn')?.addEventListener('click',()=>AmbientalAuth.logout());
 
-(async()=>{document.documentElement.classList.add('app-loading');document.body.classList.add('app-loading');setDataLoading('session','Validando acesso','Sessão segura confirmada. Carregando a central...',28);await authReady;setDataLoading('data','Carregando atendimentos','Buscando registros e atualizando sua visão operacional...',62);await fetchServer();setDataLoading('stats','Preparando indicadores','Calculando status, produção e indicadores...',86);toastLocalStorage();refresh();renderRecentHistory();await new Promise(r=>setTimeout(r,180));finishDataLoading();initAutoSync();})().catch(e=>{console.error(e);const tx=document.getElementById('dataLoadingText');if(tx)tx.textContent='Não foi possível carregar os dados. Atualize a página e tente novamente.';try{initAutoSync();}catch(_){}});
+(async()=>{
+  let hadCache = false;
+  try {
+    const cachedRaw = sessionStorage.getItem('ambiental.gestao.atendimentos_cache');
+    if (cachedRaw) {
+      const parsed = JSON.parse(cachedRaw);
+      if (Array.isArray(parsed?.items) && parsed.items.length > 0) {
+        localItems = lerLocalStorage();
+        serverItems = mergeAtendimentos(parsed.items, localItems);
+        if (parsed.stats) renderStats(parsed.stats);
+        refresh();
+        renderRecentHistory();
+        finishDataLoading();
+        hadCache = true;
+      }
+    }
+  } catch(_) {}
+
+  if (!hadCache) {
+    document.documentElement.classList.add('app-loading');
+    document.body.classList.add('app-loading');
+    setDataLoading('session','Validando acesso','Sessão segura confirmada. Carregando a central...',28);
+  }
+  await authReady;
+  if (!hadCache) {
+    setDataLoading('data','Carregando atendimentos','Buscando registros e atualizando sua visão operacional...',62);
+  }
+  await fetchServer();
+  if (!hadCache) {
+    setDataLoading('stats','Preparando indicadores','Calculando status, produção e indicadores...',86);
+  }
+  toastLocalStorage();
+  refresh();
+  renderRecentHistory();
+  finishDataLoading();
+  initAutoSync();
+})().catch(e=>{console.error(e);const tx=document.getElementById('dataLoadingText');if(tx)tx.textContent='Não foi possível carregar os dados. Atualize a página e tente novamente.';try{initAutoSync();}catch(_){}});
 </script>
 
 <script>
@@ -5632,6 +6302,408 @@ document.getElementById('logoutBtn')?.addEventListener('click',()=>AmbientalAuth
   document.getElementById('sidebarLogout')?.addEventListener('click',()=>document.getElementById('logoutBtn')?.click());
   activate(targetFromHash(),{updateHash:false});
 })();
+
+/* =========================================================
+   IMPORTAÇÃO DE CONSULTA E-SISLA (PDF) - ÁREA ADMINISTRATIVA
+   ========================================================= */
+let currentEsislaParsedData = null;
+let cachedMedicosList = [];
+
+async function carregarMedicosParaSelectEsisla() {
+  const sel = document.getElementById('esislaMedicoPeritoSelect');
+  if (!sel) return;
+  try {
+    if (!cachedMedicosList.length) {
+      const res = await (window.AmbientalAuth ? window.AmbientalAuth.authFetch('/api/admin/medicos') : fetch('/api/admin/medicos'));
+      const data = await res.json();
+      if (res.ok && data?.data?.items) {
+        cachedMedicosList = data.data.items.filter(m => Number(m.ativo) === 1);
+      }
+    }
+    if (cachedMedicosList.length) {
+      sel.innerHTML = cachedMedicosList.map(m => `<option value="${m.id}" data-nome="${m.nome}" data-crm="${m.crm || ''}">${m.nome} (${m.crm || 'Sem CRM'})</option>`).join('');
+      if (currentUserProfile && currentUserProfile.id) {
+        const found = cachedMedicosList.find(m => String(m.id) === String(currentUserProfile.id));
+        if (found) sel.value = found.id;
+      }
+    } else {
+      sel.innerHTML = '<option value="">Nenhum médico ativo cadastrado</option>';
+    }
+  } catch (err) {
+    console.warn("Erro ao carregar lista de médicos:", err);
+    sel.innerHTML = '<option value="">Médico padrão da clínica</option>';
+  }
+}
+
+window.abrirModalImportarEsisla = function() {
+  currentEsislaParsedData = null;
+  document.getElementById('dropzoneEsislaGestao').style.display = 'block';
+  document.getElementById('esislaGestaoLoading').style.display = 'none';
+  document.getElementById('esislaGestaoPreview').style.display = 'none';
+  document.getElementById('btnEsislaSalvarFila').style.display = 'none';
+  document.getElementById('btnEsislaAbrirAgora').style.display = 'none';
+  const inp = document.getElementById('fileEsislaGestaoInput');
+  if (inp) inp.value = '';
+  carregarMedicosParaSelectEsisla();
+  setModal('importarEsislaModal', true);
+};
+
+window.processarArquivoEsislaGestao = async function(file) {
+  if (!file) return;
+  const dropzone = document.getElementById('dropzoneEsislaGestao');
+  const loading = document.getElementById('esislaGestaoLoading');
+  const preview = document.getElementById('esislaGestaoPreview');
+  const btnSalvar = document.getElementById('btnEsislaSalvarFila');
+  const btnAbrir = document.getElementById('btnEsislaAbrirAgora');
+
+  if (dropzone) dropzone.style.display = 'none';
+  if (loading) loading.style.display = 'flex';
+  if (preview) preview.style.display = 'none';
+  if (btnSalvar) btnSalvar.style.display = 'none';
+  if (btnAbrir) btnAbrir.style.display = 'none';
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    let res;
+    if (window.AmbientalAPI?.esisla?.parsePdf) {
+      res = await AmbientalAPI.esisla.parsePdf(formData);
+    } else {
+      const r = await (window.AmbientalAuth ? window.AmbientalAuth.authFetch('/api/esisla/parse-pdf', {
+        method: 'POST', body: formData
+      }) : fetch('/api/esisla/parse-pdf', { method: 'POST', body: formData }));
+      res = await r.json();
+      if (!r.ok) throw new Error(res?.error?.message || res?.detail || 'Erro ao processar arquivo.');
+    }
+
+    const dados = res.data?.dados || res.dados;
+    if (!dados || (!dados.nome_paciente && !dados.cpf_paciente)) {
+      throw new Error('Não foi possível identificar os dados da Consulta Perícia Licença.');
+    }
+    currentEsislaParsedData = dados;
+
+    document.getElementById('esislaPreviewProtocolo').textContent = `Protocolo: ${dados.protocolo || 'Não informado'}`;
+    document.getElementById('prevNome').textContent = dados.nome_paciente || 'Não informado';
+    document.getElementById('prevCpfRg').textContent = `CPF: ${dados.cpf_paciente || '—'} · RG: ${dados.rg_paciente || '—'}`;
+    document.getElementById('prevIdadeNasc').textContent = `${dados.idade ? dados.idade + ' anos' : 'Idade —'} (Nasc: ${dados.data_nascimento || '—'}) · Sexo: ${dados.sexo || '—'}`;
+    
+    document.getElementById('prevCargo').textContent = dados.cargo || 'Não informado';
+    document.getElementById('prevOrgao').textContent = `Órgão: ${dados.orgao || '—'}`;
+    document.getElementById('prevUnidade').textContent = `UA: ${dados.unidade || '—'} · Reg: ${dados.regime_juridico || '—'}`;
+
+    document.getElementById('prevCidPill').textContent = `CID: ${dados.cid || '—'}`;
+    document.getElementById('prevCidDesc').textContent = dados.cid_descricao || '—';
+    document.getElementById('prevDiasData').textContent = `Prazo: ${dados.dias_solicitados || '—'} dia(s) · Emitido em: ${dados.data_documento_br || dados.data_documento || '—'}`;
+    document.getElementById('prevMedicoAssistente').textContent = `Médico Assistente: ${dados.nome_medico_assistente || '—'} (CRM: ${dados.crm_cro || '—'})`;
+
+    if (loading) loading.style.display = 'none';
+    if (preview) preview.style.display = 'block';
+    if (btnSalvar) btnSalvar.style.display = 'inline-flex';
+    if (btnAbrir) btnAbrir.style.display = 'inline-flex';
+  } catch (err) {
+    if (loading) loading.style.display = 'none';
+    if (dropzone) dropzone.style.display = 'block';
+    alert(err.message || 'Falha ao processar arquivo PDF.');
+  }
+};
+
+window.salvarAtendimentoEsislaFila = async function() {
+  if (!currentEsislaParsedData) return;
+  const sel = document.getElementById('esislaMedicoPeritoSelect');
+  const opt = sel?.options[sel.selectedIndex];
+  const payload = {
+    dados: currentEsislaParsedData,
+    medico_id: sel?.value || '',
+    medico_nome: opt?.dataset?.nome || opt?.text || '',
+    medico_crm: opt?.dataset?.crm || ''
+  };
+
+  const btn = document.getElementById('btnEsislaSalvarFila');
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando na fila...'; }
+
+  try {
+    let res;
+    if (window.AmbientalAPI?.esisla?.criarAtendimento) {
+      res = await AmbientalAPI.esisla.criarAtendimento(payload);
+    } else {
+      const r = await (window.AmbientalAuth ? window.AmbientalAuth.authFetch('/api/esisla/criar-atendimento', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      }) : fetch('/api/esisla/criar-atendimento', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      }));
+      res = await r.json();
+      if (!r.ok) throw new Error(res?.error?.message || res?.detail || 'Erro ao criar atendimento.');
+    }
+
+    closeModal('importarEsislaModal');
+    triggerRefresh(true);
+    alert(`Atendimento de ${currentEsislaParsedData.nome_paciente} salvo com sucesso na fila de rascunhos!`);
+  } catch (err) {
+    alert(err.message || 'Erro ao salvar atendimento na fila.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '💾 Salvar Rascunho na Fila'; }
+  }
+};
+
+window.abrirAtendimentoEsislaAgora = async function() {
+  if (!currentEsislaParsedData) return;
+  const sel = document.getElementById('esislaMedicoPeritoSelect');
+  const opt = sel?.options[sel.selectedIndex];
+  const payload = {
+    dados: currentEsislaParsedData,
+    medico_id: sel?.value || '',
+    medico_nome: opt?.dataset?.nome || opt?.text || '',
+    medico_crm: opt?.dataset?.crm || ''
+  };
+
+  const btn = document.getElementById('btnEsislaAbrirAgora');
+  if (btn) { btn.disabled = true; btn.textContent = 'Abrindo atendimento...'; }
+
+  try {
+    let res;
+    if (window.AmbientalAPI?.esisla?.criarAtendimento) {
+      res = await AmbientalAPI.esisla.criarAtendimento(payload);
+    } else {
+      const r = await (window.AmbientalAuth ? window.AmbientalAuth.authFetch('/api/esisla/criar-atendimento', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      }) : fetch('/api/esisla/criar-atendimento', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      }));
+      res = await r.json();
+      if (!r.ok) throw new Error(res?.error?.message || res?.detail || 'Erro ao criar atendimento.');
+    }
+
+    const atdId = res.data?.id || res.id;
+    if (atdId) {
+      location.href = `/app?atendimento=${encodeURIComponent(atdId)}`;
+    }
+  } catch (err) {
+    alert(err.message || 'Erro ao iniciar atendimento.');
+    if (btn) { btn.disabled = false; btn.textContent = '⚡ Iniciar Atendimento Agora →'; }
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  const dropzone = document.getElementById('dropzoneEsislaGestao');
+  if (dropzone) {
+    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.style.background = '#DCFCE7'; dropzone.style.borderColor = '#059669'; });
+    dropzone.addEventListener('dragleave', (e) => { e.preventDefault(); dropzone.style.background = '#F0FDF4'; dropzone.style.borderColor = '#10B981'; });
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.style.background = '#F0FDF4';
+      dropzone.style.borderColor = '#10B981';
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+        processarArquivoEsislaGestao(e.dataTransfer.files[0]);
+      }
+    });
+  }
+});
+
+/* =========================================================
+   ENTRAR LOGIN MÉDICO (IMPERSONATE) & REFINAMENTO IA E-SISLA
+   ========================================================= */
+let cachedImpersonateMedicos = [];
+
+async function carregarMedicosParaImpersonate() {
+  const selTop = document.getElementById('selectImpersonateMedicoTop');
+  const selSide = document.getElementById('selectImpersonateMedicoSidebar');
+  if (!selTop && !selSide) return;
+
+  try {
+    let medicos = [];
+    if (window.AmbientalAPI?.admin?.medicosListaImpersonate) {
+      const res = await AmbientalAPI.admin.medicosListaImpersonate();
+      medicos = res?.data?.items || [];
+    } else {
+      const token = accessToken || (await AmbientalAuth?.getAccessToken?.());
+      const res = await fetch('/api/admin/medicos/lista-impersonate', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok && data?.data?.items) {
+        medicos = data.data.items;
+      }
+    }
+
+    cachedImpersonateMedicos = medicos;
+
+    const buildOptions = (placeholder) => {
+      if (!medicos.length) {
+        return `<option value="">Nenhum médico ativo disponível</option>`;
+      }
+      return `<option value="">${placeholder}</option>` + medicos.map(m => {
+        const crmLabel = m.crm ? `CRM: ${m.crm}` : 'Sem CRM';
+        const atdCount = m.total_atendimentos ? ` · ${m.total_atendimentos} laudos` : '';
+        return `<option value="${m.id}" data-nome="${esc(m.nome)}" data-crm="${esc(m.crm || '')}">${esc(m.nome)} (${crmLabel}${atdCount})</option>`;
+      }).join('');
+    };
+
+    if (selTop) selTop.innerHTML = buildOptions('Selecione o médico para entrar...');
+    if (selSide) selSide.innerHTML = buildOptions('Selecione o médico...');
+
+    // Restore selected value if currently impersonating
+    const currentImpersonateId = sessionStorage.getItem('ambiental.impersonate_medico_id');
+    if (currentImpersonateId) {
+      if (selTop) selTop.value = currentImpersonateId;
+      if (selSide) selSide.value = currentImpersonateId;
+    }
+  } catch (err) {
+    console.warn("Falha ao carregar lista de médicos para impersonate:", err);
+    if (selTop) selTop.innerHTML = '<option value="">Médicos indisponíveis</option>';
+    if (selSide) selSide.innerHTML = '<option value="">Médicos indisponíveis</option>';
+  }
+}
+
+function onSelectImpersonateChange(val) {
+  const selTop = document.getElementById('selectImpersonateMedicoTop');
+  const selSide = document.getElementById('selectImpersonateMedicoSidebar');
+  if (selTop && selTop.value !== val) selTop.value = val;
+  if (selSide && selSide.value !== val) selSide.value = val;
+}
+
+function entrarComoMedico(medicoId) {
+  if (!medicoId) {
+    alert("Selecione um médico na lista para acessar o portal com seu login.");
+    return;
+  }
+  const medico = cachedImpersonateMedicos.find(m => String(m.id) === String(medicoId));
+  const nomeMed = medico ? medico.nome : `Médico ID ${medicoId}`;
+  
+  // Salvar no sessionStorage para todas as requisições API injetarem o header
+  sessionStorage.setItem('ambiental.impersonate_medico_id', String(medicoId));
+  if (medico) {
+    sessionStorage.setItem('ambiental.impersonate_medico_nome', medico.nome || '');
+    sessionStorage.setItem('ambiental.impersonate_medico_crm', medico.crm || '');
+  }
+
+  // Redirecionar diretamente para o Portal Médico
+  location.href = `/gestao_medicos.html?impersonate_medico_id=${encodeURIComponent(medicoId)}`;
+}
+
+function entrarComoMedicoSelecionado() {
+  const selTop = document.getElementById('selectImpersonateMedicoTop');
+  const selSide = document.getElementById('selectImpersonateMedicoSidebar');
+  const val = selTop?.value || selSide?.value;
+  if (!val) {
+    alert("Por favor, selecione um médico na lista para entrar no painel como médico.");
+    return;
+  }
+  entrarComoMedico(val);
+}
+
+// Inicializar carregamento de médicos para impersonate
+setTimeout(() => {
+  carregarMedicosParaImpersonate();
+}, 600);
+
+/* --- SENIOR AI REFINEMENT: REESTRUTURAR E OTIMIZAR FICHA E-SISLA --- */
+window._esislaTextoOriginalAntesIA = null;
+
+async function refinarFichaEsislaIA() {
+  const el = document.getElementById('esislaText');
+  let texto = el?.value || '';
+  if (!texto.trim()) {
+    if (window.currentDetailFull?.ficha_esisla) {
+      texto = window.currentDetailFull.ficha_esisla;
+      if (el) el.value = texto;
+    }
+  }
+  if (!texto.trim() || texto.trim().length < 30) {
+    alert("Gere o conteúdo da ficha e-Sisla antes de acionar a otimização com IA.");
+    return;
+  }
+
+  const btnHead = document.getElementById('btnRefinarFichaIA');
+  const btnFoot = document.getElementById('btnRefinarFichaIAFoot');
+  const btnDesfazer = document.getElementById('btnDesfazerRefinarIA');
+
+  const oldHeadText = btnHead?.innerHTML;
+  const oldFootText = btnFoot?.innerHTML;
+
+  if (btnHead) { btnHead.disabled = true; btnHead.innerHTML = '✨ Otimizando...'; }
+  if (btnFoot) { btnFoot.disabled = true; btnFoot.innerHTML = '✨ Otimizando com IA...'; }
+
+  try {
+    window._esislaTextoOriginalAntesIA = texto;
+
+    let atdId = null;
+    if (window.currentEsislaEnc) {
+      try {
+        const dec = decodeURIComponent(window.currentEsislaEnc);
+        const r = typeof find === 'function' ? find(dec) : null;
+        if (r) atdId = r.atendimento || r.id;
+      } catch(_) {}
+    }
+
+    const payload = {
+      ficha_esisla: texto,
+      texto_ficha: texto,
+      texto: texto,
+      atendimento_id: atdId
+    };
+
+    let resData;
+    if (window.AmbientalAPI?.ai?.refinarFichaEsisla) {
+      resData = await AmbientalAPI.ai.refinarFichaEsisla(payload);
+    } else {
+      const token = accessToken || await AmbientalAuth.getAccessToken();
+      const resp = await fetch('/api/ai/refinar-ficha-esisla', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      resData = await resp.json();
+      if (!resp.ok) throw new Error(resData?.error?.message || resData?.detail || 'Erro ao otimizar ficha.');
+    }
+
+    const textoOtimizado = resData?.data?.ficha_esisla_otimizada || resData?.data?.texto_otimizado || resData?.ficha_esisla_otimizada || resData?.texto_otimizado;
+    if (!textoOtimizado) {
+      throw new Error(resData?.error?.message || "Não foi possível gerar a ficha otimizada.");
+    }
+
+    el.value = textoOtimizado;
+    updateEsislaStats(textoOtimizado);
+    renderEsislaBlocos(textoOtimizado);
+
+    if (btnDesfazer) btnDesfazer.style.display = 'inline-flex';
+
+    const melhorias = resData?.data?.melhorias_aplicadas || [];
+    const msg = melhorias.length 
+      ? `✨ Ficha reestruturada e enriquecida com sucesso!\n• ${melhorias.join('\n• ')}`
+      : '✨ Ficha reestruturada e otimizada com padrão sênior e-SISLA!';
+    
+    if (window.AmbientalUtils?.toast) {
+      AmbientalUtils.toast(msg, 6000);
+    } else {
+      alert(msg);
+    }
+  } catch (err) {
+    alert("Erro na otimização com IA: " + (err.message || err));
+  } finally {
+    if (btnHead) { btnHead.disabled = false; btnHead.innerHTML = oldHeadText || '✨ Otimizar Ficha com IA'; }
+    if (btnFoot) { btnFoot.disabled = false; btnFoot.innerHTML = oldFootText || '✨ Otimizar e Reestruturar com IA'; }
+  }
+}
+
+function desfazerRefinamentoIA() {
+  if (!window._esislaTextoOriginalAntesIA) return;
+  const el = document.getElementById('esislaText');
+  if (el) {
+    el.value = window._esislaTextoOriginalAntesIA;
+    updateEsislaStats(el.value);
+    renderEsislaBlocos(el.value);
+  }
+  const btnDesfazer = document.getElementById('btnDesfazerRefinarIA');
+  if (btnDesfazer) btnDesfazer.style.display = 'none';
+  window._esislaTextoOriginalAntesIA = null;
+  if (window.AmbientalUtils?.toast) {
+    AmbientalUtils.toast('Versão anterior restaurada com sucesso!');
+  }
+}
 </script>
 </body>
 </html>

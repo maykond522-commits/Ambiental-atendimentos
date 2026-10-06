@@ -340,6 +340,12 @@
     const headers = new Headers(initOptions.headers || {});
     if (token) headers.set("Authorization", `Bearer ${token}`);
     headers.set("Accept", headers.get("Accept") || "application/json");
+    try {
+      const impId = (typeof sessionStorage !== 'undefined') ? sessionStorage.getItem('ambiental.impersonate_medico_id') : null;
+      if (impId && !headers.has("X-Impersonate-Medico-Id")) {
+        headers.set("X-Impersonate-Medico-Id", impId);
+      }
+    } catch (_) {}
     let response = await fetch(input, {
       ...initOptions,
       credentials: initOptions.credentials || "same-origin",
@@ -355,6 +361,12 @@
           const retryHeaders = new Headers(initOptions.headers || {});
           retryHeaders.set("Authorization", `Bearer ${refData.session.access_token}`);
           retryHeaders.set("Accept", retryHeaders.get("Accept") || "application/json");
+          try {
+            const impId = (typeof sessionStorage !== 'undefined') ? sessionStorage.getItem('ambiental.impersonate_medico_id') : null;
+            if (impId && !retryHeaders.has("X-Impersonate-Medico-Id")) {
+              retryHeaders.set("X-Impersonate-Medico-Id", impId);
+            }
+          } catch (_) {}
           response = await fetch(input, {
             ...initOptions,
             credentials: initOptions.credentials || "same-origin",

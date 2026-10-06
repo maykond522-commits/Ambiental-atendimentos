@@ -29,6 +29,9 @@
       const controller = new AbortController();
       const timer = window.setTimeout(() => controller.abort(), timeoutMs);
       let response;
+      const impersonatedId = (typeof sessionStorage !== 'undefined') ? sessionStorage.getItem('ambiental.impersonate_medico_id') : null;
+      const impersonateHeader = impersonatedId ? { 'X-Impersonate-Medico-Id': impersonatedId } : {};
+
       try {
         response = await AmbientalAuth.authFetch(path, {
           credentials: 'same-origin',
@@ -38,6 +41,7 @@
           headers: {
             Accept: 'application/json',
             ...(requestOptions.body ? { 'Content-Type': 'application/json' } : {}),
+            ...impersonateHeader,
             ...(requestOptions.headers || {})
           }
         });
@@ -93,10 +97,12 @@
       preenchimento: (payload) => request('/api/ai/preenchimento', { method: 'POST', body: JSON.stringify(payload), timeoutMs: 60000 }),
       preencherFicha: (payload) => request('/api/ai/preencher-ficha', { method: 'POST', body: JSON.stringify(payload), timeoutMs: 120000 }),
       documento: (payload) => request('/api/ai/documento', { method: 'POST', body: JSON.stringify(payload), timeoutMs: 60000 }),
-      esisla: (payload) => request('/api/ai/esisla', { method: 'POST', body: JSON.stringify(payload), timeoutMs: 60000 })
+      esisla: (payload) => request('/api/ai/esisla', { method: 'POST', body: JSON.stringify(payload), timeoutMs: 60000 }),
+      refinarFichaEsisla: (payload) => request('/api/ai/refinar-ficha-esisla', { method: 'POST', body: JSON.stringify(payload), timeoutMs: 90000 })
     },
     admin: {
       medicos: () => request('/api/admin/medicos'),
+      medicosListaImpersonate: () => request('/api/admin/medicos/lista-impersonate'),
       createMedico: (payload) => request('/api/admin/medicos', { method: 'POST', body: JSON.stringify(payload) }),
       updateMedico: (id, payload) => request(`/api/admin/medicos/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(payload) }),
       toggleStatus: (id) => request(`/api/admin/medicos/${encodeURIComponent(id)}/status`, { method: 'PATCH' }),
@@ -106,6 +112,63 @@
       saveAgendas: (medicoId, payload) => request(`/api/admin/medicos/${encodeURIComponent(medicoId)}/agendas`, { method: 'POST', body: JSON.stringify(payload) }),
       deleteAgenda: (agendaId) => request(`/api/admin/agendas/${encodeURIComponent(agendaId)}`, { method: 'DELETE' }),
       clearAgendas: (medicoId, data) => request(`/api/admin/medicos/${encodeURIComponent(medicoId)}/agendas?data=${encodeURIComponent(data)}`, { method: 'DELETE' })
+    },
+    impersonate: {
+      set: (medicoId, medicoInfo) => {
+        if (!medicoId) {
+          sessionStorage.removeItem('ambiental.impersonate_medico_id');
+          sessionStorage.removeItem('ambiental.impersonate_medico_info');
+        } else {
+          sessionStorage.setItem('ambiental.impersonate_medico_id', String(medicoId));
+          if (medicoInfo) sessionStorage.setItem('ambiental.impersonate_medico_info', JSON.stringify(medicoInfo));
+        }
+      },
+      get: () => {
+        const id = sessionStorage.getItem('ambiental.impersonate_medico_id');
+        let info = null;
+        try { info = JSON.parse(sessionStorage.getItem('ambiental.impersonate_medico_info') || 'null'); } catch(_) {}
+        return id ? { id, ...info } : null;
+      },
+      clear: () => {
+        sessionStorage.removeItem('ambiental.impersonate_medico_id');
+        sessionStorage.removeItem('ambiental.impersonate_medico_info');
+      }
+    },
+    esisla: {
+      parsePdf: (formDataOrPayload) => {
+        if (typeof FormData !== 'undefined' && formDataOrPayload instanceof FormData) {
+          return (window.AmbientalAuth ? window.AmbientalAuth.authFetch('/api/esisla/parse-pdf', {
+            method: 'POST',
+            body: formDataOrPayload
+          }) : fetch('/api/esisla/parse-pdf', {
+            method: 'POST',
+            body: formDataOrPayload
+          })).then(async r => {
+            const data = await r.json().catch(() => ({}));
+            if (!r.ok) throw new Error(data?.error?.message || data?.detail || 'Falha ao processar arquivo do e-SISLA.');
+            return data;
+          });
+        }
+        return request('/api/esisla/parse-pdf', { method: 'POST', body: JSON.stringify(formDataOrPayload), timeoutMs: 60000 });
+      },
+      criarAtendimento: (payload) => request('/api/esisla/criar-atendimento', { method: 'POST', body: JSON.stringify(payload) }),
+      vincularAgendaBatch: (formData) => {
+        const impersonatedId = (typeof sessionStorage !== 'undefined') ? sessionStorage.getItem('ambiental.impersonate_medico_id') : null;
+        const headers = impersonatedId ? { 'X-Impersonate-Medico-Id': impersonatedId } : {};
+        return (window.AmbientalAuth ? window.AmbientalAuth.authFetch('/api/esisla/vincular-agenda-batch', {
+          method: 'POST',
+          body: formData,
+          headers
+        }) : fetch('/api/esisla/vincular-agenda-batch', {
+          method: 'POST',
+          body: formData,
+          headers
+        })).then(async r => {
+          const data = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(data?.error?.message || data?.detail || 'Falha ao vincular arquivos e-SISLA à agenda.');
+          return data;
+        });
+      }
     }
   };
 

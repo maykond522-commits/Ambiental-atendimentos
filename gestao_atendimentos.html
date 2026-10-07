@@ -689,59 +689,117 @@ body.admin-shell {
   transform: rotate(90deg);
 }
 
-/* Botões Globais */
+/* Botões Globais Refinados — Design System Ambiental */
 .btn {
-  border: 1px solid #C7D6E5;
-  background: #fff;
-  color: #29435F;
-  padding: 9px 14px;
-  border-radius: 11px;
+  border: 1px solid #CBD5E1;
+  background: #FFFFFF;
+  color: #1E293B;
+  padding: 8px 15px;
+  border-radius: 9px;
   font-size: 11.5px;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
-  transition: all .18s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all .15s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  user-select: none;
 }
 .btn:hover {
-  border-color: #7FAAD5;
+  border-color: #94A3B8;
+  background: #F8FAFC;
+  color: #0F172A;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(7, 63, 135, 0.05);
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
+}
+.btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  pointer-events: none;
 }
 .btn-primary {
-  background: linear-gradient(135deg, var(--blue), var(--blue-2));
-  color: #fff;
-  border: none;
-  box-shadow: 0 6px 18px rgba(7, 63, 135, 0.18);
+  background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
+  color: #FFFFFF !important;
+  border: 1px solid #0284C7;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 .btn-primary:hover {
-  box-shadow: 0 8px 22px rgba(7, 63, 135, 0.25);
+  background: linear-gradient(135deg, #0369A1 0%, #075985 100%);
+  border-color: #0369A1;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.38);
   transform: translateY(-1px);
+}
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.28);
 }
 .btn-esisla {
-  background: linear-gradient(135deg, var(--green), #009645);
-  color: #fff;
-  border: none;
-  box-shadow: 0 6px 18px rgba(0, 174, 80, 0.16);
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #FFFFFF !important;
+  border: 1px solid #059669;
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 .btn-esisla:hover {
-  box-shadow: 0 8px 22px rgba(0, 174, 80, 0.24);
+  background: linear-gradient(135deg, #047857 0%, #065F46 100%);
+  border-color: #047857;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
   transform: translateY(-1px);
 }
+.btn-danger {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #DC2626;
+  box-shadow: 0 1px 2px rgba(220, 38, 38, 0.05);
+}
+.btn-danger:hover {
+  background: #DC2626;
+  border-color: #DC2626;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.28);
+  transform: translateY(-1px);
+}
+.btn-danger:active {
+  transform: translateY(0);
+}
 .btn-quiet {
-  background: #F7FAFC;
+  background: #F8FAFC;
   border-color: transparent;
+  box-shadow: none;
+}
+.btn-quiet:hover {
+  background: #F1F5F9;
+  border-color: #E2E8F0;
 }
 .btn-outline {
-  border: 1px solid #D6E0E9;
-  background: #fff;
-  color: #31506D;
+  border: 1px solid #CBD5E1;
+  background: #FFFFFF;
+  color: #334155;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+.btn-outline:hover {
+  background: #F8FAFC;
+  border-color: #94A3B8;
+  color: #0F172A;
 }
 .btn-download-file {
-  background: #F0F6FC;
-  border: 1px solid #C8DDF2;
-  color: var(--blue);
+  background: #F0F9FF;
+  border: 1px solid #BAE6FD;
+  color: #0284C7;
 }
 .btn-download-file:hover {
-  background: #E4EFF9;
+  background: #E0F2FE;
+  border-color: #7DD3FC;
+  color: #0369A1;
 }
 
 /* ===== LAYOUT & PAINEL DE BOAS-VINDAS ===== */
@@ -1329,6 +1387,116 @@ details.more[open] .more-caret {
   transform: rotate(-90deg);
 }
 .empty { padding: 42px; text-align: center; color: var(--muted); font-size: 12.5px; background: #FCFDFE; }
+
+/* ===== PAGINAÇÃO DA TABELA (MÁXIMO 40 POR PÁGINA) ===== */
+.table-pagination-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 13px 20px;
+  background: #FCFDFE;
+  border-top: 1px solid #E2E8F0;
+  user-select: none;
+}
+.pagination-info {
+  font-size: 11.5px;
+  color: #64748B;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pagination-info b {
+  color: #0F172A;
+  font-weight: 800;
+}
+.pagination-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.page-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 9px;
+  border: 1px solid #CBD5E1;
+  background: #FFFFFF;
+  color: #334155;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .16s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+.page-nav-btn:hover:not(:disabled) {
+  background: #F8FAFC;
+  border-color: #94A3B8;
+  color: #0F172A;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(15, 23, 42, 0.08);
+}
+.page-nav-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+.page-nav-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #F8FAFC;
+  border-color: #E2E8F0;
+  color: #94A3B8;
+  box-shadow: none;
+}
+.page-numbers-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.page-num-btn {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 7px;
+  border-radius: 8px;
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .15s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+.page-num-btn:hover:not(.active) {
+  background: #F1F5F9;
+  border-color: #CBD5E1;
+  color: #0F172A;
+  transform: translateY(-1px);
+}
+.page-num-btn.active {
+  background: linear-gradient(135deg, #0284C7, #0369A1);
+  border-color: #0284C7;
+  color: #FFFFFF !important;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.32);
+  pointer-events: none;
+}
+.page-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  color: #94A3B8;
+  font-weight: 800;
+  font-size: 11px;
+  user-select: none;
+}
 
 /* ===== VISÕES & HISTÓRICO ===== */
 .admin-view { display: none; }
@@ -2410,7 +2578,7 @@ body.modal-lock { overscroll-behavior: none; }
 <div class="admin-view" id="view-indicadores"><div class="view-header"><div><div class="view-kicker">Performance operacional</div><h2>Indicadores e resultados</h2><p>Resumo operacional dos atendimentos, pendências, finalizações e atualizações recentes.</p></div><span class="view-count">Leitura executiva</span></div>
 <section class="stats anchor-target" id="indicadores"><div class="stat"><span>Total</span><b id="statTotal">—</b></div><div class="stat"><span>Rascunhos</span><b id="statDraft">—</b></div><div class="stat"><span>Em revisão</span><b id="statReview">—</b></div><div class="stat"><span>Finalizados</span><b id="statDone">—</b></div><div class="stat"><span>Arquivados</span><b id="statArchived">—</b></div><div class="stat"><span>Pendências</span><b id="statPending">—</b></div><div class="stat"><span>Atualizados hoje</span><b id="statRecent">—</b></div></section></div>
 <div class="admin-view" id="view-busca"><div class="view-header"><div><div class="view-kicker">Consulta operacional</div><h2>Buscar atendimento</h2><p>Localize por número, paciente, CPF, médico, CID, unidade, status ou período e abra o registro completo.</p></div><span class="view-count" id="searchViewCount">— resultados</span></div>
-<section class="panel anchor-target" id="atendimentos"><div class="search-toolbar"><div class="search-toolbar-left"><span class="search-toolbar-title">Localizar atendimento</span><span class="filter-count" id="resultCount">— resultados</span></div><div class="search-toolbar-actions"><button class="search-refresh-btn" id="searchRefreshBtn" type="button" onclick="triggerRefresh(true)" title="Sincronizar e atualizar resultados"><span class="refresh-ico">↻</span> <span>Atualizar lista</span></button><button class="search-reset-btn" type="button" onclick="clearFilters()" title="Limpar todos os filtros"><span class="reset-icon">↺</span> <span>Redefinir busca</span></button></div></div><div class="tabs"><button class="tab active" data-tab="all" onclick="setTab('all')">Todos</button><button class="tab" data-tab="draft" onclick="setTab('draft')">Rascunhos</button><button class="tab" data-tab="review" onclick="setTab('review')">Em revisão</button><button class="tab" data-tab="done" onclick="setTab('done')">Finalizados</button><button class="tab" data-tab="archived" onclick="setTab('archived')">Arquivados</button></div><div class="filters"><input class="input" id="search" placeholder="Buscar por paciente, CPF, médico, CID ou conteúdo..." oninput="refresh()" autocomplete="off"><select class="select" id="filter"><option value="all">Todos os status</option><option value="RASCUNHO">Rascunho</option><option value="EM_REVISÃO">Em revisão</option><option value="REABERTO">Reaberto</option><option value="FINALIZADO">Finalizado</option><option value="ARQUIVADO">Arquivado</option></select><input class="input" id="medico" placeholder="Médico" oninput="refresh()"><input class="input" id="cid" placeholder="CID" oninput="refresh()"><input class="input" id="unidade" placeholder="Unidade" oninput="refresh()"><input class="input" id="periodoInicio" type="date" title="Data inicial" aria-label="Data inicial"><input class="input" id="periodoFim" type="date" title="Data final" aria-label="Data final"><select class="select" id="sort" onchange="refresh()"><option value="updated">Última atualização</option><option value="date">Data do atendimento</option><option value="patient">Paciente (A–Z)</option></select></div><div class="bulk-actions-toolbar" id="bulkActionsToolbar" style="display:none;"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:13px;font-weight:800;color:#991B1B"><span id="selectedCountBadge">0</span> atendimento(s) selecionado(s)</span><span style="font-size:11.5px;color:#7F1D1D">(Apenas administradores podem excluir permanentemente do banco)</span></div><div style="display:flex;align-items:center;gap:8px"><button type="button" class="btn btn-danger" id="btnBatchDeleteAdmin" onclick="confirmBatchDeleteAdmin()" style="font-weight:700;padding:6px 14px;font-size:12px">🗑️ Excluir Selecionados do Banco</button><button type="button" class="btn btn-outline" onclick="clearSelectedRows()" style="padding:6px 12px;font-size:12px;background:#fff">Desmarcar todos</button></div></div><table><thead><tr><th class="admin-th-select"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAllRows(this.checked)" title="Selecionar todos os atendimentos exibidos" style="cursor:pointer;width:16px;height:16px"></th><th>Paciente</th><th>Data</th><th>Profissional</th><th>Dados</th><th>Status</th><th>Atualizado</th><th></th></tr></thead><tbody id="tbody"></tbody></table><div class="empty" id="empty" style="display:none">Nenhum atendimento encontrado para os filtros atuais.</div></section>
+<section class="panel anchor-target" id="atendimentos"><div class="search-toolbar"><div class="search-toolbar-left"><span class="search-toolbar-title">Localizar atendimento</span><span class="filter-count" id="resultCount">— resultados</span></div><div class="search-toolbar-actions"><button class="search-refresh-btn" id="searchRefreshBtn" type="button" onclick="triggerRefresh(true)" title="Sincronizar e atualizar resultados"><span class="refresh-ico">↻</span> <span>Atualizar lista</span></button><button class="search-reset-btn" type="button" onclick="clearFilters()" title="Limpar todos os filtros"><span class="reset-icon">↺</span> <span>Redefinir busca</span></button></div></div><div class="tabs"><button class="tab active" data-tab="all" onclick="setTab('all')">Todos</button><button class="tab" data-tab="draft" onclick="setTab('draft')">Rascunhos</button><button class="tab" data-tab="review" onclick="setTab('review')">Em revisão</button><button class="tab" data-tab="done" onclick="setTab('done')">Finalizados</button><button class="tab" data-tab="archived" onclick="setTab('archived')">Arquivados</button></div><div class="filters"><input class="input" id="search" placeholder="Buscar por paciente, CPF, médico, CID ou conteúdo..." oninput="refresh()" autocomplete="off"><select class="select" id="filter"><option value="all">Todos os status</option><option value="RASCUNHO">Rascunho</option><option value="EM_REVISÃO">Em revisão</option><option value="REABERTO">Reaberto</option><option value="FINALIZADO">Finalizado</option><option value="ARQUIVADO">Arquivado</option></select><input class="input" id="medico" placeholder="Médico" oninput="refresh()"><input class="input" id="cid" placeholder="CID" oninput="refresh()"><input class="input" id="unidade" placeholder="Unidade" oninput="refresh()"><input class="input" id="periodoInicio" type="date" title="Data inicial" aria-label="Data inicial"><input class="input" id="periodoFim" type="date" title="Data final" aria-label="Data final"><select class="select" id="sort" onchange="refresh()"><option value="updated">Última atualização</option><option value="date">Data do atendimento</option><option value="patient">Paciente (A–Z)</option></select></div><div class="bulk-actions-toolbar" id="bulkActionsToolbar" style="display:none;"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:13px;font-weight:800;color:#991B1B"><span id="selectedCountBadge">0</span> atendimento(s) selecionado(s)</span><span style="font-size:11.5px;color:#7F1D1D">(Apenas administradores podem excluir permanentemente do banco)</span></div><div style="display:flex;align-items:center;gap:8px"><button type="button" class="btn btn-danger" id="btnBatchDeleteAdmin" onclick="confirmBatchDeleteAdmin()" style="font-weight:700;padding:6px 14px;font-size:12px">🗑️ Excluir Selecionados do Banco</button><button type="button" class="btn btn-outline" onclick="clearSelectedRows()" style="padding:6px 12px;font-size:12px;background:#fff">Desmarcar todos</button></div></div><table><thead><tr><th class="admin-th-select"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAllRows(this.checked)" title="Selecionar todos os atendimentos exibidos" style="cursor:pointer;width:16px;height:16px"></th><th>Paciente</th><th>Data</th><th>Profissional</th><th>Dados</th><th>Status</th><th>Atualizado</th><th></th></tr></thead><tbody id="tbody"></tbody></table><div class="empty" id="empty" style="display:none">Nenhum atendimento encontrado para os filtros atuais.</div><div class="table-pagination-footer" id="tablePaginationFooter" style="display:none"><div class="pagination-info" id="paginationInfo">Carregando atendimentos...</div><div class="pagination-controls" id="paginationControls"><button type="button" class="page-nav-btn" id="btnPagePrev" onclick="changeSearchPage(searchCurrentPage - 1)" title="Página anterior">‹ Anterior</button><div class="page-numbers-wrap" id="paginationNumbersWrap"></div><button type="button" class="page-nav-btn" id="btnPageNext" onclick="changeSearchPage(searchCurrentPage + 1)" title="Próxima página">Próxima ›</button></div></div></section>
 <div class="notice">Fonte principal da Gestão: <strong>PostgreSQL/backend</strong>. O LocalStorage permanece como contingência local para rascunhos e recuperação no próprio navegador.</div></div></main></div>
 <div class="modal" id="detailModal"><div class="dialog detail-modal-dialog"><div class="dialog-head"><div><strong id="detailTitle">Atendimento</strong><span id="detailSub"></span></div><div class="esisla-toolbar"><button class="btn btn-outline" id="comprovanteDetailBtn" onclick="abrirComprovanteDoDetail()" style="font-weight:700">📄 Declaração</button><button class="btn btn-esisla" id="generateEsislaBtn">Gerar ficha eSisla</button><button class="btn" onclick="closeModal('detailModal')">Fechar</button></div></div><div id="detailBody" class="detail"></div><div class="dialog-foot"><button class="btn" id="openEvalBtn">Abrir atendimento</button><button class="btn" id="historyBtn">Histórico</button></div></div></div>
 <div class="modal" id="esislaModal">
@@ -2842,50 +3010,213 @@ function toastLocalStorage(){const el=document.getElementById('localCount');if(e
 function setDataLoading(stage,title,text,progress){const overlay=document.getElementById('dataLoading');if(!overlay)return;const t=document.getElementById('dataLoadingTitle');const tx=document.getElementById('dataLoadingText');const bar=document.getElementById('loadingProgressBar');if(t)t.textContent=title;if(tx)tx.textContent=text;if(bar)bar.style.width=(progress||15)+'%';const map={session:'loadStep1',data:'loadStep2',stats:'loadStep3',ready:'loadStep4'};Object.entries(map).forEach(([k,id])=>{const el=document.getElementById(id);if(!el)return;el.classList.toggle('active',k===stage);el.classList.toggle('done',['session','data','stats','ready'].indexOf(k)<=['session','data','stats','ready'].indexOf(stage));});}
 function finishDataLoading(){setDataLoading('ready','Sala pronta','Dados carregados. A gestão está pronta para uso.',100);document.getElementById('authLoading')?.remove();const dl=document.getElementById('dataLoading');if(dl){dl.classList.add('hide');document.documentElement.classList.remove('app-loading');document.body.classList.remove('app-loading');setTimeout(()=>dl.remove(),80);}}
 
-async function fetchServer(){
-    localItems=lerLocalStorage();let remote=[];
-    try{
-        const params=new URLSearchParams();
-        const status=document.getElementById('filter').value;if(status!=='all')params.set('status',status);
-        const medico=document.getElementById('medico').value.trim();
-        const cid=document.getElementById('cid').value.trim();
-        const unidade=document.getElementById('unidade').value.trim();
-        const ini=document.getElementById('periodoInicio').value;
-        const fim=document.getElementById('periodoFim').value;
-        if(medico)params.set('medico',medico);
-        if(cid)params.set('cid',cid);
-        if(unidade)params.set('unidade',unidade);
-        if(ini)params.set('data_inicio',ini);
-        if(fim)params.set('data_fim',fim);
-        const q=document.getElementById('search').value.trim();if(q)params.set('q',q);
-        
-        params.set('page','1');params.set('page_size','40');
-        const r=await AmbientalAuth.authFetch('/api/atendimentos?'+params.toString(),{
-            cache:'no-store',
-            headers: {'Authorization': `Bearer ${accessToken}`}
+let searchCurrentPage = 1;
+const searchPageSize = 40;
+let lastFilteredList = [];
+
+function changeSearchPage(newPage) {
+    const totalPages = Math.max(1, Math.ceil(lastFilteredList.length / searchPageSize));
+    if (newPage < 1 || newPage > totalPages || newPage === searchCurrentPage) return;
+    searchCurrentPage = newPage;
+    renderTablePage();
+    const el = document.getElementById('atendimentos');
+    if (el) {
+        try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(_) {}
+    }
+}
+
+function renderPaginationUI(total, totalPages, startIdx, endIdx) {
+    const bar = document.getElementById('tablePaginationFooter');
+    if (!bar) return;
+    if (total === 0) {
+        bar.style.display = 'none';
+        return;
+    }
+    bar.style.display = 'flex';
+
+    const info = document.getElementById('paginationInfo');
+    if (info) {
+        info.innerHTML = `Exibindo <b>${startIdx + 1}–${endIdx}</b> de <b>${total}</b> atendimento${total === 1 ? '' : 's'}`;
+    }
+
+    const prevBtn = document.getElementById('btnPagePrev');
+    const nextBtn = document.getElementById('btnPageNext');
+    if (prevBtn) prevBtn.disabled = searchCurrentPage <= 1;
+    if (nextBtn) nextBtn.disabled = searchCurrentPage >= totalPages;
+
+    const numWrap = document.getElementById('paginationNumbersWrap');
+    if (numWrap) {
+        let html = '';
+        const pages = [];
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= searchCurrentPage - 1 && i <= searchCurrentPage + 1)) {
+                pages.push(i);
+            }
+        }
+        let lastP = 0;
+        for (const p of pages) {
+            if (lastP && p - lastP > 1) {
+                html += `<span class="page-ellipsis">…</span>`;
+            }
+            const activeCls = p === searchCurrentPage ? ' active' : '';
+            html += `<button type="button" class="page-num-btn${activeCls}" onclick="changeSearchPage(${p})" title="Ir para a página ${p}">${p}</button>`;
+            lastP = p;
+        }
+        numWrap.innerHTML = html;
+    }
+}
+
+function renderTablePage() {
+    const total = lastFilteredList.length;
+    const totalPages = Math.max(1, Math.ceil(total / searchPageSize));
+    if (searchCurrentPage > totalPages) searchCurrentPage = totalPages;
+    if (searchCurrentPage < 1) searchCurrentPage = 1;
+
+    const startIdx = (searchCurrentPage - 1) * searchPageSize;
+    const endIdx = Math.min(startIdx + searchPageSize, total);
+    const pagedItems = lastFilteredList.slice(startIdx, endIdx);
+
+    const empty = document.getElementById('empty');
+    if (empty) empty.style.display = total ? 'none' : 'block';
+
+    const tbody = document.getElementById('tbody');
+    if (tbody) tbody.innerHTML = pagedItems.map(row).join('');
+
+    updateBulkToolbar();
+    renderRecentHistory();
+
+    const rc = document.getElementById('resultCount');
+    if (rc) rc.textContent = `${total} resultado${total === 1 ? '' : 's'}`;
+    const sc = document.getElementById('searchViewCount');
+    if (sc) sc.textContent = `${total} resultado${total === 1 ? '' : 's'}`;
+
+    renderPaginationUI(total, totalPages, startIdx, endIdx);
+}
+
+async function fetchServer() {
+    localItems = lerLocalStorage();
+    let remote = [];
+    try {
+        const params = new URLSearchParams();
+        const status = document.getElementById('filter').value;
+        if (status !== 'all') params.set('status', status);
+        const medico = document.getElementById('medico').value.trim();
+        const cid = document.getElementById('cid').value.trim();
+        const unidade = document.getElementById('unidade').value.trim();
+        const ini = document.getElementById('periodoInicio').value;
+        const fim = document.getElementById('periodoFim').value;
+        if (medico) params.set('medico', medico);
+        if (cid) params.set('cid', cid);
+        if (unidade) params.set('unidade', unidade);
+        if (ini) params.set('data_inicio', ini);
+        if (fim) params.set('data_fim', fim);
+        const q = document.getElementById('search').value.trim();
+        if (q) params.set('q', q);
+
+        params.set('page', '1');
+        params.set('page_size', '100');
+        const token = accessToken || (window.AmbientalAuth ? await AmbientalAuth.getAccessToken() : null);
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const r = await AmbientalAuth.authFetch('/api/atendimentos?' + params.toString(), {
+            cache: 'no-store',
+            headers
         });
-        const d=await r.json();
-        if(r.ok&&d.success){
-            remote=d.data.items||[];
-            if(d.data.stats)renderStats(d.data.stats);
+        const d = await r.json();
+        if (r.ok && d.success) {
+            remote = d.data.items || [];
+            if (d.data.stats) renderStats(d.data.stats);
+            const totalBackendPages = d.data?.pagination?.pages || 1;
+            if (totalBackendPages > 1 && totalBackendPages <= 10) {
+                const extraPromises = [];
+                for (let p = 2; p <= totalBackendPages; p++) {
+                    const nextParams = new URLSearchParams(params);
+                    nextParams.set('page', String(p));
+                    extraPromises.push(
+                        AmbientalAuth.authFetch('/api/atendimentos?' + nextParams.toString(), { cache: 'no-store', headers })
+                            .then(res => res.json())
+                            .then(dataObj => (dataObj?.success && dataObj.data?.items) ? dataObj.data.items : [])
+                            .catch(() => [])
+                    );
+                }
+                const extraResults = await Promise.all(extraPromises);
+                extraResults.forEach(itemsList => { remote = remote.concat(itemsList); });
+            }
             window.lastFetchBackendSuccess = true;
             try {
                 sessionStorage.setItem('ambiental.gestao.atendimentos_cache', JSON.stringify({ items: remote, stats: d.data.stats, ts: Date.now() }));
-            } catch(_) {}
+            } catch (_) {}
         } else {
             window.lastFetchBackendSuccess = false;
         }
-    }catch(e){
+    } catch (e) {
         console.warn('Gestão: backend indisponível, usando LocalStorage.');
         window.lastFetchBackendSuccess = false;
     }
-    serverItems=mergeAtendimentos(remote,localItems);
-    if(!remote.length) renderStats(localStats(serverItems));
-    const empty=document.getElementById('empty');if(!serverItems.length)empty.textContent='Nenhum atendimento encontrado no LocalStorage ou no backend.';else empty.textContent='';return remote.length>0||localItems.length>0;
+    serverItems = mergeAtendimentos(remote, localItems);
+    if (!remote.length) renderStats(localStats(serverItems));
+    const empty = document.getElementById('empty');
+    if (!serverItems.length) empty.textContent = 'Nenhum atendimento encontrado no LocalStorage ou no backend.';
+    else empty.textContent = '';
+    return remote.length > 0 || localItems.length > 0;
 }
-function setTab(v){tab=v;document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===v));const f=document.getElementById('filter');f.value=v==='all'?'all':({draft:'RASCUNHO',review:'EM_REVISÃO',done:'FINALIZADO',archived:'ARQUIVADO'}[v]||'all');fetchServer().then(refresh)}
-function refresh(){const q=document.getElementById('search').value.trim().toLowerCase();const medico=document.getElementById('medico').value.trim().toLowerCase();const cid=document.getElementById('cid').value.trim().toLowerCase();const unidade=document.getElementById('unidade').value.trim().toLowerCase();const ini=document.getElementById('periodoInicio').value;const fim=document.getElementById('periodoFim').value;const sort=document.getElementById('sort').value;let list=serverItems.filter(r=>{const v=values(r),st=statusOf(r),d=String(v.date||'');if(tab==='draft'&&st!=='RASCUNHO')return false;if(tab==='review'&&st!=='EM_REVISÃO')return false;if(tab==='done'&&st!=='FINALIZADO')return false;if(tab==='archived'&&st!=='ARQUIVADO')return false;if(document.getElementById('filter').value!=='all'&&st!==document.getElementById('filter').value)return false;if(medico&&!String(v.doctor).toLowerCase().includes(medico))return false;if(cid&&!String(v.cid).toLowerCase().includes(cid))return false;if(unidade&&!String(v.unidade).toLowerCase().includes(unidade))return false;if(ini&&d<ini)return false;if(fim&&d>fim)return false;return !q||hay(r,q)});list.sort((a,b)=>sort==='patient'?String(values(a).patient||'').localeCompare(String(values(b).patient||''),'pt-BR',{sensitivity:'base'}):sort==='date'?String(b.aux?.dataAtd||'').localeCompare(String(a.aux?.dataAtd||'')):String(b.__registryAt||b.atualizado_em||'').localeCompare(String(a.__registryAt||a.atualizado_em||'')));document.getElementById('empty').style.display=list.length?'none':'block';document.getElementById('tbody').innerHTML=list.map(row).join('');updateBulkToolbar();renderRecentHistory();const rc=document.getElementById('resultCount');if(rc)rc.textContent=`${list.length} resultado${list.length===1?'':'s'}`;const sc=document.getElementById('searchViewCount');if(sc)sc.textContent=`${list.length} resultado${list.length===1?'':'s'}`}
-function clearFilters(navigateToSearch = false){['search','medico','cid','unidade','periodoInicio','periodoFim'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});const f=document.getElementById('filter');if(f)f.value='all';const so=document.getElementById('sort');if(so)so.value='updated';tab='all';document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab==='all'));const isDashboard=document.getElementById('view-dashboard')?.classList.contains('active');const shouldNavigate=navigateToSearch||isDashboard;if(shouldNavigate&&typeof window.goToSection==='function'){window.goToSection('atendimentos')}fetchServer().then(()=>{refresh();if(window.AmbientalUtils?.toast){AmbientalUtils.toast('Filtros redefinidos com sucesso!')}})}
+
+function setTab(v) {
+    tab = v;
+    document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === v));
+    const f = document.getElementById('filter');
+    f.value = v === 'all' ? 'all' : ({ draft: 'RASCUNHO', review: 'EM_REVISÃO', done: 'FINALIZADO', archived: 'ARQUIVADO' }[v] || 'all');
+    searchCurrentPage = 1;
+    fetchServer().then(() => refresh(false));
+}
+
+function refresh(keepPage = false) {
+    if (!keepPage) searchCurrentPage = 1;
+    const q = document.getElementById('search').value.trim().toLowerCase();
+    const medico = document.getElementById('medico').value.trim().toLowerCase();
+    const cid = document.getElementById('cid').value.trim().toLowerCase();
+    const unidade = document.getElementById('unidade').value.trim().toLowerCase();
+    const ini = document.getElementById('periodoInicio').value;
+    const fim = document.getElementById('periodoFim').value;
+    const sort = document.getElementById('sort').value;
+
+    let list = serverItems.filter(r => {
+        const v = values(r), st = statusOf(r), d = String(v.date || '');
+        if (tab === 'draft' && st !== 'RASCUNHO') return false;
+        if (tab === 'review' && st !== 'EM_REVISÃO') return false;
+        if (tab === 'done' && st !== 'FINALIZADO') return false;
+        if (tab === 'archived' && st !== 'ARQUIVADO') return false;
+        if (document.getElementById('filter').value !== 'all' && st !== document.getElementById('filter').value) return false;
+        if (medico && !String(v.doctor).toLowerCase().includes(medico)) return false;
+        if (cid && !String(v.cid).toLowerCase().includes(cid)) return false;
+        if (unidade && !String(v.unidade).toLowerCase().includes(unidade)) return false;
+        if (ini && d < ini) return false;
+        if (fim && d > fim) return false;
+        return !q || hay(r, q);
+    });
+
+    list.sort((a, b) => sort === 'patient'
+        ? String(values(a).patient || '').localeCompare(String(values(b).patient || ''), 'pt-BR', { sensitivity: 'base' })
+        : sort === 'date'
+            ? String(b.aux?.dataAtd || '').localeCompare(String(a.aux?.dataAtd || ''))
+            : String(b.__registryAt || b.atualizado_em || '').localeCompare(String(a.__registryAt || a.atualizado_em || ''))
+    );
+
+    lastFilteredList = list;
+    renderTablePage();
+}
+
+function clearFilters(navigateToSearch = false){
+    ['search','medico','cid','unidade','periodoInicio','periodoFim'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
+    const f=document.getElementById('filter');if(f)f.value='all';
+    const so=document.getElementById('sort');if(so)so.value='updated';
+    tab='all';
+    searchCurrentPage = 1;
+    document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab==='all'));
+    const isDashboard=document.getElementById('view-dashboard')?.classList.contains('active');
+    const shouldNavigate=navigateToSearch||isDashboard;
+    if(shouldNavigate&&typeof window.goToSection==='function'){window.goToSection('atendimentos')}
+    fetchServer().then(()=>{refresh(false);if(window.AmbientalUtils?.toast){AmbientalUtils.toast('Filtros redefinidos com sucesso!')}});
+}
 function focusSearch(){if(typeof window.goToSection==='function'){window.goToSection('atendimentos')}else{const v=document.getElementById('view-busca');if(v)document.querySelectorAll('.admin-view').forEach(x=>x.classList.toggle('active',x===v))}setTimeout(()=>{const el=document.getElementById('search');if(el){el.focus();try{el.scrollIntoView({behavior:'smooth',block:'center'})}catch(_){}}},120)}
 document.addEventListener('keydown',e=>{if(e.key==='/'&&document.activeElement?.tagName!=='INPUT'&&document.activeElement?.tagName!=='TEXTAREA'){e.preventDefault();focusSearch()}if(e.key==='Escape'&&document.activeElement===document.getElementById('search'))document.getElementById('search').blur()});
 let latestStats=null;function pct(n,d){return d?Math.round((Number(n||0)/Number(d||0))*100):0}function setBar(id,value,total,valId){const width=total?Math.max(0,Math.min(100,(Number(value||0)/Number(total))*100)):0;const el=document.getElementById(id);if(el)el.style.width=width+'%';const v=document.getElementById(valId);if(v)v.textContent=Number(value||0)}function renderStats(s){latestStats=s||{};document.getElementById('statTotal').textContent=s.total??0;document.getElementById('statDraft').textContent=s.rascunhos??0;document.getElementById('statReview').textContent=s.revisao??0;document.getElementById('statDone').textContent=s.finalizados??0;document.getElementById('statArchived').textContent=s.arquivados??0;document.getElementById('statPending').textContent=s.pendentes??0;document.getElementById('statRecent').textContent=s.atualizados_recentes??0;document.getElementById('dashTotal').textContent=s.total??0;document.getElementById('dashRecent').textContent=(s.atualizados_recentes??0)+' atualizados recentemente';document.getElementById('dashDone').textContent=s.finalizados??0;document.getElementById('dashDoneRate').textContent=pct(s.finalizados,s.total)+'% do total';document.getElementById('dashFav').textContent=s.favoraveis??0;document.getElementById('dashFavRate').textContent=pct(s.favoraveis,s.total)+'% dos registros';document.getElementById('dashContra').textContent=s.contrarios??0;document.getElementById('dashContraRate').textContent=pct(s.contrarios,s.total)+'% dos registros';document.getElementById('dashPending').textContent=s.pendentes??0;document.getElementById('dashComplete').textContent=(s.completude_media??0)+'%';document.getElementById('dashAlerts').textContent=s.alertas??0;document.getElementById('dashDoctors').textContent=s.medicos_ativos_na_gestao??0;setBar('barFav',s.favoraveis,s.total,'barFavVal');setBar('barContra',s.contrarios,s.total,'barContraVal');setBar('barUndefined',s.pareceres_nao_definidos,s.total,'barUndefinedVal');setBar('barDone',s.finalizados,s.total,'barDoneVal');setBar('barReview',s.revisao,s.total,'barReviewVal');setBar('barDraft',s.rascunhos,s.total,'barDraftVal');const body=document.getElementById('doctorDashboardBody');const rows=Array.isArray(s.por_medico)?s.por_medico:[];body.innerHTML=rows.length?rows.map(d=>`<tr><td>${esc(d.medico)}<div class="doctor-rate">${pct(d.finalizados,d.total)}% finalizados</div></td><td class="doctor-num">${d.total||0}</td><td class="doctor-num">${d.finalizados||0}</td><td class="doctor-num">${d.favoraveis||0}</td><td class="doctor-num">${d.contrarios||0}</td><td class="doctor-num">${pct(d.finalizados,d.total)}%</td></tr>`).join(''):'<tr><td colspan="6" style="text-align:center;color:#8A99AC;padding:18px">Nenhum atendimento disponível no escopo atual.</td></tr>'}
@@ -3210,6 +3541,154 @@ function cleanQueixaDuracao(text) {
     t = t.replace(/,\s*[Il],\s*nvestigador\b/gi, ", é Investigador");
     t = t.replace(/\b[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b/gi, "relatou não ser readaptad$1, é Investigador");
     t = t.replace(/,\s*[Il],\s*(?=(?:não\s+readaptad[oa]|investigador|[a-zà-ú]))/gi, ", ");
+
+    // 6. Elimina prefixos anômalos e redundâncias: "Queixa-se de A periciada refere que", "Queixa-se de Relata que", etc.
+    t = t.replace(/\b(?:Queixa-se\s+de|Refere|Relata\s+que)\s+((?:[Aa]\s+periciada|[Oo]\s+periciado|[Aa]\s+servidora|[Oo]\s+servidor)\s+(?:refere|relata|informa|apresenta|menciona|descreve|acompanha)\b)/gi, "$1");
+    t = t.replace(/\bQueixa-se\s+de\s+([Aa]\s+periciada|[Oo]\s+periciado|[Aa]\s+servidora|[Oo]\s+servidor)\b/gi, "$1");
+    t = t.replace(/\bQueixa-se de\s+[Rr]elata(?:r|ndo)?\s+que\b/gi, "Relata que");
+    t = t.replace(/\bQueixa-se de\s+[Rr]efere(?:\s+que)?\b/gi, "Refere que");
+    t = t.replace(/\bQueixa-se de\s+[Ii]nforma(?:\s+que)?\b/gi, "Informa que");
+    t = t.replace(/\bQueixa-se de\s+[Qq]ueixa-se de\b/gi, "Queixa-se de");
+    t = t.replace(/\bQueixa-se de\s+[Aa]presenta\b/gi, "Apresenta");
+
+    // 7. Unifica início de tratamento/acompanhamento quebrado por ponto final indevido
+    t = t.replace(/([\w\)])\.\s*[Dd]esde\s+(\d{4})\b/gi, "$1 desde $2");
+    t = t.replace(/([\w\)])\.\s*[Dd]esde\s+(\d{1,2}\/\d{1,2}\/\d{4})/gi, "$1, desde $2");
+    t = t.replace(/([\w\)])\s+desde\s+(\d{1,2}\/\d{1,2}\/\d{4})/gi, "$1, desde $2");
+    t = t.replace(/,\s*,+/g, ",");
+
+    // 8. Normalização de perícia de Acompanhante (CID Z76.3 / dependente enfermo)
+    t = t.replace(/,\s*com\s+queixa\s+de\s+[Aa]companhamento\s+de\s+pessoa\s+doente,?\s*/gi, ", para acompanhamento de familiar enfermo, ");
+    t = t.replace(/,\s*com\s+queixa\s+de\s+[Aa]companhante\b,?\s*/gi, ", para acompanhamento de familiar enfermo, ");
+    if (/\b(?:acompanha\s+a\s+filha|familiar\s+enfermo|pessoa\s+doente|dependente)\b/i.test(t)) {
+        t = t.replace(/\bNegou\s+uso\s+de\s+medica[çc][õo]es\./gi, /servidora/i.test(t) ? "A servidora negou uso de medicações próprias de uso contínuo." : "O servidor negou uso de medicações próprias de uso contínuo.");
+    }
+
+    // 9. Concordância de gênero do cargo quando a periciada for mulher ("Servidora")
+    if (/\bServidora\b/i.test(t)) {
+        t = t.replace(/\bé\s+(?:PEB|Peb)\s+([IVXLCDM]+)\b/gi, "é Professora de Educação Básica $1");
+        t = t.replace(/\bé\s+(?:PEB|Peb)\b/gi, "é Professora de Educação Básica");
+        t = t.replace(/\bé\s+T[ée]cnico\s+(?:de|em)\s+Enfermagem\b/gi, "é Técnica de Enfermagem");
+        t = t.replace(/\bé\s+T[ée]cnico\s+em\s+Administra[çc][ãa]o\b/gi, "é Técnica em Administração");
+        t = t.replace(/\bé\s+T[ée]cnico\s+de\b/gi, "é Técnica de");
+        t = t.replace(/\bé\s+T[ée]cnico\s+em\b/gi, "é Técnica em");
+        t = t.replace(/\bé\s+T[ée]cnico\b/gi, "é Técnica");
+        t = t.replace(/\bé\s+Professor\s+(?:de\s+)?Educa[çc][ãa]o\s+B[áa]sica(?:\s+([IVXLCDM]+))?\b/gi, "é Professora de Educação Básica $1");
+        t = t.replace(/\bé\s+Professor\b/gi, "é Professora");
+        t = t.replace(/\bé\s+Enfermeiro\b/gi, "é Enfermeira");
+        t = t.replace(/\bé\s+M[ée]dico\b/gi, "é Médica");
+        t = t.replace(/\bé\s+Psic[óo]logo\b/gi, "é Psicóloga");
+        t = t.replace(/\bé\s+Diretor\b/gi, "é Diretora");
+        t = t.replace(/\bé\s+Coordenador\b/gi, "é Coordenadora");
+        t = t.replace(/\bé\s+Inspetor\b/gi, "é Inspetora");
+        t = t.replace(/\bé\s+Investigador\b/gi, "é Investigadora");
+        t = t.replace(/\bé\s+Escriv[ãa]o\b/gi, "é Escrivã");
+        t = t.replace(/\bé\s+Assistente\s+T[ée]cnico\b/gi, "é Assistente Técnica");
+        t = t.replace(/\bé\s+Auxiliar\s+T[ée]cnico\b/gi, "é Auxiliar Técnica");
+        t = t.replace(/\bé\s+Oficial\s+Administrativo\b/gi, "é Oficial Administrativa");
+    } else {
+        t = t.replace(/\bé\s+(?:PEB|Peb)\s+([IVXLCDM]+)\b/gi, "é Professor de Educação Básica $1");
+        t = t.replace(/\bé\s+(?:PEB|Peb)\b/gi, "é Professor de Educação Básica");
+    }
+
+    // Preposição em "Professor(a) Educação Básica" -> "Professor(a) de Educação Básica"
+    t = t.replace(/\bé\s+(Professora?)\s+Educa[çc][ãa]o\s+B[áa]sica(?:\s+([IVXLCDM]+))?\b/gi, "é $1 de Educação Básica $2");
+
+    // Deduplicação de sintomas repetidos ou sinônimos no mesmo parágrafo
+    if (/dor\s+na\s+regi[ãa]o\s+cervical|cervicalgia/i.test(t) && /dor\s+(?:em|no)\s+ouvido/i.test(t)) {
+        t = t.replace(/,\s*cervicalgia,\s*dor\s+em\s+ouvido\b/gi, "");
+    }
+    if (/taquicardia/i.test(t)) {
+        t = t.replace(/(\btaquicardia\b[^.]+?),\s*taquicardia\b/gi, "$1");
+    }
+    if (/dorm[êe]ncia\s+nas\s+m[ãa]os\s+e\s+bra[çc]os/i.test(t)) {
+        t = t.replace(/,\s*parestesia\s+em\s+m[ãa]os\s+e\s+bra[çc]os\b/gi, "");
+    }
+    if (/dor\s+difusa\s+pelo\s+corpo/i.test(t)) {
+        t = t.replace(/,\s*dor\s+generalizada\b/gi, "");
+    }
+
+    // 10. Concordância de tempo de serviço singular ("há 1 anos" -> "há 1 ano")
+    t = t.replace(/\bh[áa]\s+1\s+anos\b/gi, "há 1 ano");
+    t = t.replace(/\bh[áa]\s+1\s+meses\b/gi, "há 1 mês");
+    t = t.replace(/\bh[áa]\s+1\s+dias\b/gi, "há 1 dia");
+
+    // 11. Normaliza posologias aglutinadas (ex.: "10 mgdia" -> "10 mg/dia")
+    t = t.replace(/\b(\d+(?:[.,]\d+)?)\s*(mg|g|mcg|ml|gotas?|comp(?:rimidos?)?|c[áa]ps(?:ulas?)?)dia\b/gi, "$1 $2/dia");
+    t = t.replace(/\b(mg|g|mcg|ml)dia\b/gi, "$1/dia");
+    t = t.replace(/\b(\d+(?:[.,]\d+)?)\s*(mg|g|mcg|ml)(?:\/)?(noite|m[eê]s|semana)\b/gi, "$1 $2/$3");
+
+    // 12. Limpa barras soltas em dosagens (ex.: "1 g/", "50 mg/") sem tocar em posologia diária como /dia
+    t = t.replace(/\b(\d+(?:[.,]\d+)?\s*(?:g|mg|mcg|ml))\s*\/(?=\s*(?:,|[.]|\(|\bse\s+dor\b|\bpara\b|\bsob\b|$))/gi, "$1");
+    t = t.replace(/\b(\d+(?:[.,]\d+)?\s*(?:g|mg|mcg|ml))\s*\/(?=\s*$)/gi, "$1");
+
+    // 13. Ajustes de dosagem:
+    // Consolidação de múltiplas medicações sem dosagem ("Em uso de A, não informado sua dosagem, B, não informado sua dosagem..." -> "Em uso de A, B, e não foram informadas suas dosagens.")
+    t = t.replace(/([Ee]m uso de\s+)([^.]+?)\./g, function(match, prefix, content) {
+        const uninformedPat = /,?\s*n[ãa]o\s+informad[oa]\s+sua\s+dosagem\b/gi;
+        const matches = content.match(uninformedPat);
+        if (matches && matches.length >= 2) {
+            const hasOtherDose = /\b\d+(?:[.,]\d+)?\s*(?:mg|g|mcg|ml)\b/i.test(content);
+            if (!hasOtherDose) {
+                const cleaned = content.replace(uninformedPat, "");
+                const rawItems = cleaned.split(/[,e]\s+/).map(x => x.trim()).filter(Boolean);
+                const items = rawItems.map(x => x.length > 1 ? x.charAt(0).toUpperCase() + x.slice(1) : x.toUpperCase());
+                let medsList = "";
+                if (items.length >= 2) {
+                    medsList = items.slice(0, -1).join(", ") + " e " + items[items.length - 1];
+                } else if (items.length === 1) {
+                    medsList = items[0];
+                } else {
+                    medsList = cleaned.trim();
+                }
+                return `${prefix}${medsList}, e não foram informadas suas dosagens.`;
+            } else {
+                let cleaned = content.replace(uninformedPat, "");
+                cleaned = cleaned.replace(/\s*,\s*/g, ", ").replace(/,\s*e\b/g, " e").replace(/\b(e\s+)+/g, "e ").replace(/\s{2,}/g, " ").replace(/^[, ]+|[, ]+$/g, "");
+                return `${prefix}${cleaned}, e não foram informadas suas dosagens.`;
+            }
+        }
+        return match;
+    });
+
+    // Duplicação "não informado sua dosagem Não informada"
+    t = t.replace(/\bn[ãa]o\s+informad[oa]\s+sua\s+dosagem\s+[Nn][ãa]o\s+informad[oa]\.?/gi, "não informada sua dosagem.");
+    t = t.replace(/\bn[ãa]o\s+informad[oa]\s+sua\s+dosagem\s+[Nn][ãa]o\s+informad[oa]\b/gi, "não informada sua dosagem");
+
+    // Normaliza "não informado sua dosagem Analgesia" -> "não informado sua dosagem, para analgesia"
+    t = t.replace(/\bn[ãa]o\s+informad[oa]\s+sua\s+dosagem\s+Analgesia\b/gi, "não informado sua dosagem, para analgesia");
+    t = t.replace(/,\s*Analgesia\b/gi, ", para analgesia");
+
+    // Pontuação adequada antes de nova medicação e antes de posologia
+    t = t.replace(/(não informad[oa]\s+sua\s+dosagem)\s+e\s+([A-ZÁ-Ú])/g, "$1, e $2");
+    t = t.replace(/(não informad[oa]\s+sua\s+dosagem)\s+(a\s+cada\s+\d+|de\s+\d+\/\d+h|se\s+dor|\d+x\s+ao\s+dia|para\s+analgesia)/gi, "$1, $2");
+
+    // 14. Remoção de contradição de troca/alteração de dosagem quando o servidor relatou aumento/alteração
+    const temRelatoAltDose = /\b(?:aumentad[oa]|aumento|ajustad[oa]|ajuste|reduzid[oa]|redução|reducao|trocad[oa]|troca)\s+(?:a\s+medica[çc][ãa]o|de\s+medica[çc][ãa]o|d[ae]\s+dosagem|d[ae]\s+dose)\b|\b(?:foi\s+aumentada\s+a\s+medica[çc][ãa]o|aumentou\s+a\s+dose|trocou\s+a\s+medica[çc][ãa]o|ajustou\s+a\s+dose)\b|\b(?:recentemente\s+foi\s+aumentada\s+a\s+medica[çc][ãa]o)\b/i.test(t);
+    if (temRelatoAltDose) {
+        t = t.replace(/\s*\(?\s*Não relatou troca de alteração de dosagem da medicação\.?\s*\)?\s*/gi, " ");
+    }
+
+    // 15. Elimina repetição de "com queixa de ... Queixa-se de"
+    if (/\bcom\s+queixa\b/i.test(t)) {
+        t = t.replace(/([\.\;]\s*)[Qq]ueixa-se\s+de\s+(?!des[âa]nimo\b)/g, "$1Refere ");
+    }
+
+    // Artigo definido antes de menções a periciado(a) ou servidor(a)
+    t = t.replace(/([\.\;]\s*)Periciado\s+refere\b/g, "$1O periciado refere");
+    t = t.replace(/([\.\;]\s*)Periciada\s+refere\b/g, "$1A periciada refere");
+    t = t.replace(/([\.\;]\s*)Servidor\s+refere\b/g, "$1O servidor refere");
+    t = t.replace(/([\.\;]\s*)Servidora\s+refere\b/g, "$1A servidora refere");
+
+    // 16. Jargões, parênteses e crase
+    t = t.replace(/\bsensibilidade\s+a\s+luz\b/gi, "sensibilidade à luz");
+    t = t.replace(/\(\s*Uso\s+sintom[áa]tico\s+s\/n\s*\)/gi, "(uso sintomático se necessário)");
+    t = t.replace(/\(\s*Sintom[áa]tico\s*\)/gi, "(para alívio sintomático)");
+    t = t.replace(/\bs\/n\b/gi, "se necessário");
+    t = t.replace(/\(\s*e\s+cessou\s+terapia[^\)]*\.?\s*\)/gi, (m) => m.replace(/[\(\)]/g, '').trim() + '.');
+    t = t.replace(/\blaser\s+terapia\b/gi, "laserterapia");
+    t = t.replace(/\bceacalm\b/gi, "Seacalm");
+
     t = t.replace(/\s{2,}/g, ' ');
     t = t.replace(/\.\s*\./g, '.');
     t = t.replace(/,\s*,+/g, ',');
@@ -3227,20 +3706,57 @@ function cleanAntecedentesMorbidos(text) {
     t = t.replace(/(?:^|\r?\n)\s*Atestados?[^\n\r]*[\s\S]*$/gi, '');
     t = t.replace(/\bEm anexo\.?\b/gi, '');
     t = t.replace(/[\s\.\,]*\b(?:[Vv]em\s+com\s+atestado|[Aa]testado)\s+de\s+\d+\s+dias[^\.\n\r]*[\.\,]?/gi, '.');
+    t = t.replace(/\s+([\.\,;:])/, '$1');
     t = t.replace(/\.{2,}/g, '.');
     t = t.replace(/^[\s\.\,;]+/, '');
     t = t.replace(/[\s\.\,;]+$/, '.');
     t = t.replace(/\s{2,}/g, ' ');
     t = t.trim();
+
+    // Prefixos anômalos em antecedentes mórbidos
+    t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+a\s+(?:Alega\s+ter\s+apresentado|Relata\s+ter\s+apresentado|Refere\s+ter\s+apresentado)\b/gi, "Refere histórico de");
+    t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+a\s+(?:Alega\s+que|Relata\s+que|Refere\s+que)\b/gi, "Relata que");
+    t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+a\s+Alega\s+ter\b/gi, "Refere histórico de");
+    t = t.replace(/\bdor\s+e\s+rangendo\s+os\s+dentes\b/gi, "dor e bruxismo (ranger de dentes)");
+
     if (t === '.' || !t) return '';
-    if (t === "Nega" || t === "Nega." || /^nega\.?$/i.test(t)) {
-        return "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas.";
+    const fraseNegaCompleta = "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas.";
+    if (t === "Nega" || t === "Nega." || /^nega\.?$/i.test(t) || t.toLowerCase() === "não refere" || t.toLowerCase() === "nao refere" || t.toLowerCase() === "sem antecedentes") {
+        return fraseNegaCompleta;
     }
+
+    // Desduplica caso venha "Nega [algo]. Nega demais antecedentes..."
+    t = t.replace(/\b(Nega\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?/gi, '$1, cirurgias prévias e neoplasias.');
+    t = t.replace(/\b(N[ãa]o\s+refere\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?/gi, '$1, cirurgias prévias e neoplasias.');
+    t = t.replace(/\b(Sem\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?/gi, '$1, cirurgias prévias e neoplasias.');
+
     const low = t.toLowerCase();
-    if (!low.includes("nega demais") && !low.includes("cirurgias") && !low.includes("neoplasias") && !low.includes("nega antecedentes")) {
-        t = t.replace(/[\s\.\,;]+$/, '') + ". Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias.";
+    const temCirurgias = low.includes("cirurgias") || low.includes("cirurgia");
+    const temNeoplasias = low.includes("neoplasias") || low.includes("neoplasia");
+    const temNegaDemais = low.includes("nega demais");
+
+    if ((temCirurgias && temNeoplasias) || (temNegaDemais && temCirurgias)) {
+        return t.replace(/[\s\.\,;]+$/, '') + '.';
     }
-    return t;
+
+    const isNegacao = /^\s*(?:Nega\b|N[ãa]o\s+refere\b|N[ãa]o\s+apresenta\b|Sem\b)/i.test(t);
+    t = t.replace(/[\s\.\,;]+$/, '');
+    if (isNegacao) {
+        if (!temCirurgias && !temNeoplasias) {
+            t += ", cirurgias prévias e neoplasias.";
+        } else if (!temCirurgias) {
+            t += " e cirurgias prévias.";
+        } else if (!temNeoplasias) {
+            t += " e neoplasias.";
+        } else {
+            t += ".";
+        }
+    } else {
+        t += ". Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias.";
+    }
+
+    t = t.replace(/\s{2,}/g, ' ').replace(/,\s*,+/g, ',').replace(/\.\s*\./g, '.').replace(/,\s*\./g, '.');
+    return t.trim();
 }
 
 function isContraryLimitationTextGestao(text) {

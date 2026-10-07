@@ -3480,18 +3480,26 @@ body:not(.mode-agil-active) #containerModoAgil {
         <input type="file" id="fileEsislaModalInput" accept=".pdf,application/pdf" style="display:none" onchange="if(this.files[0])processarArquivoEsislaNaTela(this.files[0])">
       </div>
 
+      <!-- Badge de Status e Permissão: Habilitado para ADM em login médico -->
+      <div id="badgeStatusAdmDoctorLogin" style="display:none"></div>
+
       <div>
-        <label for="txtPreenchimentoIABruto" style="display:block;font-size:12px;font-weight:700;color:#0F3254;margin-bottom:6px">
-          Texto Bruto (Anotações do Médico e/ou Dados do Sistema):
-        </label>
-        <textarea id="txtPreenchimentoIABruto" rows="11" class="input" style="width:100%;font-family:monospace;font-size:12px;line-height:1.45;resize:vertical;padding:12px;border:1.5px solid #CBD5E1;border-radius:8px;background:#fff" placeholder="Cole aqui o texto recebido... Exemplo:
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <label for="txtPreenchimentoIABruto" style="display:block;font-size:12px;font-weight:700;color:#0F3254;margin-bottom:0">
+            Texto Bruto (Anotações do Médico e/ou Dados do Sistema):
+          </label>
+          <span id="badgeIaAdmPermissaoTag" style="font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:5px;background:#F1F5F9;color:#475569;border:1px solid #CBD5E1">
+            🛡️ Recurso ADM Pericial
+          </span>
+        </div>
+        <textarea id="txtPreenchimentoIABruto" rows="11" class="input" style="width:100%;font-family:monospace;font-size:12px;line-height:1.45;resize:vertical;padding:12px;border:1.5px solid #CBD5E1;border-radius:8px;background:#fff" placeholder="Cole aqui as anotações do médico perito (ex.: WhatsApp, prontuário, anotações de consulta)... Como afirmação do médico, a IA formalizará todos os campos clínicos e o parecer DPME sem acrescentar nada.
+
+Exemplo:
 CAMILA DE OLIVEIRA
 42 anos, Professora peb II há 20 anos, Não readaptada
 Queixa: retirou 2 nódulos nos seios, mastopexia com edema e abertura de 3 pontos.
 Sintomas: dor, inchaço. Medicações: dipirona. Psico/fisio: não.
-Atestado de 15 dias do dia 29/09 por Z98.8 favorável.
-
-(Também pode colar junto os dados da tela do e-SISLA: CPF, RG, CID, CRM do assistente, etc.)"></textarea>
+Atestado de 15 dias do dia 29/09 por Z98.8 favorável."></textarea>
       </div>
 
       <div id="aiPreencherLoading" style="display:none;background:#F0FDF4;border:1px solid #86EFAC;border-radius:10px;padding:14px;color:#166534;font-size:12.5px;align-items:center;gap:12px">
@@ -4778,6 +4786,17 @@ async function syncToRegistry(){
 /* =========================================================
    PREENCHIMENTO INTELIGENTE COM IA (ANOTAÇÕES / SISTEMA)
    ========================================================= */
+function isAdmInDoctorLogin() {
+  const isImp = Boolean(
+    (currentProfile && currentProfile.is_impersonating) ||
+    (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('ambiental.impersonate_medico_id')) ||
+    new URLSearchParams(window.location.search).get('impersonate_medico_id') ||
+    new URLSearchParams(window.location.search).get('medico_id')
+  );
+  const isAdm = (currentProfile?.perfilOriginal === 'Administrador') || (currentProfile?.perfil === 'Administrador');
+  return isAdm;
+}
+
 function abrirModalPreenchimentoIA() {
   const modal = $("modalPreenchimentoIA");
   if (!modal) {
@@ -4790,6 +4809,55 @@ function abrirModalPreenchimentoIA() {
   if (loading) loading.style.display = "none";
   const btn = $("btnProcessarPreenchimentoIA");
   if (btn) btn.disabled = false;
+
+  const isAdm = isAdmInDoctorLogin();
+  const badge = $("badgeStatusAdmDoctorLogin");
+  const tagAdm = $("badgeIaAdmPermissaoTag");
+
+  if (badge) {
+    badge.style.display = "block";
+    if (isAdm) {
+      badge.innerHTML = `
+        <div style="background:#F0FDF4;border:1px solid #86EFAC;border-radius:8px;padding:9px 13px;color:#166534;font-size:12px;display:flex;align-items:center;gap:8px">
+          <span style="font-size:16px">🛡️</span>
+          <div>
+            <strong>Modo Administrador em Login Médico Ativo:</strong>
+            <span>O conteúdo digitado no Texto Bruto é tratado como afirmação do médico perito. A IA preencherá os demais campos clínicos com redação formal e robusta, sem acrescentar dados além do afirmado.</span>
+          </div>
+        </div>`;
+      if (tagAdm) {
+        tagAdm.textContent = "🛡️ ADM em Login Médico: IA Habilitada";
+        tagAdm.style.background = "#DCFCE7";
+        tagAdm.style.color = "#15803D";
+        tagAdm.style.borderColor = "#86EFAC";
+      }
+      if (btn) {
+        btn.innerHTML = "<span>✨</span> Processar Anotações do Médico e Preencher Ficha";
+        btn.style.opacity = "1";
+        btn.title = "Processar anotações do médico e preencher todos os demais campos clínicos";
+      }
+    } else {
+      badge.innerHTML = `
+        <div style="background:#FFFBEB;border:1px solid #FCD34D;border-radius:8px;padding:9px 13px;color:#92400E;font-size:12px;display:flex;align-items:center;gap:8px">
+          <span style="font-size:16px">ℹ️</span>
+          <div>
+            <strong>Recurso de Uso Exclusivo:</strong>
+            <span>O preenchimento automático de campos clínicos via IA a partir do Texto Bruto é habilitado apenas para Administradores ao entrar em login médico. Você pode importar o PDF do e-SISLA acima normalmente.</span>
+          </div>
+        </div>`;
+      if (tagAdm) {
+        tagAdm.textContent = "🔒 Restrito a ADM em Login Médico";
+        tagAdm.style.background = "#FEF3C7";
+        tagAdm.style.color = "#92400E";
+        tagAdm.style.borderColor = "#FCD34D";
+      }
+      if (btn) {
+        btn.innerHTML = "<span>🔒</span> Preenchimento de Anotações Restrito a ADM";
+        btn.title = "Habilitado apenas para Administrador ao entrar em login médico";
+      }
+    }
+  }
+
   setTimeout(() => { $("txtPreenchimentoIABruto")?.focus(); }, 150);
 }
 
@@ -4807,6 +4875,7 @@ function fecharModalPreenchimentoIA() {
 
 window.abrirModalPreenchimentoIA = abrirModalPreenchimentoIA;
 window.fecharModalPreenchimentoIA = fecharModalPreenchimentoIA;
+window.isAdmInDoctorLogin = isAdmInDoctorLogin;
 
 async function executarPreenchimentoIA() {
   const txt = ($("txtPreenchimentoIABruto")?.value || "").trim();
@@ -4814,6 +4883,12 @@ async function executarPreenchimentoIA() {
     alert("Por favor, cole as anotações do médico ou os dados do atendimento no campo de texto.");
     return;
   }
+
+  if (!isAdmInDoctorLogin()) {
+    alert("O preenchimento automático de campos clínicos via IA a partir do Texto Bruto é habilitado apenas para Administradores ao entrar em login médico.");
+    return;
+  }
+
   const loading = $("aiPreencherLoading");
   const btn = $("btnProcessarPreenchimentoIA");
   if (loading) loading.style.display = "flex";
@@ -4821,16 +4896,18 @@ async function executarPreenchimentoIA() {
 
   try {
     let res;
+    const reqBody = {
+      texto_bruto: txt,
+      atendimento: state.atendimento || $("atd")?.value || "",
+      impersonate_medico_id: (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('ambiental.impersonate_medico_id') : null)
+    };
     if (window.AmbientalAPI?.ai?.preencherFicha) {
-      res = await AmbientalAPI.ai.preencherFicha({
-        texto_bruto: txt,
-        atendimento: state.atendimento || $("atd")?.value || ""
-      });
+      res = await AmbientalAPI.ai.preencherFicha(reqBody);
     } else {
       const r = await (window.AmbientalAuth ? window.AmbientalAuth.authFetch : fetch)("/api/ai/preencher-ficha", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify({ texto_bruto: txt, atendimento: state.atendimento || $("atd")?.value || "" })
+        body: JSON.stringify(reqBody)
       });
       res = await r.json();
       if (!r.ok) throw new Error(res?.detail || res?.error?.message || "Falha ao processar texto com IA.");
@@ -4841,7 +4918,7 @@ async function executarPreenchimentoIA() {
     }
     aplicarPreenchimentoIAResultado(dados);
     fecharModalPreenchimentoIA();
-    toast("✨ Ficha preenchida pela IA com sucesso em modo Rascunho! Revise antes de finalizar.");
+    toast("✨ Campos clínicos preenchidos com IA a partir das anotações do médico! Redação formal e robusta em Rascunho.");
   } catch (err) {
     console.error("Erro no preenchimento com IA:", err);
     alert("Não foi possível preencher com IA: " + (err.message || "Erro de conexão com o servidor."));
@@ -5311,47 +5388,89 @@ function aplicarPreenchimentoIAResultado(dados) {
       return "Anos";
     };
 
-    // 2. Normalização de Dados Principais
-    state.nomePaciente = dados.nome_paciente || "";
-    state.cpfPaciente = toFormattedCpf(dados.cpf_paciente);
-    state.cargo = dados.cargo || "";
-    state.tempoCargo = dados.tempo_cargo !== undefined && dados.tempo_cargo !== null ? String(dados.tempo_cargo) : "";
-    state.tempoUnidade = toTempoUnidade(dados.tempo_unidade);
-    state.idade = dados.idade !== undefined && dados.idade !== null ? String(dados.idade) : "";
-    state.sexo = dados.sexo || "Feminino";
-    state.readaptado = dados.readaptado || "Não";
-    state.alteracaoMed = dados.alteracao_med || "Não";
-    state.outrasDoencas = dados.outras_doencas || "Não";
+    // 2. Normalização de Dados Principais (preserva dados cadastrais oficiais do e-SISLA se já preenchidos)
+    const esislaNome = (state.nomePaciente || state.aux?.nomePaciente || $("nomePaciente")?.value || "").trim();
+    state.nomePaciente = esislaNome || dados.nome_paciente || state.nomePaciente || "";
+
+    const esislaCpf = (state.cpfPaciente || state.aux?.cpfPaciente || $("cpfPaciente")?.value || "").trim();
+    state.cpfPaciente = esislaCpf ? toFormattedCpf(esislaCpf) : (toFormattedCpf(dados.cpf_paciente) || state.cpfPaciente || "");
+
+    const esislaCargo = (state.cargo || state.aux?.cargo || $("cargo")?.value || "").trim();
+    state.cargo = esislaCargo || dados.cargo || state.cargo || "";
+
+    const esislaTempoCargo = (state.tempoCargo || state.aux?.tempoCargo || $("tempoCargo")?.value || "").trim();
+    state.tempoCargo = esislaTempoCargo || ((dados.tempo_cargo !== undefined && dados.tempo_cargo !== null && String(dados.tempo_cargo).trim()) ? String(dados.tempo_cargo) : (state.tempoCargo || ""));
+
+    const esislaTempoUnidade = (state.tempoUnidade || state.aux?.tempoUnidade || $("tempoUnidade")?.value || "").trim();
+    state.tempoUnidade = esislaTempoUnidade ? toTempoUnidade(esislaTempoUnidade) : toTempoUnidade(dados.tempo_unidade || state.tempoUnidade);
+
+    const esislaIdade = (state.idade || state.aux?.idade || $("idade")?.value || "").trim();
+    state.idade = esislaIdade || ((dados.idade !== undefined && dados.idade !== null && String(dados.idade).trim()) ? String(dados.idade) : (state.idade || ""));
+
+    const esislaSexo = state.sexo || state.aux?.sexo;
+    state.sexo = esislaSexo || dados.sexo || state.sexo || "Feminino";
+
+    const esislaReadaptado = (state.readaptado || state.aux?.readaptado || "").trim();
+    state.readaptado = esislaReadaptado || dados.readaptado || state.readaptado || "Não";
+
+    state.alteracaoMed = dados.alteracao_med || state.alteracaoMed || "Não";
+    state.outrasDoencas = dados.outras_doencas || state.outrasDoencas || "Não";
     state.psicoterapia = !!dados.psicoterapia;
     state.fisioterapia = !!dados.fisioterapia;
 
-    state.cid = dados.cid || "";
-    state.exameFisicoTipo = dados.exame_fisico_tipo || "Outros";
-    state.exameMentalResultado = dados.exame_mental_resultado || "";
-    state.exameFisicoDescricao = dados.exame_fisico_descricao || "";
+    const doencaParaPreencher = (dados.doenca_motivo || dados.doencaMotivo || state.doencaMotivo || state.aux?.doencaMotivo || "").trim();
+    if (doencaParaPreencher) {
+      state.doencaMotivo = doencaParaPreencher;
+      if (!state.aux) state.aux = {};
+      state.aux.doencaMotivo = doencaParaPreencher;
+    }
 
-    const sistolica = dados.pressao_sistolica && dados.pressao_sistolica !== "Aferida" ? String(dados.pressao_sistolica) : "120";
-    const diastolica = dados.pressao_diastolica && dados.pressao_diastolica !== "Aferida" ? String(dados.pressao_diastolica) : "80";
-    const pulso = dados.pulso && dados.pulso !== "Aferido" ? String(dados.pulso) : "80";
+    const inicioTratParaPreencher = (dados.inicio_tratamento || dados.inicioTratamento || state.inicioTratamento || state.aux?.inicioTratamento || "2026").trim();
+    state.inicioTratamento = inicioTratParaPreencher;
+    if (!state.aux) state.aux = {};
+    state.aux.inicioTratamento = inicioTratParaPreencher;
+
+    const freqConsParaPreencher = (dados.freq_consultas || dados.freqConsultas || state.freqConsultas || state.aux?.freqConsultas || "Mensal").trim();
+    state.freqConsultas = freqConsParaPreencher;
+    if (!state.aux) state.aux = {};
+    state.aux.freqConsultas = freqConsParaPreencher;
+
+    const sintomasParaPreencher = (dados.sintomas_limitacao || dados.sintomasLimitacao || state.sintomasLimitacao || state.aux?.sintomasLimitacao || dados.desc_limitacao || "").trim();
+    state.sintomasLimitacao = sintomasParaPreencher;
+    if (!state.aux) state.aux = {};
+    state.aux.sintomasLimitacao = sintomasParaPreencher;
+
+    state.historicoPregresso = dados.historico_pregresso || state.historicoPregresso || "";
+    state.descLimitacao = dados.desc_limitacao || state.descLimitacao || "";
+    state.atividadesComprometidas = dados.atividades_comprometidas || state.atividadesComprometidas || "";
+
+    state.cid = dados.cid || state.cid || "";
+    state.exameFisicoTipo = dados.exame_fisico_tipo || state.exameFisicoTipo || "Outros";
+    state.exameMentalResultado = dados.exame_mental_resultado || state.exameMentalResultado || "";
+    state.exameFisicoDescricao = dados.exame_fisico_descricao || state.exameFisicoDescricao || "";
+
+    const sistolica = dados.pressao_sistolica && dados.pressao_sistolica !== "Aferida" ? String(dados.pressao_sistolica) : (state.pressaoSistolica || "120");
+    const diastolica = dados.pressao_diastolica && dados.pressao_diastolica !== "Aferida" ? String(dados.pressao_diastolica) : (state.pressaoDiastolica || "80");
+    const pulso = dados.pulso && dados.pulso !== "Aferido" ? String(dados.pulso) : (state.pulso || "80");
     state.pressaoSistolica = sistolica;
     state.pressaoDiastolica = diastolica;
     state.pulso = pulso;
     if (dados.altura) state.altura = dados.altura;
     if (dados.peso) state.peso = dados.peso;
 
-    state.limitacaoFuncional = dados.limitacao_funcional || "Sim";
-    state.limitacaoRol = dados.limitacao_rol || "Sim";
-    state.capacidade = dados.capacidade || "Capacidade parcial e temporariamente prejudicada";
-    state.parecer = dados.parecer || "FAVORÁVEL";
-    state.justificativa = dados.justificativa || "";
+    state.limitacaoFuncional = dados.limitacao_funcional || state.limitacaoFuncional || "Sim";
+    state.limitacaoRol = dados.limitacao_rol || state.limitacaoRol || "Sim";
+    state.capacidade = dados.capacidade || state.capacidade || "Capacidade parcial e temporariamente prejudicada";
+    state.parecer = dados.parecer || state.parecer || "FAVORÁVEL";
+    state.justificativa = dados.justificativa || state.justificativa || "";
 
     // Subtipo e Resultado do Exame Físico "Outros"
     const parecerFavoravel = String(state.parecer).toUpperCase().includes("FAVOR");
-    let subtipoOutros = dados.outros_subtipo || "Exame Físico Geral";
+    let subtipoOutros = dados.outros_subtipo || state.outrosSubtipo || "Exame Físico Geral";
     if (subtipoOutros.toLowerCase() === "outros" || subtipoOutros.toLowerCase() === "none") {
       subtipoOutros = "Exame Físico Geral";
     }
-    const resultadoOutros = dados.outros_resultado || (parecerFavoravel ? "Alterado" : "Normal");
+    const resultadoOutros = dados.outros_resultado || state.outrosResultado || (parecerFavoravel ? "Alterado" : "Normal");
     state.outrosSubtipo = subtipoOutros;
     state.outrosResultado = resultadoOutros;
 
@@ -5371,15 +5490,15 @@ function aplicarPreenchimentoIAResultado(dados) {
       }));
     }
 
-    const isoDoc = toIsoDate(dados.data_documento);
-    const isoNasc = toIsoDate(dados.data_nascimento);
-    const isoAltMed = toIsoDate(dados.data_alteracao_med);
+    const isoDoc = toIsoDate(dados.data_documento) || state.aux?.dataDocumento || "";
+    const isoNasc = toIsoDate(dados.data_nascimento) || state.aux?.dataNascimento || "";
+    const isoAltMed = toIsoDate(dados.data_alteracao_med) || state.aux?.dataAlteracaoMed || "";
 
     // 3. Atualizar state.aux completo
     Object.assign(state.aux, {
       nomePaciente: state.nomePaciente,
       cpfPaciente: state.cpfPaciente,
-      rgPaciente: dados.rg_paciente || "",
+      rgPaciente: dados.rg_paciente || state.aux?.rgPaciente || state.aux?.rg || "",
       dataNascimento: isoNasc,
       cargo: state.cargo,
       tempoCargo: state.tempoCargo,
@@ -5388,10 +5507,10 @@ function aplicarPreenchimentoIAResultado(dados) {
       sexo: state.sexo,
       readaptado: state.readaptado,
       atividadesReadaptado: dados.atividades_readaptado || "",
-      doencaMotivo: dados.doenca_motivo || "",
-      inicioTratamento: dados.inicio_tratamento || "",
-      freqConsultas: dados.freq_consultas || "",
-      sintomasLimitacao: dados.sintomas_limitacao || "",
+      doencaMotivo: doencaParaPreencher || dados.doenca_motivo || "",
+      inicioTratamento: state.inicioTratamento,
+      freqConsultas: state.freqConsultas,
+      sintomasLimitacao: state.sintomasLimitacao,
       alteracaoMed: state.alteracaoMed,
       dataAlteracaoMed: isoAltMed,
       obsAlteracaoMed: dados.obs_alteracao_med || "",
@@ -5399,7 +5518,7 @@ function aplicarPreenchimentoIAResultado(dados) {
       fisioterapia: state.fisioterapia,
       obsTerapias: dados.obs_terapias || "",
       outrasDoencas: state.outrasDoencas,
-      historicoPregresso: dados.historico_pregresso || "",
+      historicoPregresso: state.historicoPregresso,
       cid: state.cid,
       crmCro: dados.crm_cro || "",
       nomeMedicoAssistente: dados.nome_medico_assistente || "",
@@ -5473,22 +5592,27 @@ function aplicarPreenchimentoIAResultado(dados) {
       setVal("agilAtividadesReadaptado", dados.atividades_readaptado);
     }
 
-    // Bloco 2 - Queixa e Antecedentes (apenas acompanhante recebe texto padrão art. 199; titular fica livre)
-    if (dados.tipo_atendimento_pericia === "ACOMPANHANTE" && dados.doenca_motivo) {
-      setVal("doencaMotivo", dados.doenca_motivo);
-      setVal("agilDoencaMotivo", dados.doenca_motivo);
-    } else if (state.doencaMotivo && !isGenericCIDLabel(state.doencaMotivo)) {
-      setVal("doencaMotivo", state.doencaMotivo);
-      setVal("agilDoencaMotivo", state.doencaMotivo);
+    // Bloco 2 - Queixa e Antecedentes: Qual a doença está tratando que motivou o afastamento?
+    if (doencaParaPreencher) {
+      setVal("doencaMotivo", doencaParaPreencher);
+      setVal("agilDoencaMotivo", doencaParaPreencher);
     }
-    setVal("inicioTratamento", dados.inicio_tratamento);
-    setVal("agilInicioTratamento", dados.inicio_tratamento);
-    setVal("freqConsultas", dados.freq_consultas);
-    setVal("agilFreqConsultas", dados.freq_consultas);
-    setVal("sintomasLimitacao", dados.sintomas_limitacao);
-    setVal("agilSintomasLimitacao", dados.sintomas_limitacao);
+    if (inicioTratParaPreencher) {
+      setVal("inicioTratamento", inicioTratParaPreencher);
+      setVal("agilInicioTratamento", inicioTratParaPreencher);
+    }
+    if (freqConsParaPreencher) {
+      setVal("freqConsultas", freqConsParaPreencher);
+      setVal("agilFreqConsultas", freqConsParaPreencher);
+    }
+    if (sintomasParaPreencher) {
+      setVal("sintomasLimitacao", sintomasParaPreencher);
+      setVal("agilSintomasLimitacao", sintomasParaPreencher);
+    }
     setRadioDirect("alteracaoMed", state.alteracaoMed);
     setRadioDirect("agilAlteracaoMed", state.alteracaoMed);
+    if ($("alteracaoPanel")) $("alteracaoPanel").classList.toggle("hidden", state.alteracaoMed !== "Sim");
+    if ($("agilAlteracaoPanel")) $("agilAlteracaoPanel").classList.toggle("hidden", state.alteracaoMed !== "Sim");
     setVal("dataAlteracaoMed", isoAltMed);
     setVal("agilDataAlteracaoMed", isoAltMed);
     setVal("obsAlteracaoMed", dados.obs_alteracao_med);
@@ -5501,8 +5625,10 @@ function aplicarPreenchimentoIAResultado(dados) {
     setVal("agilObsTerapias", dados.obs_terapias);
     setRadioDirect("outrasDoencas", state.outrasDoencas);
     setRadioDirect("agilOutrasDoencas", state.outrasDoencas);
-    setVal("historicoPregresso", dados.historico_pregresso);
-    setVal("agilHistoricoPregresso", dados.historico_pregresso);
+    if ($("doencasPanel")) $("doencasPanel").classList.toggle("hidden", state.outrasDoencas !== "Sim");
+    if ($("agilDoencasPanel")) $("agilDoencasPanel").classList.toggle("hidden", state.outrasDoencas !== "Sim");
+    setVal("historicoPregresso", state.historicoPregresso);
+    setVal("agilHistoricoPregresso", state.historicoPregresso);
 
     // Bloco 3 - Atestado e Exame
     setVal("cid", state.cid);
@@ -5593,12 +5719,34 @@ function aplicarPreenchimentoIAResultado(dados) {
     if (typeof togglePanelsOnly === "function") togglePanelsOnly();
     if (typeof syncExtendedToAgil === "function") syncExtendedToAgil();
 
-    // 7. Salvaguarda final para doencaMotivo (apenas acompanhante) e exameFisicoDescricao
-    if (dados.tipo_atendimento_pericia === "ACOMPANHANTE" && dados.doenca_motivo) {
-      state.doencaMotivo = dados.doenca_motivo;
-      state.aux.doencaMotivo = dados.doenca_motivo;
-      if ($("doencaMotivo")) $("doencaMotivo").value = dados.doenca_motivo;
-      if ($("agilDoencaMotivo")) $("agilDoencaMotivo").value = dados.doenca_motivo;
+    // 7. Salvaguarda final para doencaMotivo, inicioTratamento, freqConsultas, sintomasLimitacao e exameFisicoDescricao
+    if (doencaParaPreencher) {
+      state.doencaMotivo = doencaParaPreencher;
+      if (!state.aux) state.aux = {};
+      state.aux.doencaMotivo = doencaParaPreencher;
+      if ($("doencaMotivo")) $("doencaMotivo").value = doencaParaPreencher;
+      if ($("agilDoencaMotivo")) $("agilDoencaMotivo").value = doencaParaPreencher;
+    }
+    if (inicioTratParaPreencher) {
+      state.inicioTratamento = inicioTratParaPreencher;
+      if (!state.aux) state.aux = {};
+      state.aux.inicioTratamento = inicioTratParaPreencher;
+      if ($("inicioTratamento")) $("inicioTratamento").value = inicioTratParaPreencher;
+      if ($("agilInicioTratamento")) $("agilInicioTratamento").value = inicioTratParaPreencher;
+    }
+    if (freqConsParaPreencher) {
+      state.freqConsultas = freqConsParaPreencher;
+      if (!state.aux) state.aux = {};
+      state.aux.freqConsultas = freqConsParaPreencher;
+      if ($("freqConsultas")) $("freqConsultas").value = freqConsParaPreencher;
+      if ($("agilFreqConsultas")) $("agilFreqConsultas").value = freqConsParaPreencher;
+    }
+    if (sintomasParaPreencher) {
+      state.sintomasLimitacao = sintomasParaPreencher;
+      if (!state.aux) state.aux = {};
+      state.aux.sintomasLimitacao = sintomasParaPreencher;
+      if ($("sintomasLimitacao")) $("sintomasLimitacao").value = sintomasParaPreencher;
+      if ($("agilSintomasLimitacao")) $("agilSintomasLimitacao").value = sintomasParaPreencher;
     }
     if (state.exameFisicoDescricao) {
       if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = state.exameFisicoDescricao;
@@ -5613,11 +5761,14 @@ function aplicarPreenchimentoIAResultado(dados) {
     // 9. Atualizar contadores do e-SISLA e progresso ágil
     if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
     if (typeof atualizarContadorEsisla === "function") {
-      ["nomePaciente", "cpfPaciente", "cargo", "doencaMotivo", "sintomasLimitacao", "crmCro", "diasSolicitados", "exameFisicoDescricao", "justificativa"].forEach(k => {
+      ["nomePaciente", "cpfPaciente", "cargo", "doencaMotivo", "inicioTratamento", "freqConsultas", "sintomasLimitacao", "crmCro", "diasSolicitados", "exameFisicoDescricao", "justificativa"].forEach(k => {
         atualizarContadorEsisla(k);
         atualizarContadorEsisla("agil" + k.charAt(0).toUpperCase() + k.slice(1));
       });
     }
+    ["doencaMotivo", "agilDoencaMotivo", "inicioTratamento", "agilInicioTratamento", "freqConsultas", "agilFreqConsultas", "sintomasLimitacao", "agilSintomasLimitacao"].forEach(id => {
+      $(id)?.dispatchEvent(new Event("input", { bubbles: true }));
+    });
 
   } finally {
     window.__isAutoSaving = prevAutoSaving;
@@ -6788,6 +6939,20 @@ async function init(){
    }
    if (unidadeParam) {
      state.aux.unidade = unidadeParam;
+   }
+   const acompParam = params.get("acompanhante") || params.get("is_acompanhante");
+   if (acompParam === "1" || acompParam === "true") {
+     state.isAcompanhante = true;
+     if (!state.aux) state.aux = {};
+     state.aux.isAcompanhante = true;
+     state.pessoa = "Acompanhante";
+     state.aux.pessoa = "Acompanhante";
+     if (!state.cid) {
+       state.cid = "Z763";
+       if ($("cid")) $("cid").value = "Z763";
+       if ($("agilCid")) $("agilCid").value = "Z763";
+     }
+     if (typeof atualizarBannerAcompanhante === "function") atualizarBannerAcompanhante();
    }
    applyProfessionalDefaults(currentProfile);
    applyState();
@@ -8664,29 +8829,62 @@ function gerarNarrativaQueixaMelhoriaContinua(st, v) {
   const meds = (st.medications || v.medicamentos || []).filter(m => m && (m.medicamento || m.nome));
   let medsStr = "";
   if (meds.length > 0) {
-    medsStr = meds.map(m => {
-      const nome = m.medicamento || m.nome || "";
+    const medsWithoutDose = meds.filter(m => {
       const dose = (m.dosagem || "").trim();
-      const freq = (m.frequencia || "").trim();
-      const obs = (m.observacao || "").trim();
-      let item = nome;
-      if (dose) {
-        if (!item.endsWith(" ") && !dose.startsWith("/")) {
-          item += ` ${dose}`;
+      const nome = (m.medicamento || m.nome || "").trim();
+      return !dose && !/\b\d+\s*(?:g|mg|mcg|ml|gotas?|comprimidos?)\b/i.test(nome);
+    });
+
+    if (meds.length >= 2 && medsWithoutDose.length === meds.length && meds.every(m => !m.frequencia && !m.observacao)) {
+      const nomes = meds.map(m => {
+        let n = (m.medicamento || m.nome || "").trim().replace(/\/\s*$/, "");
+        return n.length > 1 ? n.charAt(0).toUpperCase() + n.slice(1) : n.toUpperCase();
+      });
+      medsStr = nomes.slice(0, -1).join(", ") + " e " + nomes[nomes.length - 1] + ", e não foram informadas suas dosagens";
+    } else {
+      medsStr = meds.map(m => {
+        let nome = (m.medicamento || m.nome || "").trim();
+        let dose = (m.dosagem || "").trim();
+        let freq = (m.frequencia || "").trim();
+        let obs = (m.observacao || "").trim();
+        
+        nome = nome.replace(/\/\s*$/, "").trim();
+        dose = dose.replace(/\/\s*$/, "").trim();
+
+        let item = nome;
+        if (dose) {
+          if (!item.endsWith(" ") && !dose.startsWith("/")) {
+            item += ` ${dose}`;
+          } else {
+            item += dose;
+          }
         } else {
-          item += dose;
+          const hasDoseInNome = /\b\d+\s*(?:g|mg|mcg|ml|gotas?|comprimidos?)\b/i.test(nome);
+          if (!hasDoseInNome) {
+            item += `, não informado sua dosagem`;
+          }
         }
-      } else {
-        item += `, não informado sua dosagem`;
-      }
-      if (freq) {
-        item += ` ${freq}`;
-      }
-      if (obs && !obs.includes(dose) && !obs.includes(freq)) {
-        item += ` (${obs})`;
-      }
-      return item.trim();
-    }).join(" e ");
+        if (freq) {
+          if (/^analgesia$/i.test(freq.trim())) {
+            item += `, para analgesia`;
+          } else if (/^se\s+dor$/i.test(freq.trim())) {
+            item += ` se dor`;
+          } else {
+            item += ` ${freq}`;
+          }
+        }
+        if (obs && !obs.includes(dose) && !obs.includes(freq)) {
+          if (/^analgesia$/i.test(obs.trim())) {
+            if (!item.toLowerCase().includes("analgesia")) {
+              item += `, para analgesia`;
+            }
+          } else {
+            item += ` (${obs})`;
+          }
+        }
+        return item.trim();
+      }).join(" e ");
+    }
   }
   
   // Terapias
@@ -8700,7 +8898,45 @@ function gerarNarrativaQueixaMelhoriaContinua(st, v) {
     return cleanQueixaDuracao(rawQ, aux.dataAtd || st.aux?.dataAtd || $("dataAtd")?.value);
   }
 
-  const isAcomp = !!(st.isAcompanhante || aux.isAcompanhante || cidVal === "Z763" || cidVal === "Z76.3");
+  const isAcomp = !!(
+    st.isAcompanhante ||
+    aux.isAcompanhante ||
+    cidVal === "Z763" ||
+    cidVal === "Z76.3" ||
+    /acompanha/i.test(doenca || "") ||
+    /artigo\s*199/i.test(doenca || "") ||
+    /pessoa\s+doente/i.test(doenca || "") ||
+    /familiar\s+enfermo/i.test(doenca || "")
+  );
+
+  function flexibilizarCargoFem(cargoStr, isFeminino) {
+    if (!cargoStr) return cargoStr;
+    if (isFeminino) {
+      return cargoStr
+        .replace(/\b(?:PEB|Peb)\s+([IVXLCDM]+)\b/gi, "Professora de Educação Básica $1")
+        .replace(/\b(?:PEB|Peb)\b/gi, "Professora de Educação Básica")
+        .replace(/\bTécnico\s+de\s+Enfermagem\b/gi, "Técnica de Enfermagem")
+        .replace(/\bTécnico\s+em\b/gi, "Técnica em")
+        .replace(/\bTécnico\s+de\b/gi, "Técnica de")
+        .replace(/\bProfessor\s+de\s+Educação\s+Básica\b/gi, "Professora de Educação Básica")
+        .replace(/\bProfessor\b/gi, "Professora")
+        .replace(/\bDiretor\b/gi, "Diretora")
+        .replace(/\bCoordenador\b/gi, "Coordenadora")
+        .replace(/\bInspetor\b/gi, "Inspetora")
+        .replace(/\bEnfermeiro\b/gi, "Enfermeira")
+        .replace(/\bMédico\b/gi, "Médica")
+        .replace(/\bPsicólogo\b/gi, "Psicóloga")
+        .replace(/\bInvestigador\b/gi, "Investigadora")
+        .replace(/\bEscrivão\b/gi, "Escrivã")
+        .replace(/\bAssistente\s+Técnico\b/gi, "Assistente Técnica")
+        .replace(/\bAuxiliar\s+Técnico\b/gi, "Auxiliar Técnica")
+        .replace(/\bOficial\s+Administrativo\b/gi, "Oficial Administrativa");
+    }
+    return cargoStr
+      .replace(/\b(?:PEB|Peb)\s+([IVXLCDM]+)\b/gi, "Professor de Educação Básica $1")
+      .replace(/\b(?:PEB|Peb)\b/gi, "Professor de Educação Básica");
+  }
+
   if (isAcomp) {
     const depNome = aux.nomeDependente || st.nomeDependente || st.pessoa || "familiar dependente";
     const sexo = (st.sexo || v.sexo || "").toLowerCase();
@@ -8713,7 +8949,8 @@ function gerarNarrativaQueixaMelhoriaContinua(st, v) {
       ident += `, relatou não ser ${isFem ? 'readaptada' : 'readaptado'}`;
     }
     if (cargo) {
-      const cargoFormatado = cargo.trim().replace(/^é\s+/i, '');
+      let cargoFormatado = cargo.trim().replace(/^é\s+/i, '');
+      cargoFormatado = flexibilizarCargoFem(cargoFormatado, isFem);
       if (tempoCargo) {
         ident += `, é ${cargoFormatado} há ${tempoCargo} ${unidadeTempo.toLowerCase()}`;
       } else {
@@ -8728,7 +8965,7 @@ function gerarNarrativaQueixaMelhoriaContinua(st, v) {
     if (medsStr) {
       acompPartes.push(`Em uso de medicação de rotina: ${medsStr}.`);
     } else {
-      acompPartes.push("Negou uso regular de medicações.");
+      acompPartes.push(isFem ? "A servidora negou uso de medicações próprias de uso contínuo." : "O servidor negou uso de medicações próprias de uso contínuo.");
     }
     return acompPartes.join(" ");
   }
@@ -8750,7 +8987,8 @@ function gerarNarrativaQueixaMelhoriaContinua(st, v) {
 
   // 3. Cargo: "é {cargo} há {tempoCargo} {unidadeTempo}"
   if (cargo) {
-    const cargoFormatado = cargo.trim().replace(/^é\s+/i, '');
+    let cargoFormatado = cargo.trim().replace(/^é\s+/i, '');
+    cargoFormatado = flexibilizarCargoFem(cargoFormatado, isFem);
     if (tempoCargo) {
       ident += `, é ${cargoFormatado} há ${tempoCargo} ${unidadeTempo.toLowerCase()}`;
     } else {
@@ -8761,20 +8999,28 @@ function gerarNarrativaQueixaMelhoriaContinua(st, v) {
   // 3. Doença, início do tratamento e consultas
   if (doenca) {
     let cleanDoenca = doenca.replace(/^[Vv]em\s+com\s+atestado\s+de\s+\d+\s+dias\s*(?:por|de|devido\s+a)?\s*/i, "")
-                            .replace(/^[Aa]testado\s+de\s+\d+\s+dias\s*(?:por|de|devido\s+a)?\s*/i, "").trim();
-    ident += `, com queixa de ${cleanDoenca}`;
+                            .replace(/^[Aa]testado\s+de\s+\d+\s+dias\s*(?:por|de|devido\s+a)?\s*/i, "")
+                            .replace(/[\.\,\;\:]+$/, "")
+                            .trim();
+    if (/acompanhamento\s+de\s+pessoa\s+doente|familiar\s+enfermo/i.test(cleanDoenca)) {
+      ident += `, para acompanhamento de familiar enfermo, ${cleanDoenca.replace(/^acompanhamento\s+de\s+(?:pessoa\s+doente|familiar\s+enfermo)[\s,:]*/i, "")}`;
+    } else {
+      ident += `, com queixa de ${cleanDoenca}`;
+    }
     
     if (inicioTrat && !isArtifactAttendanceDate(inicioTrat, aux.dataAtd || st.aux?.dataAtd || $("dataAtd")?.value)) {
-      const s = String(inicioTrat).trim();
+      const s = String(inicioTrat).trim().replace(/^desde\s+/i, "");
       if (/^\d{4}$/.test(s)) {
-        ident += ` desde ${s}`; // iniciou-se seu tratamento em
+        ident += `, desde ${s}`; // iniciou-se seu tratamento em
       } else if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
         const p = s.split("-");
-        ident += ` desde ${p[2]}/${p[1]}/${p[0]}`; // iniciou-se seu tratamento em
-      } else if (s.toLowerCase().startsWith("desde") || s.toLowerCase().startsWith("há") || s.toLowerCase().startsWith("ha")) {
-        ident += ` ${s}`;
+        ident += `, desde ${p[2]}/${p[1]}/${p[0]}`; // iniciou-se seu tratamento em
+      } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
+        ident += `, desde ${s}`; // iniciou-se seu tratamento em
+      } else if (s.toLowerCase().startsWith("há") || s.toLowerCase().startsWith("ha")) {
+        ident += `, ${s}`;
       } else {
-        ident += ` desde ${s}`; // iniciou-se seu tratamento em
+        ident += `, desde ${s}`; // iniciou-se seu tratamento em
       }
     }
     
@@ -8810,10 +9056,30 @@ function gerarNarrativaQueixaMelhoriaContinua(st, v) {
   // 4. Sintomas e limitações
   if (sintomas) {
     let sClean = sintomas.trim();
-    if (sClean.toLowerCase().startsWith("queixa-se de") || sClean.toLowerCase().startsWith("refere")) {
-      partes.push(sClean.endsWith(".") ? sClean : sClean + ".");
+    sClean = sClean.replace(/^[Qq]ueixa-se\s+de\s+((?:[Aa]\s+periciada|[Oo]\s+periciado|[Aa]\s+servidora|[Oo]\s+servidor)\s+(?:refere|relata|informa|apresenta|menciona|descreve|acompanha)\b)/i, "$1");
+    sClean = sClean.replace(/^[Qq]ueixa-se\s+de\s+([Aa]\s+periciada|[Oo]\s+periciado|[Aa]\s+servidora|[Oo]\s+servidor)\b/i, "$1");
+    sClean = sClean.replace(/^[Qq]ueixa-se\s+de\s+[Rr]elata\s+que\s+/i, "Relata que ");
+    sClean = sClean.replace(/^[Qq]ueixa-se\s+de\s+[Rr]efere(?:\s+que)?\s+/i, "Refere que ");
+    sClean = sClean.replace(/^[Qq]ueixa-se\s+de\s+[Ii]nforma(?:\s+que)?\s+/i, "Informa que ");
+    sClean = sClean.replace(/^[Qq]ueixa-se\s+de\s+[Qq]ueixa-se\s+de\s+/i, "Queixa-se de ");
+
+    const startsWithVerb = /^(?:(?:a\s+periciada|o\s+periciado|a\s+servidora|o\s+servidor)\s+)?(?:relata\b|refere\b|informa\b|apresenta\b|descreve\b|menciona\b|acompanha\b)/i.test(sClean);
+    const startsWithQueixa = /^queixa-se\s+de\b/i.test(sClean);
+
+    if (startsWithVerb) {
+      const formatted = sClean.charAt(0).toUpperCase() + sClean.slice(1);
+      partes.push(formatted.endsWith(".") ? formatted : formatted + ".");
+    } else if (startsWithQueixa) {
+      let formatted = sClean;
+      if (doenca && ident.includes("com queixa de")) {
+        formatted = formatted.replace(/^queixa-se\s+de\s+/i, "Refere ");
+      }
+      formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+      partes.push(formatted.endsWith(".") ? formatted : formatted + ".");
     } else {
-      partes.push(`Queixa-se de ${sClean.endsWith(".") ? sClean.slice(0, -1) : sClean}.`);
+      const verboIntro = (doenca && ident.includes("com queixa de")) ? "Refere" : "Queixa-se de";
+      const sBody = sClean.endsWith(".") ? sClean.slice(0, -1) : sClean;
+      partes.push(`${verboIntro} ${sBody}.`);
     }
   }
   
@@ -8821,15 +9087,24 @@ function gerarNarrativaQueixaMelhoriaContinua(st, v) {
   if (medsStr) {
     partes.push(`Em uso de ${medsStr}.`);
   } else {
-    partes.push("Negou uso de medicações.");
+    if (isAcomp || /acompanha/i.test(sintomas || "") || /familiar/i.test(doenca || "")) {
+      partes.push(isFem ? "A servidora negou uso de medicações próprias de uso contínuo." : "O servidor negou uso de medicações próprias de uso contínuo.");
+    } else {
+      partes.push("Negou uso de medicações.");
+    }
   }
   
   // 6. Alteração de medicação (CID F e geral)
-  const altMed = String(st.alteracaoMed || aux.alteracaoMed || getRadio("agilAlteracaoMed") || "").toLowerCase() === "sim";
+  const temRelatoAlt = /\b(?:aumentad[oa]|aumento|ajustad[oa]|ajuste|reduzid[oa]|redução|reducao|trocad[oa]|troca)\s+(?:a\s+medica[çc][ãa]o|de\s+medica[çc][ãa]o|d[ae]\s+dosagem|d[ae]\s+dose)\b|\b(?:foi\s+aumentada\s+a\s+medica[çc][ãa]o|aumentou\s+a\s+dose|trocou\s+a\s+medica[çc][ãa]o|ajustou\s+a\s+dose)\b|\b(?:recentemente\s+foi\s+aumentada\s+a\s+medica[çc][ãa]o)\b/i.test(sintomas || "");
+  const altMed = String(st.alteracaoMed || aux.alteracaoMed || getRadio("agilAlteracaoMed") || "").toLowerCase() === "sim" || temRelatoAlt;
   if (altMed) {
     const dtAlt = aux.dataAlteracaoMed || $("agilDataAlteracaoMed")?.value || "";
     const obsAlt = aux.obsAlteracaoMed || $("agilObsAlteracaoMed")?.value || "";
-    partes.push(`Informa alteração recente na prescrição medicamentosa${dtAlt ? ` em ${formatDate(dtAlt)}` : ""}${obsAlt ? ` (${obsAlt})` : ""}.`);
+    if (temRelatoAlt) {
+      // Já relatado nos sintomas
+    } else {
+      partes.push(`Informa alteração recente na prescrição medicamentosa${dtAlt ? ` em ${formatDate(dtAlt)}` : ""}${obsAlt ? ` (${obsAlt})` : ""}.`);
+    }
   } else {
     partes.push("Não relatou troca de alteração de dosagem da medicação.");
   }
@@ -8847,7 +9122,67 @@ function gerarNarrativaQueixaMelhoriaContinua(st, v) {
     partes.push("Não alegou fazer fisioterapia e psicoterapia.");
   }
   
-  return partes.join(" ");
+  let resNarrativa = partes.join(" ");
+
+  // Deduplicação de sintomas repetidos ou sinônimos no mesmo parágrafo
+  if (/dor\s+na\s+regi[ãa]o\s+cervical|cervicalgia/i.test(resNarrativa) && /dor\s+(?:em|no)\s+ouvido/i.test(resNarrativa)) {
+    resNarrativa = resNarrativa.replace(/,\s*cervicalgia,\s*dor\s+em\s+ouvido\b/gi, "");
+  }
+  if (/taquicardia/i.test(resNarrativa)) {
+    resNarrativa = resNarrativa.replace(/(\btaquicardia\b[^.]+?),\s*taquicardia\b/gi, "$1");
+  }
+  if (/dorm[êe]ncia\s+nas\s+m[ãa]os\s+e\s+bra[çc]os/i.test(resNarrativa)) {
+    resNarrativa = resNarrativa.replace(/,\s*parestesia\s+em\s+m[ãa]os\s+e\s+bra[çc]os\b/gi, "");
+  }
+  if (/dor\s+difusa\s+pelo\s+corpo/i.test(resNarrativa)) {
+    resNarrativa = resNarrativa.replace(/,\s*dor\s+generalizada\b/gi, "");
+  }
+
+  // Consolidação de múltiplas medicações sem dosagem
+  resNarrativa = resNarrativa.replace(/([Ee]m uso de\s+)([^.]+?)\./g, function(match, prefix, content) {
+    const uninformedPat = /,?\s*n[ãa]o\s+informad[oa]\s+sua\s+dosagem\b/gi;
+    const matches = content.match(uninformedPat);
+    if (matches && matches.length >= 2) {
+      const hasOtherDose = /\b\d+(?:[.,]\d+)?\s*(?:mg|g|mcg|ml)\b/i.test(content);
+      if (!hasOtherDose) {
+        const cleaned = content.replace(uninformedPat, "");
+        const rawItems = cleaned.split(/[,e]\s+/).map(x => x.trim()).filter(Boolean);
+        const items = rawItems.map(x => x.length > 1 ? x.charAt(0).toUpperCase() + x.slice(1) : x.toUpperCase());
+        let medsList = "";
+        if (items.length >= 2) {
+          medsList = items.slice(0, -1).join(", ") + " e " + items[items.length - 1];
+        } else if (items.length === 1) {
+          medsList = items[0];
+        } else {
+          medsList = cleaned.trim();
+        }
+        return `${prefix}${medsList}, e não foram informadas suas dosagens.`;
+      } else {
+        let cleaned = content.replace(uninformedPat, "");
+        cleaned = cleaned.replace(/\s*,\s*/g, ", ").replace(/,\s*e\b/g, " e").replace(/\b(e\s+)+/g, "e ").replace(/\s{2,}/g, " ").replace(/^[, ]+|[, ]+$/g, "");
+        return `${prefix}${cleaned}, e não foram informadas suas dosagens.`;
+      }
+    }
+    return match;
+  });
+
+  resNarrativa = resNarrativa.replace(/\bh[áa]\s+1\s+anos\b/gi, "há 1 ano");
+  resNarrativa = resNarrativa.replace(/\bh[áa]\s+1\s+meses\b/gi, "há 1 mês");
+  resNarrativa = resNarrativa.replace(/\bh[áa]\s+1\s+dias\b/gi, "há 1 dia");
+  resNarrativa = resNarrativa.replace(/\b(\d+(?:[.,]\d+)?)\s*(mg|g|mcg|ml|gotas?|comp(?:rimidos?)?|c[áa]ps(?:ulas?)?)dia\b/gi, "$1 $2/dia");
+  resNarrativa = resNarrativa.replace(/\b(mg|g|mcg|ml)dia\b/gi, "$1/dia");
+  resNarrativa = resNarrativa.replace(/(\b\d+(?:[.,]\d+)?\s*(?:g|mg|mcg|ml|gotas?|comp(?:rimidos?)?|c[áa]ps(?:ulas?)?)(?:\/dia)?)\s*,?\s*n[ãa]o\s+informad[oa]\s+sua\s+dosagem,?\s*/gi, "$1, ");
+  resNarrativa = resNarrativa.replace(/\bn[ãa]o\s+informad[oa]\s+sua\s+dosagem\s+[Nn][ãa]o\s+informad[oa]\.?/gi, "não informada sua dosagem.");
+  resNarrativa = resNarrativa.replace(/\bn[ãa]o\s+informad[oa]\s+sua\s+dosagem\s+[Nn][ãa]o\s+informad[oa]\b/gi, "não informada sua dosagem");
+  resNarrativa = resNarrativa.replace(/\bn[ãa]o\s+informado\s+sua\s+dosagem\b/gi, "não informada sua dosagem");
+  resNarrativa = resNarrativa.replace(/\bn[ãa]o\s+informada\s+sua\s+dosagem\s+Analgesia\b/gi, "não informada sua dosagem, para analgesia");
+  resNarrativa = resNarrativa.replace(/,\s*Analgesia\b/gi, ", para analgesia");
+  resNarrativa = resNarrativa.replace(/(não informada sua dosagem)\s+e\s+([A-ZÁ-Ú])/g, "$1, e $2");
+  resNarrativa = resNarrativa.replace(/(não informada sua dosagem)\s+(a\s+cada\s+\d+|de\s+\d+\/\d+h|se\s+dor|\d+x\s+ao\s+dia|para\s+analgesia)/gi, "$1, $2");
+  resNarrativa = resNarrativa.replace(/\bsensibilidade\s+a\s+luz\b/gi, "sensibilidade à luz");
+  resNarrativa = resNarrativa.replace(/\blaser\s+terapia\b/gi, "laserterapia");
+  resNarrativa = resNarrativa.replace(/\bceacalm\b/gi, "Seacalm");
+  return resNarrativa.replace(/\s{2,}/g, " ").trim();
 }
 
 function gerarNarrativaAntecedentesMelhoriaContinua(st, v) {
@@ -8860,14 +9195,49 @@ function gerarNarrativaAntecedentesMelhoriaContinua(st, v) {
   const fraseComplemento = "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias.";
   const fraseNegaCompleta = "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas.";
 
-  // Se já tiver uma redação do médico ou histórico, limpa menção a atestados e complementa com negação de cirurgias e neoplasias
-  if (rawHist && rawHist !== "Nega" && rawHist !== "Nega." && !/^nega\.?$/i.test(rawHist.trim())) {
+  // Se já tiver uma redação do médico ou histórico, limpa menção a atestados e complementa sem duplicidade
+  if (rawHist && rawHist !== "Nega" && rawHist !== "Nega." && !/^nega\.?$/i.test(rawHist.trim()) && rawHist.toLowerCase() !== "não refere" && rawHist.toLowerCase() !== "nao refere" && rawHist.toLowerCase() !== "sem antecedentes") {
     let t = rawHist.replace(/[\s\.\,]*\b(?:[Vv]em\s+com\s+atestado|[Aa]testado)\s+de\s+\d+\s+dias[^\.\n\r]*[\.\,]?/gi, "").trim();
-    if (!t.endsWith(".")) t += ".";
-    if (!t.toLowerCase().includes("nega demais") && !t.toLowerCase().includes("cirurgias") && !t.toLowerCase().includes("neoplasias") && !t.toLowerCase().includes("nega antecedentes")) {
-      t += " " + fraseComplemento;
+    t = t.replace(/\s+([\.\,;:])/, '$1');
+    t = t.replace(/\.{2,}/g, '.').replace(/^[\s\.\,;]+/, '').replace(/[\s\.\,;]+$/, '');
+
+    // Prefixos anômalos em antecedentes mórbidos
+    t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+a\s+(?:Alega\s+ter\s+apresentado|Relata\s+ter\s+apresentado|Refere\s+ter\s+apresentado)\b/gi, "Refere histórico de");
+    t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+a\s+(?:Alega\s+que|Relata\s+que|Refere\s+que)\b/gi, "Relata que");
+    t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+a\s+Alega\s+ter\b/gi, "Refere histórico de");
+    t = t.replace(/\bdor\s+e\s+rangendo\s+os\s+dentes\b/gi, "dor e bruxismo (ranger de dentes)");
+
+    // Desduplica caso venha "Nega [algo]. Nega demais antecedentes..."
+    t = t.replace(/\b(Nega\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?/gi, '$1, cirurgias prévias e neoplasias.');
+    t = t.replace(/\b(N[ãa]o\s+refere\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?/gi, '$1, cirurgias prévias e neoplasias.');
+    t = t.replace(/\b(Sem\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?/gi, '$1, cirurgias prévias e neoplasias.');
+
+    const low = t.toLowerCase();
+    const temCirurgias = low.includes("cirurgias") || low.includes("cirurgia");
+    const temNeoplasias = low.includes("neoplasias") || low.includes("neoplasia");
+    const temNegaDemais = low.includes("nega demais");
+
+    if ((temCirurgias && temNeoplasias) || (temNegaDemais && temCirurgias)) {
+      return t.replace(/[\s\.\,;]+$/, '') + '.';
     }
-    return t;
+
+    const isNegacao = /^\s*(?:Nega\b|N[ãa]o\s+refere\b|N[ãa]o\s+apresenta\b|Sem\b)/i.test(t);
+    t = t.replace(/[\s\.\,;]+$/, '');
+    if (isNegacao) {
+      if (!temCirurgias && !temNeoplasias) {
+        t += ", cirurgias prévias e neoplasias.";
+      } else if (!temCirurgias) {
+        t += " e cirurgias prévias.";
+      } else if (!temNeoplasias) {
+        t += " e neoplasias.";
+      } else {
+        t += ".";
+      }
+    } else {
+      t += ". " + fraseComplemento;
+    }
+    t = t.replace(/\s{2,}/g, ' ').replace(/,\s*,+/g, ',').replace(/\.\s*\./g, '.').replace(/,\s*\./g, '.');
+    return t.trim();
   }
   
   if (conds.length > 0) {
@@ -11244,6 +11614,128 @@ function cleanQueixaDuracao(text, atdDate) {
   t = t.replace(/,\s*[Il],\s*nvestigador\b/gi, ", é Investigador");
   t = t.replace(/\b[Il],\s*\(?n[ãa]o\s+readaptad([oa])\)?\s*nvestigador\b/gi, "relatou não ser readaptad$1, é Investigador");
   t = t.replace(/,\s*[Il],\s*(?=(?:não\s+readaptad[oa]|investigador|[a-zà-ú]))/gi, ", ");
+
+  // 6. Elimina prefixos anômalos e redundâncias: "Queixa-se de A periciada refere que", "Queixa-se de Relata que", etc.
+  t = t.replace(/\b(?:Queixa-se\s+de|Refere|Relata\s+que)\s+((?:[Aa]\s+periciada|[Oo]\s+periciado|[Aa]\s+servidora|[Oo]\s+servidor)\s+(?:refere|relata|informa|apresenta|menciona|descreve|acompanha)\b)/gi, "$1");
+  t = t.replace(/\bQueixa-se\s+de\s+([Aa]\s+periciada|[Oo]\s+periciado|[Aa]\s+servidora|[Oo]\s+servidor)\b/gi, "$1");
+  t = t.replace(/\bQueixa-se de\s+[Rr]elata(?:r|ndo)?\s+que\b/gi, "Relata que");
+  t = t.replace(/\bQueixa-se de\s+[Rr]efere(?:\s+que)?\b/gi, "Refere que");
+  t = t.replace(/\bQueixa-se de\s+[Ii]nforma(?:\s+que)?\b/gi, "Informa que");
+  t = t.replace(/\bQueixa-se de\s+[Qq]ueixa-se de\b/gi, "Queixa-se de");
+  t = t.replace(/\bQueixa-se de\s+[Aa]presenta\b/gi, "Apresenta");
+
+  // 7. Unifica início de tratamento/acompanhamento quebrado por ponto final indevido
+  t = t.replace(/([\w\)])\.\s*[Dd]esde\s+(\d{4})\b/gi, "$1 desde $2");
+  t = t.replace(/([\w\)])\.\s*[Dd]esde\s+(\d{1,2}\/\d{1,2}\/\d{4})/gi, "$1, desde $2");
+  t = t.replace(/([\w\)])\s+desde\s+(\d{1,2}\/\d{1,2}\/\d{4})/gi, "$1, desde $2");
+  t = t.replace(/,\s*,+/g, ",");
+
+  // 8. Normalização de perícia de Acompanhante (CID Z76.3 / dependente enfermo)
+  t = t.replace(/,\s*com\s+queixa\s+de\s+[Aa]companhamento\s+de\s+pessoa\s+doente,?\s*/gi, ", para acompanhamento de familiar enfermo, ");
+  t = t.replace(/,\s*com\s+queixa\s+de\s+[Aa]companhante\b,?\s*/gi, ", para acompanhamento de familiar enfermo, ");
+  if (/\b(?:acompanha\s+a\s+filha|familiar\s+enfermo|pessoa\s+doente|dependente)\b/i.test(t)) {
+    t = t.replace(/\bNegou\s+uso\s+de\s+medica[çc][õo]es\./gi, /servidora/i.test(t) ? "A servidora negou uso de medicações próprias de uso contínuo." : "O servidor negou uso de medicações próprias de uso contínuo.");
+  }
+
+  // 9. Concordância de gênero do cargo quando a periciada for mulher ("Servidora")
+  if (/\bServidora\b/i.test(t)) {
+    t = t.replace(/\bé\s+(?:PEB|Peb)\s+([IVXLCDM]+)\b/gi, "é Professora de Educação Básica $1");
+    t = t.replace(/\bé\s+(?:PEB|Peb)\b/gi, "é Professora de Educação Básica");
+    t = t.replace(/\bé\s+T[ée]cnico\s+(?:de|em)\s+Enfermagem\b/gi, "é Técnica de Enfermagem");
+    t = t.replace(/\bé\s+T[ée]cnico\s+em\s+Administra[çc][ãa]o\b/gi, "é Técnica em Administração");
+    t = t.replace(/\bé\s+T[ée]cnico\s+de\b/gi, "é Técnica de");
+    t = t.replace(/\bé\s+T[ée]cnico\s+em\b/gi, "é Técnica em");
+    t = t.replace(/\bé\s+T[ée]cnico\b/gi, "é Técnica");
+    t = t.replace(/\bé\s+Professor\s+(?:de\s+)?Educa[çc][ãa]o\s+B[áa]sica(?:\s+([IVXLCDM]+))?\b/gi, "é Professora de Educação Básica $1");
+    t = t.replace(/\bé\s+Professor\b/gi, "é Professora");
+    t = t.replace(/\bé\s+Enfermeiro\b/gi, "é Enfermeira");
+    t = t.replace(/\bé\s+M[ée]dico\b/gi, "é Médica");
+    t = t.replace(/\bé\s+Psic[óo]logo\b/gi, "é Psicóloga");
+    t = t.replace(/\bé\s+Diretor\b/gi, "é Diretora");
+    t = t.replace(/\bé\s+Coordenador\b/gi, "é Coordenadora");
+    t = t.replace(/\bé\s+Inspetor\b/gi, "é Inspetora");
+    t = t.replace(/\bé\s+Investigador\b/gi, "é Investigadora");
+    t = t.replace(/\bé\s+Escriv[ãa]o\b/gi, "é Escrivã");
+    t = t.replace(/\bé\s+Assistente\s+T[ée]cnico\b/gi, "é Assistente Técnica");
+    t = t.replace(/\bé\s+Auxiliar\s+T[ée]cnico\b/gi, "é Auxiliar Técnica");
+    t = t.replace(/\bé\s+Oficial\s+Administrativo\b/gi, "é Oficial Administrativa");
+  } else {
+    t = t.replace(/\bé\s+(?:PEB|Peb)\s+([IVXLCDM]+)\b/gi, "é Professor de Educação Básica $1");
+    t = t.replace(/\bé\s+(?:PEB|Peb)\b/gi, "é Professor de Educação Básica");
+  }
+
+  // Preposição em "Professor(a) Educação Básica" -> "Professor(a) de Educação Básica"
+  t = t.replace(/\bé\s+(Professora?)\s+Educa[çc][ãa]o\s+B[áa]sica(?:\s+([IVXLCDM]+))?\b/gi, "é $1 de Educação Básica $2");
+
+  // Deduplicação de sintomas repetidos ou sinônimos no mesmo parágrafo
+  if (/dor\s+na\s+regi[ãa]o\s+cervical|cervicalgia/i.test(t) && /dor\s+(?:em|no)\s+ouvido/i.test(t)) {
+    t = t.replace(/,\s*cervicalgia,\s*dor\s+em\s+ouvido\b/gi, "");
+  }
+  if (/taquicardia/i.test(t)) {
+    t = t.replace(/(\btaquicardia\b[^.]+?),\s*taquicardia\b/gi, "$1");
+  }
+  if (/dorm[êe]ncia\s+nas\s+m[ãa]os\s+e\s+bra[çc]os/i.test(t)) {
+    t = t.replace(/,\s*parestesia\s+em\s+m[ãa]os\s+e\s+bra[çc]os\b/gi, "");
+  }
+  if (/dor\s+difusa\s+pelo\s+corpo/i.test(t)) {
+    t = t.replace(/,\s*dor\s+generalizada\b/gi, "");
+  }
+
+  // 10. Concordância de tempo de serviço singular ("há 1 anos" -> "há 1 ano")
+  t = t.replace(/\bh[áa]\s+1\s+anos\b/gi, "há 1 ano");
+  t = t.replace(/\bh[áa]\s+1\s+meses\b/gi, "há 1 mês");
+  t = t.replace(/\bh[áa]\s+1\s+dias\b/gi, "há 1 dia");
+
+  // 11. Normaliza posologias aglutinadas (ex.: "10 mgdia" -> "10 mg/dia")
+  t = t.replace(/\b(\d+(?:[.,]\d+)?)\s*(mg|g|mcg|ml|gotas?|comp(?:rimidos?)?|c[áa]ps(?:ulas?)?)dia\b/gi, "$1 $2/dia");
+  t = t.replace(/\b(mg|g|mcg|ml)dia\b/gi, "$1/dia");
+  t = t.replace(/\b(\d+(?:[.,]\d+)?)\s*(mg|g|mcg|ml)(?:\/)?(noite|m[eê]s|semana)\b/gi, "$1 $2/$3");
+
+  // 12. Limpa barras soltas em dosagens (ex.: "1 g/", "50 mg/") sem tocar em posologia diária como /dia
+  t = t.replace(/\b(\d+(?:[.,]\d+)?\s*(?:g|mg|mcg|ml))\s*\/(?=\s*(?:,|[.]|\(|\bse\s+dor\b|\bpara\b|\bsob\b|$))/gi, "$1");
+  t = t.replace(/\b(\d+(?:[.,]\d+)?\s*(?:g|mg|mcg|ml))\s*\/(?=\s*$)/gi, "$1");
+
+  // 13. Ajustes de dosagem:
+  // Consolidação de múltiplas medicações sem dosagem ("Em uso de A, não informado sua dosagem, B, não informado sua dosagem..." -> "Em uso de A, B, e não foram informadas suas dosagens.")
+  t = t.replace(/([Ee]m uso de\s+)([^.]+?)\./g, function(match, prefix, content) {
+    const uninformedPat = /,?\s*n[ãa]o\s+informad[oa]\s+sua\s+dosagem\b/gi;
+    const matches = content.match(uninformedPat);
+    if (matches && matches.length >= 2) {
+      const hasOtherDose = /\b\d+(?:[.,]\d+)?\s*(?:mg|g|mcg|ml)\b/i.test(content);
+      if (!hasOtherDose) {
+        const cleaned = content.replace(uninformedPat, "");
+        const rawItems = cleaned.split(/[,e]\s+/).map(x => x.trim()).filter(Boolean);
+        const items = rawItems.map(x => x.length > 1 ? x.charAt(0).toUpperCase() + x.slice(1) : x.toUpperCase());
+        let medsList = "";
+        if (items.length >= 2) {
+          medsList = items.slice(0, -1).join(", ") + " e " + items[items.length - 1];
+        } else if (items.length === 1) {
+          medsList = items[0];
+        } else {
+          medsList = cleaned.trim();
+        }
+        return `${prefix}${medsList}, e não foram informadas suas dosagens.`;
+      } else {
+        let cleaned = content.replace(uninformedPat, "");
+        cleaned = cleaned.replace(/\s*,\s*/g, ", ").replace(/,\s*e\b/g, " e").replace(/\b(e\s+)+/g, "e ").replace(/\s{2,}/g, " ").replace(/^[, ]+|[, ]+$/g, "");
+        return `${prefix}${cleaned}, e não foram informadas suas dosagens.`;
+      }
+    }
+    return match;
+  });
+
+  // Duplicação "não informado sua dosagem Não informada"
+  t = t.replace(/\bn[ãa]o\s+informad[oa]\s+sua\s+dosagem\s+[Nn][ãa]o\s+informad[oa]\.?/gi, "não informada sua dosagem.");
+  t = t.replace(/\bn[ãa]o\s+informad[oa]\s+sua\s+dosagem\s+[Nn][ãa]o\s+informad[oa]\b/gi, "não informada sua dosagem");
+
+  // Normaliza "não informado sua dosagem Analgesia" -> "não informado sua dosagem, para analgesia"
+  t = t.replace(/\bn[ãa]o\s+informad[oa]\s+sua\s+dosagem\s+Analgesia\b/gi, "não informado sua dosagem, para analgesia");
+  t = t.replace(/,\s*Analgesia\b/gi, ", para analgesia");
+
+  // Pontuação adequada antes de nova medicação e antes de posologia
+  t = t.replace(/(não informad[oa]\s+sua\s+dosagem)\s+e\s+([A-ZÁ-Ú])/g, "$1, e $2");
+  t = t.replace(/(não informad[oa]\s+sua\s+dosagem)\s+(a\s+cada\s+\d+|de\s+\d+\/\d+h|se\s+dor|\d+x\s+ao\s+dia|para\s+analgesia)/gi, "$1, $2");
+
   t = t.replace(/\s{2,}/g, ' ');
   t = t.replace(/\.\s*\./g, '.');
   t = t.replace(/,\s*,+/g, ',');

@@ -109,9 +109,47 @@
       resetSenha: (id, senha) => request(`/api/admin/medicos/${encodeURIComponent(id)}/senha`, { method: 'POST', body: JSON.stringify({ senha }) }),
       deleteMedico: (id) => request(`/api/admin/medicos/${encodeURIComponent(id)}`, { method: 'DELETE' }),
       getAgendas: (medicoId, params = {}) => request(`/api/admin/medicos/${encodeURIComponent(medicoId)}/agendas?${new URLSearchParams(params)}`),
+      getDoctorAgendas: (medicoId, params = {}) => request(`/api/admin/medicos/${encodeURIComponent(medicoId)}/agendas?${new URLSearchParams(params)}`),
       saveAgendas: (medicoId, payload) => request(`/api/admin/medicos/${encodeURIComponent(medicoId)}/agendas`, { method: 'POST', body: JSON.stringify(payload) }),
+      saveDoctorAgendas: (medicoId, payload) => request(`/api/admin/medicos/${encodeURIComponent(medicoId)}/agendas`, { method: 'POST', body: JSON.stringify(payload) }),
       deleteAgenda: (agendaId) => request(`/api/admin/agendas/${encodeURIComponent(agendaId)}`, { method: 'DELETE' }),
-      clearAgendas: (medicoId, data) => request(`/api/admin/medicos/${encodeURIComponent(medicoId)}/agendas?data=${encodeURIComponent(data)}`, { method: 'DELETE' })
+      deleteSingleAgenda: (agendaId) => request(`/api/admin/agendas/${encodeURIComponent(agendaId)}`, { method: 'DELETE' }),
+      clearAgendas: (medicoId, data) => request(`/api/admin/medicos/${encodeURIComponent(medicoId)}/agendas?data=${encodeURIComponent(data)}`, { method: 'DELETE' }),
+      deleteDoctorAgendas: (medicoId, data) => request(`/api/admin/medicos/${encodeURIComponent(medicoId)}/agendas?data=${encodeURIComponent(data)}`, { method: 'DELETE' }),
+      parseAgendaPdf: (formDataOrPayload) => {
+        if (typeof FormData !== 'undefined' && formDataOrPayload instanceof FormData) {
+          return (window.AmbientalAuth ? window.AmbientalAuth.authFetch('/api/admin/agendas/parse-pdf', {
+            method: 'POST',
+            body: formDataOrPayload
+          }) : fetch('/api/admin/agendas/parse-pdf', {
+            method: 'POST',
+            body: formDataOrPayload
+          })).then(async r => {
+            const body = await r.json().catch(() => ({}));
+            if (!r.ok || body?.success === false) throw new Error(body?.error?.message || body?.detail || 'Falha ao processar arquivo PDF da agenda.');
+            const dataObj = (body && body.data && typeof body.data === 'object') ? body.data : body;
+            return {
+              ...body,
+              ...dataObj,
+              data: dataObj?.data || dataObj?.data_ymd || '',
+              data_ymd: dataObj?.data_ymd || dataObj?.data || '',
+              data_formatada: dataObj?.data_formatada || '',
+              itens: dataObj?.itens || body?.itens || []
+            };
+          });
+        }
+        return request('/api/admin/agendas/parse-pdf', { method: 'POST', body: JSON.stringify(formDataOrPayload) }).then(res => {
+          const dataObj = (res && res.data && typeof res.data === 'object') ? res.data : res;
+          return {
+            ...res,
+            ...dataObj,
+            data: dataObj?.data || dataObj?.data_ymd || '',
+            data_ymd: dataObj?.data_ymd || dataObj?.data || '',
+            data_formatada: dataObj?.data_formatada || '',
+            itens: dataObj?.itens || res?.itens || []
+          };
+        });
+      }
     },
     impersonate: {
       set: (medicoId, medicoInfo) => {

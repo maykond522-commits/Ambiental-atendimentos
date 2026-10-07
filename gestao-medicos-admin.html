@@ -678,6 +678,116 @@ main { min-width: 0; }
 }
 .btn-sm.danger:hover { background: #fee2e2; }
 
+/* PAGINAÇÃO DE MÉDICOS (LIMITE 40 POR PÁGINA) */
+.table-pagination-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 13px 20px;
+  background: #FCFDFE;
+  border-top: 1px solid var(--line);
+  user-select: none;
+}
+.pagination-info {
+  font-size: 11.5px;
+  color: var(--muted);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pagination-info b {
+  color: var(--ink);
+  font-weight: 800;
+}
+.pagination-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.page-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 9px;
+  border: 1px solid #CBD5E1;
+  background: #FFFFFF;
+  color: #334155;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .16s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+.page-nav-btn:hover:not(:disabled) {
+  background: #F8FAFC;
+  border-color: #94A3B8;
+  color: #0F172A;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(15, 23, 42, 0.08);
+}
+.page-nav-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+.page-nav-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #F8FAFC;
+  border-color: #E2E8F0;
+  color: #94A3B8;
+  box-shadow: none;
+}
+.page-numbers-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.page-num-btn {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 7px;
+  border-radius: 8px;
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .15s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+.page-num-btn:hover:not(.active) {
+  background: #F1F5F9;
+  border-color: #CBD5E1;
+  color: #0F172A;
+  transform: translateY(-1px);
+}
+.page-num-btn.active {
+  background: linear-gradient(135deg, #0284C7, #0369A1);
+  border-color: #0284C7;
+  color: #FFFFFF !important;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.32);
+  pointer-events: none;
+}
+.page-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  color: #94A3B8;
+  font-weight: 800;
+  font-size: 11px;
+  user-select: none;
+}
+
 /* MODALS */
 .modal-overlay {
   position: fixed;
@@ -1092,6 +1202,14 @@ main { min-width: 0; }
             </table>
           </div>
           <div class="empty" id="empty" hidden style="padding:40px;text-align:center;color:var(--muted)">Nenhum médico encontrado com os filtros atuais.</div>
+          <div class="table-pagination-footer" id="doctorPaginationFooter" style="display:none">
+            <div class="pagination-info" id="doctorPaginationInfo">Carregando médicos...</div>
+            <div class="pagination-controls" id="doctorPaginationControls">
+              <button type="button" class="page-nav-btn" id="btnDocPrev" onclick="changeDoctorPage(doctorCurrentPage - 1)" title="Página anterior">‹ Anterior</button>
+              <div class="page-numbers-wrap" id="doctorPaginationNumbersWrap"></div>
+              <button type="button" class="page-nav-btn" id="btnDocNext" onclick="changeDoctorPage(doctorCurrentPage + 1)" title="Próxima página">Próxima ›</button>
+            </div>
+          </div>
         </div>
       </section>
     </section>
@@ -1270,30 +1388,41 @@ main { min-width: 0; }
         <div style="background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
             <div>
-              <strong style="font-size:12.5px;color:var(--ink)">📥 Importar Agendamentos da Planilha</strong>
-              <p class="hint" style="margin:3px 0 0">Cole as linhas copiadas do Excel (Ctrl+C / Ctrl+V) ou selecione o arquivo (.xlsx, .csv).<br>Colunas: <b>Status, Hora, Tipo, Protocolo, NI, Nome do Periciado, Compareceu, Obs / Assinatura, Seq</b></p>
+              <strong style="font-size:12.5px;color:var(--ink)">📥 Importar Agendamentos (PDF Oficial ou Planilha)</strong>
+              <p class="hint" style="margin:3px 0 0">
+                Selecione ou arraste o <b>PDF oficial de Perícias Agendadas</b> (Governo Digital / SP) ou cole as linhas copiadas do Excel.<br>
+                💡 <i>Identificação automática: periciados com <b>X</b> na coluna Pessoa são marcados como <b>Perícia de Acompanhante</b>; coluna Read com <b>S</b> como <b>Readaptado</b>.</i>
+              </p>
             </div>
             <button type="button" class="btn-sm" id="btnExemploPlanilha" title="Preencher com exemplo de teste" style="flex-shrink:0">Exemplo</button>
           </div>
-          <textarea id="agendaPasteInput" rows="4" style="width:100%;border:1px solid #cfdae6;border-radius:12px;padding:10px 12px;font-size:11.5px;font-family:Consolas,monospace;resize:vertical;background:#fbfdff" placeholder="Cole aqui os dados copiados da planilha do Excel..."></textarea>
+
+          <div id="agendaPdfDropZone" style="border:2px dashed #93c5fd;background:#f0f9ff;border-radius:12px;padding:14px;text-align:center;margin-bottom:12px;cursor:pointer;transition:all .2s">
+            <span style="font-size:22px;display:block;margin-bottom:2px">📄</span>
+            <strong style="color:#0369a1;font-size:12.5px">Clique ou arraste o PDF oficial de perícias aqui</strong>
+            <p style="margin:2px 0 0;font-size:11px;color:#64748b">O sistema lê a data da agenda, horários, protocolos e acompanhantes automaticamente.</p>
+          </div>
+
+          <textarea id="agendaPasteInput" rows="3" style="width:100%;border:1px solid #cfdae6;border-radius:12px;padding:10px 12px;font-size:11.5px;font-family:Consolas,monospace;resize:vertical;background:#fbfdff" placeholder="Ou se preferir, cole aqui as linhas de texto ou dados da planilha..."></textarea>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;flex-wrap:wrap;gap:8px">
-            <div style="display:flex;align-items:center;gap:8px">
-              <input type="file" id="agendaFileInput" accept=".csv,.xlsx,.xls,.tsv,.txt" style="display:none">
-              <button type="button" class="btn-sm" id="btnTriggerFile">📁 Selecionar Arquivo (.xlsx / .csv)</button>
-              <span id="agendaFileFeedback" style="font-size:10.5px;color:var(--muted)"></span>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <input type="file" id="agendaFileInput" accept=".pdf,.csv,.xlsx,.xls,.tsv,.txt" style="display:none">
+              <button type="button" class="btn-sm primary" id="btnTriggerPdfFile" style="background:#0284c7;color:#fff">📄 Selecionar PDF (.pdf)</button>
+              <button type="button" class="btn-sm" id="btnTriggerFile">📁 Planilha (.xlsx / .csv)</button>
+              <span id="agendaFileFeedback" style="font-size:11px;font-weight:700;color:var(--ink)"></span>
             </div>
-            <button type="button" class="primary" id="btnProcessarPlanilha" style="padding:9px 18px">⚡ Processar Planilha</button>
+            <button type="button" class="primary" id="btnProcessarPlanilha" style="padding:9px 18px">⚡ Processar Dados</button>
           </div>
         </div>
 
         <div id="agendaPreviewArea" style="display:none;background:#f8fbff;border:1px solid #bae6fd;border-radius:16px;padding:16px;margin-bottom:16px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <div><strong style="font-size:12.5px;color:var(--blue-dark)">✨ Pré-visualização da Planilha</strong> <span class="badge" id="previewCountBadge" style="margin-left:6px">0 periciados</span></div>
+            <div><strong style="font-size:12.5px;color:var(--blue-dark)">✨ Pré-visualização dos Agendamentos</strong> <span class="badge" id="previewCountBadge" style="margin-left:6px">0 periciados</span></div>
             <span style="font-size:10.5px;color:var(--muted)">Revise antes de gravar na base</span>
           </div>
-          <div class="table-wrap" style="max-height:220px;border:1px solid var(--line);border-radius:12px;background:#fff">
+          <div class="table-wrap" style="max-height:240px;border:1px solid var(--line);border-radius:12px;background:#fff">
             <table class="agenda-preview-table">
-              <thead><tr><th>Hora</th><th>Tipo</th><th>Protocolo</th><th>NI</th><th>Nome do Periciado</th><th>Compareceu</th><th>Obs</th></tr></thead>
+              <thead><tr><th>Hora</th><th>Tipo</th><th>Protocolo</th><th>NI</th><th>Nome do Periciado</th><th>Categoria</th><th>Compareceu</th><th>Obs</th></tr></thead>
               <tbody id="agendaPreviewTbody"></tbody>
             </table>
           </div>
@@ -1447,6 +1576,61 @@ main { min-width: 0; }
     }).join('');
   };
 
+  let doctorCurrentPage = 1;
+  const doctorPageSize = 40;
+
+  function renderDoctorPaginationUI(total, totalPages, startIdx, endIdx) {
+    const bar = $('doctorPaginationFooter');
+    if (!bar) return;
+    if (total === 0) {
+      bar.style.display = 'none';
+      return;
+    }
+    bar.style.display = 'flex';
+
+    const info = $('doctorPaginationInfo');
+    if (info) {
+      info.innerHTML = `Exibindo <b>${startIdx + 1}–${endIdx}</b> de <b>${total}</b> médico${total === 1 ? '' : 's'}`;
+    }
+
+    const prevBtn = $('btnDocPrev');
+    const nextBtn = $('btnDocNext');
+    if (prevBtn) prevBtn.disabled = doctorCurrentPage <= 1;
+    if (nextBtn) nextBtn.disabled = doctorCurrentPage >= totalPages;
+
+    const numWrap = $('doctorPaginationNumbersWrap');
+    if (numWrap) {
+      let html = '';
+      const pages = [];
+      for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= doctorCurrentPage - 1 && i <= doctorCurrentPage + 1)) {
+          pages.push(i);
+        }
+      }
+      let lastP = 0;
+      for (const p of pages) {
+        if (lastP && p - lastP > 1) {
+          html += `<span class="page-ellipsis">…</span>`;
+        }
+        const activeCls = p === doctorCurrentPage ? ' active' : '';
+        html += `<button type="button" class="page-num-btn${activeCls}" onclick="changeDoctorPage(${p})">${p}</button>`;
+        lastP = p;
+      }
+      numWrap.innerHTML = html;
+    }
+  }
+
+  window.changeDoctorPage = function(p) {
+    const totalPages = Math.max(1, Math.ceil(filtered.length / doctorPageSize));
+    if (p < 1 || p > totalPages || p === doctorCurrentPage) return;
+    doctorCurrentPage = p;
+    render();
+    const panel = document.querySelector('.workspace');
+    if (panel) {
+      try { panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(_) {}
+    }
+  };
+
   const render = () => {
     $('count').textContent = rows.length;
     $('activeCount').textContent = rows.filter(r => Number(r.ativo) === 1).length;
@@ -1462,7 +1646,16 @@ main { min-width: 0; }
     filtered = rows.filter(r => !q || `${r.nome || ''} ${r.crm || ''} ${r.email || ''}`.toLowerCase().includes(q));
     $('empty').hidden = filtered.length > 0;
 
-    $('tbody').innerHTML = filtered.map(r => {
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / doctorPageSize));
+    if (doctorCurrentPage > totalPages) doctorCurrentPage = totalPages;
+    if (doctorCurrentPage < 1) doctorCurrentPage = 1;
+
+    const startIdx = (doctorCurrentPage - 1) * doctorPageSize;
+    const endIdx = Math.min(startIdx + doctorPageSize, total);
+    const pagedDoctors = filtered.slice(startIdx, endIdx);
+
+    $('tbody').innerHTML = pagedDoctors.map(r => {
       const isActive = Number(r.ativo) === 1;
       const mode = (r.modo_atendimento || 'agil').toLowerCase();
       let modeBadge = '<span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;font-weight:800">⚡ Ágil</span>';
@@ -1512,6 +1705,8 @@ main { min-width: 0; }
         </td>
       </tr>`;
     }).join('');
+
+    renderDoctorPaginationUI(total, totalPages, startIdx, endIdx);
 
     document.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openEditDoctor(b.dataset.edit)));
     document.querySelectorAll('[data-agenda]').forEach(b => b.addEventListener('click', () => openAgendaDoctor(b.dataset.agenda)));
@@ -1693,6 +1888,8 @@ main { min-width: 0; }
         <td>${esc(item.ni || '—')}</td>
         <td><b>${esc(item.nome_periciado)}</b></td>
         <td>
+          ${(item.pessoa === 'Acompanhante' || item.is_acompanhante) ? '<span class="badge" style="background:#f3e8ff;color:#7e22ce;font-weight:800;border:1px solid #d8b4fe;margin-right:4px">👥 Acomp.</span>' : ''}
+          ${item.readaptado === 'Sim' ? '<span class="badge" style="background:#fef3c7;color:#92400e;font-weight:800;border:1px solid #fde68a;margin-right:4px">🔄 Read.</span>' : ''}
           <span class="badge ${item.atendimento_id ? '' : 'off'}">
             ${item.atendimento_id ? '✓ Atendido' : (item.compareceu ? 'Compareceu' : 'Agendado')}
           </span>
@@ -1727,8 +1924,8 @@ main { min-width: 0; }
     if (!confirm(`Atenção: Deseja apagar TODOS os agendamentos do dia ${dataStr} para este médico?`)) return;
     try {
       busy(true);
-      const res = await AmbientalAPI.admin.deleteDoctorAgendas(activeAgendaDoctorId, dataStr);
-      toast(`Removidos ${res?.data?.deleted_count || 0} agendamentos.`);
+      const res = await (AmbientalAPI.admin.deleteDoctorAgendas || AmbientalAPI.admin.clearAgendas)(activeAgendaDoctorId, dataStr);
+      toast(`Removidos ${res?.count || res?.data?.deleted_count || 0} agendamentos.`);
       await loadDoctorAgendasForSelectedDate();
     } catch(err) {
       toast(err.message || 'Erro ao limpar agenda do dia.');
@@ -1737,7 +1934,7 @@ main { min-width: 0; }
     }
   };
 
-  /* PARSER DA PLANILHA (TSV / EXCEL) */
+  /* PARSER DA PLANILHA OU TEXTO DO PDF */
   function parseAgendaCsvText(rawText) {
     return parseExcelSpreadsheet(rawText);
   }
@@ -1745,44 +1942,98 @@ main { min-width: 0; }
   function parseExcelSpreadsheet(rawText) {
     const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
     const parsed = [];
-    for (const line of lines) {
-      const parts = line.split('\t').map(p => p.trim());
-      if (parts.length < 2) continue;
-      if (parts.some(p => /^(STATUS|HORA|TIPO|PROTOCOLO|NOME DO PERICIADO)$/i.test(p))) continue;
 
-      let hora = '', tipo = '', protocolo = '', ni = '', nome = '', comp = '', obs = '', seq = '', status = '';
-      if (parts.length >= 6) {
-        status = parts[0] || '';
-        hora = parts[1] || '';
-        tipo = parts[2] || '';
-        protocolo = parts[3] || '';
-        ni = parts[4] || '';
-        nome = parts[5] || '';
-        comp = parts[6] || '';
-        obs = parts[7] || '';
-        seq = parts[8] || '';
-      } else {
-        hora = parts[0] || '';
-        tipo = parts[1] || '';
-        protocolo = parts[2] || '';
-        nome = parts[3] || '';
+    // Se houver data no cabeçalho
+    const dateMatch = rawText.match(/Per[í\xed\ufffd\w\s]*Agendadas\s+para:?\s*(\d{2}\/\d{2}\/\d{4})/i) || rawText.match(/(\d{2}\/\d{2}\/\d{4})/);
+    if (dateMatch && $('agendaDataInput') && !$('agendaDataInput').value) {
+      const parts = dateMatch[1].split('/');
+      if (parts.length === 3) {
+        $('agendaDataInput').value = `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+    }
+
+    for (const line of lines) {
+      if (/^(STATUS|HORA|TIPO|PROTOCOLO|NOME DO PERICIADO|Perícias Agendadas|SECRETARIA|Emissão|Página)/i.test(line)) continue;
+
+      // Padrão 1: Linha oficial de Perícias Agendadas (com ou sem pontilhados)
+      // Ex: (   ) 13:30 LICENC 954382024 1381516 JANAINA FEITOZA S PORTUGAL ..../..../........:...... ............................1 X
+      const mOfficial = line.match(/^\(?\s*\)?\s*(\d{1,2}:\d{2})\s+([A-Za-z0-9_-]+)\s+(\d+)\s+(\d+)\s+(.+?)(?:\s*\.{2,}.*?(\d+)?\s*(.*))?$/);
+      if (mOfficial && mOfficial[5]) {
+        const hora = mOfficial[1];
+        const tipo = mOfficial[2];
+        const protocolo = mOfficial[3];
+        const ni = mOfficial[4];
+        let nome = mOfficial[5].trim();
+        const seq = mOfficial[6] || '1';
+        const rest = (mOfficial[7] || '').trim().split(/\s+/);
+        
+        nome = nome.replace(/\.{2,}.*$/, '').trim();
+        const isRead = rest.includes('S');
+        const isAcomp = rest.includes('X');
+        
+        if (nome && nome.length >= 3) {
+          parsed.push({
+            status: 'Agendado',
+            hora,
+            tipo,
+            protocolo,
+            ni,
+            nome_periciado: nome,
+            compareceu: '',
+            observacao: '',
+            seq,
+            pessoa: isAcomp ? 'Acompanhante' : '',
+            is_acompanhante: isAcomp,
+            readaptado: isRead ? 'Sim' : ''
+          });
+          continue;
+        }
       }
 
-      const horaMatch = hora.match(/\b([01]?\d|2[0-3]):[0-5]\d\b/);
-      if (horaMatch) hora = horaMatch[0];
+      // Padrão 2: TSV / Excel tabulado
+      const parts = line.split('\t').map(p => p.trim());
+      if (parts.length >= 2) {
+        let hora = '', tipo = '', protocolo = '', ni = '', nome = '', comp = '', obs = '', seq = '', status = 'Agendado', pessoa = '', readaptado = '';
+        if (parts.length >= 6) {
+          status = parts[0] || 'Agendado';
+          hora = parts[1] || '';
+          tipo = parts[2] || '';
+          protocolo = parts[3] || '';
+          ni = parts[4] || '';
+          nome = parts[5] || '';
+          comp = parts[6] || '';
+          obs = parts[7] || '';
+          seq = parts[8] || '';
+          if (parts[9]) pessoa = parts[9];
+        } else {
+          hora = parts[0] || '';
+          tipo = parts[1] || '';
+          protocolo = parts[2] || '';
+          nome = parts[3] || '';
+        }
 
-      if (nome && nome.length >= 3) {
-        parsed.push({
-          status,
-          hora: hora || '08:00',
-          tipo: tipo || 'LICENC',
-          protocolo: protocolo || '',
-          ni: ni || '',
-          nome_periciado: nome,
-          compareceu: comp || '',
-          observacao: obs || '',
-          seq: seq || ''
-        });
+        const horaMatch = hora.match(/\b([01]?\d|2[0-3]):[0-5]\d\b/);
+        if (horaMatch) hora = horaMatch[0];
+
+        const isAcomp = /acompanhante|x/i.test(pessoa) || /acompanhante/i.test(obs) || /acompanhante/i.test(tipo);
+        const isRead = /sim|s/i.test(readaptado) || /readaptad/i.test(obs);
+
+        if (nome && nome.length >= 3) {
+          parsed.push({
+            status,
+            hora: hora || '08:00',
+            tipo: tipo || 'LICENC',
+            protocolo: protocolo || '',
+            ni: ni || '',
+            nome_periciado: nome,
+            compareceu: comp || '',
+            observacao: obs || '',
+            seq: seq || '',
+            pessoa: isAcomp ? 'Acompanhante' : (pessoa || ''),
+            is_acompanhante: isAcomp,
+            readaptado: isRead ? 'Sim' : ''
+          });
+        }
       }
     }
     return parsed;
@@ -1790,10 +2041,10 @@ main { min-width: 0; }
 
   $('btnExemploPlanilha').onclick = () => {
     $('agendaPasteInput').value = 
-`Agendado\t08:00\tLICENC\t1029384\t987654\tMARIA APARECIDA DA SILVA\tSIM\tLaudo anexado\t1
-Agendado\t08:30\tLICENC\t1029385\t987655\tJOAO CARLOS PEREIRA\t\t\t2
-Agendado\t09:00\tLICENC\t1029386\t987656\tANA PAULA DE SOUZA\tSIM\tAtestado digital\t3`;
-    toast('Exemplo preenchido. Clique em "Processar Planilha".');
+`(   ) 13:00 LICENC 954381237 1234272 ALESSANDRA APARECIDA ROSA ..../..../........:...... ............................1 
+(   ) 13:30 LICENC 954382024 1381516 JANAINA FEITOZA S PORTUGAL ..../..../........:...... ............................1 X
+(   ) 13:30 LICENC 954382387 1390635 RENATO DE SOUZA ABELHA ..../..../........:...... ............................1 S `;
+    toast('Exemplo do formato oficial preenchido. Clique em "Processar Dados".');
   };
 
   async function ensureXlsx() {
@@ -1808,14 +2059,73 @@ Agendado\t09:00\tLICENC\t1029386\t987656\tANA PAULA DE SOUZA\tSIM\tAtestado digi
     });
   }
 
-  $('btnTriggerFile').onclick = () => $('agendaFileInput').click();
+  function displayParsedAgenda(items) {
+    currentParsedAgendaItems = items;
+    const acompCount = items.filter(x => x.is_acompanhante || x.pessoa === 'Acompanhante').length;
+    const readCount = items.filter(x => x.readaptado === 'Sim').length;
+    
+    let countText = `${items.length} periciado(s)`;
+    if (acompCount > 0) countText += ` · ${acompCount} acompanhante(s)`;
+    if (readCount > 0) countText += ` · ${readCount} readaptado(s)`;
+    
+    $('previewCountBadge').textContent = countText;
+    $('agendaPreviewArea').style.display = 'block';
+    $('agendaPreviewTbody').innerHTML = items.map(it => `
+      <tr>
+        <td><strong>${esc(it.hora)}</strong></td>
+        <td><span class="badge" style="background:#e0f2fe;color:#0369a1">${esc(it.tipo)}</span></td>
+        <td><code>${esc(it.protocolo || '—')}</code></td>
+        <td>${esc(it.ni || '—')}</td>
+        <td><b>${esc(it.nome_periciado)}</b></td>
+        <td>
+          ${(it.is_acompanhante || it.pessoa === 'Acompanhante') ? '<span class="badge" style="background:#f3e8ff;color:#7e22ce;font-weight:800;border:1px solid #d8b4fe">👥 Acompanhante</span>' : ''}
+          ${it.readaptado === 'Sim' ? '<span class="badge" style="background:#fef3c7;color:#92400e;font-weight:800;border:1px solid #fde68a">🔄 Readaptado</span>' : ''}
+          ${(!it.is_acompanhante && it.pessoa !== 'Acompanhante' && it.readaptado !== 'Sim') ? '<span style="color:#94a3b8;font-size:11px">Titular Padrão</span>' : ''}
+        </td>
+        <td>${esc(it.compareceu || '—')}</td>
+        <td><small>${esc(it.observacao || '—')}</small></td>
+      </tr>
+    `).join('');
+    toast(`${items.length} agendamentos extraídos com sucesso.`);
+  }
 
-  $('agendaFileInput').onchange = async (e) => {
-    const file = e.target.files[0];
+  async function handleSelectedAgendaFile(file) {
     if (!file) return;
-    $('agendaFileFeedback').textContent = `Lendo ${file.name}…`;
+    const isPdf = file.name.toLowerCase().endsWith('.pdf');
+    $('agendaFileFeedback').textContent = `Processando ${file.name}…`;
 
     try {
+      if (isPdf) {
+        busy(true);
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await AmbientalAPI.admin.parseAgendaPdf(fd);
+
+        // Suporte resiliente a envelopes de resposta (res.itens, res.data.itens, etc.)
+        const payload = (res && res.data && typeof res.data === 'object' && Array.isArray(res.data.itens)) 
+          ? res.data 
+          : res;
+        const items = payload?.itens || res?.itens || res?.data?.itens || (Array.isArray(res?.data) ? res.data : []);
+        const dateVal = (typeof res?.data === 'string' && res.data)
+          || (typeof payload?.data === 'string' && payload.data)
+          || payload?.data_ymd
+          || res?.data_ymd
+          || '';
+
+        if (dateVal && $('agendaDataInput')) {
+          $('agendaDataInput').value = dateVal;
+        }
+
+        if (!items || !items.length) {
+          toast('Nenhum agendamento reconhecido no PDF selecionado.');
+          $('agendaFileFeedback').textContent = 'Nenhum agendamento encontrado no PDF.';
+          return;
+        }
+        $('agendaFileFeedback').textContent = `✓ ${file.name} processado! ${items.length} agendamento(s) extraído(s).`;
+        displayParsedAgenda(items);
+        return;
+      }
+
       if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
         await ensureXlsx();
         const data = await file.arrayBuffer();
@@ -1832,15 +2142,83 @@ Agendado\t09:00\tLICENC\t1029386\t987656\tANA PAULA DE SOUZA\tSIM\tAtestado digi
       }
       $('btnProcessarPlanilha').click();
     } catch(err) {
-      toast('Erro ao ler arquivo da planilha: ' + err.message);
+      toast('Erro ao ler arquivo da agenda: ' + err.message);
       $('agendaFileFeedback').textContent = 'Erro ao ler arquivo.';
+    } finally {
+      busy(false);
     }
+  }
+
+  $('btnTriggerFile').onclick = () => $('agendaFileInput').click();
+  if ($('btnTriggerPdfFile')) $('btnTriggerPdfFile').onclick = () => $('agendaFileInput').click();
+
+  const dropZone = $('agendaPdfDropZone');
+  if (dropZone) {
+    dropZone.onclick = () => $('agendaFileInput').click();
+    dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.borderColor = '#0284c7'; dropZone.style.background = '#e0f2fe'; };
+    dropZone.ondragleave = () => { dropZone.style.borderColor = '#93c5fd'; dropZone.style.background = '#f0f9ff'; };
+    dropZone.ondrop = async (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = '#93c5fd'; dropZone.style.background = '#f0f9ff';
+      const file = e.dataTransfer?.files?.[0];
+      if (file) handleSelectedAgendaFile(file);
+    };
+  }
+
+  // Suporte a colar (Ctrl+V) arquivo PDF ou arrastar direto no textarea
+  if ($('agendaPasteInput')) {
+    $('agendaPasteInput').addEventListener('drop', (e) => {
+      const file = e.dataTransfer?.files?.[0];
+      if (file && (file.name.toLowerCase().endsWith('.pdf') || file.type.includes('pdf'))) {
+        e.preventDefault();
+        handleSelectedAgendaFile(file);
+      }
+    });
+
+    $('agendaPasteInput').addEventListener('paste', async (e) => {
+      const files = e.clipboardData?.files;
+      if (files && files.length > 0) {
+        const file = files[0];
+        if (file && (file.name.toLowerCase().endsWith('.pdf') || file.type.includes('pdf'))) {
+          e.preventDefault();
+          await handleSelectedAgendaFile(file);
+          return;
+        }
+      }
+      // Se colou texto com padrão de agenda, dispara processamento automático
+      setTimeout(() => {
+        const val = $('agendaPasteInput').value.trim();
+        if (val && (val.includes('LICENC') || val.includes('RECONS') || val.includes('Perícias Agendadas') || /^\(?\s*\)?\s*\d{1,2}:\d{2}/m.test(val))) {
+          $('btnProcessarPlanilha').click();
+        }
+      }, 80);
+    });
+  }
+
+  // Listener global de paste caso o usuário dê Ctrl+V de arquivo na tela
+  document.addEventListener('paste', async (e) => {
+    const tabAgenda = $('tabContentEditAgenda');
+    if (!tabAgenda || tabAgenda.hidden) return;
+    const files = e.clipboardData?.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file && (file.name.toLowerCase().endsWith('.pdf') || file.type.includes('pdf'))) {
+        e.preventDefault();
+        await handleSelectedAgendaFile(file);
+      }
+    }
+  });
+
+  $('agendaFileInput').onchange = async (e) => {
+    const file = e.target.files[0];
+    if (file) await handleSelectedAgendaFile(file);
+    e.target.value = '';
   };
 
   $('btnProcessarPlanilha').onclick = () => {
     const raw = $('agendaPasteInput').value.trim();
     if (!raw) {
-      toast('Cole os dados do Excel ou selecione um arquivo.');
+      toast('Cole os dados ou selecione um arquivo PDF / Planilha.');
       return;
     }
     const items = parseExcelSpreadsheet(raw);
@@ -1848,21 +2226,7 @@ Agendado\t09:00\tLICENC\t1029386\t987656\tANA PAULA DE SOUZA\tSIM\tAtestado digi
       toast('Nenhum agendamento reconhecido no formato padrão.');
       return;
     }
-    currentParsedAgendaItems = items;
-    $('previewCountBadge').textContent = `${items.length} periciado(s)`;
-    $('agendaPreviewArea').style.display = 'block';
-    $('agendaPreviewTbody').innerHTML = items.map(it => `
-      <tr>
-        <td><strong>${esc(it.hora)}</strong></td>
-        <td><span class="badge" style="background:#e0f2fe;color:#0369a1">${esc(it.tipo)}</span></td>
-        <td><code>${esc(it.protocolo || '—')}</code></td>
-        <td>${esc(it.ni || '—')}</td>
-        <td><b>${esc(it.nome_periciado)}</b></td>
-        <td>${esc(it.compareceu || '—')}</td>
-        <td><small>${esc(it.observacao || '—')}</small></td>
-      </tr>
-    `).join('');
-    toast(`${items.length} agendamentos extraídos. Revise e clique em "Gravar Agendamentos".`);
+    displayParsedAgenda(items);
   };
 
   $('btnSalvarAgenda').onclick = async () => {
@@ -1877,12 +2241,13 @@ Agendado\t09:00\tLICENC\t1029386\t987656\tANA PAULA DE SOUZA\tSIM\tAtestado digi
     const btn = $('btnSalvarAgenda');
     btn.disabled = true; btn.textContent = 'Gravando…'; busy(true);
     try {
-      const res = await AmbientalAPI.admin.saveDoctorAgendas(activeAgendaDoctorId, {
+      const res = await (AmbientalAPI.admin.saveDoctorAgendas || AmbientalAPI.admin.saveAgendas)(activeAgendaDoctorId, {
         data: dataStr,
         itens: currentParsedAgendaItems,
+        substituir: replaceExisting,
         substituir_existentes: replaceExisting
       });
-      toast(`Sucesso! ${res?.data?.saved_count || currentParsedAgendaItems.length} agendamentos gravados.`);
+      toast(`Sucesso! ${res?.count || res?.data?.saved_count || currentParsedAgendaItems.length} agendamentos gravados.`);
       discardPreview();
       $('agendaPasteInput').value = '';
       await loadDoctorAgendasForSelectedDate();
@@ -2019,7 +2384,10 @@ Agendado\t09:00\tLICENC\t1029386\t987656\tANA PAULA DE SOUZA\tSIM\tAtestado digi
     }
   });
 
-  $('search').oninput = render;
+  $('search').oninput = () => {
+    doctorCurrentPage = 1;
+    render();
+  };
 
   /* ESC & CLIQUE FORA */
   document.addEventListener('keydown', e => {

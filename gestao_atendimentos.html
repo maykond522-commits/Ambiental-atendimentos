@@ -11,6 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/auth.js"></script>
 <script src="/utils.js"></script>
+<script src="/esisla_core.js"></script>
 <style>
 /* =========================================================
    SISTEMA DE DESIGN & TOKENS — GESTÃO ADMINISTRATIVA LTS
@@ -2580,7 +2581,55 @@ body.modal-lock { overscroll-behavior: none; }
 <div class="admin-view" id="view-busca"><div class="view-header"><div><div class="view-kicker">Consulta operacional</div><h2>Buscar atendimento</h2><p>Localize por número, paciente, CPF, médico, CID, unidade, status ou período e abra o registro completo.</p></div><span class="view-count" id="searchViewCount">— resultados</span></div>
 <section class="panel anchor-target" id="atendimentos"><div class="search-toolbar"><div class="search-toolbar-left"><span class="search-toolbar-title">Localizar atendimento</span><span class="filter-count" id="resultCount">— resultados</span></div><div class="search-toolbar-actions"><button class="search-refresh-btn" id="searchRefreshBtn" type="button" onclick="triggerRefresh(true)" title="Sincronizar e atualizar resultados"><span class="refresh-ico">↻</span> <span>Atualizar lista</span></button><button class="search-reset-btn" type="button" onclick="clearFilters()" title="Limpar todos os filtros"><span class="reset-icon">↺</span> <span>Redefinir busca</span></button></div></div><div class="tabs"><button class="tab active" data-tab="all" onclick="setTab('all')">Todos</button><button class="tab" data-tab="draft" onclick="setTab('draft')">Rascunhos</button><button class="tab" data-tab="review" onclick="setTab('review')">Em revisão</button><button class="tab" data-tab="done" onclick="setTab('done')">Finalizados</button><button class="tab" data-tab="archived" onclick="setTab('archived')">Arquivados</button></div><div class="filters"><input class="input" id="search" placeholder="Buscar por paciente, CPF, médico, CID ou conteúdo..." oninput="refresh()" autocomplete="off"><select class="select" id="filter"><option value="all">Todos os status</option><option value="RASCUNHO">Rascunho</option><option value="EM_REVISÃO">Em revisão</option><option value="REABERTO">Reaberto</option><option value="FINALIZADO">Finalizado</option><option value="ARQUIVADO">Arquivado</option></select><input class="input" id="medico" placeholder="Médico" oninput="refresh()"><input class="input" id="cid" placeholder="CID" oninput="refresh()"><input class="input" id="unidade" placeholder="Unidade" oninput="refresh()"><input class="input" id="periodoInicio" type="date" title="Data inicial" aria-label="Data inicial"><input class="input" id="periodoFim" type="date" title="Data final" aria-label="Data final"><select class="select" id="sort" onchange="refresh()"><option value="updated">Última atualização</option><option value="date">Data do atendimento</option><option value="patient">Paciente (A–Z)</option></select></div><div class="bulk-actions-toolbar" id="bulkActionsToolbar" style="display:none;"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:13px;font-weight:800;color:#991B1B"><span id="selectedCountBadge">0</span> atendimento(s) selecionado(s)</span><span style="font-size:11.5px;color:#7F1D1D">(Apenas administradores podem excluir permanentemente do banco)</span></div><div style="display:flex;align-items:center;gap:8px"><button type="button" class="btn btn-danger" id="btnBatchDeleteAdmin" onclick="confirmBatchDeleteAdmin()" style="font-weight:700;padding:6px 14px;font-size:12px">🗑️ Excluir Selecionados do Banco</button><button type="button" class="btn btn-outline" onclick="clearSelectedRows()" style="padding:6px 12px;font-size:12px;background:#fff">Desmarcar todos</button></div></div><table><thead><tr><th class="admin-th-select"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAllRows(this.checked)" title="Selecionar todos os atendimentos exibidos" style="cursor:pointer;width:16px;height:16px"></th><th>Paciente</th><th>Data</th><th>Profissional</th><th>Dados</th><th>Status</th><th>Atualizado</th><th></th></tr></thead><tbody id="tbody"></tbody></table><div class="empty" id="empty" style="display:none">Nenhum atendimento encontrado para os filtros atuais.</div><div class="table-pagination-footer" id="tablePaginationFooter" style="display:none"><div class="pagination-info" id="paginationInfo">Carregando atendimentos...</div><div class="pagination-controls" id="paginationControls"><button type="button" class="page-nav-btn" id="btnPagePrev" onclick="changeSearchPage(searchCurrentPage - 1)" title="Página anterior">‹ Anterior</button><div class="page-numbers-wrap" id="paginationNumbersWrap"></div><button type="button" class="page-nav-btn" id="btnPageNext" onclick="changeSearchPage(searchCurrentPage + 1)" title="Próxima página">Próxima ›</button></div></div></section>
 <div class="notice">Fonte principal da Gestão: <strong>PostgreSQL/backend</strong>. O LocalStorage permanece como contingência local para rascunhos e recuperação no próprio navegador.</div></div></main></div>
-<div class="modal" id="detailModal"><div class="dialog detail-modal-dialog"><div class="dialog-head"><div><strong id="detailTitle">Atendimento</strong><span id="detailSub"></span></div><div class="esisla-toolbar"><button class="btn btn-outline" id="comprovanteDetailBtn" onclick="abrirComprovanteDoDetail()" style="font-weight:700">📄 Declaração</button><button class="btn btn-esisla" id="generateEsislaBtn">Gerar ficha eSisla</button><button class="btn" onclick="closeModal('detailModal')">Fechar</button></div></div><div id="detailBody" class="detail"></div><div class="dialog-foot"><button class="btn" id="openEvalBtn">Abrir atendimento</button><button class="btn" id="historyBtn">Histórico</button></div></div></div>
+<div class="modal" id="detailModal"><div class="dialog detail-modal-dialog"><div class="dialog-head"><div><strong id="detailTitle">Atendimento</strong><span id="detailSub"></span></div><div class="esisla-toolbar"><button class="btn btn-outline" id="comprovanteDetailBtn" onclick="abrirComprovanteDoDetail()" style="font-weight:700">📄 Declaração</button><button class="btn btn-outline" id="btnBenchmarkDetail" onclick="consultarBenchmarkDetail()" style="font-weight:700;display:inline-flex;align-items:center;gap:4px;color:#1D4ED8;border-color:#BFDBFE" title="Consultar referências de afastamento e limites DPME para o CID deste atendimento">📊 Benchmark CID</button><button class="btn btn-esisla" id="generateEsislaBtn">Gerar ficha eSisla</button><button class="btn" onclick="closeModal('detailModal')">Fechar</button></div></div><div id="detailBody" class="detail"></div><div class="dialog-foot"><button class="btn btn-outline" id="btnDitadoGestao" onclick="iniciarDitadoParaAtendimento()" style="color:#059669;border-color:#A7F3D0;font-weight:700" title="Abrir ficha pericial com gravador de voz por IA ativo">🎤 Ditado por Voz</button><button class="btn" id="openEvalBtn">Abrir atendimento</button><button class="btn" id="historyBtn">Histórico</button></div></div></div>
+
+<!-- Modal de Benchmark CID na Gestão -->
+<div class="modal" id="modalBenchmarkGestao" style="display:none">
+  <div class="dialog" style="width:min(620px,94vw);border-radius:18px;overflow:hidden">
+    <div class="dialog-head" style="background:#EFF6FF;border-bottom:1.5px solid #BFDBFE">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:22px">📊</span>
+        <div>
+          <strong style="color:#1E3A8A;font-size:16px">Parâmetros Clínicos & Benchmark DPME</strong>
+          <span style="color:#3B82F6;font-size:11.5px">Prazos de afastamento, média estatística e limites de Junta Médica</span>
+        </div>
+      </div>
+      <button class="btn" onclick="closeModal('modalBenchmarkGestao')">✕</button>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:14px;background:#fff">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="badge" id="benchGestaoPill" style="background:#1D4ED8;color:#fff;font-weight:800;font-size:13px;padding:4px 10px">CID</span>
+        <strong id="benchGestaoNome" style="color:#0F172A;font-size:14px">—</strong>
+      </div>
+      <div id="benchGestaoGrupo" style="font-size:12px;color:#64748B">—</div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px">
+        <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;font-weight:800;color:#64748B">MÉDIA USUAL</div>
+          <div id="benchGestaoMedia" style="font-size:15px;font-weight:800;color:#1D4ED8;margin-top:2px">—</div>
+        </div>
+        <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;font-weight:800;color:#64748B">FAIXA DE DIAS</div>
+          <div id="benchGestaoFaixa" style="font-size:14px;font-weight:800;color:#0F172A;margin-top:2px">—</div>
+        </div>
+        <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;font-weight:800;color:#64748B">LIMITE JUNTA</div>
+          <div id="benchGestaoJunta" style="font-size:14px;font-weight:800;color:#DC2626;margin-top:2px">—</div>
+        </div>
+        <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;font-weight:800;color:#64748B">ESPECIALIDADE</div>
+          <div id="benchGestaoEsp" style="font-size:13px;font-weight:800;color:#2563EB;margin-top:2px">—</div>
+        </div>
+      </div>
+
+      <div id="benchGestaoInfo" style="font-size:12px;color:#1E3A8A;background:#EFF6FF;border-radius:8px;padding:12px;line-height:1.5;border:1px solid #DBEAFE"></div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn" onclick="closeModal('modalBenchmarkGestao')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="esislaModal">
   <div class="dialog esisla-dialog-window" style="width:min(1080px,96vw);max-width:1120px">
     
@@ -3253,9 +3302,61 @@ async function view(enc){
         document.getElementById('generateEsislaBtn').onclick=()=>generateEsisla(enc);
         const compBtn=document.getElementById('comprovanteDetailBtn');
         if(compBtn)compBtn.onclick=()=>abrirModalComprovanteGestao(full);
+        const benchBtn=document.getElementById('btnBenchmarkDetail');
+        if(benchBtn)benchBtn.onclick=()=>consultarBenchmarkDetail(v.cid);
+        const ditadoBtn=document.getElementById('btnDitadoGestao');
+        if(ditadoBtn)ditadoBtn.onclick=()=>iniciarDitadoParaAtendimento(enc);
     }catch(e){
         if(body)body.innerHTML=`<div class="history-empty"><strong>Não foi possível carregar a ficha.</strong><div style="margin-top:6px">${esc(e.message||'Tente novamente.')}</div></div>`;
     }
+}
+
+async function consultarBenchmarkDetail(cidParam) {
+    let cid = cidParam;
+    if (!cid && window.currentDetailFull) {
+        const v = values(window.currentDetailFull);
+        cid = v.cid;
+    }
+    cid = String(cid || '').trim();
+    if (!cid || cid === '—' || cid === '-') {
+        alert('Este atendimento não possui um código CID cadastrado para consulta de parâmetros.');
+        return;
+    }
+    try {
+        let res;
+        if (window.AmbientalAPI?.ai?.benchmarkCid) {
+            res = await AmbientalAPI.ai.benchmarkCid(cid);
+        } else {
+            const r = await fetch(`/api/ai/benchmark-cid/${encodeURIComponent(cid)}`);
+            res = await r.json();
+        }
+        const b = res?.data || res;
+        if (!b || !b.cid) throw new Error('Dados de benchmark não encontrados para este CID.');
+        
+        document.getElementById('benchGestaoPill').textContent = b.cid;
+        document.getElementById('benchGestaoNome').textContent = b.descricao || 'Descrição não cadastrada';
+        document.getElementById('benchGestaoGrupo').textContent = b.grupo || 'Capítulo clínico padrão';
+        document.getElementById('benchGestaoMedia').textContent = b.dias_medio ? `${b.dias_medio} dias` : '—';
+        document.getElementById('benchGestaoFaixa').textContent = b.faixa_usual || '—';
+        document.getElementById('benchGestaoJunta').textContent = b.limite_junta_medica ? `${b.limite_junta_medica} dias` : 'Critério pericial';
+        document.getElementById('benchGestaoEsp').textContent = b.especialidade || 'Medicina Pericial';
+        
+        let info = `<strong>Diretrizes Clínico-Periciais DPME/SP:</strong> `;
+        if (b.diretrizes) info += `${b.diretrizes} `;
+        if (b.regras_dpme && b.regras_dpme.length) {
+            info += `<br><br>• ${b.regras_dpme.join('<br>• ')}`;
+        }
+        document.getElementById('benchGestaoInfo').innerHTML = info;
+        setModal('modalBenchmarkGestao', true);
+    } catch(err) {
+        alert('Não foi possível obter parâmetros do CID: ' + (err.message || 'Erro de conexão.'));
+    }
+}
+
+function iniciarDitadoParaAtendimento(enc) {
+    const rawId = decodeURIComponent(enc || window.currentDetailEnc || '');
+    if (!rawId) return;
+    openEval(encodeURIComponent(rawId));
 }
 
 function detail(r){

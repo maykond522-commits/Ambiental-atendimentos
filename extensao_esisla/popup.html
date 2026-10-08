@@ -14,17 +14,18 @@
         <span class="header-bolt">⚡</span>
         <div>
           <strong>Ambiental</strong>
-          <small>Automação e-SISLA</small>
+          <small>Fila Inteligente e-SISLA</small>
         </div>
       </div>
       <div class="header-status">
         <span class="status-dot"></span>
-        <span class="status-text">Ativo</span>
+        <span class="status-text" id="statusQueueBadge">0 na fila</span>
       </div>
     </header>
 
-    <!-- Cartão com a Ficha Carregada -->
+    <!-- Conteúdo Principal -->
     <main class="popup-body">
+      <!-- Cartão com a Ficha Ativa / Selecionada -->
       <div id="cardComFicha" class="card-attendance" style="display:none">
         <div class="card-badge-row">
           <span class="badge-protocol" id="badgeProtocol">#00000</span>
@@ -53,10 +54,20 @@
         </button>
       </div>
 
+      <!-- Estado Vazio -->
       <div id="cardSemFicha" class="card-empty">
         <div class="empty-icon">📋</div>
-        <strong>Nenhum laudo na memória</strong>
-        <p>Gere ou copie a Ficha e-SISLA no sistema Ambiental para preencher automaticamente.</p>
+        <strong>Fila vazia</strong>
+        <p>Ao abrir a Ficha e-SISLA no sistema Ambiental, clique em <strong>Adicionar à Fila</strong> para ter conferência e preenchimento seguro.</p>
+      </div>
+
+      <!-- Seção da Fila Inteligente do Dia -->
+      <div class="section-queue" id="sectionQueue" style="display:none">
+        <div class="section-queue-header">
+          <strong>📋 Laudos na Fila (<span id="queueCount">0</span>)</strong>
+          <button type="button" id="btnLimparFila" class="btn-queue-clear" title="Limpar todos os laudos da fila">Limpar Fila</button>
+        </div>
+        <div class="queue-list" id="queueList"></div>
       </div>
 
       <!-- Botões de Ação Auxiliar -->
@@ -64,15 +75,12 @@
         <button type="button" class="btn-action-sec" id="btnColarClipboard">
           📋 Colar da Área de Transf.
         </button>
-        <button type="button" class="btn-action-sec danger" id="btnLimparMemoria" title="Limpar dados carregados">
-          🗑️
-        </button>
       </div>
     </main>
 
     <!-- Rodapé -->
     <footer class="popup-footer">
-      <span>Dica: No e-SISLA, use também o botão verde flutuante no canto superior direito!</span>
+      <span>🛡️ <strong>Trava de Segurança:</strong> O e-SISLA confere o protocolo e nome na tela antes de liberar o preenchimento.</span>
     </footer>
 
   </div>

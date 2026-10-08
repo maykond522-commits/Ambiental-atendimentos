@@ -60,10 +60,10 @@ elif APP_ENV == "development":
 else:
     # Em produção, a aplicação deve receber CORS_ORIGINS explicitamente.
     ALLOWED_ORIGINS = []
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 ESISLA_PROMPT_VERSION = "esisla-v11-readaptado-sem-parenteses-antecedentes-robusto"
 GEMINI_FALLBACK_MODELS = [
-    m.strip() for m in os.getenv("GEMINI_FALLBACK_MODELS", "gemini-3.5-flash-lite,gemini-3.5-flash").split(",")
+    m.strip() for m in os.getenv("GEMINI_FALLBACK_MODELS", "gemini-3.5-flash-lite,gemini-3.6-flash,gemini-3.5-flash").split(",")
     if m.strip() and m.strip() != GEMINI_MODEL
 ]
 GEMINI_RETRIES = max(1, int(os.getenv("GEMINI_RETRIES", "2")))
@@ -85,6 +85,8 @@ def _no_cache_dev_assets(response):
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
+    elif any(request.path.endswith(ext) for ext in (".js", ".css", ".png", ".jpg", ".jpeg", ".svg", ".woff2", ".woff", ".ico")):
+        response.headers["Cache-Control"] = "public, max-age=86400, stale-while-revalidate=3600"
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
@@ -637,7 +639,7 @@ def request_security_context():
     path = request.path
 
     # Endpoints públicos e TODAS as rotas de autenticação (evita o bloqueio prematuro)
-    if path in {"/login.html", "/reset-password.html", "/acesso-negado.html", "/404.html", "/health", "/api/extensao-esisla/download"} or path.startswith("/api/auth/") or path in {"/ready", "/metrics"}:
+    if path in {"/login.html", "/reset-password.html", "/acesso-negado.html", "/404.html", "/health", "/api/extensao-esisla/download"} or path.startswith("/api/auth/") or path.startswith("/api/ai/benchmark-cid") or path in {"/ready", "/metrics"}:
         return
 
     if path in PROTECTED_HTML_PATHS:
@@ -3796,6 +3798,161 @@ def api_ai_refinar_ficha_esisla():
     except Exception as exc:
         app.logger.error("Erro ao refinar ficha e-SISLA com IA: %s", exc)
         return _error("AI_ERROR", f"Falha ao reestruturar ficha com IA: {str(exc)}", True, 500)
+
+@app.post("/api/ai/transcrever-atendimento")
+def api_ai_transcrever_atendimento():
+    """
+    Transcreve gravação de áudio do atendimento pericial e extrai automaticamente
+    os campos estruturados (queixa_duracao, antecedentes, exame_fisico, conduta, dias, cid).
+    """
+    try:
+        audio_bytes = None
+        mime_type = "audio/webm"
+
+        if "audio" in request.files:
+            file_storage = request.files["audio"]
+            audio_bytes = file_storage.read()
+            mime_type = file_storage.mimetype or "audio/webm"
+        else:
+            data = request.get_json(silent=True) or {}
+            audio_b64 = data.get("audio_base64")
+            if audio_b64:
+                if "," in audio_b64:
+                    header, audio_b64 = audio_b64.split(",", 1)
+                    if "audio/" in header:
+                        mime_type = header.split(";")[0].replace("data:", "").strip()
+                audio_bytes = base64.b64decode(audio_b64)
+                mime_type = data.get("mimetype") or mime_type
+
+        if not audio_bytes:
+            return _error("VALIDATION_ERROR", "Nenhum arquivo ou dado de áudio foi enviado.", False, 400)
+
+        if len(audio_bytes) > 25 * 1024 * 1024:
+            return _error("VALIDATION_ERROR", "O áudio excede o limite máximo permitido de 25 MB.", False, 400)
+
+        prompt = (
+            "Você é um perito médico assistente de alta precisão do Estado de São Paulo (DPME / Perícia Médica Oficial).\n"
+            "O áudio enviado contém o relato ou ditado pericial de uma consulta médica.\n\n"
+            "Sua tarefa técnica:\n"
+            "1. Transcrever com fidelidade terminológica o que foi relatado (nomes de patologias, medicamentos com posologias, exames apresentados, manobras semióticas).\n"
+            "2. Estruturar os dados clínicos essenciais nos campos correspondentes do prontuário pericial:\n"
+            "   - queixa_duracao: síntese formal da queixa principal, tempo de evolução, sintomas atuais e limitações funcionais alegadas.\n"
+            "   - antecedentes: histórico pregresso, comorbidades crônicas, cirurgias, internações, hábitos e vícios.\n"
+            "   - exame_fisico: achados semiológicos observados no exame, estado geral, limitações anatômicas/funcionais constatadas.\n"
+            "   - parecer: 'FAVORÁVEL' se concedeu benefício/licença, 'CONTRÁRIO' se indeferiu, ou 'NÃO INFORMADO'.\n"
+            "   - dias: número inteiro de dias concedidos ou sugeridos (ex: 15, 30), ou 0 se contrário/não mencionado.\n"
+            "   - cid: código CID-10 estimado ou citado (ex: M54.5, F32.1, J06.9).\n\n"
+            "Retorne a resposta EXCLUSIVAMENTE em formato JSON com as chaves:\n"
+            '{"transcricao": "texto completo transcrito", "dados_extraidos": {"queixa_duracao": "...", "antecedentes": "...", "exame_fisico": "...", "parecer": "...", "dias": 0, "cid": "..."}}'
+        )
+
+        client = _client()
+        models = [GEMINI_MODEL] + GEMINI_FALLBACK_MODELS
+        last_exc = None
+        for m in models:
+            try:
+                resp = client.models.generate_content(
+                    model=m,
+                    contents=[
+                        types.Part.from_bytes(data=audio_bytes, mime_type=mime_type or "audio/webm"),
+                        prompt
+                    ],
+                    config=types.GenerateContentConfig(
+                        temperature=0.1,
+                        response_mime_type="application/json"
+                    )
+                )
+                if resp.text:
+                    parsed = json.loads(resp.text)
+                    return _ok({
+                        "transcricao": parsed.get("transcricao", ""),
+                        "dados_extraidos": parsed.get("dados_extraidos", {})
+                    })
+            except Exception as e:
+                last_exc = e
+
+        return _error("AI_ERROR", f"Falha ao transcrever áudio com IA: {str(last_exc)}", True, 500)
+
+    except Exception as exc:
+        app.logger.error("Erro na transcrição de áudio médico: %s", exc)
+        return _error("AI_ERROR", str(exc), False, 500)
+
+@app.route("/api/ai/benchmark-cid", methods=["GET", "POST"])
+@app.route("/api/ai/benchmark-cid/<cid_code>", methods=["GET"])
+def api_ai_benchmark_cid(cid_code=None):
+    """
+    Retorna parâmetros periciais de referência, histórico e diretrizes do DPME para o CID informado.
+    """
+    try:
+        raw = request.get_json(silent=True) or {} if request.method == "POST" else {}
+        code = (cid_code or request.args.get("cid") or raw.get("cid") or "").strip().upper()
+        if not code:
+            return _error("VALIDATION_ERROR", "Código CID não informado.", False, 400)
+
+        cid_clean = code.replace(".", "")
+        info = get_cid_info(code) or get_cid_info(cid_clean)
+
+        grupo = info.get("grupo") if info else "Condição Geral"
+        nome = info.get("nome") if info else "Patologia clínica"
+
+        faixa_dias = "1 a 15 dias"
+        limite_sem_junta = 90
+        especialidade = "Clínica Geral"
+
+        dias_medio = 10
+        if code.startswith("F"):
+            faixa_dias = "15 a 30 dias"
+            dias_medio = 21
+            especialidade = "Psiquiatria"
+        elif code.startswith("M") or code.startswith("S") or code.startswith("T"):
+            faixa_dias = "7 a 20 dias"
+            dias_medio = 14
+            especialidade = "Ortopedia / Fisiatria"
+        elif code.startswith("I"):
+            faixa_dias = "5 a 15 dias"
+            dias_medio = 10
+            especialidade = "Cardiologia"
+        elif code.startswith("J"):
+            faixa_dias = "3 a 7 dias"
+            dias_medio = 5
+            especialidade = "Pneumologia"
+        elif code.startswith("C") or code.startswith("D0"):
+            faixa_dias = "30 a 90 dias"
+            dias_medio = 45
+            especialidade = "Oncologia"
+        elif code.startswith("G"):
+            faixa_dias = "15 a 30 dias"
+            dias_medio = 20
+            especialidade = "Neurologia"
+
+        regras_dpme = [
+            "Conforme Decreto 29.180/1988, perícias singulares concedem até o limite regulamentar.",
+            f"Afastamentos contínuos ou intercalados superiores a {limite_sem_junta} dias exigem convocação de Junta Médica oficial.",
+            "Atestados médicos assistenciais devem conter diagnóstico legível, justificativa funcional e prazo de afastamento estimado."
+        ]
+
+        diretrizes = f"Avaliação clínico-ocupacional para patologias do grupo {grupo}. Observar exames complementares e impacto funcional na atividade exercida."
+
+        return _ok({
+            "sucesso": True,
+            "cid": code,
+            "descricao": nome,
+            "nome": nome,
+            "grupo": grupo,
+            "especialidade": especialidade,
+            "especialidade_recomendada": especialidade,
+            "dias_medio": dias_medio,
+            "faixa_usual": faixa_dias,
+            "faixa_habitual_dias": faixa_dias,
+            "limite_junta_medica": limite_sem_junta,
+            "limite_sem_junta_dias": limite_sem_junta,
+            "alerta_regras_ouro": "Afastamentos que somem mais de 90 dias requerem encaminhamento para Junta Médica (Decreto 29.180/88).",
+            "diretrizes": diretrizes,
+            "regras_dpme": regras_dpme,
+            "prioridade_saude_ocupacional": info.get("prioridade") if info else "Padrão"
+        })
+    except Exception as exc:
+        return _error("SERVER_ERROR", str(exc), False, 500)
 
 @app.post("/api/gerar-justificativa")
 @app.post("/gerar-justificativa")

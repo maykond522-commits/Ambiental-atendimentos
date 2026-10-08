@@ -6,7 +6,7 @@
 }
 
 body {
-  width: 320px;
+  width: 340px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background: #F8FAFC;
   color: #0F172A;
@@ -243,6 +243,129 @@ body {
 }
 
 .btn-action-sec.danger:hover {
+  background: #FEE2E2;
+}
+
+/* Fila de Laudos do Dia */
+.section-queue {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.section-queue-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #F8FAFC;
+  border-bottom: 1px solid #E2E8F0;
+  font-size: 11.5px;
+  color: #334155;
+}
+
+.btn-queue-clear {
+  background: transparent;
+  border: none;
+  color: #EF4444;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.btn-queue-clear:hover {
+  text-decoration: underline;
+}
+
+.queue-list {
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.popup-queue-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid #F1F5F9;
+  cursor: pointer;
+  transition: background 0.12s;
+  font-size: 11px;
+}
+
+.popup-queue-item:last-child {
+  border-bottom: none;
+}
+
+.popup-queue-item:hover {
+  background: #F8FAFC;
+}
+
+.popup-queue-item.selected {
+  background: #EFF6FF;
+  border-left: 3px solid #0284C7;
+}
+
+.popup-queue-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.popup-queue-proto-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.popup-queue-proto {
+  font-weight: 800;
+  color: #073F87;
+  font-size: 11px;
+}
+
+.popup-queue-status {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.popup-queue-status.pendente {
+  background: #FEF3C7;
+  color: #B45309;
+}
+
+.popup-queue-status.preenchido {
+  background: #DCFCE7;
+  color: #15803D;
+}
+
+.popup-queue-name {
+  color: #64748B;
+  font-size: 10.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 230px;
+}
+
+.btn-remove-queue-item {
+  background: transparent;
+  border: none;
+  color: #94A3B8;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 3px 5px;
+  border-radius: 4px;
+}
+
+.btn-remove-queue-item:hover {
+  color: #EF4444;
   background: #FEE2E2;
 }
 

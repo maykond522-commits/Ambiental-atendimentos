@@ -47,6 +47,25 @@
         d.querySelector('input[name*="flPfinal"]') ||
         d.getElementById('idParEdtcspf') ||
         d.querySelector('input[name="voResult.numCrm"]') ||
+        d.getElementById('justificaPericia') ||
+        d.getElementById('strProtocolo') ||
+        d.querySelector('input[name="strProtocolo"]') ||
+        d.querySelector('input[type="image"][src*="btn_Buscar"]')
+      );
+    } catch(_) {
+      return false;
+    }
+  }
+
+  function isLaudoDoc(d) {
+    if (!d) return false;
+    try {
+      return !!(
+        d.querySelector('textarea[name="voMedico.parRlCat"]') ||
+        d.getElementById('blocoGeral') ||
+        d.querySelector('input[name="fl_d_prev"]') ||
+        d.querySelector('input[name*="flPfinal"]') ||
+        d.getElementById('idParEdtcspf') ||
         d.getElementById('justificaPericia')
       );
     } catch(_) {
@@ -397,8 +416,128 @@
   // ==========================================
   // 3. WIDGET FLUTUANTE NA TELA DO E-SISLA
   // ==========================================
+  // ==========================================
+  // 3. WIDGET FLUTUANTE NA TELA DO E-SISLA & RECONHECIMENTO INTELIGENTE
+  // ==========================================
+  var activeMatchedPayload = null;
+  var currentQueue = [];
+
+  function normalizarTexto(str) {
+    return String(str || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .trim();
+  }
+
+  function extrairIdentificacaoTela() {
+    var { doc } = findTargetDoc();
+    var protocolos = new Set();
+    var nomes = new Set();
+    var textos = [];
+
+    function scan(d) {
+      if (!d) return;
+      try {
+        // 1. Inputs e campos
+        var inps = d.querySelectorAll('input, textarea, select');
+        inps.forEach(el => {
+          var n = (el.name || el.id || '').toLowerCase();
+          var v = String(el.value || '').trim();
+          if (/protocolo|atendimento|requerimento|laudo/.test(n) && v) {
+            var m = v.match(/\d{6,12}/);
+            if (m) protocolos.add(m[0]);
+          }
+          if (/servidor|paciente|periciado|nome/.test(n) && v && v.length >= 5 && !/crm|medico|perito|assistente/i.test(n)) {
+            nomes.add(v);
+          }
+        });
+
+        // 2. Células de tabelas e spans do cabeçalho
+        var cells = d.querySelectorAll('td, th, span, b, div, p, font');
+        cells.forEach(el => {
+          var t = (el.textContent || '').trim();
+          if (t.length >= 4 && t.length <= 160) {
+            var mProt = t.match(/(?:protocolo|atendimento|requerimento|n[ºo])\s*[:\.]?\s*(\d{6,12})/i);
+            if (mProt) protocolos.add(mProt[1]);
+            
+            var mNome = t.match(/(?:servidor|paciente|periciado|nome|nome\s+do\s+servidor)\s*[:\.]?\s*([A-ZÀ-Ú\s]{5,60})/i);
+            if (mNome && !/perito|m[ée]dico|crm|assistente|diretor|unidade/i.test(mNome[1])) {
+              nomes.add(mNome[1].trim());
+            }
+
+            if (/^\d{8,10}$/.test(t)) {
+              protocolos.add(t);
+            }
+          }
+        });
+
+        var bodyTxt = (d.body ? d.body.innerText || d.body.textContent : '') || '';
+        textos.push(bodyTxt.slice(0, 6000));
+      } catch(_) {}
+    }
+
+    scan(document);
+    if (doc !== document) scan(doc);
+
+    try {
+      var ifrs = document.querySelectorAll('iframe, frame');
+      ifrs.forEach(ifr => {
+        try {
+          var ifrDoc = ifr.contentDocument || (ifr.contentWindow && ifr.contentWindow.document);
+          if (ifrDoc) scan(ifrDoc);
+        } catch(_) {}
+      });
+    } catch(_) {}
+
+    return {
+      protocolos: Array.from(protocolos),
+      nomes: Array.from(nomes),
+      rawText: textos.join(' ')
+    };
+  }
+
+  function encontrarMatchNaTela(fila, ident) {
+    if (!Array.isArray(fila) || !fila.length) return null;
+
+    var rawLower = normalizarTexto(ident.rawText);
+
+    // Passo 1: Busca por Protocolo (exatidão de 100%)
+    for (var i = 0; i < fila.length; i++) {
+      var item = fila[i];
+      var protoDigits = String(item.protocolo || '').replace(/\D/g, '');
+      if (protoDigits.length >= 6) {
+        if (ident.protocolos.includes(protoDigits) || rawLower.includes(protoDigits)) {
+          return { laudo: item, motivo: 'protocolo' };
+        }
+      }
+    }
+
+    // Passo 2: Busca por Nome do Servidor (exatidão de 95%)
+    for (var j = 0; j < fila.length; j++) {
+      var it = fila[j];
+      var nomeNorm = normalizarTexto(it.servidor || it.paciente || '');
+      var partes = nomeNorm.split(/\s+/).filter(w => w.length >= 3);
+      if (partes.length >= 2) {
+        var nomeCompletoNoTexto = rawLower.includes(nomeNorm);
+        var primeiroEUltimoNoTexto = rawLower.includes(partes[0]) && rawLower.includes(partes[partes.length - 1]);
+        
+        var nomeNasCelulas = ident.nomes.some(n => {
+          var nNorm = normalizarTexto(n);
+          return nNorm.includes(nomeNorm) || (nNorm.includes(partes[0]) && nNorm.includes(partes[partes.length - 1]));
+        });
+
+        if (nomeCompletoNoTexto || (primeiroEUltimoNoTexto && (nomeNasCelulas || ident.nomes.length > 0))) {
+          return { laudo: it, motivo: 'nome' };
+        }
+      }
+    }
+
+    return null;
+  }
+
   function criarWidgetFlutuante() {
-    // Apenas na janela principal ou no frame que contiver a barra de navegação/topo
     if (window.top !== window && !isEsislaDoc(document)) return;
     if (document.getElementById('ambientalEsislaWidget')) return;
 
@@ -408,23 +547,24 @@
     
     widget.innerHTML = `
       <div class="ambiental-widget-pill" id="ambientalWidgetPill">
-        <div class="ambiental-widget-brand" id="ambientalWidgetTrigger" title="Clique para preencher a ficha do laudo">
+        <div class="ambiental-widget-brand" id="ambientalWidgetTrigger" title="Clique para verificar correspondência e preencher">
           <span class="ambiental-widget-bolt">⚡</span>
           <span class="ambiental-widget-title">Ambiental e-SISLA</span>
           <span class="ambiental-widget-status-dot" id="ambientalWidgetDot"></span>
         </div>
         <div class="ambiental-widget-info" id="ambientalWidgetInfo">
-          <span id="ambientalWidgetProto">Aguardando laudo...</span>
+          <span id="ambientalWidgetProto">Analisando periciado...</span>
         </div>
-        <button type="button" class="ambiental-widget-btn-fill" id="ambientalWidgetBtnFill" title="Preencher todos os campos do e-SISLA">
-          ⚡ Preencher
+        <button type="button" class="ambiental-widget-btn-fill disabled" id="ambientalWidgetBtnFill" title="Aguardando identificação do periciado" disabled>
+          🔒 Bloqueado
         </button>
-        <button type="button" class="ambiental-widget-btn-menu" id="ambientalWidgetBtnMenu" title="Mais opções (Colar JSON, Histórico)">
+        <button type="button" class="ambiental-widget-btn-menu" id="ambientalWidgetBtnMenu" title="Fila de laudos do dia e opções">
           ▾
         </button>
       </div>
 
       <div class="ambiental-widget-dropdown" id="ambientalWidgetDropdown" style="display:none">
+        <div id="ambientalQueueContainer"></div>
         <div class="ambiental-widget-menu-item" id="ambientalMenuColarClip">
           📋 Colar da Área de Transferência
         </div>
@@ -432,7 +572,7 @@
           ✍️ Inserir JSON Manualmente
         </div>
         <div class="ambiental-widget-menu-item" id="ambientalMenuRecarregar">
-          🔄 Buscar Última Ficha do Ambiental
+          🔄 Re-escanear Periciado na Tela
         </div>
         <div class="ambiental-widget-menu-divider"></div>
         <div class="ambiental-widget-menu-item" id="ambientalMenuMinimizar">
@@ -443,17 +583,21 @@
 
     document.body.appendChild(widget);
 
-    // Atualiza estado do widget
     atualizarInfoWidget();
 
-    // Event Listeners
     var btnFill = document.getElementById('ambientalWidgetBtnFill');
     var btnTrigger = document.getElementById('ambientalWidgetTrigger');
     var btnMenu = document.getElementById('ambientalWidgetBtnMenu');
     var dropdown = document.getElementById('ambientalWidgetDropdown');
 
     btnFill.addEventListener('click', dispararPreenchimentoAtual);
-    btnTrigger.addEventListener('click', dispararPreenchimentoAtual);
+    btnTrigger.addEventListener('click', () => {
+      if (activeMatchedPayload) {
+        dispararPreenchimentoAtual();
+      } else {
+        dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+      }
+    });
 
     btnMenu.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -466,48 +610,487 @@
 
     document.getElementById('ambientalMenuColarClip').addEventListener('click', colarDoClipboard);
     document.getElementById('ambientalMenuColarManual').addEventListener('click', abrirModalColagemManual);
-    document.getElementById('ambientalMenuRecarregar').addEventListener('click', atualizarInfoWidget);
+    document.getElementById('ambientalMenuRecarregar').addEventListener('click', () => {
+      atualizarInfoWidget();
+      mostrarToast('🔄 Tela do e-SISLA re-escaneada!', 'sucesso');
+    });
     document.getElementById('ambientalMenuMinimizar').addEventListener('click', () => {
       widget.classList.toggle('minimized');
     });
 
-    // Torna o widget arrastável pela tela
     tornarArrastavel(widget);
   }
 
+  function renderizarListaFilaNoDropdown(fila) {
+    var container = document.getElementById('ambientalQueueContainer');
+    if (!container) return;
+
+    if (!fila || !fila.length) {
+      container.innerHTML = `
+        <div class="ambiental-widget-menu-header">
+          <span>📋 Fila de Laudos do Dia (0)</span>
+        </div>
+        <div style="padding:10px 14px;font-size:11px;color:#94A3B8;line-height:1.35">
+          Nenhuma ficha na fila.<br>No sistema Ambiental, abra a Ficha e confirme para adicionar à fila.
+        </div>
+        <div class="ambiental-widget-menu-divider"></div>
+      `;
+      return;
+    }
+
+    var htmlItens = fila.map((it, idx) => {
+      var isMatch = activeMatchedPayload && String(activeMatchedPayload.protocolo || '') === String(it.protocolo || '');
+      var isDone = it.status === 'preenchido';
+      var pac = it.servidor || it.paciente || 'Servidor';
+      return `
+        <div class="ambiental-queue-item ${isMatch ? 'active-match' : ''}" data-idx="${idx}" title="Clique para selecionar este laudo manualmente">
+          <div class="queue-item-row">
+            <strong style="color:${isMatch ? '#00C95A' : '#0F172A'}">${it.protocolo || 'Sem prot.'}</strong>
+            <span class="queue-status ${isDone ? 'preenchido' : 'pendente'}">${isDone ? '✓ Preenchido' : 'Pendente'}</span>
+          </div>
+          <div class="queue-item-name">${pac}</div>
+        </div>
+      `;
+    }).join('');
+
+    container.innerHTML = `
+      <div class="ambiental-widget-menu-header">
+        <span>📋 Fila do Dia (${fila.length})</span>
+        <button type="button" id="btnLimparFilaDropdown" style="background:transparent;border:none;color:#EF4444;cursor:pointer;font-size:11px;font-weight:700;padding:2px 4px" title="Limpar todos os laudos da fila">🗑️ Limpar</button>
+      </div>
+      <div class="ambiental-queue-items-list" id="ambientalQueueList">
+        ${htmlItens}
+      </div>
+      <div class="ambiental-widget-menu-divider"></div>
+    `;
+
+    var btnClear = document.getElementById('btnLimparFilaDropdown');
+    if (btnClear) {
+      btnClear.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (confirm('Deseja limpar todos os laudos da fila da extensão?')) {
+          chrome.runtime.sendMessage({ action: 'LIMPAR_FILA' }, () => {
+            atualizarInfoWidget();
+          });
+        }
+      });
+    }
+
+    var items = container.querySelectorAll('.ambiental-queue-item');
+    items.forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        var idx = Number(el.dataset.idx);
+        if (fila[idx]) {
+          selecionarLaudoManualmente(fila[idx]);
+          var dropdown = document.getElementById('ambientalWidgetDropdown');
+          if (dropdown) dropdown.style.display = 'none';
+        }
+      });
+    });
+  }
+
+  var isSearchModeActive = false;
+  var currentSearchCandidate = null;
+  var autoFillPollingInterval = null;
+
+  function detectarCampoPesquisaProtocolo() {
+    function findInDoc(d) {
+      if (!d) return null;
+      try {
+        var inp = d.getElementById('strProtocolo') ||
+                  d.querySelector('input[name="strProtocolo"]') ||
+                  d.querySelector('input[name="protocolo"]') ||
+                  d.querySelector('input[name*="Protocolo"]');
+        if (inp) return { input: inp, doc: d };
+      } catch(_) {}
+      return null;
+    }
+
+    var res = findInDoc(document);
+    if (res) return res;
+
+    // Busca em frames e iframes
+    var iframes = document.querySelectorAll('iframe, frame');
+    for (var i = 0; i < iframes.length; i++) {
+      try {
+        var idoc = iframes[i].contentDocument || (iframes[i].contentWindow && iframes[i].contentWindow.document);
+        var r = findInDoc(idoc);
+        if (r) return r;
+      } catch(_) {}
+    }
+
+    return null;
+  }
+
+  function clicarBotaoBuscarEsisla(targetDoc) {
+    function findBtn(d) {
+      if (!d) return null;
+      try {
+        return d.querySelector('input[type="image"][src*="btn_Buscar"]') ||
+               d.querySelector('input.botao_side[src*="Buscar"]') ||
+               d.querySelector('input.botao_side[title="Buscar"]') ||
+               d.querySelector('input[type="image"][title="Buscar"]') ||
+               d.querySelector('input[src*="btn_Buscar"]') ||
+               d.querySelector('input[src*="Buscar"]') ||
+               d.querySelector('input[value="Buscar"]') ||
+               d.querySelector('button[title="Buscar"]');
+      } catch(_) {
+        return null;
+      }
+    }
+
+    var btn = findBtn(targetDoc || document);
+    if (btn) {
+      btn.click();
+      return true;
+    }
+
+    var iframes = document.querySelectorAll('iframe, frame');
+    for (var i = 0; i < iframes.length; i++) {
+      try {
+        var idoc = iframes[i].contentDocument || (iframes[i].contentWindow && iframes[i].contentWindow.document);
+        var b = findBtn(idoc);
+        if (b) {
+          b.click();
+          return true;
+        }
+      } catch(_) {}
+    }
+
+    return false;
+  }
+
+  function renderizarAssistenteBuscaInline(input, candidate, doc) {
+    if (!input || !candidate) return;
+    var d = doc || document;
+
+    var existing = d.getElementById('ambientalSearchInlineCard');
+    var proto = candidate.protocolo || 'Sem Prot.';
+    var pac = candidate.servidor || candidate.paciente || 'Servidor';
+
+    if (existing) {
+      var protoStrong = existing.querySelector('strong');
+      var pacSmall = existing.querySelector('small');
+      if (protoStrong) protoStrong.textContent = `Próximo da Fila: Prot. ${proto}`;
+      if (pacSmall) pacSmall.textContent = pac;
+      return;
+    }
+
+    var card = d.createElement('div');
+    card.id = 'ambientalSearchInlineCard';
+    card.className = 'ambiental-search-inline-card';
+    card.innerHTML = `
+      <div class="search-inline-info">
+        <span class="search-inline-bolt">⚡</span>
+        <div>
+          <strong>Próximo da Fila: Prot. ${proto}</strong>
+          <small>${pac}</small>
+        </div>
+      </div>
+      <button type="button" class="btn-search-entrar-preencher" id="btnSearchInlineEntrarPreencher" title="Preenche o protocolo, pesquisa e preenche o laudo automaticamente ao abrir">
+        ⚡ Entrar e Preencher
+      </button>
+    `;
+
+    var parentP = input.closest('p') || input.parentElement;
+    if (parentP && parentP.parentElement) {
+      parentP.parentElement.insertBefore(card, parentP.nextSibling);
+    } else if (input.parentElement) {
+      input.parentElement.appendChild(card);
+    }
+
+    var btn = card.querySelector('#btnSearchInlineEntrarPreencher');
+    if (btn) {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        acionarEntrarEPreencher(candidate, { input: input, doc: d });
+      });
+    }
+  }
+
+  function acionarEntrarEPreencher(payload, searchContext) {
+    if (!payload || !payload.protocolo) {
+      mostrarToast('❌ Nenhum protocolo válido encontrado para busca.', 'erro');
+      return;
+    }
+
+    var protoDigits = String(payload.protocolo).replace(/\D/g, '');
+    var pac = payload.servidor || payload.paciente || 'Servidor';
+
+    // 1. Preenche o campo de protocolo na tela
+    var sc = searchContext || detectarCampoPesquisaProtocolo();
+    if (sc && sc.input) {
+      sc.input.focus();
+      sc.input.value = protoDigits;
+      try {
+        sc.input.dispatchEvent(new Event('input', { bubbles: true }));
+        sc.input.dispatchEvent(new Event('change', { bubbles: true }));
+        sc.input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+      } catch(_) {}
+      try {
+        sc.input.classList.add('ambiental-filled-glow');
+        setTimeout(() => sc.input.classList.remove('ambiental-filled-glow'), 2000);
+      } catch(_) {}
+    }
+
+    // 2. Salva a diretiva para preenchimento automático assim que a ficha abrir
+    chrome.storage.local.set({
+      ambiental_auto_fill_target: {
+        protocolo: protoDigits,
+        servidor: pac,
+        payload: payload,
+        timestamp: Date.now()
+      }
+    }, () => {
+      mostrarToast(`⏳ Protocolo ${protoDigits} preenchido. Clicando em Buscar...`, 'info');
+
+      // 3. Clica no botão Buscar após 160ms
+      setTimeout(() => {
+        var clicou = clicarBotaoBuscarEsisla(sc ? sc.doc : document);
+        if (!clicou && sc && sc.input && sc.input.form) {
+          sc.input.form.submit();
+        }
+
+        // Inicia observador para preencher assim que o formulário do laudo aparecer
+        iniciarObservadorAutoFill();
+      }, 160);
+    });
+  }
+
+  function verificarAutoFillPendente() {
+    chrome.storage.local.get(['ambiental_auto_fill_target'], (res) => {
+      var target = res.ambiental_auto_fill_target;
+      if (!target || !target.payload) return;
+
+      if (Date.now() - (target.timestamp || 0) > 120000) {
+        chrome.storage.local.remove(['ambiental_auto_fill_target']);
+        return;
+      }
+
+      var { doc } = findTargetDoc();
+      if (isLaudoDoc(doc)) {
+        if (autoFillPollingInterval) {
+          clearInterval(autoFillPollingInterval);
+          autoFillPollingInterval = null;
+        }
+
+        chrome.storage.local.remove(['ambiental_auto_fill_target'], () => {
+          var execRes = executarPreenchimento(target.payload);
+          if (execRes && execRes.success) {
+            chrome.runtime.sendMessage({
+              action: 'MARCAR_FICHA_PREENCHIDA',
+              protocolo: target.protocolo,
+              servidor: target.servidor
+            });
+            mostrarToast(`🎉 Atendimento de ${target.servidor} (Prot. ${target.protocolo}) preenchido com sucesso!`, 'sucesso');
+            atualizarInfoWidget();
+          }
+        });
+      }
+    });
+  }
+
+  function iniciarObservadorAutoFill() {
+    if (autoFillPollingInterval) clearInterval(autoFillPollingInterval);
+    var attempts = 0;
+    autoFillPollingInterval = setInterval(() => {
+      attempts++;
+      verificarAutoFillPendente();
+      if (attempts >= 40) {
+        clearInterval(autoFillPollingInterval);
+        autoFillPollingInterval = null;
+      }
+    }, 300);
+  }
+
+  function selecionarLaudoManualmente(item) {
+    if (!item) return;
+    activeMatchedPayload = item;
+    var btnFill = document.getElementById('ambientalWidgetBtnFill');
+    var protoEl = document.getElementById('ambientalWidgetProto');
+    var dot = document.getElementById('ambientalWidgetDot');
+    var pac = item.servidor || item.paciente || 'Servidor';
+    var pacShort = pac.length > 18 ? pac.slice(0, 18) + '…' : pac;
+
+    var sc = detectarCampoPesquisaProtocolo();
+    if (sc && sc.input) {
+      currentSearchCandidate = item;
+      isSearchModeActive = true;
+      renderizarAssistenteBuscaInline(sc.input, item, sc.doc);
+      if (protoEl) {
+        protoEl.innerHTML = `<span style="color:#0284C7;font-weight:800">🔍 Prot. ${item.protocolo}</span> · ${pacShort}`;
+        protoEl.title = `Laudo de ${pac} (${item.protocolo}) selecionado para busca. Clique em Entrar e Preencher!`;
+      }
+      if (dot) {
+        dot.style.background = '#0284C7';
+        dot.style.boxShadow = '0 0 8px rgba(2, 132, 199, 0.6)';
+      }
+      if (btnFill) {
+        btnFill.disabled = false;
+        btnFill.classList.remove('disabled');
+        btnFill.classList.add('search-mode');
+        btnFill.style.opacity = '1';
+        btnFill.style.pointerEvents = 'auto';
+        btnFill.innerHTML = '⚡ Entrar e Preencher';
+        btnFill.title = `Preencher protocolo ${item.protocolo}, clicar em Buscar e preencher a ficha ao abrir`;
+      }
+      mostrarToast(`⚡ Laudo de ${pac} (${item.protocolo}) selecionado para busca. Clique em Entrar e Preencher!`, 'info');
+      return;
+    }
+
+    if (protoEl) {
+      protoEl.innerHTML = `<span style="color:#0284C7;font-weight:800">📋 ${item.protocolo}</span> · ${pacShort}`;
+      protoEl.title = `Laudo selecionado manualmente: ${pac} (${item.protocolo})`;
+    }
+    if (dot) {
+      dot.style.background = '#0284C7';
+      dot.style.boxShadow = '0 0 8px rgba(2, 132, 199, 0.6)';
+    }
+    if (btnFill) {
+      btnFill.disabled = false;
+      btnFill.classList.remove('disabled');
+      btnFill.classList.remove('search-mode');
+      btnFill.style.opacity = '1';
+      btnFill.style.pointerEvents = 'auto';
+      btnFill.innerHTML = '⚡ Preencher';
+      btnFill.title = `Preencher laudo de ${pac}`;
+    }
+    mostrarToast(`⚡ Laudo de ${pac} (${item.protocolo}) selecionado manualmente. Clique em Preencher!`, 'sucesso');
+  }
+
   function atualizarInfoWidget() {
-    chrome.storage.local.get(['ambiental_latest_esisla'], (result) => {
-      var payload = result.ambiental_latest_esisla;
+    chrome.storage.local.get(['ambiental_esisla_queue', 'ambiental_latest_esisla'], (result) => {
+      var fila = Array.isArray(result.ambiental_esisla_queue) ? result.ambiental_esisla_queue : [];
+      if (!fila.length && result.ambiental_latest_esisla) {
+        fila = [result.ambiental_latest_esisla];
+      }
+      currentQueue = fila;
+
+      var ident = extrairIdentificacaoTela();
+      var matchResult = encontrarMatchNaTela(fila, ident);
+
       var protoEl = document.getElementById('ambientalWidgetProto');
       var dot = document.getElementById('ambientalWidgetDot');
       var btnFill = document.getElementById('ambientalWidgetBtnFill');
 
-      if (payload && payload.protocolo) {
-        var proto = payload.protocolo;
-        var pac = payload.servidor || payload.paciente || '';
-        if (pac.length > 15) pac = pac.slice(0, 15) + '...';
-        if (protoEl) protoEl.textContent = `${proto} ${pac ? '· ' + pac : ''}`;
-        if (dot) dot.style.background = '#00E676';
+      renderizarListaFilaNoDropdown(fila);
+
+      // CASO 1: Encontrou tela de laudo com match de paciente/protocolo
+      if (matchResult && matchResult.laudo) {
+        isSearchModeActive = false;
+        currentSearchCandidate = null;
+        activeMatchedPayload = matchResult.laudo;
+        var laudo = matchResult.laudo;
+        var proto = laudo.protocolo || '';
+        var pac = laudo.servidor || laudo.paciente || 'Servidor';
+        var pacShort = pac.length > 18 ? pac.slice(0, 18) + '…' : pac;
+
+        if (protoEl) {
+          protoEl.innerHTML = `<span style="color:#00C95A;font-weight:800">✓ ${proto}</span> · ${pacShort}`;
+          protoEl.title = `Periciado identificado na tela: ${pac} (Prot. ${proto}) [via ${matchResult.motivo}]`;
+        }
+        if (dot) {
+          dot.style.background = '#00E676';
+          dot.style.boxShadow = '0 0 8px #00E676';
+        }
         if (btnFill) {
           btnFill.disabled = false;
+          btnFill.classList.remove('disabled');
+          btnFill.classList.remove('search-mode');
           btnFill.style.opacity = '1';
+          btnFill.style.pointerEvents = 'auto';
+          btnFill.innerHTML = '⚡ Preencher';
+          btnFill.title = `Clique para preencher o laudo de ${pac}`;
         }
-      } else {
-        if (protoEl) protoEl.textContent = 'Nenhum laudo pronto';
-        if (dot) dot.style.background = '#94A3B8';
+        return;
+      }
+
+      // CASO 2: Tela de busca de protocolo (strProtocolo + btn_Buscar)
+      var sc = detectarCampoPesquisaProtocolo();
+      if (sc && sc.input && fila.length > 0) {
+        var candidate = currentSearchCandidate || fila.find(f => f.status !== 'preenchido') || fila[0];
+        currentSearchCandidate = candidate;
+        isSearchModeActive = true;
+        activeMatchedPayload = null;
+
+        var candProto = candidate.protocolo || '';
+        var candPac = candidate.servidor || candidate.paciente || 'Servidor';
+        var candShort = candPac.length > 18 ? candPac.slice(0, 18) + '…' : candPac;
+
+        renderizarAssistenteBuscaInline(sc.input, candidate, sc.doc);
+
+        if (protoEl) {
+          protoEl.innerHTML = `<span style="color:#0284C7;font-weight:800">🔍 Prot. ${candProto}</span> · ${candShort}`;
+          protoEl.title = `Pronto para buscar e preencher: ${candPac} (Prot. ${candProto}). Clique em 'Entrar e Preencher'!`;
+        }
+        if (dot) {
+          dot.style.background = '#0284C7';
+          dot.style.boxShadow = '0 0 8px rgba(2, 132, 199, 0.6)';
+        }
+        if (btnFill) {
+          btnFill.disabled = false;
+          btnFill.classList.remove('disabled');
+          btnFill.classList.add('search-mode');
+          btnFill.style.opacity = '1';
+          btnFill.style.pointerEvents = 'auto';
+          btnFill.innerHTML = '⚡ Entrar e Preencher';
+          btnFill.title = `Preencher protocolo ${candProto}, clicar em Buscar e preencher a ficha ao abrir!`;
+        }
+        return;
+      }
+
+      // CASO 3: Sem match / bloqueado
+      isSearchModeActive = false;
+      currentSearchCandidate = null;
+      activeMatchedPayload = null;
+      if (dot) dot.style.boxShadow = 'none';
+
+      if (btnFill) {
+        btnFill.disabled = true;
+        btnFill.classList.add('disabled');
+        btnFill.classList.remove('search-mode');
+        btnFill.style.opacity = '0.55';
+        btnFill.style.pointerEvents = 'none';
+        btnFill.innerHTML = '🔒 Bloqueado';
+        btnFill.title = 'Abra no e-SISLA a tela de busca ou a tela do periciado que possui laudo na fila para liberar o preenchimento.';
+      }
+
+      if (protoEl) {
+        if (fila.length > 0) {
+          protoEl.innerHTML = `<span style="color:#F59E0B">⚠️ Periciado não bate</span> <small style="color:#94A3B8">(${fila.length} na fila)</small>`;
+          protoEl.title = `${fila.length} laudo(s) disponível(is) na fila, mas nenhum coincide com o protocolo/nome desta tela. Abra a tela de busca ou selecione manualmente no menu ▾.`;
+          if (dot) dot.style.background = '#F59E0B';
+        } else {
+          protoEl.textContent = 'Fila vazia (gere no Ambiental)';
+          protoEl.title = 'Gere a ficha de um periciado no sistema Ambiental para adicionar à fila.';
+          if (dot) dot.style.background = '#94A3B8';
+        }
       }
     });
   }
 
   function dispararPreenchimentoAtual() {
-    chrome.storage.local.get(['ambiental_latest_esisla'], (result) => {
-      var payload = result.ambiental_latest_esisla;
-      if (payload) {
-        executarPreenchimento(payload);
-      } else {
-        colarDoClipboard();
-      }
-    });
+    if (isSearchModeActive && currentSearchCandidate) {
+      var sc = detectarCampoPesquisaProtocolo();
+      acionarEntrarEPreencher(currentSearchCandidate, sc);
+      return;
+    }
+
+    if (!activeMatchedPayload) {
+      mostrarToast('🔒 Nenhum periciado correspondente identificado na tela do e-SISLA. Selecione um laudo no menu ▾.', 'erro');
+      return;
+    }
+    var res = executarPreenchimento(activeMatchedPayload);
+    if (res && res.success) {
+      chrome.runtime.sendMessage({
+        action: 'MARCAR_FICHA_PREENCHIDA',
+        protocolo: activeMatchedPayload.protocolo,
+        servidor: activeMatchedPayload.servidor || activeMatchedPayload.paciente
+      });
+      atualizarInfoWidget();
+    }
   }
 
   function colarDoClipboard() {
@@ -516,10 +1099,10 @@
         try {
           var parsed = JSON.parse(text);
           if (parsed && (parsed.campos_esisla || parsed['voMedico.parRlCat'] || parsed.protocolo)) {
-            // Salva na memória da extensão também
-            chrome.runtime.sendMessage({ action: 'SALVAR_FICHA', payload: parsed });
-            executarPreenchimento(parsed);
-            atualizarInfoWidget();
+            chrome.runtime.sendMessage({ action: 'ADICIONAR_FICHA_FILA', payload: parsed }, () => {
+              executarPreenchimento(parsed);
+              atualizarInfoWidget();
+            });
           } else {
             abrirModalColagemManual();
           }
@@ -658,16 +1241,34 @@
 
   // Escuta atualizações de storage para atualizar o widget instantaneamente
   chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName === 'local' && changes.ambiental_latest_esisla) {
-      atualizarInfoWidget();
+    if (areaName === 'local') {
+      if (changes.ambiental_latest_esisla || changes.ambiental_esisla_queue) {
+        atualizarInfoWidget();
+      }
+      if (changes.ambiental_auto_fill_target && changes.ambiental_auto_fill_target.newValue) {
+        verificarAutoFillPendente();
+        iniciarObservadorAutoFill();
+      }
     }
   });
 
-  // Inicializa o widget flutuante quando o DOM estiver pronto
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', criarWidgetFlutuante);
-  } else {
+  // Re-escaneia periodicamente a tela para detectar trocas de abas ou formulários no e-SISLA sem reload
+  setInterval(() => {
+    atualizarInfoWidget();
+    verificarAutoFillPendente();
+  }, 3000);
+
+  function inicializarModuloEsisla() {
     criarWidgetFlutuante();
+    verificarAutoFillPendente();
+    iniciarObservadorAutoFill();
+  }
+
+  // Inicializa o widget flutuante e verificação de auto-fill quando o DOM estiver pronto
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', inicializarModuloEsisla);
+  } else {
+    inicializarModuloEsisla();
   }
 
 })();

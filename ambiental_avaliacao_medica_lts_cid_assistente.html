@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="/global.css">
 <script src="/utils.js"></script>
+<script src="/esisla_core.js"></script>
 <meta name="theme-color" content="#073F87">
 <title>Ambiental — Avaliação Médica Pericial LTS</title>
 <!-- v15: validação determinística dos quesitos baseada diretamente nos radio buttons + sincronização de estado -->
@@ -1866,6 +1867,9 @@ body:not(.mode-agil-active) #containerModoAgil {
           </span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn btn-sm" id="btnGravarVozIA" onclick="abrirModalGravadorVozIA()" style="font-weight:800;background:linear-gradient(135deg, #059669 0%, #10B981 100%);color:#fff;border:none;padding:8px 14px;font-size:12px;display:flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(16,185,129,0.25);border-radius:6px;cursor:pointer" title="Gravar voz ou áudio para ditado médico e estruturação completa via Gemini 3.8 Flash">
+            <span>🎤</span> Ditado por Voz (IA)
+          </button>
           <button type="button" class="btn btn-outline btn-sm" onclick="abrirModalPreenchimentoIA(); setTimeout(()=>document.getElementById('fileEsislaModalInput')?.click(), 250);" style="font-weight:700;background:#fff;border-color:#2563EB;color:#1D4ED8;padding:8px 14px;font-size:12px;display:flex;align-items:center;gap:6px" title="Importar PDF da Consulta Perícia Licença do e-SISLA">
             <span>📄</span> Importar PDF e-SISLA
           </button>
@@ -2969,9 +2973,51 @@ body:not(.mode-agil-active) #containerModoAgil {
     <div class="cid-input-row">
       <input class="input" id="cid" autocomplete="off" placeholder="Ex.: F32.1, F41.1, M54.5, I10..." oninput="onCidInput(this.value)" onfocus="onCidInput(this.value)">
       <button type="button" class="cid-check" onclick="openOfficialCID()">Consultar fonte oficial</button>
+      <button type="button" class="cid-check" id="btnBenchmarkCID" onclick="consultarBenchmarkCID()" style="background:#2563EB;color:#fff;border-color:#1D4ED8;margin-left:6px;font-weight:700" title="Ver parâmetros de afastamento, média estatística e limites de Junta Médica da DPME/SP">📊 Benchmark & DPME</button>
     </div>
     <div class="help">Digite o código para receber sugestões de descrição e roteiro de avaliação. O sistema não conclui diagnóstico ou incapacidade.</div>
     <div class="cid-suggestions" id="cidSuggestions"></div>
+
+    <!-- Card de Benchmark CID DPME/SP -->
+    <div id="cidBenchmarkBox" style="display:none;margin-top:12px;background:#EFF6FF;border:1.5px solid #93C5FD;border-radius:10px;padding:14px;box-shadow:0 2px 8px rgba(37,99,235,0.08)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="badge" id="cidBenchmarkPill" style="background:#1D4ED8;color:#fff;font-weight:800;font-size:12px;padding:3px 8px">CID</span>
+            <strong id="cidBenchmarkNome" style="color:#1E3A8A;font-size:13px">—</strong>
+          </div>
+          <div id="cidBenchmarkGrupo" style="font-size:11.5px;color:#3B82F6;margin-top:2px">Capítulo / Grupo Clínico</div>
+        </div>
+        <button type="button" onclick="document.getElementById('cidBenchmarkBox').style.display='none'" style="background:none;border:none;color:#64748B;font-size:16px;cursor:pointer" title="Fechar">&times;</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:8px;margin-top:12px">
+        <div style="background:#fff;border:1px solid #BFDBFE;border-radius:8px;padding:8px 10px;text-align:center">
+          <div style="font-size:10.5px;color:#64748B;font-weight:700">MÉDIA USUAL</div>
+          <div id="cidBenchmarkMedia" style="font-size:14px;font-weight:800;color:#1D4ED8;margin-top:2px">—</div>
+        </div>
+        <div style="background:#fff;border:1px solid #BFDBFE;border-radius:8px;padding:8px 10px;text-align:center">
+          <div style="font-size:10.5px;color:#64748B;font-weight:700">FAIXA DE DIAS</div>
+          <div id="cidBenchmarkFaixa" style="font-size:13px;font-weight:800;color:#0F172A;margin-top:2px">—</div>
+        </div>
+        <div style="background:#fff;border:1px solid #BFDBFE;border-radius:8px;padding:8px 10px;text-align:center">
+          <div style="font-size:10.5px;color:#64748B;font-weight:700">LIMITE JUNTA MÉDICA</div>
+          <div id="cidBenchmarkJunta" style="font-size:13px;font-weight:800;color:#DC2626;margin-top:2px">—</div>
+        </div>
+        <div style="background:#fff;border:1px solid #BFDBFE;border-radius:8px;padding:8px 10px;text-align:center">
+          <div style="font-size:10.5px;color:#64748B;font-weight:700">ESPECIALIDADE</div>
+          <div id="cidBenchmarkEsp" style="font-size:12px;font-weight:800;color:#2563EB;margin-top:2px">—</div>
+        </div>
+      </div>
+
+      <div id="cidBenchmarkInfo" style="font-size:11.5px;color:#1E3A8A;background:rgba(255,255,255,0.7);border-radius:6px;padding:8px 10px;margin-top:10px;line-height:1.45"></div>
+
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
+        <button type="button" class="btn btn-sm" onclick="aplicarBenchmarkJustificativa()" style="background:#1D4ED8;color:#fff;border:none;font-weight:700;font-size:11px;padding:5px 10px;border-radius:6px;cursor:pointer">
+          ⚖️ Inserir parâmetros na Justificativa (Etapa 8)
+        </button>
+      </div>
+    </div>
   </div>
   <div class="cid-assist" id="cidAssist">
     <div class="cid-assist-head">
@@ -3488,9 +3534,14 @@ body:not(.mode-agil-active) #containerModoAgil {
           <label for="txtPreenchimentoIABruto" style="display:block;font-size:12px;font-weight:700;color:#0F3254;margin-bottom:0">
             Texto Bruto (Anotações do Médico e/ou Dados do Sistema):
           </label>
-          <span id="badgeIaAdmPermissaoTag" style="font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:5px;background:#F1F5F9;color:#475569;border:1px solid #CBD5E1">
-            🛡️ Recurso ADM Pericial
-          </span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button type="button" class="btn btn-outline voice-btn" id="voiceBtn_txtPreenchimentoIABruto" onclick="toggleVoiceDictation('txtPreenchimentoIABruto')" style="font-size:11px;padding:3px 9px;font-weight:700;border-radius:6px;display:inline-flex;align-items:center;gap:4px" title="Ditar anotações médicas por voz diretamente neste campo">
+              <span>🎤</span> <strong>Ditar por voz</strong>
+            </button>
+            <span id="badgeIaAdmPermissaoTag" style="font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:5px;background:#F1F5F9;color:#475569;border:1px solid #CBD5E1">
+              🛡️ Recurso ADM Pericial
+            </span>
+          </div>
         </div>
         <textarea id="txtPreenchimentoIABruto" rows="11" class="input" style="width:100%;font-family:monospace;font-size:12px;line-height:1.45;resize:vertical;padding:12px;border:1.5px solid #CBD5E1;border-radius:8px;background:#fff" placeholder="Cole aqui as anotações do médico perito (ex.: WhatsApp, prontuário, anotações de consulta)... Como afirmação do médico, a IA formalizará todos os campos clínicos e o parecer DPME sem acrescentar nada.
 
@@ -3514,6 +3565,74 @@ Atestado de 15 dias do dia 29/09 por Z98.8 favorável."></textarea>
         <button type="button" class="btn btn-outline" onclick="fecharModalPreenchimentoIA()">Cancelar</button>
         <button type="button" class="btn btn-green" id="btnProcessarPreenchimentoIA" onclick="executarPreenchimentoIA()" style="font-weight:800;display:flex;align-items:center;gap:8px;padding:10px 20px;font-size:13px">
           <span>✨</span> Processar e Preencher Ficha
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Gravador de Voz / Ditado IA (Gemini 3.8 Flash) -->
+<div class="modal" id="modalGravadorVozIA" style="display:none">
+  <div class="modal-card" style="max-width:680px;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.25);overflow:hidden">
+    <div style="background:linear-gradient(135deg, #10B981 0%, #059669 100%);padding:18px 24px;color:#fff;display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:26px">🎤</span>
+        <div>
+          <h3 style="margin:0;font-size:17px;font-weight:800;letter-spacing:-0.01em">Ditado Clínico por Voz & Transcrição IA</h3>
+          <p style="margin:2px 0 0;font-size:12px;opacity:0.9">Dite a consulta pericial em tempo real ou envie um áudio gravado. A IA transcreve e estrutura a ficha completa.</p>
+        </div>
+      </div>
+      <button type="button" onclick="fecharModalGravadorVozIA()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;opacity:0.8;line-height:1" title="Fechar">&times;</button>
+    </div>
+
+    <div style="padding:22px;display:flex;flex-direction:column;gap:16px;background:#F8FAFC">
+      <!-- Painel de Gravação -->
+      <div style="background:#fff;border:1.5px solid #E2E8F0;border-radius:12px;padding:20px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,0.03)">
+        <div id="gravadorVozStatusIndicator" style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:20px;background:#F1F5F9;color:#64748B;font-size:12px;font-weight:700;margin-bottom:14px">
+          <span id="gravadorVozDot" style="width:10px;height:10px;border-radius:50%;background:#94A3B8;display:inline-block"></span>
+          <span id="gravadorVozStatusTexto">Microfone pronto para gravação</span>
+        </div>
+
+        <div style="font-size:32px;font-weight:800;font-family:monospace;color:#0F172A;margin-bottom:16px" id="gravadorVozTimer">00:00</div>
+
+        <div style="display:flex;justify-content:center;align-items:center;gap:12px">
+          <button type="button" id="btnToggleGravacaoVoz" onclick="alternarGravacaoVozIA()" class="btn" style="background:#10B981;color:#fff;font-weight:800;border:none;border-radius:50px;padding:12px 28px;font-size:14px;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 14px rgba(16,185,129,0.35);cursor:pointer;transition:all 0.2s">
+            <span id="btnToggleGravacaoIcone" style="font-size:18px">🎙️</span>
+            <span id="btnToggleGravacaoTexto">Iniciar Gravação</span>
+          </button>
+          <button type="button" id="btnDescartarGravacao" onclick="descartarGravacaoVozIA()" class="btn btn-outline" style="border-radius:50px;display:none;padding:12px 20px;font-size:13px;font-weight:700;color:#64748B;cursor:pointer">
+            🔄 Recomeçar
+          </button>
+        </div>
+
+        <div style="margin-top:14px;font-size:11.5px;color:#64748B">
+          Ou selecione um arquivo de áudio:
+          <input type="file" id="inputArquivoAudioVoz" accept="audio/*,.mp3,.wav,.ogg,.m4a,.webm" style="display:none" onchange="aoSelecionarArquivoAudio(this.files[0])">
+          <button type="button" onclick="document.getElementById('inputArquivoAudioVoz')?.click()" style="background:none;border:none;color:#2563EB;font-weight:700;cursor:pointer;text-decoration:underline;padding:0 4px;font-size:11.5px">
+            📁 Enviar arquivo de áudio
+          </button>
+        </div>
+        <div id="gravadorVozArquivoNome" style="display:none;margin-top:8px;font-size:12px;font-weight:700;color:#059669"></div>
+      </div>
+
+      <!-- Preview de Transcrição e Dados Extraídos -->
+      <div id="gravadorVozResultadoBox" style="display:none;background:#fff;border:1.5px solid #CBD5E1;border-radius:12px;padding:16px">
+        <label style="font-size:12px;font-weight:800;color:#0F172A;display:block;margin-bottom:6px">📝 Transcrição da Fala:</label>
+        <div id="gravadorVozTranscricaoTexto" style="max-height:120px;overflow-y:auto;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:10px;font-size:12px;color:#334155;line-height:1.45;white-space:pre-wrap"></div>
+      </div>
+
+      <div id="gravadorVozLoading" style="display:none;background:#ECFDF5;border:1px solid #A7F3D0;border-radius:10px;padding:14px;color:#065F46;font-size:12.5px;align-items:center;gap:12px">
+        <span class="save-dot working" style="width:14px;height:14px;display:inline-block"></span>
+        <div>
+          <strong>Gemini 3.8 Flash processando áudio médico...</strong>
+          <div style="font-size:11.5px;color:#047857;margin-top:2px">Transcrevendo o áudio pericial e estruturando todos os campos clínicos. Aguarde alguns instantes...</div>
+        </div>
+      </div>
+
+      <div class="footer-actions" style="margin-top:4px;padding:0;display:flex;justify-content:space-between;align-items:center">
+        <button type="button" class="btn btn-outline" onclick="fecharModalGravadorVozIA()">Cancelar</button>
+        <button type="button" class="btn" id="btnProcessarGravacaoVoz" onclick="processarAudioGravadoIA()" style="background:#10B981;color:#fff;font-weight:800;display:flex;align-items:center;gap:8px;padding:10px 22px;font-size:13px;border-radius:8px;box-shadow:0 3px 10px rgba(16,185,129,0.25);cursor:pointer;border:none" disabled>
+          <span>⚡</span> Processar Áudio e Preencher Ficha
         </button>
       </div>
     </div>
@@ -4927,6 +5046,425 @@ async function executarPreenchimentoIA() {
     if (btn) btn.disabled = false;
   }
 }
+
+/* =========================================================
+   DITADO CLÍNICO POR VOZ E TRANSCRIÇÃO IA (GEMINI 3.8 FLASH)
+   ========================================================= */
+let mediaRecorderVoz = null;
+let speechRecognitionVoz = null;
+let gravacaoAudioChunks = [];
+let gravacaoTimerInterval = null;
+let gravacaoSegundos = 0;
+let arquivoAudioSelecionado = null;
+let ultimoBenchmarkCidCarregado = null;
+let gravacaoVozAtiva = false;
+
+function abrirModalGravadorVozIA() {
+  const modal = $("modalGravadorVozIA");
+  if (!modal) return;
+  modal.classList.add("show");
+  modal.style.display = "flex";
+  descartarGravacaoVozIA();
+  
+  // Exibir a caixa de transcrição imediatamente
+  const resBox = $("gravadorVozResultadoBox");
+  if (resBox) resBox.style.display = "block";
+  const txtBox = $("gravadorVozTranscricaoTexto");
+  if (txtBox) txtBox.textContent = "🎙️ Microfone sendo ativado... Permita o microfone se solicitado pelo navegador e comece a falar.";
+
+  // Dispara a gravação imediatamente para abrir a solicitação de permissão nativa do navegador
+  setTimeout(() => {
+    alternarGravacaoVozIA(true);
+  }, 120);
+}
+
+function fecharModalGravadorVozIA() {
+  pararGravacaoVozIA();
+  const modal = $("modalGravadorVozIA");
+  if (modal) {
+    modal.classList.remove("show");
+    modal.style.display = "none";
+  }
+}
+
+function atualizarTimerGravacao() {
+  gravacaoSegundos++;
+  const m = String(Math.floor(gravacaoSegundos / 60)).padStart(2, "0");
+  const s = String(gravacaoSegundos % 60).padStart(2, "0");
+  const timerEl = $("gravadorVozTimer");
+  if (timerEl) timerEl.textContent = `${m}:${s}`;
+}
+
+function pararGravacaoVozIA() {
+  gravacaoVozAtiva = false;
+  if (speechRecognitionVoz) {
+    try { speechRecognitionVoz.stop(); } catch(_) {}
+    speechRecognitionVoz = null;
+  }
+  if (mediaRecorderVoz && mediaRecorderVoz.state === "recording") {
+    try { mediaRecorderVoz.stop(); } catch(_) {}
+  }
+  clearInterval(gravacaoTimerInterval);
+  gravacaoTimerInterval = null;
+
+  if ($("btnToggleGravacaoIcone")) $("btnToggleGravacaoIcone").textContent = "🎙️";
+  if ($("btnToggleGravacaoTexto")) $("btnToggleGravacaoTexto").textContent = "Gravar Novamente";
+  if ($("btnToggleGravacaoVoz")) $("btnToggleGravacaoVoz").style.background = "#2563EB";
+  if ($("gravadorVozDot")) $("gravadorVozDot").style.background = "#10B981";
+  if ($("gravadorVozStatusTexto")) $("gravadorVozStatusTexto").textContent = "Ditado finalizado! Pronto para estruturar com IA.";
+  if ($("btnDescartarGravacao")) $("btnDescartarGravacao").style.display = "inline-flex";
+  if ($("btnProcessarGravacaoVoz")) $("btnProcessarGravacaoVoz").disabled = false;
+}
+
+async function alternarGravacaoVozIA(forceStart = false) {
+  if (gravacaoVozAtiva && !forceStart) {
+    pararGravacaoVozIA();
+    return;
+  }
+
+  // Verificação de protocolo file:///
+  if (location.protocol === "file:") {
+    toast("O navegador bloqueia o microfone em arquivos abertos diretamente (file:///). Inicie o sistema via servidor local (http://localhost:8000).");
+    return;
+  }
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  gravacaoVozAtiva = true;
+  gravacaoAudioChunks = [];
+  arquivoAudioSelecionado = null;
+  if ($("gravadorVozArquivoNome")) $("gravadorVozArquivoNome").style.display = "none";
+  if ($("gravadorVozResultadoBox")) $("gravadorVozResultadoBox").style.display = "block";
+
+  gravacaoSegundos = 0;
+  if ($("gravadorVozTimer")) $("gravadorVozTimer").textContent = "00:00";
+  clearInterval(gravacaoTimerInterval);
+  gravacaoTimerInterval = setInterval(atualizarTimerGravacao, 1000);
+
+  if ($("btnToggleGravacaoIcone")) $("btnToggleGravacaoIcone").textContent = "⏹️";
+  if ($("btnToggleGravacaoTexto")) $("btnToggleGravacaoTexto").textContent = "Concluir Ditado";
+  if ($("btnToggleGravacaoVoz")) $("btnToggleGravacaoVoz").style.background = "#EF4444";
+  if ($("gravadorVozDot")) $("gravadorVozDot").style.background = "#EF4444";
+  if ($("gravadorVozStatusTexto")) $("gravadorVozStatusTexto").textContent = "🔴 Gravando... Fale os achados da consulta";
+  if ($("btnDescartarGravacao")) $("btnDescartarGravacao").style.display = "none";
+  if ($("btnProcessarGravacaoVoz")) $("btnProcessarGravacaoVoz").disabled = false;
+
+  // 1. INICIAR SPEECH RECOGNITION (Web Speech API) - dispara imediatamente a permissão nativa de microfone no Chrome/Edge
+  if (SpeechRecognition) {
+    try {
+      if (speechRecognitionVoz) {
+        try { speechRecognitionVoz.abort(); } catch(_) {}
+        speechRecognitionVoz = null;
+      }
+      speechRecognitionVoz = new SpeechRecognition();
+      speechRecognitionVoz.lang = "pt-BR";
+      speechRecognitionVoz.continuous = true;
+      speechRecognitionVoz.interimResults = true;
+      speechRecognitionVoz.maxAlternatives = 1;
+
+      speechRecognitionVoz.onresult = (event) => {
+        let finalSegment = "";
+        let interimSegment = "";
+        for (let i = 0; i < event.results.length; ++i) {
+          const item = event.results[i];
+          if (item.isFinal) finalSegment += item[0].transcript + " ";
+          else interimSegment += item[0].transcript;
+        }
+
+        const liveWords = (finalSegment + interimSegment).trim();
+        if (liveWords) {
+          const txtBox = $("gravadorVozTranscricaoTexto");
+          if (txtBox) {
+            txtBox.textContent = liveWords;
+            txtBox.scrollTop = txtBox.scrollHeight;
+          }
+          const txtBruto = $("txtPreenchimentoIABruto");
+          if (txtBruto) txtBruto.value = liveWords;
+          if ($("btnProcessarGravacaoVoz")) $("btnProcessarGravacaoVoz").disabled = false;
+        }
+      };
+
+      speechRecognitionVoz.onerror = (event) => {
+        console.warn("SpeechRecognition erro:", event.error);
+        if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+          gravacaoVozAtiva = false;
+          pararGravacaoVozIA();
+          toast("Permissão do microfone negada. Clique no ícone de cadeado/microfone na barra de endereços para permitir.");
+        }
+      };
+
+      speechRecognitionVoz.onend = () => {
+        if (gravacaoVozAtiva) {
+          try { speechRecognitionVoz.start(); } catch(_) {}
+        }
+      };
+
+      speechRecognitionVoz.start();
+      toast("Microfone ativo! Fale seus achados periciais com clareza.");
+    } catch (srErr) {
+      console.warn("Falha ao iniciar SpeechRecognition:", srErr);
+    }
+  }
+
+  // 2. EM PARALELO: CAPTURA DO FLUXO DE ÁUDIO VIA GETUSERMEDIA E MEDIARECORDER (Permite envio para Gemini Multimodal)
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true }).catch(err => {
+        console.warn("getUserMedia não concedido ou erro:", err);
+        return null;
+      });
+
+      if (stream) {
+        window._voiceAudioStreamGlobal = stream;
+        try {
+          const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+            ? "audio/webm;codecs=opus"
+            : (MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "");
+          mediaRecorderVoz = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+          mediaRecorderVoz.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) gravacaoAudioChunks.push(e.data);
+          };
+          mediaRecorderVoz.onstop = () => {
+            try { stream.getTracks().forEach(t => t.stop()); } catch(_) {}
+          };
+          mediaRecorderVoz.start(250);
+        } catch (mrErr) {
+          console.warn("MediaRecorder falhou:", mrErr);
+        }
+      }
+    } catch (e) {
+      console.warn("Erro ao iniciar getUserMedia:", e);
+    }
+  }
+}
+
+function descartarGravacaoVozIA() {
+  pararGravacaoVozIA();
+  gravacaoSegundos = 0;
+  gravacaoAudioChunks = [];
+  arquivoAudioSelecionado = null;
+
+  if ($("gravadorVozTimer")) $("gravadorVozTimer").textContent = "00:00";
+  if ($("gravadorVozDot")) $("gravadorVozDot").style.background = "#94A3B8";
+  if ($("gravadorVozStatusTexto")) $("gravadorVozStatusTexto").textContent = "Microfone pronto para gravação";
+  if ($("btnToggleGravacaoIcone")) $("btnToggleGravacaoIcone").textContent = "🎙️";
+  if ($("btnToggleGravacaoTexto")) $("btnToggleGravacaoTexto").textContent = "Iniciar Gravação";
+  if ($("btnToggleGravacaoVoz")) $("btnToggleGravacaoVoz").style.background = "#10B981";
+  if ($("btnDescartarGravacao")) $("btnDescartarGravacao").style.display = "none";
+  if ($("btnProcessarGravacaoVoz")) $("btnProcessarGravacaoVoz").disabled = true;
+  if ($("gravadorVozArquivoNome")) $("gravadorVozArquivoNome").style.display = "none";
+  const txtBox = $("gravadorVozTranscricaoTexto");
+  if (txtBox) txtBox.textContent = "";
+}
+
+function aoSelecionarArquivoAudio(file) {
+  if (!file) return;
+  pararGravacaoVozIA();
+  arquivoAudioSelecionado = file;
+  gravacaoAudioChunks = [];
+  
+  if ($("gravadorVozArquivoNome")) {
+    $("gravadorVozArquivoNome").textContent = `📁 Arquivo selecionado: ${file.name} (${Math.round(file.size / 1024)} KB)`;
+    $("gravadorVozArquivoNome").style.display = "block";
+  }
+  if ($("gravadorVozStatusTexto")) $("gravadorVozStatusTexto").textContent = "Arquivo de áudio pronto para envio!";
+  if ($("gravadorVozDot")) $("gravadorVozDot").style.background = "#10B981";
+  if ($("btnDescartarGravacao")) $("btnDescartarGravacao").style.display = "inline-flex";
+  if ($("btnProcessarGravacaoVoz")) $("btnProcessarGravacaoVoz").disabled = false;
+}
+
+async function processarAudioGravadoIA() {
+  pararGravacaoVozIA();
+
+  let blobParaEnvio = null;
+  if (arquivoAudioSelecionado) {
+    blobParaEnvio = arquivoAudioSelecionado;
+  } else if (gravacaoAudioChunks.length > 0) {
+    const mime = (mediaRecorderVoz && mediaRecorderVoz.mimeType) || "audio/webm";
+    blobParaEnvio = new Blob(gravacaoAudioChunks, { type: mime });
+  }
+
+  const transcricaoLocal = ($("gravadorVozTranscricaoTexto")?.textContent || $("txtPreenchimentoIABruto")?.value || "").replace(/^🎙️ Microfone sendo ativado.*$/, "").trim();
+
+  if (!blobParaEnvio && !transcricaoLocal) {
+    alert("Nenhum áudio gravado ou fala detectada para processamento.");
+    return;
+  }
+
+  const loading = $("gravadorVozLoading");
+  const btnProcessar = $("btnProcessarGravacaoVoz");
+  if (loading) loading.style.display = "flex";
+  if (btnProcessar) btnProcessar.disabled = true;
+
+  try {
+    let dados = null;
+    let transcricao = transcricaoLocal;
+
+    const atdId = state.atendimento || $("atd")?.value || "";
+    const impId = (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('ambiental.impersonate_medico_id') : null);
+
+    // Se temos o áudio binário, enviamos para o endpoint multimodal Gemini 3.8 Flash
+    if (blobParaEnvio) {
+      const formData = new FormData();
+      formData.append("audio", blobParaEnvio, arquivoAudioSelecionado ? arquivoAudioSelecionado.name : "ditado_clinico.webm");
+      if (atdId) formData.append("atendimento", atdId);
+      if (impId) formData.append("impersonate_medico_id", impId);
+
+      let res;
+      if (window.AmbientalAPI?.ai?.transcreverAtendimento) {
+        res = await AmbientalAPI.ai.transcreverAtendimento(formData, atdId, impId);
+      } else {
+        const token = (typeof AmbientalAuth !== 'undefined') ? await AmbientalAuth.getAccessToken().catch(()=>null) : null;
+        const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+        const r = await fetch("/api/ai/transcrever-atendimento", {
+          method: "POST",
+          headers,
+          body: formData
+        });
+        res = await r.json();
+        if (!r.ok) throw new Error(res?.detail || res?.error?.message || "Falha ao processar áudio.");
+      }
+
+      transcricao = res?.transcricao || transcricao;
+      dados = res?.dados_extraidos || {};
+    }
+
+    // Se não gerou dados estruturados via áudio mas temos transcrição via SpeechRecognition:
+    if ((!dados || Object.keys(dados).length === 0) && transcricao) {
+      const reqBody = {
+        texto_bruto: transcricao,
+        atendimento: atdId,
+        impersonate_medico_id: impId
+      };
+      let resIa;
+      if (window.AmbientalAPI?.ai?.preencherFicha) {
+        resIa = await AmbientalAPI.ai.preencherFicha(reqBody);
+      } else {
+        const token = (typeof AmbientalAuth !== 'undefined') ? await AmbientalAuth.getAccessToken().catch(()=>null) : null;
+        const r = await fetch("/api/ai/preencher-ficha", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...(token ? { "Authorization": `Bearer ${token}` } : {}) },
+          body: JSON.stringify(reqBody)
+        });
+        resIa = await r.json();
+      }
+      dados = resIa?.dados || resIa;
+    }
+
+    if (transcricao) {
+      const box = $("gravadorVozResultadoBox");
+      const txtBox = $("gravadorVozTranscricaoTexto");
+      if (box && txtBox) {
+        txtBox.textContent = transcricao;
+        box.style.display = "block";
+      }
+      const txtBruto = $("txtPreenchimentoIABruto");
+      if (txtBruto) txtBruto.value = transcricao;
+    }
+
+    if (dados && Object.keys(dados).length > 0) {
+      aplicarPreenchimentoIAResultado(dados);
+      toast("✨ Ditado médico transcrito e ficha preenchida via Gemini 3.8 Flash!");
+    } else if (transcricao) {
+      toast("📝 Áudio transcrito com sucesso! Revise o texto.");
+    }
+
+    setTimeout(() => {
+      fecharModalGravadorVozIA();
+    }, 1200);
+
+  } catch (err) {
+    console.error("Erro na transcrição e estruturação do áudio:", err);
+    alert("Não foi possível processar o áudio com IA: " + (err.message || "Erro de conexão."));
+  } finally {
+    if (loading) loading.style.display = "none";
+    if (btnProcessar) btnProcessar.disabled = false;
+  }
+}
+
+/* =========================================================
+   BENCHMARK CLÍNICO E LIMITES DPME / JUNTA MÉDICA
+   ========================================================= */
+async function consultarBenchmarkCID(cidParam) {
+  const cidCode = String(cidParam || $("cid")?.value || "").trim().toUpperCase();
+  if (!cidCode) {
+    alert("Informe um código CID no campo antes de consultar os parâmetros.");
+    return;
+  }
+
+  const box = $("cidBenchmarkBox");
+  const btn = $("btnBenchmarkCID");
+  if (btn) btn.disabled = true;
+
+  try {
+    let res;
+    if (window.AmbientalAPI?.ai?.benchmarkCid) {
+      res = await AmbientalAPI.ai.benchmarkCid(cidCode);
+    } else {
+      const r = await fetch(`/api/ai/benchmark-cid/${encodeURIComponent(cidCode)}`);
+      res = await r.json();
+      if (!r.ok) throw new Error(res?.detail || "Falha ao consultar parâmetros.");
+    }
+
+    ultimoBenchmarkCidCarregado = res?.data || res;
+    const b = ultimoBenchmarkCidCarregado;
+
+    if (box) {
+      box.style.display = "block";
+      if ($("cidBenchmarkPill")) $("cidBenchmarkPill").textContent = b.cid || cidCode;
+      if ($("cidBenchmarkNome")) $("cidBenchmarkNome").textContent = b.descricao || "Descrição não cadastrada";
+      if ($("cidBenchmarkGrupo")) $("cidBenchmarkGrupo").textContent = b.grupo || "Capítulo clínico padrão";
+      if ($("cidBenchmarkMedia")) $("cidBenchmarkMedia").textContent = b.dias_medio ? `${b.dias_medio} dias` : "—";
+      if ($("cidBenchmarkFaixa")) $("cidBenchmarkFaixa").textContent = b.faixa_usual || "—";
+      if ($("cidBenchmarkJunta")) $("cidBenchmarkJunta").textContent = b.limite_junta_medica ? `${b.limite_junta_medica} dias` : "Critério pericial";
+      if ($("cidBenchmarkEsp")) $("cidBenchmarkEsp").textContent = b.especialidade || "Medicina Pericial";
+      
+      const infoEl = $("cidBenchmarkInfo");
+      if (infoEl) {
+        let txtInfo = `<strong>Diretrizes Clínico-Periciais DPME/SP:</strong> `;
+        if (b.diretrizes) txtInfo += `${b.diretrizes} `;
+        if (b.regras_dpme && b.regras_dpme.length) {
+          txtInfo += `<br>• ${b.regras_dpme.join('<br>• ')}`;
+        }
+        infoEl.innerHTML = txtInfo;
+      }
+      box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  } catch (err) {
+    console.error("Erro ao consultar benchmark:", err);
+    alert("Não foi possível consultar os parâmetros do CID: " + (err.message || "Erro de conexão."));
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function aplicarBenchmarkJustificativa() {
+  if (!ultimoBenchmarkCidCarregado) return;
+  const b = ultimoBenchmarkCidCarregado;
+  const justEl = $("justificativa") || $("parecerJustificativa");
+  if (!justEl) return;
+
+  const textoBenchmark = `[Parâmetros de Referência DPME/SP - CID ${b.cid}]: Faixa usual de afastamento: ${b.faixa_usual || 'critério pericial'} (média de ${b.dias_medio || '—'} dias). Limite para convocação em Junta Médica: ${b.limite_junta_medica ? b.limite_junta_medica + ' dias' : 'avaliação singular'}. Especialidade de referência: ${b.especialidade || 'Clínica Médica'}.`;
+
+  const anterior = (justEl.value || "").trim();
+  if (anterior.includes(`CID ${b.cid}`)) {
+    toast("Os parâmetros deste CID já estão presentes na Justificativa.");
+    return;
+  }
+
+  justEl.value = anterior ? `${anterior}\n\n${textoBenchmark}` : textoBenchmark;
+  justEl.dispatchEvent(new Event("input", { bubbles: true }));
+  toast("⚖️ Parâmetros de referência e diretrizes DPME inseridos na Justificativa (Etapa 8)!");
+}
+
+window.abrirModalGravadorVozIA = abrirModalGravadorVozIA;
+window.fecharModalGravadorVozIA = fecharModalGravadorVozIA;
+window.alternarGravacaoVozIA = alternarGravacaoVozIA;
+window.descartarGravacaoVozIA = descartarGravacaoVozIA;
+window.aoSelecionarArquivoAudio = aoSelecionarArquivoAudio;
+window.processarAudioGravadoIA = processarAudioGravadoIA;
+window.consultarBenchmarkCID = consultarBenchmarkCID;
+window.aplicarBenchmarkJustificativa = aplicarBenchmarkJustificativa;
 
 /* =========================================================
    IMPORTAÇÃO DIRETA DE CONSULTA E-SISLA (PDF / DADOS)

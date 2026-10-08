@@ -98,7 +98,24 @@
       preencherFicha: (payload) => request('/api/ai/preencher-ficha', { method: 'POST', body: JSON.stringify(payload), timeoutMs: 120000 }),
       documento: (payload) => request('/api/ai/documento', { method: 'POST', body: JSON.stringify(payload), timeoutMs: 60000 }),
       esisla: (payload) => request('/api/ai/esisla', { method: 'POST', body: JSON.stringify(payload), timeoutMs: 60000 }),
-      refinarFichaEsisla: (payload) => request('/api/ai/refinar-ficha-esisla', { method: 'POST', body: JSON.stringify(payload), timeoutMs: 90000 })
+      refinarFichaEsisla: (payload) => request('/api/ai/refinar-ficha-esisla', { method: 'POST', body: JSON.stringify(payload), timeoutMs: 90000 }),
+      transcreverAtendimento: (audioBase64OrForm) => {
+        if (typeof FormData !== 'undefined' && audioBase64OrForm instanceof FormData) {
+          return (window.AmbientalAuth ? window.AmbientalAuth.authFetch('/api/ai/transcrever-atendimento', {
+            method: 'POST',
+            body: audioBase64OrForm
+          }) : fetch('/api/ai/transcrever-atendimento', {
+            method: 'POST',
+            body: audioBase64OrForm
+          })).then(async r => {
+            const b = await r.json().catch(() => ({}));
+            if (!r.ok || b?.success === false) throw new Error(b?.error?.message || b?.detail || 'Falha ao transcrever áudio.');
+            return b?.data ?? b;
+          });
+        }
+        return request('/api/ai/transcrever-atendimento', { method: 'POST', body: JSON.stringify(audioBase64OrForm), timeoutMs: 90000 });
+      },
+      benchmarkCid: (cid) => request(`/api/ai/benchmark-cid/${encodeURIComponent(cid)}`)
     },
     admin: {
       medicos: () => request('/api/admin/medicos'),

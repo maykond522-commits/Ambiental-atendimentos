@@ -5515,19 +5515,53 @@ def api_medico_agenda():
         SELECT a.id, a.medico_id, a.data::text AS data, a.hora, a.status, a.tipo, a.protocolo,
                a.ni, a.nome_periciado, a.compareceu, a.observacao, a.seq,
                COALESCE(a.pessoa, '') AS pessoa, COALESCE(a.readaptado, '') AS readaptado,
-               a.atendimento_id, a.criado_em,
-               atd.id AS atd_existente_id, atd.numero AS atd_existente_numero, atd.status AS atd_status
+               a.atendimento_id, a.criado_em
           FROM agendas a
-          LEFT JOIN atendimentos atd ON (atd.numero = a.protocolo OR atd.id = a.atendimento_id)
          WHERE a.medico_id = %s AND a.data = %s
          ORDER BY a.hora ASC, a.id ASC
     """, (medico_id, data_str))
-    rows = cur.fetchall()
+    agenda_rows = [dict(r) for r in cur.fetchall()]
+
+    atd_map_by_id = {}
+    atd_map_by_num = {}
+    ids_to_fetch = list({str(r["atendimento_id"]) for r in agenda_rows if r.get("atendimento_id")})
+    nums_to_fetch = list({str(r["protocolo"]) for r in agenda_rows if r.get("protocolo")})
+    
+    if ids_to_fetch or nums_to_fetch:
+        clause_parts = []
+        params = []
+        if ids_to_fetch:
+            clause_parts.append(f"id IN ({','.join(['%s']*len(ids_to_fetch))})")
+            params.extend(ids_to_fetch)
+        if nums_to_fetch:
+            clause_parts.append(f"numero IN ({','.join(['%s']*len(nums_to_fetch))})")
+            params.extend(nums_to_fetch)
+        cur.execute(f"""
+            SELECT id, numero, status, atualizado_em
+              FROM atendimentos
+             WHERE {' OR '.join(clause_parts)}
+             ORDER BY atualizado_em DESC
+        """, tuple(params))
+        for atd in cur.fetchall():
+            a_dict = dict(atd)
+            if a_dict["id"] and a_dict["id"] not in atd_map_by_id:
+                atd_map_by_id[a_dict["id"]] = a_dict
+            if a_dict["numero"] and a_dict["numero"] not in atd_map_by_num:
+                atd_map_by_num[a_dict["numero"]] = a_dict
+
+    final_rows = []
+    for r in agenda_rows:
+        matched_atd = atd_map_by_id.get(r.get("atendimento_id")) or atd_map_by_num.get(r.get("protocolo"))
+        r["atd_existente_id"] = matched_atd["id"] if matched_atd else None
+        r["atd_existente_numero"] = matched_atd["numero"] if matched_atd else None
+        r["atd_status"] = matched_atd["status"] if matched_atd else None
+        final_rows.append(r)
+
     cur.close()
     return _ok({
         "data": data_str,
-        "itens": [dict(r) for r in rows],
-        "total": len(rows),
+        "itens": final_rows,
+        "total": len(final_rows),
         "medico_id": str(medico_id)
     })
 
@@ -6386,6 +6420,10 @@ def api_dashboard():
         f"""
         SELECT id, numero, status, medico, unidade, completude, alertas, inconsistencias,
                criado_em, atualizado_em, finalizado_em,
+               COALESCE(NULLIF(paciente_nome, ''), payload_json->'aux'->>'nomePaciente', payload_json->>'nomePaciente', '') AS paciente_nome,
+               COALESCE(payload_json->'aux'->>'cargo', payload_json->>'cargo', '') AS cargo,
+               COALESCE(payload_json->'aux'->>'protocolo', payload_json->>'protocolo', '') AS protocolo,
+               COALESCE(payload_json->'aux'->>'cid', payload_json->>'cid', cid, '') AS cid,
                payload_json->'aux'->>'dataAtd' AS data_atd,
                payload_json->'aux'->>'horaAtd' AS hora_atd
         FROM atendimentos
@@ -6404,7 +6442,14 @@ def api_dashboard():
     pending_params = (eff["id"],) if scoped else ()
     cur.execute(
         f"""
-        SELECT id, numero, status, completude, alertas, inconsistencias, atualizado_em
+        SELECT id, numero, status, completude, alertas, inconsistencias, atualizado_em,
+               unidade,
+               COALESCE(NULLIF(paciente_nome, ''), payload_json->'aux'->>'nomePaciente', payload_json->>'nomePaciente', '') AS paciente_nome,
+               COALESCE(payload_json->'aux'->>'cargo', payload_json->>'cargo', '') AS cargo,
+               COALESCE(payload_json->'aux'->>'protocolo', payload_json->>'protocolo', '') AS protocolo,
+               COALESCE(payload_json->'aux'->>'cid', payload_json->>'cid', '') AS cid,
+               payload_json->'aux'->>'dataAtd' AS data_atd,
+               payload_json->'aux'->>'horaAtd' AS hora_atd
         FROM atendimentos
         {pending_where}
         status NOT IN ('FINALIZADO','ARQUIVADO')

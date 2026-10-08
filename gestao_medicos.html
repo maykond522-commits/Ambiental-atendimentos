@@ -951,10 +951,10 @@ main { min-width: 0; }
 
 /* Productivity Bar Chart */
 .bars {
-  height: 230px;
+  height: 220px;
   display: flex;
   align-items: flex-end;
-  gap: 16px;
+  gap: 14px;
   padding: 10px 4px 0;
 }
 .bar-col {
@@ -967,64 +967,95 @@ main { min-width: 0; }
   gap: 8px;
 }
 .bar-wrap {
-  height: 165px;
+  height: 155px;
   width: 100%;
   display: flex;
   align-items: flex-end;
   justify-content: center;
   background: #f8fafc;
-  border-radius: 10px;
-  padding-bottom: 2px;
+  border: 1px solid #f1f5f9;
+  border-radius: 12px;
+  padding: 0 4px 4px;
+  position: relative;
+  transition: all 0.18s ease;
+}
+.bar-col.has-val:hover .bar-wrap {
+  background: #f0f7ff;
+  border-color: #dbeafe;
 }
 .bar {
-  width: min(36px, 75%);
-  background: linear-gradient(180deg, #38bdf8 0%, #0756a8 100%);
+  width: min(34px, 80%);
+  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
   border-radius: 8px 8px 3px 3px;
-  min-height: 6px;
-  transition: height .4s cubic-bezier(.4,0,.2,1);
-  box-shadow: 0 4px 10px rgba(7, 86, 168, 0.2);
+  transition: height 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s ease;
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.22);
+  position: relative;
+  cursor: pointer;
 }
 .bar:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.12);
+  transform: scaleY(1.02);
+}
+.bar-empty {
+  min-height: 2px !important;
+  background: #e2e8f0 !important;
+  box-shadow: none !important;
+  border-radius: 2px !important;
+  opacity: 0.6;
 }
 .bar-col strong {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
-  color: var(--text-primary);
+  line-height: 1;
 }
-.bar-col span {
-  font-size: 9.5px;
-  color: var(--text-muted);
+.bar-col strong.active-count {
+  color: #0c2f5a;
+}
+.bar-col strong.zero-count {
+  color: #94a3b8;
   font-weight: 600;
+}
+.bar-col .day-lbl {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.bar-col.today .day-lbl {
+  color: #0284c7;
+  font-weight: 800;
 }
 
 /* Donut Chart */
 .donut-wrap {
   display: grid;
-  grid-template-columns: 155px 1fr;
+  grid-template-columns: 160px 1fr;
   align-items: center;
-  gap: 20px;
+  gap: 24px;
   height: 100%;
 }
 .donut {
-  width: 150px;
-  height: 150px;
+  width: 154px;
+  height: 154px;
   border-radius: 50%;
-  background: conic-gradient(var(--brand-blue) 0 55%, var(--brand-green) 55% 76%, #d7a848 76% 88%, #dfe6ec 88% 100%);
   position: relative;
   display: grid;
   place-items: center;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 24px rgba(7, 86, 168, 0.08);
+  transition: transform 0.2s ease;
+}
+.donut:hover {
+  transform: scale(1.03);
 }
 .donut:after {
   content: "";
-  width: 96px;
-  height: 96px;
-  background: #fff;
+  width: 100px;
+  height: 100px;
+  background: #ffffff;
   border-radius: 50%;
   position: absolute;
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 .donut-center {
   position: relative;
@@ -1033,19 +1064,20 @@ main { min-width: 0; }
 }
 .donut b {
   display: block;
-  font-size: 26px;
-  font-weight: 800;
-  color: #0f2744;
+  font-size: 28px;
+  font-weight: 900;
+  color: #0c2f5a;
   line-height: 1;
+  letter-spacing: -0.02em;
 }
 .donut small {
   display: block;
-  font-size: 8.5px;
+  font-size: 9px;
   font-weight: 800;
-  color: var(--text-muted);
+  color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-top: 3px;
+  letter-spacing: 0.08em;
+  margin-top: 4px;
 }
 .legend {
   display: grid;
@@ -1055,18 +1087,42 @@ main { min-width: 0; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
-  padding: 6px 10px;
+  font-size: 11.5px;
+  padding: 8px 12px;
+  background: #ffffff;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.16s ease;
+}
+.legend-row:hover {
   background: #f8fafc;
-  border-radius: 9px;
-  border: 1px solid #edf2f7;
+  border-color: #cbd5e1;
+  transform: translateX(2px);
 }
 .legend-row span:first-child {
   display: flex;
   align-items: center;
+  gap: 9px;
+  font-weight: 600;
+  color: #334155;
+}
+.legend-vals {
+  display: flex;
+  align-items: center;
   gap: 8px;
-  font-weight: 500;
-  color: var(--text-secondary);
+}
+.legend-vals b {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+}
+.legend-vals small {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 1px 6px;
+  border-radius: 5px;
 }
 .dot {
   width: 9px;
@@ -1075,8 +1131,8 @@ main { min-width: 0; }
   background: var(--brand-blue);
   flex: 0 0 auto;
 }
-.dot.g { background: var(--brand-green); }
-.dot.a { background: #d7a848; }
+.dot.g { background: #059669; }
+.dot.a { background: #d97706; }
 .dot.n { background: #cbd5e1; }
 
 /* Attendance Lists */
@@ -1264,38 +1320,229 @@ main { min-width: 0; }
 }
 
 /* Alerts List */
-.alert-box { display: grid; gap: 9px; }
-.alert-item {
-  display: flex;
+.alert-box { display: grid; gap: 10px; }
+.alert-item-card {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
   gap: 12px;
-  align-items: flex-start;
-  border: 1px solid #fed7aa;
-  border-radius: 12px;
-  padding: 12px 14px;
-  background: #fffaf0;
+  align-items: center;
+  padding: 13px 16px;
+  background: linear-gradient(135deg, #fffdf8 0%, #fffbf0 100%);
+  border: 1.5px solid #fed7aa;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 1px 3px rgba(217, 119, 6, 0.04);
 }
-.alert-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+.alert-item-card:hover {
+  background: #fff8e8;
+  border-color: #f59e0b;
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 16px rgba(217, 119, 6, 0.12);
+}
+.alert-item-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
   background: #fef3c7;
   color: #b45309;
   display: grid;
   place-items: center;
+  font-size: 15px;
+  border: 1px solid #fde68a;
+  flex-shrink: 0;
+}
+.alert-item-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.alert-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.alert-item-title {
   font-size: 13px;
   font-weight: 800;
-  flex: 0 0 auto;
-}
-.alert-item b {
-  font-size: 11.5px;
   color: #92400e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
 }
-.alert-item span {
-  display: block;
-  font-size: 10px;
+.alert-item-proto {
+  font-size: 9.5px;
+  font-weight: 700;
   color: #78350f;
-  margin-top: 3px;
-  line-height: 1.45;
+  background: #fef3c7;
+  padding: 1px 6px;
+  border-radius: 5px;
+}
+.alert-item-sub {
+  font-size: 11px;
+  color: #78350f;
+  font-weight: 500;
+}
+.alert-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.alert-progress-track {
+  width: 90px;
+  height: 6px;
+  background: #fde68a;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.alert-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #d97706, #f59e0b);
+  border-radius: 999px;
+}
+.alert-progress-text {
+  font-size: 10px;
+  font-weight: 700;
+  color: #b45309;
+}
+.btn-alert-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-alert-action:hover {
+  background: #fde68a;
+  color: #78350f;
+  border-color: #f59e0b;
+}
+
+/* Próximos Atendimentos Cards */
+.upcoming-card {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 13px 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+}
+.upcoming-card:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 16px rgba(7, 86, 168, 0.08);
+}
+.upcoming-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  color: var(--brand-blue);
+  font-weight: 800;
+  font-size: 13px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #bfdbfe;
+  box-shadow: 0 2px 4px rgba(7, 86, 168, 0.06);
+  flex-shrink: 0;
+}
+.upcoming-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.upcoming-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.upcoming-patient-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f2744;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+.upcoming-proto-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  background: #f1f5f9;
+  color: #475569;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+.upcoming-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.meta-chip {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.meta-chip.cid-chip {
+  background: #eff6ff;
+  color: #0284c7;
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-weight: 700;
+}
+.upcoming-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.btn-primary-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: linear-gradient(135deg, var(--brand-blue), #0369a1);
+  color: #ffffff;
+  border: none;
+  border-radius: 9px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(7, 86, 168, 0.22);
+  transition: all 0.16s ease;
+}
+.btn-primary-card:hover {
+  background: linear-gradient(135deg, #0369a1, #0756a8);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(7, 86, 168, 0.32);
 }
 
 /* Quick Access Shortcuts */
@@ -1595,89 +1842,233 @@ main { min-width: 0; }
   .day .event { display: none; }
 }
 
-/* Agenda do Dia Cards & Layout */
+/* Agenda do Dia — Layout Executivo Médico Minimalista */
+.agenda-cards-container {
+  display: grid;
+  gap: 7px;
+}
 .agenda-item-card {
   display: grid;
-  grid-template-columns: 88px 1fr auto;
+  grid-template-columns: 82px 1fr auto;
   gap: 16px;
   align-items: center;
-  padding: 14px 18px;
-  background: #fff;
+  padding: 10px 18px;
+  background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  box-shadow: 0 2px 5px rgba(7, 63, 135, 0.03);
-  transition: all .16s ease;
+  border-radius: 11px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .agenda-item-card:hover {
-  background: #f8fbfe;
-  border-color: #cbd5e1;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(7, 86, 168, 0.07);
+  background: #fafcff;
+  border-color: #93c5fd;
+  box-shadow: 0 3px 10px rgba(7, 86, 168, 0.05);
+  transform: translateY(-0.5px);
+}
+.agenda-item-card.agenda-card-finalizado {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  border-left: 4px solid #10b981;
+  opacity: 0.95;
 }
 .agenda-time-box {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  background: linear-gradient(135deg, #0756a8, #0b67b9);
-  color: #fff;
-  padding: 8px 10px;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(7, 86, 168, 0.18);
+  gap: 1px;
 }
 .agenda-time-hour {
   font-size: 15px;
-  font-weight: 900;
-  letter-spacing: .02em;
+  font-weight: 850;
+  color: #0c2f5a;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
+  line-height: 1.15;
 }
 .agenda-time-type {
-  font-size: 8.5px;
-  font-weight: 800;
-  opacity: .85;
+  font-size: 9.5px;
+  font-weight: 750;
+  color: #64748b;
   text-transform: uppercase;
-  letter-spacing: .05em;
-  margin-top: 2px;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+}
+.agenda-card-finalizado .agenda-time-hour {
+  color: #047857;
+}
+.agenda-card-finalizado .agenda-time-type {
+  color: #059669;
 }
 .agenda-patient-info {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.agenda-patient-name {
-  font-size: 13.5px;
-  font-weight: 800;
-  color: #0f2744;
-}
-.agenda-patient-meta {
-  display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 11px;
-  color: var(--text-muted);
+  gap: 8px;
+  min-width: 0;
   flex-wrap: wrap;
 }
-.agenda-patient-meta b {
-  color: var(--text-secondary);
+.agenda-patient-name {
+  font-size: 14px;
+  font-weight: 750;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 440px;
+}
+.badge-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 750;
+  padding: 2px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.01em;
+}
+.badge-tag.amber {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+.badge-tag.purple {
+  background: #f3e8ff;
+  color: #7e22ce;
+  border: 1px solid #d8b4fe;
+}
+.badge-tag.linked {
+  background: #eff6ff;
+  color: #0284c7;
+  border: 1px solid #bfdbfe;
+}
+.badge-tag.green-solid {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
 }
 .agenda-patient-actions {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
-@media (max-width: 768px) {
+.btn-agenda-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6.5px 14px;
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.22);
+  transition: all 0.15s ease;
+}
+.btn-agenda-open:hover {
+  background: linear-gradient(135deg, #0369a1, #0284c7);
+  box-shadow: 0 3px 8px rgba(2, 132, 199, 0.32);
+  transform: translateY(-0.5px);
+}
+.btn-agenda-start {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6.5px 14px;
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.22);
+  transition: all 0.15s ease;
+}
+.btn-agenda-start:hover {
+  background: linear-gradient(135deg, #0369a1, #0284c7);
+  box-shadow: 0 3px 8px rgba(2, 132, 199, 0.32);
+  transform: translateY(-0.5px);
+}
+.btn-agenda-presence {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 11.5px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-agenda-presence:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+.presence-confirmed-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  font-size: 11.5px;
+  font-weight: 750;
+}
+.presence-dot {
+  width: 6.5px;
+  height: 6.5px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.22);
+}
+.btn-agenda-finalizado {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 13px;
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 11.5px;
+  font-weight: 750;
+  cursor: not-allowed;
+}
+@media (max-width: 900px) {
+  .agenda-item-card {
+    grid-template-columns: 82px 1fr;
+    gap: 12px;
+  }
+  .agenda-patient-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+}
+@media (max-width: 600px) {
   .agenda-item-card {
     grid-template-columns: 1fr;
-    gap: 10px;
   }
   .agenda-time-box {
-    align-self: flex-start;
     flex-direction: row;
     gap: 8px;
-    padding: 4px 10px;
+    align-items: center;
   }
   .agenda-patient-actions {
     flex-wrap: wrap;
+    justify-content: stretch;
+  }
+  .agenda-patient-actions button {
+    flex: 1;
   }
 }
 </style>
@@ -1895,8 +2286,9 @@ main { min-width: 0; }
             </div>
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
               <span class="badge blue" id="dashboardAgendaBadge" style="font-weight:700">0 agendados</span>
-              <button class="btn-sm" type="button" onclick="abrirModalImportarEsislaAgenda()" style="font-weight:800;background:linear-gradient(135deg, #0284C7, #0369A1);color:#fff;border:none;box-shadow:0 2px 6px rgba(2,132,199,0.3);cursor:pointer">
-                <span>📄 Importar e-SISLA (PDF)</span>
+              <button class="btn-sm" type="button" onclick="abrirModalImportarEsislaAgenda()" style="font-weight:800;background:linear-gradient(135deg, #0284C7, #0369A1);color:#fff;border:none;box-shadow:0 2px 6px rgba(2,132,199,0.25);cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:8px">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                <span>Importar e-SISLA (PDF)</span>
               </button>
               <button class="btn-sm" type="button" onclick="setView('agenda'); switchAgendaMode('day');" style="font-weight:800;color:var(--brand-blue);background:#fff">Ver agenda completa →</button>
             </div>
@@ -1914,7 +2306,13 @@ main { min-width: 0; }
         <div class="grid-top">
           <section class="panel">
             <div class="panel-head">
-              <div><b>Produtividade Semanal</b><span>Distribuição dos seus atendimentos nos últimos 7 dias</span></div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:18px">📊</span>
+                <div>
+                  <b style="font-size:13.5px;color:var(--brand-blue)">Produtividade Semanal</b>
+                  <span>Distribuição dos seus atendimentos nos últimos 7 dias</span>
+                </div>
+              </div>
               <span class="counter-badge" id="productivityLabel">— registros</span>
             </div>
             <div class="panel-body"><div class="bars" id="bars"></div></div>
@@ -1922,7 +2320,13 @@ main { min-width: 0; }
 
           <section class="panel">
             <div class="panel-head">
-              <div><b>Status dos Atendimentos</b><span>Visão consolidada</span></div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:18px"></span>
+                <div>
+                  <b style="font-size:13.5px;color:var(--brand-blue)">Status dos Atendimentos</b>
+                  <span>Visão consolidada</span>
+                </div>
+              </div>
             </div>
             <div class="panel-body">
               <div class="donut-wrap">
@@ -1941,15 +2345,27 @@ main { min-width: 0; }
         <div class="grid-mid">
           <section class="panel">
             <div class="panel-head">
-              <div><b>Próximos Atendimentos</b><span>Ordenados por data disponível</span></div>
-              <button class="btn-sm" data-view-target="atendimentos">Ver todos →</button>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:18px">📋</span>
+                <div>
+                  <b style="font-size:13.5px;color:var(--brand-blue)">Próximos Atendimentos</b>
+                  <span>Ordenados por data disponível</span>
+                </div>
+              </div>
+              <button class="btn-sm" data-view-target="agenda" style="font-weight:700">Ver agenda completa →</button>
             </div>
             <div class="panel-body"><div class="list" id="upcoming"></div></div>
           </section>
 
           <section class="panel">
             <div class="panel-head">
-              <div><b>Itens em Atenção</b><span>Registros que demandam ação do médico</span></div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:18px">⚠️</span>
+                <div>
+                  <b style="font-size:13.5px;color:var(--brand-blue)">Itens em Atenção</b>
+                  <span>Registros que demandam ação do médico</span>
+                </div>
+              </div>
             </div>
             <div class="panel-body"><div class="alert-box" id="alertsList"></div></div>
           </section>
@@ -1957,7 +2373,13 @@ main { min-width: 0; }
 
         <div class="panel" style="margin-top:20px">
           <div class="panel-head">
-            <div><b>Acesso Rápido</b><span>Atalhos práticos do seu dia a dia</span></div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:18px">⚡</span>
+              <div>
+                <b style="font-size:13.5px;color:var(--brand-blue)">Acesso Rápido</b>
+                <span>Atalhos práticos do seu dia a dia</span>
+              </div>
+            </div>
           </div>
           <div class="panel-body">
             <div class="quick">
@@ -2036,15 +2458,16 @@ main { min-width: 0; }
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
                   <span id="doctorAgendaDayBadge" class="counter-badge" style="background:#e0f2fe;color:#0369a1;font-weight:800">0 agendados</span>
-                  <button type="button" class="btn-sm" onclick="abrirModalImportarEsislaAgenda()" style="font-weight:800;background:linear-gradient(135deg, #0284C7, #0369A1);color:#fff;border:none;box-shadow:0 2px 6px rgba(2,132,199,0.3);cursor:pointer">
-                    <span>📄 Importar e-SISLA (PDF)</span>
+                  <button type="button" class="btn-sm" onclick="abrirModalImportarEsislaAgenda()" style="font-weight:800;background:linear-gradient(135deg, #0284C7, #0369A1);color:#fff;border:none;box-shadow:0 2px 6px rgba(2,132,199,0.25);cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:8px">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                    <span>Importar e-SISLA (PDF)</span>
                   </button>
                   <button type="button" class="btn-sm" id="btnRefreshDoctorAgenda" title="Atualizar agenda">↻ Atualizar</button>
                 </div>
               </div>
 
               <!-- Lista cronológica dos agendamentos -->
-              <div id="doctorAgendaList" class="list"></div>
+              <div id="doctorAgendaList" class="agenda-cards-container"></div>
               <div class="empty" id="doctorAgendaEmpty" hidden>Nenhum agendamento cadastrado para esta data.</div>
             </div>
 
@@ -2239,6 +2662,15 @@ main { min-width: 0; }
     const p = s.split('-');
     return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : s;
   };
+  const cleanUnidade = u => {
+    if (!u) return '';
+    const s = String(u).trim();
+    const parts = s.split(/\s*-\s*/);
+    if (parts.length > 1 && /^\d+$/.test(parts[0])) {
+      return parts.slice(1).join(' - ');
+    }
+    return s;
+  };
   const payload = r => (r?.payload && typeof r.payload === 'object') ? r.payload : (r || {});
   const aux = r => payload(r).aux || {};
   const atdDate = r => String(aux(r).dataAtd || payload(r).data_atendimento || '').slice(0, 10);
@@ -2340,19 +2772,29 @@ main { min-width: 0; }
       d.setHours(12, 0, 0, 0);
       d.setDate(d.getDate() - i);
       const iso = d.toISOString().slice(0, 10);
-      labels.push({ iso, label: d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '') });
+      labels.push({ iso, label: d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase() });
     }
     const counts = labels.map(x => byDay.get(x.iso) || 0);
     const max = Math.max(...counts, 1);
-    $('bars').innerHTML = labels.map((d, i) => `
-      <div class="bar-col">
-        <div class="bar-wrap">
-          <div class="bar" style="height:${Math.max(6, counts[i] / max * 100)}%" title="${counts[i]} atendimento(s)"></div>
+    $('bars').innerHTML = labels.map((d, i) => {
+      const count = counts[i];
+      const hasValue = count > 0;
+      const pct = hasValue ? Math.max(12, Math.round((count / max) * 100)) : 0;
+      const isToday = i === 6;
+      return `
+        <div class="bar-col${isToday ? ' today' : ''}${hasValue ? ' has-val' : ' is-zero'}">
+          <div class="bar-wrap">
+            ${hasValue ? `
+              <div class="bar" style="height:${pct}%" data-count="${count}" title="${count} atendimento(s) em ${d.label}"></div>
+            ` : `
+              <div class="bar bar-empty" style="height:2px" title="Nenhum atendimento em ${d.label}"></div>
+            `}
+          </div>
+          <strong class="${hasValue ? 'active-count' : 'zero-count'}">${count}</strong>
+          <span class="day-lbl">${d.label}</span>
         </div>
-        <strong>${counts[i]}</strong>
-        <span>${d.label}</span>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
   
   function renderDonut() {
@@ -2365,27 +2807,40 @@ main { min-width: 0; }
     const vals = [counts.FINALIZADO, counts.ATIVO, counts.PENDENTE, counts.ARQUIVADO];
     const sum = Math.max(vals.reduce((a, b) => a + b, 0), 1);
     let a = 0;
-    const c = ['var(--brand-green)', 'var(--brand-blue)', '#d7a848', '#dfe6ec'];
+    const c = ['#059669', 'var(--brand-blue)', '#d97706', '#cbd5e1'];
     const stops = vals.map((v, i) => {
       const start = a / sum * 100;
       a += v;
       return `${c[i]} ${start}% ${a / sum * 100}%`;
     }).join(',');
     $('donut').style.background = `conic-gradient(${stops})`;
+    const pct = v => total > 0 ? `${Math.round((v / total) * 100)}%` : '0%';
     $('legend').innerHTML = `
-      <div class="legend-row"><span><i class="dot g"></i>Finalizados</span><b>${counts.FINALIZADO}</b></div>
-      <div class="legend-row"><span><i class="dot"></i>Em andamento</span><b>${counts.ATIVO}</b></div>
-      <div class="legend-row"><span><i class="dot a"></i>Pendentes</span><b>${counts.PENDENTE}</b></div>
-      <div class="legend-row"><span><i class="dot n"></i>Arquivados</span><b>${counts.ARQUIVADO}</b></div>
+      <div class="legend-row"><span><i class="dot g"></i>Finalizados</span><div class="legend-vals"><b>${counts.FINALIZADO}</b><small>${pct(counts.FINALIZADO)}</small></div></div>
+      <div class="legend-row"><span><i class="dot"></i>Em andamento</span><div class="legend-vals"><b>${counts.ATIVO}</b><small>${pct(counts.ATIVO)}</small></div></div>
+      <div class="legend-row"><span><i class="dot a"></i>Pendentes</span><div class="legend-vals"><b>${counts.PENDENTE}</b><small>${pct(counts.PENDENTE)}</small></div></div>
+      <div class="legend-row"><span><i class="dot n"></i>Arquivados</span><div class="legend-vals"><b>${counts.ARQUIVADO}</b><small>${pct(counts.ARQUIVADO)}</small></div></div>
     `;
   }
   
   function rowHtml(r) {
     const id = esc(r.atendimento || r.id);
+    const p = payload(r);
+    const a = aux(r);
+    const name = r.nomePaciente || r.paciente_nome || p.nomePaciente || a.nomePaciente || '';
+    const displayTitle = name ? esc(name) : `Atendimento #${esc(a.protocolo || p.protocolo || id.slice(0, 8))}`;
+    const proto = a.protocolo || p.protocolo || '';
+    const unid = cleanUnidade(r.unidade || a.unidade || p.unidade || '');
+    const cidVal = r.cid || a.cid || p.cid || '';
+    const dataVal = dateDisplay(atdDate(r));
+    const horaVal = atdTime(r);
     return `<div class="row">
       <div class="row-main">
-        <b>${esc(r.atendimento || 'Atendimento')}</b>
-        <span>${esc(dateDisplay(atdDate(r)))}${atdTime(r) ? ' · ' + esc(atdTime(r)) : ''}${r.unidade ? ' · ' + esc(r.unidade) : ''}${r.cid ? ' · CID: ' + esc(r.cid) : ''}</span>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <b>${displayTitle}</b>
+          ${proto ? `<span class="badge" style="font-size:9.5px;padding:2px 7px;font-weight:700">#${esc(proto)}</span>` : ''}
+        </div>
+        <span>${esc(dataVal)}${horaVal ? ' · ' + esc(horaVal) : ''}${unid ? ' · ' + esc(unid) : ''}${cidVal ? ' · CID: ' + esc(cidVal) : ''}</span>
       </div>
       <span class="badge ${statusClass(r.status)}"><i class="dot"></i>${esc(statusLabel(r.status))}</span>
       <div style="display:flex;gap:6px">
@@ -2396,11 +2851,14 @@ main { min-width: 0; }
   }
   
   function wireButtons(scope = document) {
-    scope.querySelectorAll('[data-open]').forEach(b => b.onclick = () => {
-      const r = records.find(x => String(x.atendimento || x.id) === String(b.dataset.open));
+    scope.querySelectorAll('[data-open]').forEach(b => b.onclick = (e) => {
+      e.stopPropagation();
+      const openId = b.dataset.open;
+      const r = records.find(x => String(x.atendimento || x.id) === String(openId)) || { atendimento: openId, id: openId };
       openRecord(r);
     });
-    scope.querySelectorAll('[data-preview]').forEach(b => b.onclick = () => {
+    scope.querySelectorAll('[data-preview]').forEach(b => b.onclick = (e) => {
+      e.stopPropagation();
       openQuickView(b.dataset.preview);
     });
   }
@@ -2510,38 +2968,110 @@ main { min-width: 0; }
       atendimento: r.numero || r.atendimento,
       atualizado_em: r.atualizado_em
     }));
-    $('upcoming').innerHTML = list.length ? list.map(r => `
-      <div class="row">
-        <div class="row-main">
-          <b>${esc(r.atendimento || 'Atendimento')}</b>
-          <span>${esc(dateDisplay(r.data_atd || ''))}${r.hora_atd ? ' · ' + esc(String(r.hora_atd).slice(0, 5)) : ''}${r.unidade ? ' · ' + esc(r.unidade) : ''}</span>
+    $('upcoming').innerHTML = list.length ? list.map(r => {
+      const id = esc(r.atendimento || r.id);
+      const matchedRecord = records.find(x => String(x.atendimento || x.id) === String(id)) || {};
+      const name = r.paciente_nome || matchedRecord.nomePaciente || matchedRecord.paciente_nome || '';
+      const displayTitle = name ? esc(name) : `Atendimento #${esc(r.protocolo || id.slice(0, 8))}`;
+      const ini = initials(name || 'Paciente');
+      const proto = r.protocolo || matchedRecord.aux?.protocolo || '';
+      const cargo = r.cargo || matchedRecord.aux?.cargo || '';
+      const cid = r.cid || matchedRecord.cid || matchedRecord.aux?.cid || '';
+      const unid = cleanUnidade(r.unidade || matchedRecord.unidade || '');
+      const dataStr = dateDisplay(r.data_atd || atdDate(matchedRecord) || '');
+      const horaStr = r.hora_atd ? String(r.hora_atd).slice(0, 5) : (atdTime(matchedRecord) || '');
+      
+      return `
+        <div class="upcoming-card">
+          <div class="upcoming-avatar">${ini}</div>
+          <div class="upcoming-body">
+            <div class="upcoming-title-row">
+              <b class="upcoming-patient-name" title="${name ? esc(name) : ''}">${displayTitle}</b>
+              ${proto ? `<span class="upcoming-proto-badge">#${esc(proto)}</span>` : ''}
+              <span class="badge ${statusClass(r.status)}"><i class="dot"></i>${esc(statusLabel(r.status))}</span>
+            </div>
+            <div class="upcoming-meta-row">
+              ${dataStr ? `<span class="meta-chip">📅 ${esc(dataStr)}${horaStr ? ' às ' + esc(horaStr) : ''}</span>` : ''}
+              ${unid ? `<span class="meta-chip" title="${esc(r.unidade || '')}">🏫 ${esc(unid)}</span>` : ''}
+              ${cargo ? `<span class="meta-chip">💼 ${esc(cargo)}</span>` : ''}
+              ${cid ? `<span class="meta-chip cid-chip">🩺 CID: ${esc(cid)}</span>` : ''}
+            </div>
+          </div>
+          <div class="upcoming-actions">
+            <button class="btn-sm upcoming-preview-btn" data-preview="${id}" title="Visualizar laudo rápido">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              <span>Visualizar</span>
+            </button>
+            <button class="btn-primary-card" data-open="${id}" title="Abrir prontuário completo">
+              <span>Abrir</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
         </div>
-        <span class="badge ${statusClass(r.status)}"><i class="dot"></i>${esc(statusLabel(r.status))}</span>
-        <div style="display:flex;gap:6px">
-          <button class="btn-sm" data-preview="${esc(r.atendimento || r.id)}">Visualizar</button>
-          <button class="open-link" data-open="${esc(r.atendimento || r.id)}">Abrir</button>
-        </div>
-      </div>
-    `).join('') : '<div class="empty">Nenhum próximo atendimento agendado.</div>';
+      `;
+    }).join('') : '<div class="empty">Nenhum próximo atendimento agendado.</div>';
     wireButtons($('upcoming'));
   }
   
   function renderAlerts() {
     const p = Array.isArray(dashboard?.pendencias) ? dashboard.pendencias : [];
-    $('alertsList').innerHTML = p.length ? p.slice(0, 4).map(r => `
-      <div class="alert-item">
-        <div class="alert-icon">!</div>
-        <div>
-          <b>${esc(r.numero || 'Atendimento')}</b>
-          <span>${r.status === 'RASCUNHO' ? 'Atendimento ainda em rascunho. ' : ''}${Number(r.alertas || 0) ? Number(r.alertas) + ' alerta(s). ' : ''}${Number(r.inconsistencias || 0) ? Number(r.inconsistencias) + ' inconsistência(s). ' : ''}${Number(r.completude || 0) < 100 ? 'Preenchimento ' + Number(r.completude || 0) + '%.' : ''}</span>
+    $('alertsList').innerHTML = p.length ? p.slice(0, 4).map(r => {
+      const id = esc(r.numero || r.id);
+      const matchedRecord = records.find(x => String(x.atendimento || x.id) === String(id)) || {};
+      const name = r.paciente_nome || matchedRecord.nomePaciente || matchedRecord.paciente_nome || '';
+      const displayTitle = name ? esc(name) : `Atendimento #${esc(r.protocolo || id.slice(0, 8))}`;
+      const proto = r.protocolo || matchedRecord.aux?.protocolo || '';
+      const pct = Math.round(Number(r.completude || matchedRecord.completude || 0));
+      const alertsCount = Number(r.alertas || 0);
+      const inconCount = Number(r.inconsistencias || 0);
+      
+      let msg = '';
+      if (r.status === 'RASCUNHO') msg = 'Atendimento em rascunho';
+      else if (r.status === 'PENDENTE') msg = 'Aguardando validação clínica';
+      else msg = 'Atenção necessária';
+      
+      if (alertsCount > 0) msg += ` · ${alertsCount} alerta(s)`;
+      if (inconCount > 0) msg += ` · ${inconCount} inconsistência(s)`;
+
+      return `
+        <div class="alert-item-card" data-open="${id}" title="Clique para continuar este atendimento">
+          <div class="alert-item-icon">⚠️</div>
+          <div class="alert-item-body">
+            <div class="alert-item-header">
+              <b class="alert-item-title">${displayTitle}</b>
+              ${proto ? `<span class="alert-item-proto">#${esc(proto)}</span>` : ''}
+            </div>
+            <div class="alert-item-sub">${esc(msg)}</div>
+            ${pct < 100 ? `
+              <div class="alert-progress-wrap">
+                <div class="alert-progress-track">
+                  <div class="alert-progress-fill" style="width:${Math.max(5, pct)}%"></div>
+                </div>
+                <span class="alert-progress-text">${pct}% preenchido</span>
+              </div>
+            ` : ''}
+          </div>
+          <div class="alert-item-action">
+            <button class="btn-alert-action" type="button" data-open="${id}">
+              <span>Continuar</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
         </div>
-      </div>
-    `).join('') : '<div class="empty">Tudo em dia. Nenhuma pendência identificada.</div>';
+      `;
+    }).join('') : '<div class="empty">Tudo em dia. Nenhuma pendência identificada.</div>';
+    wireButtons($('alertsList'));
   }
   
   function renderLists() {
     const q = String($('search').value || '').trim().toLowerCase();
-    let list = records.filter(r => !q || `${r.atendimento || ''} ${r.medico || ''} ${r.cid || ''} ${r.unidade || ''}`.toLowerCase().includes(q)).sort((a, b) => String(b.atualizado_em || '').localeCompare(String(a.atualizado_em || '')));
+    let list = records.filter(r => {
+      const p = payload(r);
+      const a = aux(r);
+      const name = r.nomePaciente || r.paciente_nome || p.nomePaciente || a.nomePaciente || '';
+      const proto = a.protocolo || p.protocolo || '';
+      return !q || `${r.atendimento || ''} ${name} ${proto} ${r.medico || ''} ${r.cid || ''} ${r.unidade || ''}`.toLowerCase().includes(q);
+    }).sort((a, b) => String(b.atualizado_em || '').localeCompare(String(a.atualizado_em || '')));
     $('allList').innerHTML = list.length ? list.map(rowHtml).join('') : '<div class="empty">Nenhum atendimento encontrado.</div>';
     wireButtons($('allList'));
     
@@ -2582,63 +3112,60 @@ main { min-width: 0; }
   function renderDoctorAgendaCards(items) {
     if (!items.length) return '';
     return items.map(it => {
-      const horaStr = esc(it.hora || '—');
+      const horaStr = esc(String(it.hora || '--:--').slice(0, 5));
       const nomeStr = esc(it.nome_periciado || 'Não informado');
       const protStr = esc(it.protocolo || '');
       const niStr = esc(it.ni || '');
-      const tipoStr = esc(it.tipo || 'LICENC');
-      const statusStr = esc(it.status || 'Agendado');
+      let tipoLabel = esc(it.tipo || 'LTS');
+      if (it.tipo === 'LICENC') tipoLabel = 'Licença';
+      else if (it.tipo === 'RECONS') tipoLabel = 'Recons.';
+      else if (it.tipo === 'APOSENT') tipoLabel = 'Aposent.';
       const compareceu = it.compareceu && it.compareceu !== 'NÃO';
       const hasAtd = Boolean(it.atd_existente_numero || it.atd_existente_id);
       const atdNum = it.atd_existente_numero || it.atd_existente_id;
-      const atdStatus = it.atd_status ? statusLabel(it.atd_status) : '';
       const isFinalizado = it.atd_status === 'FINALIZADO' || it.status === 'FINALIZADO';
       const isAcomp = it.pessoa === 'Acompanhante' || it.is_acompanhante;
       const isRead = it.readaptado === 'Sim';
 
       return `
-        <div class="agenda-item-card ${isFinalizado ? 'agenda-card-finalizado' : ''}" style="${isFinalizado ? 'background:#F8FAFC;border:1px solid #CBD5E1;border-left:5px solid #10B981;box-shadow:none;' : ''}">
-          <div class="agenda-time-box" style="${isFinalizado ? 'background:#ECFDF5;border-color:#A7F3D0;' : ''}">
-            <span class="agenda-time-hour" style="${isFinalizado ? 'color:#059669;' : ''}">${horaStr}</span>
-            <span class="agenda-time-type" style="${isFinalizado ? 'color:#047857;' : ''}">${tipoStr}</span>
+        <div class="agenda-item-card ${isFinalizado ? 'agenda-card-finalizado' : ''}">
+          <div class="agenda-time-box">
+            <span class="agenda-time-hour">${horaStr}</span>
+            <span class="agenda-time-type">${tipoLabel}</span>
           </div>
           <div class="agenda-patient-info">
-            <div class="agenda-patient-name" style="${isFinalizado ? 'color:#1E293B;' : ''}">${nomeStr}</div>
-            <div class="agenda-patient-meta">
-              ${protStr ? `<span><b>Protocolo:</b> <code>${protStr}</code></span>` : ''}
-              ${niStr ? `<span><b>NI:</b> ${niStr}</span>` : ''}
-              ${isAcomp ? `<span class="badge" style="background:#F3E8FF;color:#7E22CE;font-weight:800;border:1px solid #D8B4FE">👥 Acompanhante</span>` : ''}
-              ${isRead ? `<span class="badge" style="background:#FEF3C7;color:#92400E;font-weight:800;border:1px solid #FDE68A">🔄 Readaptado</span>` : ''}
-              ${isFinalizado ? `
-                <span class="badge" style="background:#DCFCE7;color:#15803D;font-weight:800;border:1px solid #86EFAC">✓ ATENDIMENTO CONCLUÍDO</span>
-              ` : `
-                <span><b>Status:</b> ${statusStr}</span>
-                ${compareceu ? `<span class="badge green">✓ Compareceu</span>` : ''}
-                ${hasAtd ? `<span class="badge blue">Atendimento: ${esc(atdStatus || 'Em andamento')}</span>` : ''}
-                ${hasAtd ? `<span class="badge" style="background:#f0f9ff;border:1px solid #bae6fd;color:#0284c7;font-weight:700">📄 Ficha Vinculada</span>` : ''}
-              `}
-            </div>
+            <b class="agenda-patient-name" title="${nomeStr}">${nomeStr}</b>
+            ${isRead ? `<span class="badge-tag amber">🔄 Readaptado</span>` : ''}
+            ${isAcomp ? `<span class="badge-tag purple">👥 Acompanhante</span>` : ''}
+            ${hasAtd && !isFinalizado ? `<span class="badge-tag linked">📄 Ficha Vinculada</span>` : ''}
+            ${isFinalizado ? `<span class="badge-tag green-solid">✓ Laudo Concluído</span>` : ''}
           </div>
           <div class="agenda-patient-actions">
             ${isFinalizado ? `
-              <button class="btn-sm" type="button" disabled style="background:#E2E8F0;color:#64748B;cursor:not-allowed;border:1px solid #CBD5E1;font-weight:800;letter-spacing:0.02em" title="Atendimento finalizado - acesso bloqueado para novas edições">
+              <button class="btn-agenda-finalizado" type="button" disabled title="Atendimento finalizado - laudo concluído">
                 🔒 Atendimento Concluído
               </button>
             ` : `
-              ${hasAtd ? `
-                <button class="btn-sm primary" type="button" onclick="iniciarAtendimentoAgenda('${esc(it.nome_periciado)}', '${esc(it.protocolo || '')}', '${esc(it.ni || '')}', '${esc(it.hora || '')}', '${esc(atdNum)}', ${Boolean(isAcomp)}, '${esc(it.readaptado || '')}', '${esc(it.atd_status || '')}')">
-                  Abrir Atendimento →
-                </button>
+              ${compareceu ? `
+                <span class="presence-confirmed-badge" title="Presença confirmada do periciado">
+                  <span class="presence-dot"></span>
+                  <span>Presente</span>
+                </span>
               ` : `
-                <button class="btn-sm primary" type="button" onclick="iniciarAtendimentoAgenda('${esc(it.nome_periciado)}', '${esc(it.protocolo || '')}', '${esc(it.ni || '')}', '${esc(it.hora || '')}', '', ${Boolean(isAcomp)}, '${esc(it.readaptado || '')}', '${esc(it.atd_status || '')}')">
-                  + Iniciar Atendimento
+                <button class="btn-agenda-presence" type="button" onclick="confirmarPresencaAgenda(${it.id})" title="Registrar chegada do periciado">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Confirmar Presença</span>
                 </button>
               `}
-              ${compareceu ? `
-                <span class="badge green" style="font-weight:800;padding:6px 10px;font-size:11px">✓ Presença Confirmada</span>
+              ${hasAtd ? `
+                <button class="btn-agenda-open" type="button" onclick="iniciarAtendimentoAgenda('${esc(it.nome_periciado)}', '${esc(it.protocolo || '')}', '${esc(it.ni || '')}', '${esc(it.hora || '')}', '${esc(atdNum)}', ${Boolean(isAcomp)}, '${esc(it.readaptado || '')}', '${esc(it.atd_status || '')}')">
+                  <span>Abrir Atendimento</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
               ` : `
-                <button class="btn-sm" type="button" onclick="confirmarPresencaAgenda(${it.id})" title="Registrar presença do periciado">
-                  Confirmar Presença
+                <button class="btn-agenda-start" type="button" onclick="iniciarAtendimentoAgenda('${esc(it.nome_periciado)}', '${esc(it.protocolo || '')}', '${esc(it.ni || '')}', '${esc(it.hora || '')}', '', ${Boolean(isAcomp)}, '${esc(it.readaptado || '')}', '${esc(it.atd_status || '')}')">
+                  <span>Iniciar</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </button>
               `}
             `}
@@ -2670,9 +3197,12 @@ main { min-width: 0; }
       if (impId) params.medico_id = impId;
       const res = await AmbientalAPI.medico.agenda(params);
       currentDoctorAgenda = Array.isArray(res?.itens) ? res.itens : [];
-      if (badgeEl) badgeEl.textContent = `${currentDoctorAgenda.length} agendado(s)`;
-      if (dashBadgeEl) dashBadgeEl.textContent = `${currentDoctorAgenda.length} agendado(s)`;
-      if (dashSubEl) dashSubEl.textContent = `${currentDoctorAgenda.length} periciado(s) agendado(s) para ${dateDisplay(currentAgendaSelectedDate)} em ordem de horários.`;
+      const totalCount = currentDoctorAgenda.length;
+      const presCount = currentDoctorAgenda.filter(it => it.compareceu && it.compareceu !== 'NÃO').length;
+      const badgeText = `${totalCount} agendado(s)${presCount > 0 ? ` · ${presCount} presente(s)` : ''}`;
+      if (badgeEl) badgeEl.textContent = badgeText;
+      if (dashBadgeEl) dashBadgeEl.textContent = badgeText;
+      if (dashSubEl) dashSubEl.textContent = `${totalCount} periciado(s) agendado(s) para ${dateDisplay(currentAgendaSelectedDate)} em ordem de horários.`;
 
       const cardsHtml = renderDoctorAgendaCards(currentDoctorAgenda);
 

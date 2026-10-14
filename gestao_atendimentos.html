@@ -3381,9 +3381,13 @@ function renderTablePage() {
     renderPaginationUI(total, totalPages, startIdx, endIdx);
 }
 
-async function fetchServer() {
+let lastServerDatasetVersion = null;
+let lastServerDatasetParams = '';
+
+async function fetchServer(opts = {}) {
     localItems = lerLocalStorage();
     let remote = [];
+    const isForce = (opts === true || (typeof opts === 'object' && opts.force));
     try {
         const params = new URLSearchParams();
         const status = document.getElementById('filter').value;
@@ -3401,18 +3405,53 @@ async function fetchServer() {
         const q = document.getElementById('search').value.trim();
         if (q) params.set('q', q);
 
-        params.set('page', '1');
-        params.set('page_size', '100');
+        const currentParamsStr = params.toString();
+        const filterChanged = (currentParamsStr !== lastServerDatasetParams);
+        lastServerDatasetParams = currentParamsStr;
+
         const token = accessToken || (window.AmbientalAuth ? await AmbientalAuth.getAccessToken() : null);
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+        // 🚀 Otimização de Egress Supabase: Checagem ultraleve de versão (apenas ~40 bytes)
+        // Se a base não mudou e já temos os dados em memória, evita baixar megabytes repetidamente!
+        if (!isForce && !filterChanged && lastServerDatasetVersion && serverItems && serverItems.length > 0) {
+            try {
+                const chkRes = await AmbientalAuth.authFetch('/api/atendimentos/check-version?' + currentParamsStr, {
+                    cache: 'no-store',
+                    headers
+                });
+                const chkData = await chkRes.json().catch(() => null);
+                if (chkRes.ok && chkData?.success && chkData?.data?.version) {
+                    if (chkData.data.version === lastServerDatasetVersion) {
+                        // Nenhuma modificação no banco de dados! Consumo de Egress ZERO!
+                        window.lastFetchBackendSuccess = true;
+                        return { changed: false, count: serverItems.length };
+                    }
+                }
+            } catch (_) {}
+        }
+
+        params.set('page', '1');
+        params.set('page_size', '100');
+        if (lastServerDatasetVersion && !isForce && !filterChanged) {
+            headers['If-None-Match'] = `"${lastServerDatasetVersion}"`;
+        }
+
         const r = await AmbientalAuth.authFetch('/api/atendimentos?' + params.toString(), {
             cache: 'no-store',
             headers
         });
+
+        if (r.status === 304) {
+            window.lastFetchBackendSuccess = true;
+            return { changed: false, count: serverItems.length };
+        }
+
         const d = await r.json();
         if (r.ok && d.success) {
             remote = d.data.items || [];
             if (d.data.stats) renderStats(d.data.stats);
+            if (d.data.version) lastServerDatasetVersion = d.data.version;
             const totalBackendPages = d.data?.pagination?.pages || 1;
             if (totalBackendPages > 1 && totalBackendPages <= 10) {
                 const extraPromises = [];
@@ -3445,7 +3484,7 @@ async function fetchServer() {
     const empty = document.getElementById('empty');
     if (!serverItems.length) empty.textContent = 'Nenhum atendimento encontrado no LocalStorage ou no backend.';
     else empty.textContent = '';
-    return remote.length > 0 || localItems.length > 0;
+    return { changed: true, count: serverItems.length };
 }
 
 function setTab(v) {
@@ -6293,11 +6332,12 @@ async function triggerRefresh(opts = true){
     const prevFingerprint = previousFingerprint || computeDatasetFingerprint(serverItems);
     const prevCount = previousTotalCount || serverItems.length;
 
-    await fetchServer();
+    const fetchResult = await fetchServer({ force: isManual });
+    const hasDataChanged = fetchResult?.changed !== false;
 
     const newFingerprint = computeDatasetFingerprint(serverItems);
     const newCount = serverItems.length;
-    const hasChanged = prevFingerprint && (prevFingerprint !== newFingerprint);
+    const hasChanged = hasDataChanged && prevFingerprint && (prevFingerprint !== newFingerprint);
 
     previousFingerprint = newFingerprint;
     previousTotalCount = newCount;
@@ -6372,15 +6412,15 @@ function initAutoSync(){
 
   autoSyncIntervalTimer = setInterval(async () => {
     if(document.visibilityState === 'hidden') return;
-    await triggerRefresh(false);
-  }, 25000);
+    await triggerRefresh({ silent: true, force: false });
+  }, 60000);
 
   autoSyncUiTimer = setInterval(updateSyncChipUi, 5000);
 
   document.addEventListener('visibilitychange', () => {
     if(document.visibilityState === 'visible'){
-      if(Date.now() - lastSyncTimestamp > 10000){
-        triggerRefresh(false);
+      if(Date.now() - lastSyncTimestamp > 30000){
+        triggerRefresh({ silent: true, force: false });
       } else {
         updateSyncChipUi();
       }
@@ -6388,8 +6428,8 @@ function initAutoSync(){
   });
 
   window.addEventListener('focus', () => {
-    if(Date.now() - lastSyncTimestamp > 10000){
-      triggerRefresh(false);
+    if(Date.now() - lastSyncTimestamp > 30000){
+      triggerRefresh({ silent: true, force: false });
     } else {
       updateSyncChipUi();
     }

@@ -5992,6 +5992,41 @@ def _get_effective_user():
         "real_user_role": getattr(request, "user_role", ""),
     }
 
+@app.get("/api/atendimentos/check-version")
+def api_check_atendimentos_version():
+    denied = _require_permission("view")
+    if denied:
+        return denied
+
+    eff = _get_effective_user()
+    db = get_db()
+    clauses, params = service_list_filters(request.args, role=eff["role"], user_id=eff["id"])
+    where = build_where(clauses)
+
+    cur = db.cursor()
+    cur.execute(
+        f"SELECT COALESCE(MAX(atualizado_em)::text, '0') AS last_updated, COUNT(*) AS total FROM atendimentos{where}",
+        params,
+    )
+    row = cur.fetchone() or {}
+    cur.close()
+
+    last_up = str(row.get("last_updated") or "0")
+    total = int(row.get("total") or 0)
+    token = hashlib.sha1(f"{last_up}:{total}".encode("utf-8")).hexdigest()[:16]
+
+    res = jsonify({
+        "success": True,
+        "data": {
+            "version": token,
+            "total": total,
+            "last_updated": last_up,
+        }
+    })
+    res.headers["Cache-Control"] = "no-cache, must-revalidate"
+    res.headers["ETag"] = f'"{token}"'
+    return res, 200
+
 @app.get("/api/atendimentos")
 def api_list_atendimentos():
     denied = _require_permission("view")
@@ -6006,8 +6041,20 @@ def api_list_atendimentos():
     where = build_where(clauses)
 
     cur = db.cursor()
-    cur.execute(f"SELECT COUNT(*) AS total FROM atendimentos{where}", params)
-    total = int((cur.fetchone() or {}).get("total", 0))
+    cur.execute(f"SELECT COALESCE(MAX(atualizado_em)::text, '0') AS last_updated, COUNT(*) AS total FROM atendimentos{where}", params)
+    meta_row = cur.fetchone() or {}
+    total = int(meta_row.get("total") or 0)
+    last_up = str(meta_row.get("last_updated") or "0")
+    etag_token = hashlib.sha1(f"{last_up}:{total}:{page}:{page_size}".encode("utf-8")).hexdigest()[:16]
+
+    client_etag = (request.headers.get("If-None-Match") or "").strip('"').strip("'")
+    if client_etag and client_etag == etag_token and not request.args.get("force"):
+        cur.close()
+        res = make_response("", 304)
+        res.headers["ETag"] = f'"{etag_token}"'
+        res.headers["Cache-Control"] = "no-cache, must-revalidate"
+        return res
+
     offset = (page - 1) * page_size
 
     cur.execute(
@@ -6187,11 +6234,15 @@ def api_list_atendimentos():
         with _STATS_CACHE_LOCK:
             _STATS_CACHE[stat_key] = {"stats": stats, "expires": now_ts + 20.0}
     pages = (total + page_size - 1) // page_size if total else 0
-    return _ok({
+    resp_obj, resp_code = _ok({
         "items": items,
         "stats": stats,
         "pagination": {"page": page, "page_size": page_size, "total": total, "pages": pages},
+        "version": etag_token,
     })
+    resp_obj.headers["ETag"] = f'"{etag_token}"'
+    resp_obj.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return resp_obj, resp_code
 
 @app.get("/api/atendimentos/<rid>")
 def api_get_atendimento(rid):

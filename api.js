@@ -89,6 +89,7 @@
       updateAgendaStatus: (id, payload) => request(`/api/medico/agenda/${encodeURIComponent(id)}/status`, { method: 'PATCH', body: JSON.stringify(payload) })
     },
     atendimento: {
+      checkVersion: (params = {}) => request(`/api/atendimentos/check-version?${new URLSearchParams(params)}`),
       get: (id) => request(`/api/atendimentos/${encodeURIComponent(id)}`),
       save: (id, payload) => request(id ? `/api/atendimentos/${encodeURIComponent(id)}` : '/api/atendimentos', {
         method: id ? 'PUT' : 'POST', body: JSON.stringify(payload)

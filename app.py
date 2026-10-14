@@ -6437,6 +6437,16 @@ def api_save_atendimento(rid=None):
         app.logger.error("Erro interno ao salvar atendimento: %s", str(exc))
         return _error("INTERNAL_ERROR", "Não foi possível salvar o atendimento neste momento.", True, 500)
 
+def _normalize_yes_no(value: Any) -> str | None:
+    if not value:
+        return None
+    s = str(value).strip().strip("'").strip('"').lower()
+    if s in {"sim", "s", "1", "true"} or s.startswith("s"):
+        return "Sim"
+    if s in {"nao", "não", "n", "0", "false"} or s.startswith("n") or "\ufffd" in s:
+        return "Não"
+    return None
+
 def _finalization_blockers(payload: dict[str, Any]) -> list[dict[str, str]]:
     a = payload.get("aux") or {}
     blockers = []
@@ -6456,7 +6466,7 @@ def _finalization_blockers(payload: dict[str, Any]) -> list[dict[str, str]]:
     ]
     for step, label, value in required:
         if step == 6:
-            ok = str(value or "").strip() in {"Sim", "Não", "Nao"}
+            ok = _normalize_yes_no(value) is not None
         else:
             ok = str(value or "").strip() != ""
         if not ok:
@@ -6470,7 +6480,7 @@ def _finalization_blockers(payload: dict[str, Any]) -> list[dict[str, str]]:
 
     qs = payload.get("quesitos") or []
     answers = [str(q.get("resposta") or "").strip() for q in qs[:3]]
-    if len(answers) != 3 or any(v not in {"Sim", "Não", "Nao"} for v in answers):
+    if len(answers) != 3 or any(_normalize_yes_no(v) is None for v in answers):
         blockers.append({"etapa": "7", "campo": "Quesitos"})
     return blockers
 

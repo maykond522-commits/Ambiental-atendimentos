@@ -4753,7 +4753,11 @@ function buildSteps(){
 function updateProgress(){
   const pct=Math.round((state.current/9)*100);$("sideProgress").textContent=`Etapa ${state.current} de 9`;$("progressLabel").textContent=`${state.current}. ${steps[state.current-1][1]}`;$("progressPercent").textContent=`${pct}%`;$("progressFill").style.width=pct+"%";qsa(".step").forEach((el,i)=>{el.classList.toggle("active",i===state.current-1);el.classList.toggle("done",i<state.current-1);});updateStepValidation();
 }
-function isYesNoAnswer(value){ return value === "Sim" || value === "Não"; }
+function isYesNoAnswer(value){
+  if(!value) return false;
+  const s = String(value).trim().replace(/^['"]|['"]$/g, "").toLowerCase();
+  return s === "sim" || s === "s" || s === "não" || s === "nao" || s.startsWith("s") || s.startsWith("n") || s.includes("\ufffd");
+}
 function updateStepValidation(){
   const result=ValidationEngine.get(); const qv=result.quesitos || QuesitoService.validate();
   qsa(".step").forEach((el,i)=>{const step=i+1;const data=result.steps[step]||{count:0,pending:[]};const st=el.querySelector(".step-status");el.classList.toggle("needs-review",data.count>0);el.classList.toggle("complete-valid",data.count===0&&step<=state.current);if(!st)return;if(step===7){const needs=qv.answered<3;st.textContent=needs?`! ${3-qv.answered}`:(qv.allSame?"⚠":"✓");el.classList.toggle("needs-review",needs);el.classList.toggle("complete-valid",qv.answered===3&&step<=state.current);}else st.textContent=data.count?`! ${data.count}`:(data.count===0&&step<=state.current?"✓":"");});
@@ -7280,8 +7284,47 @@ async function openFinalReport(){
 async function downloadFinalPDF(){ const miss=missingFields();if(miss.length){go(9);renderReview();toast("Há bloqueios críticos; corrija-os antes do PDF.");return;} const html=buildReportHTML(); try{setAIStatus("loading","Gerando PDF...");const r=await AmbientalAuth.authFetch(`${getApiBase()}/api/relatorios/pdf`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({atendimento:state.atendimento,html})});if(!r.ok)throw new Error("Falha ao gerar PDF");const blob=await r.blob();const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`ATD-${state.atendimento||"Ambiental"}.pdf`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);toast("PDF gerado com sucesso.");}catch(e){toast("Não foi possível gerar o PDF pelo servidor. Abra a prévia e use Imprimir → Salvar como PDF.");openFinalReport();}finally{setAIStatus("online","Sistema Online");}}
 function previewFinalReport(){const miss=missingFields();if(miss.length){go(9);renderReview();toast("Há campos pendentes. Revise antes de visualizar o relatório.");return;}openFinalReport();}
 function finalizeFromHeader(){if(isFinalizedReadOnly()){toast("Atendimento já finalizado. Reabra pela Gestão para editar.");return;}if(currentAttendanceMode === "agil"){finalizarAtendimentoAgil();return;}go(9);setTimeout(openFinalizeDialog,100);}
-function openFinalizeDialog(){const validation=ValidationEngine.get();if(!validation.valid){renderReview();toast("Há bloqueios críticos. Revise o checklist antes de finalizar.");return;}syncState();const q=getQuesitoValidation();const el=$("finalizeSummary");if(!el)return;const items=[["Atendimento",state.atendimento],["Situação","Todos os campos obrigatórios preenchidos"],["Quesitos",`${q.answered}/3 respondidos`],["Capacidade laborativa",state.capacidade||"Não definida"],["Parecer",state.parecer||"Não definido"],["Inconsistências críticas",String(validation.blocking.length)],["Documento final",missingFields().length?"Pendente":"Disponível para visualização"]];el.innerHTML=items.map(([l,v])=>`<div class="finalize-item"><span>${esc(l)}</span><b>${esc(v)}</b></div>`).join("");$("finalizeOverlay")?.classList.add("open");}
-function closeFinalizeDialog(){$("finalizeOverlay")?.classList.remove("open");}
+function openFinalizeDialog(){
+  const validation=ValidationEngine.get();
+  if(!validation.valid){
+    renderReview();
+    toast("Há bloqueios críticos. Revise o checklist antes de finalizar.");
+    return;
+  }
+  syncState();
+  const q=getQuesitoValidation();
+  const el=$("finalizeSummary");
+  if(!el)return;
+  const items=[
+    ["Atendimento",state.atendimento],
+    ["Situação","Todos os campos obrigatórios preenchidos"],
+    ["Quesitos",`${q.answered}/3 respondidos`],
+    ["Capacidade laborativa",state.capacidade||"Não definida"],
+    ["Parecer",state.parecer||"Não definido"],
+    ["Inconsistências críticas",String(validation.blocking.length)],
+    ["Documento final",missingFields().length?"Pendente":"Disponível para visualização"]
+  ];
+  el.innerHTML=items.map(([l,v])=>`<div class="finalize-item"><span>${esc(l)}</span><b>${esc(v)}</b></div>`).join("");
+  const fo = $("finalizeOverlay");
+  if(fo){
+    fo.classList.add("open");
+    fo.setAttribute("aria-hidden", "false");
+    const confirmBtn = $("confirmFinalizeBtn");
+    if(confirmBtn){
+      setTimeout(() => { try { confirmBtn.focus(); } catch(_) {} }, 50);
+    }
+  }
+}
+function closeFinalizeDialog(){
+  const fo = $("finalizeOverlay");
+  if(fo){
+    if(document.activeElement && fo.contains(document.activeElement)){
+      document.activeElement.blur();
+    }
+    fo.classList.remove("open");
+    fo.setAttribute("aria-hidden", "true");
+  }
+}
 function openFinalizeProgress(){const o=$("finalizeProgressOverlay");if(!o)return;o.classList.remove("success");o.classList.add("open");o.setAttribute("aria-hidden","false");$("finalizeProgressTitle").textContent="Finalizando atendimento";$("finalizeProgressSubtitle").textContent="Salvando os dados e registrando a finalização com segurança.";$("fpStepSave").className="finalize-progress-step active";$("fpStepFinalize").className="finalize-progress-step";$("fpStepDone").className="finalize-progress-step";}
 function setFinalizeProgress(stage,title,subtitle){const t=$("finalizeProgressTitle"),sub=$("finalizeProgressSubtitle");if(t)t.textContent=title;if(sub)sub.textContent=subtitle;const map={save:"fpStepSave",finalize:"fpStepFinalize",done:"fpStepDone"};Object.entries(map).forEach(([key,id])=>{const el=$(id);if(!el)return;el.className="finalize-progress-step "+(key===stage?"active":(["save","finalize","done"].indexOf(key)<["save","finalize","done"].indexOf(stage)?"done":""));});}
 function closeFinalizeProgress(){const o=$("finalizeProgressOverlay");if(!o)return;o.classList.remove("open","success");o.setAttribute("aria-hidden","true");}

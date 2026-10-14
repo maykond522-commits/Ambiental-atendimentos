@@ -12,6 +12,7 @@
 <script src="/auth.js"></script>
 <script src="/api.js"></script>
 <script src="/utils.js"></script>
+
 <style>
 :root {
   --nav-bg: #06254d;
@@ -2735,9 +2736,12 @@ main { min-width: 0; }
   window.toggleSidebar = toggleSidebar;
   
   function setIdentity() {
-    const isImpersonating = !!sessionStorage.getItem('ambiental.impersonate_medico_id') && (profile?.perfilOriginal === 'Administrador' || profile?.perfil === 'Administrador');
-    const n = profile?.nome || profile?.email || 'Usuário';
-    const crm = profile?.crm || '';
+    const isImpersonating = !!sessionStorage.getItem('ambiental.impersonate_medico_id') && 
+      (['Administrador', 'Gestor', 'Coordenador'].includes(profile?.perfilOriginal) || ['Administrador', 'Gestor', 'Coordenador'].includes(profile?.perfil));
+    const cachedNome = sessionStorage.getItem('ambiental.impersonate_medico_nome');
+    const cachedCrm = sessionStorage.getItem('ambiental.impersonate_medico_crm');
+    const n = (isImpersonating && cachedNome) ? cachedNome : (profile?.nome || profile?.email || 'Usuário');
+    const crm = (isImpersonating && cachedCrm) ? cachedCrm : (profile?.crm || '');
     $('userName').textContent = n;
     $('userRole').textContent = isImpersonating ? `Médico (Acesso Adm${crm ? ' · CRM ' + crm : ''})` : (profile?.perfil || 'Médico');
     $('avatar').textContent = initials(n);
@@ -3618,7 +3622,10 @@ main { min-width: 0; }
     try {
       const bar = $('topSyncBar');
       if (bar) bar.classList.add('active');
-      const list = await AmbientalAPI.medico.atendimentos({ page: currentPage, page_size: pageSize });
+      const impId = sessionStorage.getItem('ambiental.impersonate_medico_id');
+      const atdParams = { page: currentPage, page_size: pageSize };
+      if (impId) atdParams.medico_id = impId;
+      const list = await AmbientalAPI.medico.atendimentos(atdParams);
       records = Array.isArray(list?.items) ? list.items : [];
       totalItems = Number(list?.total || records.length);
       totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
@@ -3639,9 +3646,13 @@ main { min-width: 0; }
     if ($('refreshBtn')) $('refreshBtn').classList.add('spin-btn');
     status.innerHTML = '<i style="background:#d7a848"></i> Sincronizando...';
     try {
+      const impId = sessionStorage.getItem('ambiental.impersonate_medico_id');
+      const atdParams = { page: currentPage, page_size: pageSize };
+      if (impId) atdParams.medico_id = impId;
+      const dashParams = impId ? { medico_id: impId } : {};
       const [dash, list] = await Promise.all([
-        AmbientalAPI.medico.dashboard(),
-        AmbientalAPI.medico.atendimentos({ page: currentPage, page_size: pageSize })
+        AmbientalAPI.medico.dashboard(dashParams),
+        AmbientalAPI.medico.atendimentos(atdParams)
       ]);
       dashboard = dash || {};
       records = Array.isArray(list?.items) ? list.items : [];
@@ -3713,7 +3724,7 @@ main { min-width: 0; }
     try {
       updateSyncLoader('Validando Sessão Médica', 'Confirmando autenticação pericial segura…', 'Conectando ao serviço de autenticação...', 25);
       profile = await AmbientalAuth.requireAuth({ area: 'portal-medico' });
-      if (profile?.perfil !== 'Médico' && profile?.perfil !== 'Administrador') {
+      if (profile?.perfil !== 'Médico' && !['Administrador', 'Gestor', 'Coordenador'].includes(profile?.perfil)) {
         location.replace('/acesso-negado.html?area=portal-medico');
         return;
       }
@@ -3725,18 +3736,31 @@ main { min-width: 0; }
         sessionStorage.setItem('ambiental.impersonate_medico_id', urlImpersonateId);
       }
       const impersonateId = sessionStorage.getItem('ambiental.impersonate_medico_id');
-      const isImpersonating = !!impersonateId && (profile?.perfil === 'Administrador' || profile?.perfilOriginal === 'Administrador');
+      const isAdminOrImpersonating = ['Administrador', 'Gestor', 'Coordenador'].includes(profile?.perfil) || 
+                                    ['Administrador', 'Gestor', 'Coordenador'].includes(profile?.perfilOriginal);
+      const isImpersonating = !!impersonateId && isAdminOrImpersonating;
 
       if (isImpersonating) {
+        // Aplica imediatamente as credenciais do médico selecionado em cache
+        const cachedNome = sessionStorage.getItem('ambiental.impersonate_medico_nome');
+        const cachedCrm = sessionStorage.getItem('ambiental.impersonate_medico_crm');
+        profile = {
+          ...profile,
+          id: impersonateId,
+          nome: cachedNome || profile.nome,
+          crm: cachedCrm || profile.crm || '',
+          perfilOriginal: profile.perfilOriginal || profile.perfil,
+          perfil: 'Médico'
+        };
+
         try {
-          const token = await AmbientalAuth.getAccessToken();
-          const res = await fetch('/api/admin/medicos/lista-impersonate', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          const data = await res.json();
-          const medicos = data?.data?.items || [];
-          const med = medicos.find(m => String(m.id) === String(impersonateId));
+          const res = await (window.AmbientalAPI?.admin?.medicosListaImpersonate 
+            ? window.AmbientalAPI.admin.medicosListaImpersonate() 
+            : AmbientalAuth.authFetch('/api/admin/medicos/lista-impersonate').then(r => r.json()));
+          const medicos = res?.items || res?.data?.items || [];
+          const med = medicos.find(m => String(m.id) === String(impersonateId) || (cachedCrm && String(m.crm) === String(cachedCrm)));
           if (med) {
+            sessionStorage.setItem('ambiental.impersonate_medico_id', String(med.id));
             sessionStorage.setItem('ambiental.impersonate_medico_nome', med.nome || '');
             sessionStorage.setItem('ambiental.impersonate_medico_crm', med.crm || '');
             profile = {
@@ -3745,7 +3769,8 @@ main { min-width: 0; }
               nome: med.nome,
               crm: med.crm || '',
               email: med.email || profile.email,
-              perfilOriginal: 'Administrador',
+              modo_atendimento: med.modo_atendimento || profile.modo_atendimento || 'agil',
+              perfilOriginal: profile.perfilOriginal || 'Administrador',
               perfil: 'Médico'
             };
           }
@@ -3755,8 +3780,8 @@ main { min-width: 0; }
         const docLabel = $('impersonateDoctorLabel');
         if (warnBanner) warnBanner.style.display = 'block';
         if (docLabel) {
-          const nom = sessionStorage.getItem('ambiental.impersonate_medico_nome') || `Dr(a). ID ${impersonateId}`;
-          const crm = sessionStorage.getItem('ambiental.impersonate_medico_crm');
+          const nom = profile.nome || sessionStorage.getItem('ambiental.impersonate_medico_nome') || `Dr(a). ID ${impersonateId}`;
+          const crm = profile.crm || sessionStorage.getItem('ambiental.impersonate_medico_crm');
           docLabel.textContent = `${nom} ${crm ? '(CRM ' + crm + ')' : ''}`;
         }
       }

@@ -25,8 +25,19 @@ import uuid
 from services.atendimento_service import pagination as service_pagination, list_filters as service_list_filters, build_where
 from services.observability import install as install_observability, metrics_snapshot, current_request_id
 
-from flask import Flask, jsonify, request, send_from_directory, g, make_response, redirect, send_file
+from flask import Flask, jsonify, request, send_from_directory, g, make_response, redirect, send_file, Response
 from dotenv import load_dotenv
+from blueprints import (
+    bp_atendimentos,
+    bp_ai,
+    bp_agendas,
+    bp_admin,
+    bp_esisla,
+    RefinarFichaEsislaResult,
+    AudioTranscricaoAtendimentoResult,
+    DadosExtraidosAudio,
+    generate_justificativa_stream
+)
 from flask_cors import CORS
 from pydantic import BaseModel, Field, ValidationError, ConfigDict
 
@@ -78,6 +89,11 @@ app = Flask(__name__, static_folder=BASE_DIR, static_url_path="")
 app.config.update(JSON_SORT_KEYS=False, MAX_CONTENT_LENGTH=16 * 1024 * 1024, REQUEST_ID_HEADER="X-Request-ID")
 
 install_observability(app)
+app.register_blueprint(bp_atendimentos)
+app.register_blueprint(bp_ai)
+app.register_blueprint(bp_agendas)
+app.register_blueprint(bp_admin)
+app.register_blueprint(bp_esisla)
 
 @app.after_request
 def _no_cache_dev_assets(response):
@@ -596,6 +612,25 @@ def _init_db():
         ALTER TABLE agendas ADD COLUMN IF NOT EXISTS readaptado TEXT DEFAULT '';
         CREATE INDEX IF NOT EXISTS idx_agendas_medico_data_hora ON agendas(medico_id, data, hora ASC);
         CREATE INDEX IF NOT EXISTS idx_agendas_protocolo ON agendas(protocolo);
+
+        -- Índice GIN para aceleração de buscas no JSONB dos atendimentos
+        CREATE INDEX IF NOT EXISTS idx_atd_payload_json_gin ON atendimentos USING gin(payload_json);
+
+        -- Tabela de Auditoria de Acesso e Leitura (LGPD & Resoluções CFM 1.821 e 2.299)
+        CREATE TABLE IF NOT EXISTS auditoria_acessos (
+            id SERIAL PRIMARY KEY,
+            atendimento_id TEXT NOT NULL REFERENCES atendimentos(id) ON DELETE CASCADE,
+            usuario_id TEXT NOT NULL,
+            usuario_nome TEXT,
+            usuario_perfil TEXT,
+            acao TEXT NOT NULL DEFAULT 'VISUALIZACAO',
+            ip TEXT,
+            is_impersonating BOOLEAN DEFAULT FALSE,
+            criado_em TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_auditoria_atd_id ON auditoria_acessos(atendimento_id);
+        CREATE INDEX IF NOT EXISTS idx_auditoria_usr_id ON auditoria_acessos(usuario_id);
+        CREATE INDEX IF NOT EXISTS idx_auditoria_criado ON auditoria_acessos(criado_em DESC);
         """)
         conn.commit()
         cur.close()
@@ -1814,6 +1849,24 @@ def _log_ai(endpoint, model, elapsed_ms, status, error_code=None, atendimento_id
         cur.close()
     except Exception as exc:
         app.logger.warning("falha ao registrar log de IA: %s", type(exc).__name__)
+
+def _log_audit_access(atendimento_id: str, usuario_id: str, usuario_nome: str, usuario_perfil: str, ip: str = None, is_impersonating: bool = False, acao: str = "VISUALIZACAO"):
+    """Grava registro de auditoria de leitura/acesso em conformidade com a LGPD e resoluções do CFM."""
+    try:
+        db = get_db()
+        cur = db.cursor()
+        cur.execute(
+            """
+            INSERT INTO auditoria_acessos (
+                atendimento_id, usuario_id, usuario_nome, usuario_perfil, acao, ip, is_impersonating, criado_em
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (atendimento_id, usuario_id, usuario_nome, usuario_perfil, acao, ip, is_impersonating, _utc_now())
+        )
+        db.commit()
+        cur.close()
+    except Exception as exc:
+        app.logger.warning("Falha ao registrar auditoria de leitura LGPD: %s", type(exc).__name__)
 
 def _generate_structured(instruction: str, schema):
     endpoint=getattr(request,"path","/unknown")
@@ -3760,9 +3813,20 @@ def api_ai_refinar_ficha_esisla():
                         config=types.GenerateContentConfig(
                             system_instruction=system_instruction,
                             temperature=0.2,
+                            response_mime_type="application/json",
+                            response_schema=RefinarFichaEsislaResult,
                         )
                     )
-                    t = (response.text or "").strip()
+                    t = None
+                    if hasattr(response, "parsed") and response.parsed:
+                        t = getattr(response.parsed, "ficha_otimizada", None)
+                    if not t and response.text:
+                        try:
+                            data_json = json.loads(response.text)
+                            t = data_json.get("ficha_otimizada") or response.text
+                        except Exception:
+                            t = response.text
+                    t = (t or "").strip()
                     if t:
                         ficha_otimizada = t
                         break
@@ -3859,10 +3923,18 @@ def api_ai_transcrever_atendimento():
                     ],
                     config=types.GenerateContentConfig(
                         temperature=0.1,
-                        response_mime_type="application/json"
+                        response_mime_type="application/json",
+                        response_schema=AudioTranscricaoAtendimentoResult,
                     )
                 )
-                if resp.text:
+                if hasattr(resp, "parsed") and resp.parsed:
+                    p_obj = resp.parsed
+                    dados_dict = p_obj.dados_extraidos.model_dump() if hasattr(p_obj.dados_extraidos, "model_dump") else p_obj.dados_extraidos.dict()
+                    return _ok({
+                        "transcricao": p_obj.transcricao,
+                        "dados_extraidos": dados_dict
+                    })
+                elif resp.text:
                     parsed = json.loads(resp.text)
                     return _ok({
                         "transcricao": parsed.get("transcricao", ""),
@@ -5205,7 +5277,7 @@ def api_admin_medicos_lista_impersonate():
                COUNT(a.id) FILTER (WHERE a.status='FINALIZADO') AS finalizados
           FROM usuarios u
           LEFT JOIN atendimentos a ON a.usuario_id = u.id
-         WHERE u.perfil = 'Médico' AND u.ativo = 1
+         WHERE (u.perfil ILIKE 'm%%dico' OR u.perfil = 'Médico' OR u.perfil = 'Medico') AND u.ativo = 1
          GROUP BY u.id, u.nome, u.crm, u.email, u.modo_atendimento
          ORDER BY u.nome ASC
     """)
@@ -5656,11 +5728,11 @@ def api_admin_excluir_agenda_item(agenda_id):
 @app.get("/api/medico/agenda")
 def api_medico_agenda():
     eff = _get_effective_user()
-    if eff["role"] not in {"Médico", "Administrador"} and request.user_role not in {"Médico", "Administrador"}:
+    if eff["role"] not in {"Médico", "Administrador"} and getattr(request, "user_role", None) not in {"Médico", "Administrador", "Gestor", "Coordenador"}:
         return _error("PERMISSION_DENIED", "Seu perfil não possui acesso à agenda médica.", False, 403)
         
     medico_id = eff["id"]
-    if request.user_role == "Administrador" and request.args.get("medico_id"):
+    if getattr(request, "user_role", None) in {"Administrador", "Gestor", "Coordenador"} and request.args.get("medico_id"):
         medico_id = request.args.get("medico_id").strip()
         
     data_str = request.args.get("data", "").strip()
@@ -5862,7 +5934,12 @@ def api_auth_resolve_identifier():
         return _error("INTERNAL_ERROR", _safe_error_message(exc), False, 500)
 
 def _get_effective_user():
-    impersonate_id = (request.headers.get("X-Impersonate-Medico-Id") or request.args.get("impersonate_medico_id") or request.args.get("medico_id") or "").strip()
+    impersonate_id = (
+        request.headers.get("X-Impersonate-Medico-Id")
+        or request.args.get("impersonate_medico_id")
+        or request.args.get("medico_id")
+        or ""
+    ).strip()
     if not impersonate_id:
         try:
             b = request.get_json(silent=True)
@@ -5870,11 +5947,22 @@ def _get_effective_user():
                 impersonate_id = str(b.get("impersonate_medico_id") or b.get("medico_id") or "").strip()
         except Exception:
             pass
-    if getattr(request, "user_role", None) == "Administrador" and impersonate_id:
+
+    user_role = getattr(request, "user_role", None)
+    if (getattr(request, "user_role", None) == "Administrador" or user_role in {"Gestor", "Coordenador"}) and impersonate_id:
         try:
             db = get_db()
             cur = db.cursor()
-            cur.execute("SELECT id, nome, crm, email, COALESCE(modo_atendimento, 'agil') AS modo_atendimento FROM usuarios WHERE id=%s AND perfil='Médico'", (impersonate_id,))
+            cur.execute(
+                """
+                SELECT id, nome, crm, email, COALESCE(modo_atendimento, 'agil') AS modo_atendimento
+                  FROM usuarios
+                 WHERE (id::text = %s OR crm = %s)
+                   AND (perfil ILIKE 'm%%dico' OR perfil = 'Médico' OR perfil = 'Medico')
+                 LIMIT 1
+                """,
+                (impersonate_id, impersonate_id),
+            )
             medico_row = cur.fetchone()
             cur.close()
             if medico_row:
@@ -5886,11 +5974,12 @@ def _get_effective_user():
                     "email": medico_row["email"],
                     "modo_atendimento": medico_row.get("modo_atendimento") or "agil",
                     "is_impersonating": True,
-                    "real_user_id": request.user_id,
-                    "real_user_role": request.user_role
+                    "real_user_id": getattr(request, "user_id", ""),
+                    "real_user_role": user_role,
                 }
-        except Exception:
-            pass
+        except Exception as exc:
+            app.logger.warning(f"Erro ao resolver impersonate ({impersonate_id}): {exc}")
+
     return {
         "id": getattr(request, "user_id", ""),
         "role": getattr(request, "user_role", ""),
@@ -5900,7 +5989,7 @@ def _get_effective_user():
         "modo_atendimento": getattr(request, "user_modo_atendimento", "agil"),
         "is_impersonating": False,
         "real_user_id": getattr(request, "user_id", ""),
-        "real_user_role": getattr(request, "user_role", "")
+        "real_user_role": getattr(request, "user_role", ""),
     }
 
 @app.get("/api/atendimentos")
@@ -5997,7 +6086,12 @@ def api_list_atendimentos():
             },
         })
 
-    stat_key = f"{request.user_role}:{request.user_id if request.user_role == 'Médico' else 'all'}"
+    eff = _get_effective_user()
+    effective_role = eff.get("role") or getattr(request, "user_role", "")
+    effective_user_id = eff.get("id") or getattr(request, "user_id", "")
+    is_doctor = effective_role in ("Médico", "Medico")
+
+    stat_key = f"{effective_role}:{effective_user_id if is_doctor else 'all'}"
     now_ts = time.time()
     cached_stats = None
     with _STATS_CACHE_LOCK:
@@ -6010,8 +6104,8 @@ def api_list_atendimentos():
         cur.close()
     else:
         # Estatísticas agregadas diretamente no PostgreSQL com alto desempenho
-        stat_where = " WHERE usuario_id=%s" if request.user_role == "Médico" else ""
-        stat_params = [request.user_id] if request.user_role == "Médico" else []
+        stat_where = " WHERE usuario_id=%s" if is_doctor else ""
+        stat_params = [effective_user_id] if is_doctor else []
         today_prefix = _utc_now()[:10]
 
         cur.execute(
@@ -6130,6 +6224,18 @@ def api_get_atendimento(rid):
             if not payload.get("medico"): payload["medico"] = medico_row
         if unidade_row:
             if not payload["aux"].get("unidade"): payload["aux"]["unidade"] = unidade_row
+
+    try:
+        user_id = str(getattr(request, "user_id", "") or "anonymous")
+        user_nome = str(getattr(request, "user_name", "") or getattr(request, "user_nome", "") or "Usuário")
+        user_perfil = str(getattr(request, "user_role", "") or "")
+        eff = _get_effective_user()
+        is_imp = bool(eff.get("is_impersonating")) if eff else False
+        ip = (request.headers.get("X-Forwarded-For", "").split(",", 1)[0].strip() or request.remote_addr or "")[:128]
+        _log_audit_access(r["id"], user_id, user_nome, user_perfil, ip, is_imp, "VISUALIZACAO")
+    except Exception as aud_err:
+        app.logger.warning("Falha ao registrar auditoria de leitura LGPD: %s", aud_err)
+
     return _ok({"id":r["id"],"atendimento":r["numero"],"status":r["status"],"payload":payload,"completude":r["completude"],"atualizado_em":r["atualizado_em"],"finalizado_em":r["finalizado_em"],"versao":int(r.get("versao") or 1),"atualizado_por":r.get("atualizado_por")})
 
 @app.post("/api/atendimentos")
@@ -6713,6 +6819,67 @@ def download_extensao_esisla():
         as_attachment=True,
         download_name="extensao_esisla.zip"
     )
+
+@app.get("/api/atendimentos/<rid>/auditoria")
+def api_atendimento_auditoria_acessos(rid):
+    """Retorna os registros de acesso e visualização do atendimento conforme LGPD Art. 11."""
+    denied = _require_permission("audit")
+    if denied: return denied
+    db = get_db(); cur = db.cursor()
+    cur.execute("SELECT id FROM atendimentos WHERE id=%s OR numero=%s", (rid, rid))
+    r = cur.fetchone()
+    if not r:
+        cur.close()
+        return _error("NOT_FOUND", "Atendimento não encontrado.", False, 404)
+    cur.execute("SELECT usuario_id FROM atendimentos WHERE id=%s", (r["id"],))
+    owner_row = cur.fetchone()
+    denied = _require_record_access(owner_row)
+    if denied:
+        cur.close()
+        return denied
+    cur.execute(
+        """
+        SELECT id, usuario_nome, usuario_perfil, acao, ip, is_impersonating, criado_em
+        FROM auditoria_acessos
+        WHERE atendimento_id = %s
+        ORDER BY criado_em DESC, id DESC
+        LIMIT 200
+        """,
+        (r["id"],)
+    )
+    rows = cur.fetchall()
+    cur.close()
+    return _ok([dict(x) for x in rows])
+
+@app.post("/api/admin/manutencao/limpeza")
+def api_admin_manutencao_limpeza():
+    """
+    Higienização periódica de dados operacionais:
+    - Remove travas órfãs de sessões fechadas (> 5 min).
+    - Remove registros de rate limit antigos (> 24h).
+    - Remove cache antigo de IA (> 30 dias).
+    """
+    denied = _require_admin()
+    if denied: return denied
+    try:
+        db = get_db(); cur = db.cursor()
+        cur.execute("DELETE FROM ia_cadastro_locks WHERE iniciado_em < NOW() - INTERVAL '5 minutes'")
+        travas_removidas = cur.rowcount
+        cur.execute("DELETE FROM ia_rate_limits WHERE atualizado_em < NOW() - INTERVAL '24 hours'")
+        rate_limits_removidos = cur.rowcount
+        cur.execute("DELETE FROM cache_ia WHERE atualizado_em < TO_CHAR(NOW() - INTERVAL '30 days', 'YYYY-MM-DD\"T\"HH24:MI:SS')")
+        cache_removido = cur.rowcount
+        db.commit()
+        cur.close()
+        return _ok({
+            "mensagem": "Higienização operacional concluída com sucesso.",
+            "travas_removidas": travas_removidas,
+            "rate_limits_removidos": rate_limits_removidos,
+            "cache_removido": cache_removido
+        })
+    except Exception as exc:
+        app.logger.exception("admin_manutencao_limpeza")
+        return _error("CLEANUP_ERROR", f"Falha na manutenção: {_safe_error_message(exc)}", False, 500)
 
 if __name__ == "__main__":
     import sys

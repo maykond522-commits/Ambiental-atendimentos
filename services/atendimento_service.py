@@ -37,7 +37,7 @@ def list_filters(args: Any, *, role: str, user_id: str) -> tuple[list[str], list
     data_fim = str(args.get("data_fim", "")).strip()
 
     # Security boundary: the authenticated server identity defines ownership.
-    if role == "Médico":
+    if role in ("Médico", "Medico"):
         clauses.append("usuario_id = %s")
         params.append(user_id)
 

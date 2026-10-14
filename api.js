@@ -80,7 +80,10 @@
       logout: () => AmbientalAuth.logout()
     },
     medico: {
-      dashboard: () => request('/api/medico/dashboard'),
+      dashboard: (params = {}) => {
+        const q = new URLSearchParams(params).toString();
+        return request(`/api/medico/dashboard${q ? '?' + q : ''}`);
+      },
       atendimentos: (params = {}) => request(`/api/medico/atendimentos?${new URLSearchParams(params)}`),
       agenda: (params = {}) => request(`/api/medico/agenda?${new URLSearchParams(params)}`),
       updateAgendaStatus: (id, payload) => request(`/api/medico/agenda/${encodeURIComponent(id)}/status`, { method: 'PATCH', body: JSON.stringify(payload) })
@@ -90,10 +93,66 @@
       save: (id, payload) => request(id ? `/api/atendimentos/${encodeURIComponent(id)}` : '/api/atendimentos', {
         method: id ? 'PUT' : 'POST', body: JSON.stringify(payload)
       }),
-      history: (id) => request(`/api/atendimentos/${encodeURIComponent(id)}/historico`)
+      history: (id) => request(`/api/atendimentos/${encodeURIComponent(id)}/historico`),
+      auditoria: (id) => request(`/api/atendimentos/${encodeURIComponent(id)}/auditoria`)
     },
     ai: {
       justificativa: (payload) => request('/api/ai/justificativa', { method: 'POST', body: JSON.stringify(payload), timeoutMs: 60000 }),
+      justificativaStream: async (payload, { onChunk, onDone, onError } = {}) => {
+        const impersonatedId = (typeof sessionStorage !== 'undefined') ? sessionStorage.getItem('ambiental.impersonate_medico_id') : null;
+        const impersonateHeader = impersonatedId ? { 'X-Impersonate-Medico-Id': impersonatedId } : {};
+        const fetchFn = window.AmbientalAuth ? window.AmbientalAuth.authFetch : fetch;
+        try {
+          const response = await fetchFn('/api/ai/justificativa/stream', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'text/event-stream',
+              ...impersonateHeader
+            },
+            body: JSON.stringify(payload)
+          });
+          if (!response.ok) {
+            const errJson = await response.json().catch(() => ({}));
+            const msg = errJson?.error?.message || errJson?.detail || `HTTP ${response.status}`;
+            throw new Error(msg);
+          }
+          if (!response.body) throw new Error('Streaming não suportado pelo navegador.');
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder('utf-8');
+          let buffer = '';
+          let fullText = '';
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed || !trimmed.startsWith('data:')) continue;
+              try {
+                const data = JSON.parse(trimmed.slice(5).trim());
+                if (data.error) throw new Error(data.error);
+                if (data.text) {
+                  fullText += data.text;
+                  if (typeof onChunk === 'function') onChunk(data.text, fullText);
+                }
+                if (data.done && typeof onDone === 'function') {
+                  onDone(fullText);
+                }
+              } catch (pe) {
+                if (trimmed.includes('"error"')) throw pe;
+              }
+            }
+          }
+          if (typeof onDone === 'function') onDone(fullText);
+          return fullText;
+        } catch (err) {
+          if (typeof onError === 'function') onError(err);
+          throw err;
+        }
+      },
       preenchimento: (payload) => request('/api/ai/preenchimento', { method: 'POST', body: JSON.stringify(payload), timeoutMs: 60000 }),
       preencherFicha: (payload) => request('/api/ai/preencher-ficha', { method: 'POST', body: JSON.stringify(payload), timeoutMs: 120000 }),
       documento: (payload) => request('/api/ai/documento', { method: 'POST', body: JSON.stringify(payload), timeoutMs: 60000 }),
@@ -166,7 +225,8 @@
             itens: dataObj?.itens || res?.itens || []
           };
         });
-      }
+      },
+      limpezaManutencao: () => request('/api/admin/manutencao/limpeza', { method: 'POST' })
     },
     impersonate: {
       set: (medicoId, medicoInfo) => {
@@ -223,7 +283,8 @@
           if (!r.ok) throw new Error(data?.error?.message || data?.detail || 'Falha ao vincular arquivos e-SISLA à agenda.');
           return data;
         });
-      }
+      },
+      importarAgenda: (payload) => request('/api/esisla/importar-agenda', { method: 'POST', body: JSON.stringify(payload) })
     }
   };
 

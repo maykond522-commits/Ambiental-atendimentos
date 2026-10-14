@@ -176,4 +176,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     return true;
   }
+
+  // 8. Sincronizar Agenda Capturada do e-SISLA com as Abas do Ambiental
+  if (request.action === 'AGENDA_ESISLA_CAPTURADA') {
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => {
+        try {
+          if (tab.url && (tab.url.includes('localhost') || tab.url.includes('127.0.0.1') || tab.url.includes('gestao') || tab.url.includes('ambiental') || tab.url.includes('vercel.app'))) {
+            chrome.tabs.sendMessage(tab.id, {
+              action: 'AGENDA_ESISLA_DISPONIVEL',
+              payload: request.payload
+            }, () => {
+              if (chrome.runtime.lastError) {}
+            });
+          }
+        } catch(_) {}
+      });
+    });
+    sendResponse({ status: 'ok' });
+    return true;
+  }
 });

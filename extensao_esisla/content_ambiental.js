@@ -261,4 +261,92 @@
     }, 200);
   });
 
+  // 5. Recepção de Agenda Capturada no e-SISLA para Importação 1-Clique no Ambiental
+  try {
+    chrome.runtime.onMessage.addListener((msg) => {
+      if (msg && msg.action === 'AGENDA_ESISLA_DISPONIVEL' && msg.payload) {
+        exibirPromptImportarAgenda(msg.payload);
+      }
+    });
+  } catch(_) {}
+
+  function exibirPromptImportarAgenda(payload) {
+    if (!payload || !payload.itens || !payload.itens.length) return;
+    const existing = document.getElementById('ambientalAgendaImportPrompt');
+    if (existing) existing.remove();
+
+    const count = payload.itens.length;
+    const prompt = document.createElement('div');
+    prompt.id = 'ambientalAgendaImportPrompt';
+    prompt.style.cssText = `
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 999999;
+      background: #FFFFFF;
+      border: 1.5px solid #0284C7;
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: 0 10px 30px rgba(2, 132, 199, 0.25);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 380px;
+      animation: slideUp 0.25s ease-out;
+    `;
+    prompt.innerHTML = `
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:22px">📅</span>
+          <div>
+            <strong style="font-size:13.5px;color:#0F172A;display:block">Agenda do e-SISLA Capturada!</strong>
+            <span style="font-size:11.5px;color:#0284C7;font-weight:700">${count} periciado(s) identificados na grade</span>
+          </div>
+        </div>
+        <button type="button" id="btnFecharPromptAgenda" style="background:transparent;border:none;color:#94A3B8;cursor:pointer;font-size:16px;padding:2px 6px">✕</button>
+      </div>
+      <div style="font-size:11.5px;color:#475569;margin-bottom:12px;line-height:1.4">
+        Deseja importar automaticamente estes agendamentos para a sua <strong>Agenda Médica</strong> no sistema Ambiental?
+      </div>
+      <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px">
+        <button type="button" id="btnIgnorarAgenda" style="background:#FFFFFF;border:1px solid #CBD5E1;color:#64748B;font-size:11.5px;font-weight:700;padding:6px 12px;border-radius:7px;cursor:pointer">
+          Dispensar
+        </button>
+        <button type="button" id="btnExecutarImportarAgenda" style="background:linear-gradient(135deg, #0284C7 0%, #0369A1 100%);color:#FFFFFF;border:none;font-size:11.5px;font-weight:800;padding:6.5px 14px;border-radius:7px;cursor:pointer;box-shadow:0 2px 6px rgba(2,132,199,0.3)">
+          ⚡ Importar para Minha Agenda
+        </button>
+      </div>
+    `;
+
+    document.body.appendChild(prompt);
+
+    document.getElementById('btnFecharPromptAgenda').addEventListener('click', () => prompt.remove());
+    document.getElementById('btnIgnorarAgenda').addEventListener('click', () => prompt.remove());
+    document.getElementById('btnExecutarImportarAgenda').addEventListener('click', async () => {
+      const btn = document.getElementById('btnExecutarImportarAgenda');
+      btn.disabled = true;
+      btn.innerText = 'Importando...';
+      try {
+        if (window.AmbientalAPI?.esisla?.importarAgenda) {
+          await window.AmbientalAPI.esisla.importarAgenda(payload);
+        } else {
+          await fetch('/api/esisla/importar-agenda', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
+        prompt.innerHTML = `
+          <div style="display:flex;align-items:center;gap:8px;color:#16A34A;font-weight:800;font-size:13px">
+            <span>✅</span> ${count} agendamentos importados com sucesso!
+          </div>
+        `;
+        setTimeout(() => prompt.remove(), 2500);
+        if (typeof window.carregarAgenda === 'function') window.carregarAgenda();
+        if (typeof window.carregarAtendimentos === 'function') window.carregarAtendimentos();
+      } catch(err) {
+        alert('Erro ao importar agenda: ' + (err.message || 'Falha na requisição'));
+        prompt.remove();
+      }
+    });
+  }
+
 })();

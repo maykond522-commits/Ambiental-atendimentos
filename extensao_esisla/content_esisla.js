@@ -537,6 +537,262 @@
     return null;
   }
 
+  // ==========================================
+  // 3. HUD DE VERIFICAÇÃO PERICIAL (CHECKLIST)
+  // ==========================================
+  function verificarChecklistLaudoEsisla(targetDoc) {
+    var { doc } = targetDoc ? { doc: targetDoc } : findTargetDoc();
+    var checks = [];
+
+    // 1. Identificação do Servidor
+    var ident = extrairIdentificacaoTela();
+    var hasProto = ident.protocolos.length > 0;
+    var hasServ = ident.nomes.length > 0;
+    checks.push({
+      campo: 'Identificação do Periciado',
+      el: null,
+      ok: hasProto || hasServ,
+      detalhe: hasProto ? `Prot. ${ident.protocolos[0]}` : (hasServ ? ident.nomes[0] : 'Não identificado')
+    });
+
+    // 2. Queixa e Duração
+    var elQueixa = doc.querySelector('textarea[name="voMedico.parRlCat"]');
+    var valQueixa = elQueixa ? elQueixa.value.trim() : '';
+    checks.push({
+      campo: 'Queixa e Duração',
+      el: elQueixa,
+      ok: valQueixa.length >= 20,
+      detalhe: valQueixa ? `${valQueixa.length} caracteres` : 'Pendente de preenchimento'
+    });
+
+    // 3. Exame Físico Geral
+    var elExame = doc.querySelector('textarea[name="voMedico.parRlExApres"]');
+    var valExame = elExame ? elExame.value.trim() : '';
+    checks.push({
+      campo: 'Exame Físico Geral',
+      el: elExame,
+      ok: valExame.length >= 10,
+      detalhe: valExame ? `${valExame.length} caracteres` : 'Pendente de preenchimento'
+    });
+
+    // 4. Parecer Médico
+    var radFav = doc.querySelector('input[name*="flPfinal"][value="1"], #flPfinal1, input[name*="flPfinal"][value="S"]');
+    var radContr = doc.querySelector('input[name*="flPfinal"][value="2"], #flPfinal2, input[name*="flPfinal"][value="N"]');
+    var isFav = radFav && radFav.checked;
+    var isContr = radContr && radContr.checked;
+    var parecerDefinido = isFav || isContr;
+    checks.push({
+      campo: 'Parecer Médico',
+      el: radFav || radContr,
+      ok: parecerDefinido,
+      detalhe: isFav ? 'FAVORÁVEL' : (isContr ? 'CONTRÁRIO' : 'Não selecionado')
+    });
+
+    // 5. Dias Concedidos
+    var elDias = doc.querySelector('input[name="voResult.voParecerFinal.qtDiasPm"], input[name*="qtDias"]');
+    var valDias = elDias ? parseInt(elDias.value, 10) : 0;
+    var diasOk = isContr ? true : (valDias > 0);
+    checks.push({
+      campo: 'Dias Concedidos',
+      el: elDias,
+      ok: diasOk,
+      detalhe: isContr ? '0 dias (Contrário)' : (valDias > 0 ? `${valDias} dias` : 'Obrigatório > 0 para parecer favorável')
+    });
+
+    // 6. CID-10 Principal
+    var elCid = doc.querySelector('input[name="voResult.voParecerFinal.cdCidPm"], input[name*="cdCid"]');
+    var valCid = elCid ? elCid.value.trim().toUpperCase() : '';
+    checks.push({
+      campo: 'CID-10 Principal',
+      el: elCid,
+      ok: valCid.length >= 3,
+      detalhe: valCid || 'Código CID não inserido'
+    });
+
+    // 7. Resposta aos Quesitos
+    var q1 = doc.querySelector('input[name*="Quesito1"]:checked, input[name*="flQ1"]:checked');
+    var q2 = doc.querySelector('input[name*="Quesito2"]:checked, input[name*="flQ2"]:checked');
+    var q3 = doc.querySelector('input[name*="Quesito3"]:checked, input[name*="flQ3"]:checked');
+    var quesitosOk = !!(q1 && q2 && q3);
+    checks.push({
+      campo: 'Resposta aos 3 Quesitos',
+      el: q1 || doc.querySelector('input[name*="Quesito1"]'),
+      ok: quesitosOk,
+      detalhe: quesitosOk ? '1, 2 e 3 respondidos' : 'Quesitos pendentes'
+    });
+
+    // 8. Justificativa Parecer Médico
+    var elJust = doc.getElementById('justificaPericia') || doc.querySelector('textarea[name*="justifica"]');
+    var valJust = elJust ? elJust.value.trim() : '';
+    checks.push({
+      campo: 'Justificativa Pericial DPME',
+      el: elJust,
+      ok: valJust.length >= 25,
+      detalhe: valJust ? `${valJust.length} caracteres` : 'Fundamentação pericial pendente'
+    });
+
+    return checks;
+  }
+
+  function abrirModalChecklistSeguranca() {
+    var old = document.getElementById('ambientalChecklistModal');
+    if (old) old.remove();
+
+    var checks = verificarChecklistLaudoEsisla();
+    var okCount = checks.filter(c => c.ok).length;
+    var totalCount = checks.length;
+    var isAllOk = okCount === totalCount;
+
+    var modal = document.createElement('div');
+    modal.id = 'ambientalChecklistModal';
+    modal.className = 'ambiental-paste-modal-backdrop';
+
+    var itemsHtml = checks.map(c => `
+      <div class="ambiental-checklist-item ${c.ok ? 'item-ok' : 'item-warn'}" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:8px;background:${c.ok ? '#F0FDF4' : '#FFFBEB'};border:1px solid ${c.ok ? '#BBF7D0' : '#FDE68A'};margin-bottom:8px;cursor:pointer" title="Clique para rolar até este campo no formulário">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:16px">${c.ok ? '✅' : '⚠️'}</span>
+          <div>
+            <strong style="font-size:12.5px;color:${c.ok ? '#166534' : '#92400E'};display:block">${c.campo}</strong>
+            <span style="font-size:11px;color:${c.ok ? '#15803D' : '#B45309'}">${c.detalhe}</span>
+          </div>
+        </div>
+        <span style="font-size:11px;font-weight:700;color:${c.ok ? '#16A34A' : '#D97706'}">${c.ok ? 'Conforme' : 'Ajustar ↗'}</span>
+      </div>
+    `).join('');
+
+    modal.innerHTML = `
+      <div class="ambiental-paste-dialog" style="max-width:540px">
+        <div class="ambiental-paste-head" style="background:${isAllOk ? '#F0FDF4' : '#FFFBEB'};border-bottom:1px solid ${isAllOk ? '#BBF7D0' : '#FDE68A'}">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:22px">${isAllOk ? '🛡️' : '📋'}</span>
+            <div>
+              <strong style="color:${isAllOk ? '#166534' : '#92400E'};font-size:14px;display:block">HUD de Verificação Pericial e-SISLA</strong>
+              <span style="font-size:11px;color:${isAllOk ? '#15803D' : '#B45309'}">${isAllOk ? '100% dos campos obrigatórios conferidos e prontos para gravação!' : `${totalCount - okCount} campo(s) pendente(s) antes de salvar`}</span>
+            </div>
+          </div>
+          <button type="button" class="ambiental-paste-close" id="ambientalChecklistClose">✕</button>
+        </div>
+        <div class="ambiental-paste-body" style="max-height:360px;overflow-y:auto;padding:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;font-size:12px;color:#475569">
+            <span>Status dos requisitos DPME:</span>
+            <strong style="color:${isAllOk ? '#16A34A' : '#D97706'}">${okCount} de ${totalCount} requisitos atendidos</strong>
+          </div>
+          ${itemsHtml}
+        </div>
+        <div class="ambiental-paste-foot">
+          <button type="button" class="ambiental-btn-sec" id="ambientalChecklistFechar">Fechar</button>
+          <button type="button" class="ambiental-btn-pri" id="ambientalChecklistReescanear">🔄 Re-verificar</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    document.getElementById('ambientalChecklistClose').addEventListener('click', () => modal.remove());
+    document.getElementById('ambientalChecklistFechar').addEventListener('click', () => modal.remove());
+    document.getElementById('ambientalChecklistReescanear').addEventListener('click', () => {
+      modal.remove();
+      abrirModalChecklistSeguranca();
+    });
+
+    modal.querySelectorAll('.ambiental-checklist-item').forEach((row, idx) => {
+      row.addEventListener('click', () => {
+        var c = checks[idx];
+        if (c && c.el) {
+          try {
+            c.el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            c.el.focus();
+            destacarElemento(c.el);
+            modal.remove();
+          } catch(_) {}
+        }
+      });
+    });
+  }
+
+  // ==========================================
+  // 4. SCRAPER DE AGENDA E-SISLA (1-CLIQUE)
+  // ==========================================
+  function extrairAgendaEsislaDaTela(targetDoc) {
+    var d = targetDoc || document;
+    var rows = [];
+    var tables = d.querySelectorAll('table');
+
+    tables.forEach(table => {
+      var trs = table.querySelectorAll('tr');
+      if (trs.length < 2) return;
+
+      var headerText = (table.querySelector('tr')?.innerText || table.innerText || '').toLowerCase();
+      var looksLikeAgenda = /hor[áa]rio|protocolo|servidor|periciando|paciente|requerente/i.test(headerText);
+      if (!looksLikeAgenda) return;
+
+      trs.forEach((tr, rIdx) => {
+        var tds = tr.querySelectorAll('td');
+        if (tds.length < 3) return;
+        var textRow = (tr.innerText || '').trim();
+
+        var mProto = textRow.match(/(?:20\d{2}[\.\/]?\d{2}[\.\/]?\d{4,8}|\b\d{8,12}\b)/);
+        var mHora = textRow.match(/\b([01]?\d|2[0-3]):[0-5]\d\b/);
+        var mCpf = textRow.match(/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/);
+        var mRg = textRow.match(/\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dX]\b/i);
+
+        var possivelNome = '';
+        tds.forEach(td => {
+          var txt = (td.innerText || '').trim();
+          if (txt.length >= 6 && txt.length <= 60 && !/\d{4}/.test(txt) && !/protocolo|hor[áa]rio|status|compareceu|agendado/i.test(txt)) {
+            if (/^[A-ZÀ-Ú\s]+$/i.test(txt) && txt.split(/\s+/).length >= 2) {
+              if (!possivelNome || txt.length > possivelNome.length) possivelNome = txt;
+            }
+          }
+        });
+
+        if (mProto || (mHora && possivelNome)) {
+          rows.push({
+            id: mProto ? mProto[0].replace(/\D/g, '') : `agenda_${rIdx}`,
+            protocolo: mProto ? mProto[0] : '',
+            horario: mHora ? mHora[0] : '08:00',
+            servidor: possivelNome || 'Servidor',
+            cpf: mCpf ? mCpf[0] : '',
+            rg: mRg ? mRg[0] : '',
+            cargo: '',
+            tipo: 'Perícia Médica e-SISLA'
+          });
+        }
+      });
+    });
+
+    return rows;
+  }
+
+  function importarAgendaEsisla(agendaRows) {
+    if (!agendaRows || !agendaRows.length) {
+      mostrarToast('Nenhum agendamento detectado nesta tela do e-SISLA.', 'erro');
+      return;
+    }
+
+    var hoje = new Date().toISOString().split('T')[0];
+    var payload = {
+      data: hoje,
+      itens: agendaRows
+    };
+
+    chrome.storage.local.set({
+      ambiental_esisla_scraped_agenda: payload,
+      ambiental_esisla_last_scraped_at: new Date().toISOString()
+    }, () => {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(JSON.stringify(payload, null, 2)).catch(() => {});
+      }
+
+      chrome.runtime.sendMessage({
+        action: 'AGENDA_ESISLA_CAPTURADA',
+        payload: payload
+      });
+
+      mostrarToast(`✅ ${agendaRows.length} agendamentos extraídos da agenda e-SISLA! Sincronizados com o Ambiental.`, 'sucesso');
+    });
+  }
+
   function criarWidgetFlutuante() {
     if (window.top !== window && !isEsislaDoc(document)) return;
     if (document.getElementById('ambientalEsislaWidget')) return;
@@ -555,6 +811,12 @@
         <div class="ambiental-widget-info" id="ambientalWidgetInfo">
           <span id="ambientalWidgetProto">Analisando periciado...</span>
         </div>
+        <button type="button" class="ambiental-widget-btn-check" id="ambientalWidgetBtnCheck" style="display:none" title="Conferir Checklist de Segurança do Laudo (HUD)">
+          📋 Checklist
+        </button>
+        <button type="button" class="ambiental-widget-btn-agenda" id="ambientalWidgetBtnAgenda" style="display:none" title="Importar grade de perícias do dia para o Ambiental">
+          📅 Importar Agenda
+        </button>
         <button type="button" class="ambiental-widget-btn-fill disabled" id="ambientalWidgetBtnFill" title="Aguardando identificação do periciado" disabled>
           🔒 Bloqueado
         </button>
@@ -565,6 +827,12 @@
 
       <div class="ambiental-widget-dropdown" id="ambientalWidgetDropdown" style="display:none">
         <div id="ambientalQueueContainer"></div>
+        <div class="ambiental-widget-menu-item" id="ambientalMenuChecklist" style="display:none">
+          📋 Checklist Pericial (HUD de Segurança)
+        </div>
+        <div class="ambiental-widget-menu-item" id="ambientalMenuImportarAgenda" style="display:none">
+          📅 Importar Agenda do e-SISLA
+        </div>
         <div class="ambiental-widget-menu-item" id="ambientalMenuColarClip">
           📋 Colar da Área de Transferência
         </div>
@@ -589,6 +857,21 @@
     var btnTrigger = document.getElementById('ambientalWidgetTrigger');
     var btnMenu = document.getElementById('ambientalWidgetBtnMenu');
     var dropdown = document.getElementById('ambientalWidgetDropdown');
+    var btnCheck = document.getElementById('ambientalWidgetBtnCheck');
+    var btnAgenda = document.getElementById('ambientalWidgetBtnAgenda');
+    var menuChecklist = document.getElementById('ambientalMenuChecklist');
+    var menuAgenda = document.getElementById('ambientalMenuImportarAgenda');
+
+    if (btnCheck) btnCheck.addEventListener('click', abrirModalChecklistSeguranca);
+    if (menuChecklist) menuChecklist.addEventListener('click', abrirModalChecklistSeguranca);
+    if (btnAgenda) btnAgenda.addEventListener('click', () => {
+      var agRows = extrairAgendaEsislaDaTela();
+      importarAgendaEsisla(agRows);
+    });
+    if (menuAgenda) menuAgenda.addEventListener('click', () => {
+      var agRows = extrairAgendaEsislaDaTela();
+      importarAgendaEsisla(agRows);
+    });
 
     btnFill.addEventListener('click', dispararPreenchimentoAtual);
     btnTrigger.addEventListener('click', () => {
@@ -974,6 +1257,51 @@
       var protoEl = document.getElementById('ambientalWidgetProto');
       var dot = document.getElementById('ambientalWidgetDot');
       var btnFill = document.getElementById('ambientalWidgetBtnFill');
+      var btnCheck = document.getElementById('ambientalWidgetBtnCheck');
+      var btnAgenda = document.getElementById('ambientalWidgetBtnAgenda');
+      var menuChecklist = document.getElementById('ambientalMenuChecklist');
+      var menuAgenda = document.getElementById('ambientalMenuImportarAgenda');
+
+      var { doc } = findTargetDoc();
+
+      // 1. HUD Checklist de Segurança Pericial (visível em telas de laudo)
+      if (isLaudoDoc(doc)) {
+        var checks = verificarChecklistLaudoEsisla(doc);
+        var okCount = checks.filter(c => c.ok).length;
+        var totalCount = checks.length;
+        if (btnCheck) {
+          btnCheck.style.display = 'inline-flex';
+          btnCheck.innerHTML = `📋 ${okCount}/${totalCount}`;
+          if (okCount === totalCount) {
+            btnCheck.classList.remove('has-warnings');
+            btnCheck.title = 'Checklist 100% Conforme! Pronto para gravar.';
+          } else {
+            btnCheck.classList.add('has-warnings');
+            btnCheck.title = `${totalCount - okCount} requisito(s) pendente(s) no laudo. Clique para conferir!`;
+          }
+        }
+        if (menuChecklist) menuChecklist.style.display = 'block';
+      } else {
+        if (btnCheck) btnCheck.style.display = 'none';
+        if (menuChecklist) menuChecklist.style.display = 'none';
+      }
+
+      // 2. Importação 1-Clique da Grade do e-SISLA (visível em telas de agendamento/tabelas)
+      var agRows = extrairAgendaEsislaDaTela(doc);
+      if (agRows && agRows.length > 0) {
+        if (btnAgenda) {
+          btnAgenda.style.display = 'inline-flex';
+          btnAgenda.innerHTML = `📅 Importar (${agRows.length})`;
+          btnAgenda.title = `Clique para importar ${agRows.length} agendamentos desta tela para o Ambiental`;
+        }
+        if (menuAgenda) {
+          menuAgenda.style.display = 'block';
+          menuAgenda.innerHTML = `📅 Importar Agenda (${agRows.length} itens)`;
+        }
+      } else {
+        if (btnAgenda) btnAgenda.style.display = 'none';
+        if (menuAgenda) menuAgenda.style.display = 'none';
+      }
 
       renderizarListaFilaNoDropdown(fila);
 

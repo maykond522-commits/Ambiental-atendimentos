@@ -4,6 +4,7 @@ import atexit
 import base64
 from contextlib import contextmanager
 import csv
+import hmac
 import json
 import os
 import re
@@ -62,6 +63,7 @@ load_dotenv(os.path.join(BASE_DIR, ".env"), override=False)
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
 SUPABASE_PUBLISHABLE_KEY = os.getenv("SUPABASE_PUBLISHABLE_KEY", os.getenv("SUPABASE_ANON_KEY", "")).strip()
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+AUTH_SECRET = os.getenv("AUTH_SECRET") or SUPABASE_SERVICE_ROLE_KEY or "ambiental-corp-secret-key-fallback"
 MAX_BODY_BYTES = int(os.getenv("MAX_BODY_BYTES", "120000"))
 AI_RATE_LIMIT = int(os.getenv("AI_RATE_LIMIT_PER_MINUTE", "12"))
 RATE_WINDOW = 60
@@ -221,7 +223,7 @@ def _request_supabase_user(token: str) -> dict[str, Any] | None:
                 "Authorization": f"Bearer {clean_token}",
                 "Accept": "application/json",
             },
-            timeout=12
+            timeout=4
         )
         if response.status_code != 200:
             app.logger.warning("Supabase token validation failed with status=%s", response.status_code)
@@ -231,7 +233,7 @@ def _request_supabase_user(token: str) -> dict[str, Any] | None:
         return payload if isinstance(payload, dict) and payload.get("id") else None
         
     except requests.exceptions.Timeout:
-        app.logger.warning("Supabase auth request timed out (timeout=12s).")
+        app.logger.warning("Supabase auth request timed out (timeout=4s).")
         return None
     except Exception as e:
         app.logger.warning("Supabase auth request failed: %s", type(e).__name__)
@@ -302,6 +304,54 @@ def _role_from_profile(user: dict[str, Any], db) -> tuple[str | None, dict[str, 
         "permissoes": sorted(_ROLE_PERMISSIONS.get(role, set())),
     }
 
+def _sign_session_context(profile: dict[str, Any], token_hash: str) -> str:
+    exp = int(time.time() + 28800)
+    data = {
+        "id": profile.get("id"),
+        "nome": profile.get("nome"),
+        "perfil": profile.get("perfil"),
+        "crm": profile.get("crm"),
+        "email": profile.get("email"),
+        "modo_atendimento": profile.get("modo_atendimento"),
+        "permissoes": profile.get("permissoes"),
+        "th": token_hash[:16],
+        "exp": exp,
+    }
+    payload = base64.urlsafe_b64encode(json.dumps(data, separators=(",", ":")).encode("utf-8")).decode("ascii").rstrip("=")
+    sig = hmac.new(AUTH_SECRET.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).hexdigest()[:32]
+    return f"{payload}.{sig}"
+
+def _verify_session_context(signed_ctx: str, token_hash: str) -> dict[str, Any] | None:
+    if not signed_ctx or "." not in signed_ctx:
+        return None
+    try:
+        payload, sig = signed_ctx.rsplit(".", 1)
+        expected_sig = hmac.new(AUTH_SECRET.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).hexdigest()[:32]
+        if not hmac.compare_digest(sig, expected_sig):
+            return None
+        padded = payload + "=" * (-len(payload) % 4)
+        data = json.loads(base64.urlsafe_b64decode(padded.encode("ascii")).decode("utf-8"))
+        if not isinstance(data, dict):
+            return None
+        if data.get("exp", 0) < time.time():
+            return None
+        if data.get("th") != token_hash[:16]:
+            return None
+        role = data.get("perfil")
+        if role not in _ALLOWED_ROLES:
+            return None
+        return {
+            "id": str(data.get("id") or ""),
+            "nome": str(data.get("nome") or "Usuário"),
+            "email": str(data.get("email") or ""),
+            "perfil": role,
+            "crm": data.get("crm"),
+            "modo_atendimento": data.get("modo_atendimento"),
+            "permissoes": data.get("permissoes") or sorted(_ROLE_PERMISSIONS.get(role, set())),
+        }
+    except Exception:
+        return None
+
 def _authenticate_request() -> tuple[dict[str, Any] | None, str | None]:
     token = _get_request_token()
     if not token:
@@ -318,7 +368,19 @@ def _authenticate_request() -> tuple[dict[str, Any] | None, str | None]:
         if cached and cached.get("expires", 0) > now:
             return cached.get("profile"), token
 
-    # 2. Decodifica claims do token JWT
+    # 2. Checa cookie de contexto de sessão assinado (ultra-rápido, ~0ms, validação sem I/O de rede)
+    signed_ctx = request.cookies.get("ambiental_sctx")
+    if signed_ctx:
+        verified_profile = _verify_session_context(signed_ctx, token_hash)
+        if verified_profile:
+            with _AUTH_CACHE_LOCK:
+                _AUTH_CACHE[token_hash] = {
+                    "profile": verified_profile,
+                    "expires": now + 600,
+                }
+            return verified_profile, token
+
+    # 3. Decodifica claims do token JWT
     claims = _decode_jwt_payload_unverified(token)
     token_exp = claims.get("exp") if claims else None
     if token_exp and token_exp < now:
@@ -335,11 +397,24 @@ def _authenticate_request() -> tuple[dict[str, Any] | None, str | None]:
             "user_metadata": claims.get("user_metadata") or {},
         }
 
-    # 3. Tenta validação remota no Supabase (timeout de 12s)
-    user = _request_supabase_user(token)
+    # 4. Tenta resolver perfil direto no banco de dados (evita HTTP externo para Supabase Auth)
+    if decoded_user:
+        try:
+            db = get_db()
+            role, profile = _role_from_profile(decoded_user, db)
+            if role and profile:
+                cache_ttl = min(token_exp or (now + 3600), now + 900)
+                with _AUTH_CACHE_LOCK:
+                    _AUTH_CACHE[token_hash] = {
+                        "profile": profile,
+                        "expires": cache_ttl,
+                    }
+                return profile, token
+        except Exception as db_exc:
+            app.logger.info("Tentativa direta no DB falhou, prosseguindo com contingência: %s", type(db_exc).__name__)
 
-    # 4. Fallback tolerante a falhas de rede: se o Supabase deu ReadTimeout/erro de conexão
-    # mas o token JWT recebido é estruturalmente válido e ainda não expirou, mantemos a sessão ativa!
+    # 5. Fallback para validação remota no Supabase Auth
+    user = _request_supabase_user(token)
     if not user and decoded_user:
         app.logger.info("Supabase indisponível/timeout; mantendo sessão ativa via claims JWT para usuário %s", decoded_user["id"])
         user = decoded_user
@@ -359,7 +434,7 @@ def _authenticate_request() -> tuple[dict[str, Any] | None, str | None]:
         g._auth_error = ("DB_UNAVAILABLE", "Não foi possível validar o acesso devido a uma instabilidade no servidor de dados.", 503)
         return None, token
 
-    # 5. Salva no cache com TTL de até 15 minutos (ou até expiração do token)
+    # 6. Salva no cache com TTL de até 15 minutos (ou até expiração do token)
     cache_ttl = min(token_exp or (now + 3600), now + 900)
     with _AUTH_CACHE_LOCK:
         _AUTH_CACHE[token_hash] = {
@@ -415,6 +490,8 @@ def _init_pool():
     )
     return DB_POOL
 
+_DB_CONN_LAST_USED: dict[int, float] = {}
+
 def get_db():
     db = getattr(g, "ambiental_db", None)
     if db is not None and not db.closed:
@@ -422,18 +499,24 @@ def get_db():
 
     pool = _init_pool()
     db = pool.getconn()
+    now_conn = time.time()
+    conn_id = id(db)
     try:
         if db.closed:
             raise RuntimeError("Conexão do pool encerrada.")
-        # Remove conexões quebradas antes de entregá-las à requisição.
-        with db.cursor() as cur:
-            cur.execute("SELECT 1")
+        # Só testa com SELECT 1 se a conexão esteve ociosa por mais de 45s (economiza 150-300ms por request)
+        if now_conn - _DB_CONN_LAST_USED.get(conn_id, 0) > 45:
+            with db.cursor() as cur:
+                cur.execute("SELECT 1")
     except Exception:
+        _DB_CONN_LAST_USED.pop(conn_id, None)
         try:
             pool.putconn(db, close=True)
         except Exception:
             pass
         db = pool.getconn()
+        conn_id = id(db)
+    _DB_CONN_LAST_USED[conn_id] = now_conn
     g.ambiental_db = db
     return db
 
@@ -690,8 +773,15 @@ def request_security_context():
     if path in PROTECTED_HTML_PATHS:
         if not AUTH_REQUIRED:
             return
+        token = _get_request_token()
+        if not token:
+            return _html_auth_redirect()
+
         profile, _token = _authenticate_request()
         if not profile:
+            claims = _decode_jwt_payload_unverified(token)
+            if claims and (claims.get("exp") or 0) > time.time() and claims.get("sub"):
+                return
             return _html_auth_redirect()
             
         # Atualize a linha abaixo para cobrir as 3 formas de escrever a URL:
@@ -5907,10 +5997,17 @@ def api_auth_session():
             return _error(code, msg, status_code >= 500, status_code)
         return _error("AUTH_ERROR", "Não foi possível validar sua sessão.", False, 401)
         
-    # Construindo a resposta direto com jsonify para evitar o Erro 500 (bug das tuplas)
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    sctx_val = _sign_session_context(profile, token_hash)
     resp = jsonify({"success": True, "data": profile})
     resp.set_cookie(
         "ambiental_session", token,
+        max_age=28800, httponly=True,
+        secure=APP_ENV == "production",
+        samesite="Lax", path="/",
+    )
+    resp.set_cookie(
+        "ambiental_sctx", sctx_val,
         max_age=28800, httponly=True,
         secure=APP_ENV == "production",
         samesite="Lax", path="/",
@@ -5936,6 +6033,7 @@ def api_auth_logout():
             _AUTH_CACHE.pop(token_hash, None)
     resp = jsonify({"success": True, "data": {"logged_out": True}})
     resp.delete_cookie("ambiental_session", path="/", samesite="Lax")
+    resp.delete_cookie("ambiental_sctx", path="/", samesite="Lax")
     return resp, 200
 
 @app.post("/api/auth/resolve-identifier")

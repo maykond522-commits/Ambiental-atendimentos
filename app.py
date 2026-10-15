@@ -6191,6 +6191,16 @@ def api_check_atendimentos_version():
     res.headers["ETag"] = f'"{token}"'
     return res, 200
 
+def _parse_doctor_name_crm(raw: str) -> tuple[str, str]:
+    s = (raw or "").strip()
+    if not s or s.lower() in ("não identificado", "nao identificado", "médico não informado", "medico nao informado", "-", "none"):
+        return ("Não identificado", "")
+    m = re.search(r"CRM[:\s]*([0-9A-Za-z\/\-]+)", s, re.IGNORECASE)
+    crm = m.group(1).strip() if m else ""
+    clean = re.sub(r"\s*-\s*CRM.*$", "", s, flags=re.IGNORECASE)
+    clean = re.sub(r"\s*CRM[:\s]*[0-9A-Za-z\/\-]+.*$", "", clean, flags=re.IGNORECASE).strip()
+    return clean or s, crm
+
 @app.get("/api/atendimentos")
 def api_list_atendimentos():
     denied = _require_permission("view")
@@ -6359,23 +6369,44 @@ def api_list_atendimentos():
             {stat_where}
             GROUP BY COALESCE(NULLIF(TRIM(medico), ''), 'Não identificado')
             ORDER BY total DESC, medico ASC
-            LIMIT 12
             """,
             stat_params,
         )
         doc_rows = cur.fetchall() or []
         cur.close()
 
-        por_medico = [
-            {
-                "medico": d["medico"],
-                "total": int(d["total"] or 0),
-                "finalizados": int(d["finalizados"] or 0),
-                "favoraveis": int(d["favoraveis"] or 0),
-                "contrarios": int(d["contrarios"] or 0),
-            }
-            for d in doc_rows
-        ]
+        doc_map = {}
+        for d in doc_rows:
+            raw_med = str(d.get("medico") or "").strip()
+            clean_name, crm = _parse_doctor_name_crm(raw_med)
+            key = clean_name.upper()
+            if key not in doc_map:
+                doc_map[key] = {
+                    "medico": raw_med,
+                    "nome": clean_name,
+                    "crm": crm,
+                    "total": 0,
+                    "finalizados": 0,
+                    "favoraveis": 0,
+                    "contrarios": 0,
+                }
+            entry = doc_map[key]
+            if crm and not entry["crm"]:
+                entry["crm"] = crm
+            if " - CRM:" in raw_med:
+                entry["medico"] = raw_med
+            entry["total"] += int(d.get("total") or 0)
+            entry["finalizados"] += int(d.get("finalizados") or 0)
+            entry["favoraveis"] += int(d.get("favoraveis") or 0)
+            entry["contrarios"] += int(d.get("contrarios") or 0)
+
+        por_medico = list(doc_map.values())
+        for item in por_medico:
+            t = item["total"]
+            item["taxa_conclusao"] = round((item["finalizados"] / t) * 100, 1) if t else 0.0
+            if item["crm"] and "CRM" not in item["medico"]:
+                item["medico"] = f"{item['nome']} - CRM: {item['crm']}"
+        por_medico.sort(key=lambda x: (x["total"], x["finalizados"]), reverse=True)
 
         stats = {
             "total": total_count,

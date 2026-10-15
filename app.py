@@ -48,6 +48,14 @@ except ImportError:
     genai = None
     types = None
 
+try:
+    import pypdf
+except ImportError:
+    try:
+        import PyPDF2 as pypdf
+    except ImportError:
+        pypdf = None
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"), override=False)
 
@@ -4643,9 +4651,8 @@ def api_esisla_parse_pdf():
                 mimetype = b.get("mimetype", "application/pdf")
 
         # Se temos arquivo binário PDF, extrair estritamente da primeira página (página 0) onde estão todos os dados
-        if file_bytes:
+        if file_bytes and pypdf:
             try:
-                import pypdf
                 reader = pypdf.PdfReader(BytesIO(file_bytes))
                 if reader.pages:
                     raw_text = (reader.pages[0].extract_text() or "").strip()
@@ -4857,8 +4864,6 @@ def api_esisla_vincular_agenda_batch():
              ORDER BY a.hora ASC, a.id ASC
         """, (medico_id, data_str))
         agenda_rows = [dict(r) for r in cur.fetchall()]
-
-        import pypdf
         import unicodedata
 
         def _norm(txt):
@@ -4900,12 +4905,13 @@ def api_esisla_vincular_agenda_batch():
 
             # Extração de texto (estritamente da 1ª página onde estão os dados)
             raw_text = ""
-            try:
-                reader = pypdf.PdfReader(BytesIO(file_bytes))
-                if reader.pages:
-                    raw_text = (reader.pages[0].extract_text() or "").strip()
-            except Exception as e:
-                app.logger.warning("Erro pypdf no arquivo %s: %s", fname, e)
+            if pypdf:
+                try:
+                    reader = pypdf.PdfReader(BytesIO(file_bytes))
+                    if reader.pages:
+                        raw_text = (reader.pages[0].extract_text() or "").strip()
+                except Exception as e:
+                    app.logger.warning("Erro pypdf no arquivo %s: %s", fname, e)
 
             dados = parse_esisla_text(raw_text) if raw_text else {}
 
@@ -5572,10 +5578,27 @@ def api_admin_listar_agendas_medico(user_id):
     })
 
 def _parse_agenda_pdf_content(pdf_bytes):
-    import io, pypdf
-    stream = io.BytesIO(pdf_bytes)
-    reader = pypdf.PdfReader(stream)
-    full_text = "\n".join([page.extract_text() or "" for page in reader.pages])
+    import io
+    full_text = ""
+    try:
+        import pypdf
+        stream = io.BytesIO(pdf_bytes)
+        reader = pypdf.PdfReader(stream)
+        full_text = "\n".join([page.extract_text() or "" for page in reader.pages])
+    except ImportError:
+        try:
+            import PyPDF2
+            stream = io.BytesIO(pdf_bytes)
+            reader = PyPDF2.PdfReader(stream)
+            full_text = "\n".join([page.extract_text() or "" for page in reader.pages])
+        except ImportError:
+            # Fallback direto via regex de streams textuais do PDF caso faltem libs
+            raw = pdf_bytes.decode("latin1", errors="ignore")
+            text_blocks = re.findall(r'\((.*?)\)\s*T[jJ]', raw)
+            if text_blocks:
+                full_text = "\n".join(text_blocks)
+            else:
+                raise ImportError("A biblioteca 'pypdf' não foi encontrada no ambiente de execução do servidor. Instale com 'pip install pypdf' ou reinicie o servidor.")
     
     date_match = re.search(r'Per[í\xed\ufffd\w\s]*Agendadas\s+para:?\s*(\d{2}/\d{2}/\d{4})', full_text, re.IGNORECASE)
     if not date_match:

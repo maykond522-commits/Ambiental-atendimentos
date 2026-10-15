@@ -56,4 +56,16 @@ def test_gestao_atendimentos_producao_por_medico_elements():
     assert 'id="modalDocHeroCount"' in GESTAO_HTML
     assert 'id="modalDocDataEspecifica"' in GESTAO_HTML
     assert "abrirModalAtendimentosMedico" in GESTAO_HTML
+    assert "abrirModalAtendimentosMedicoByIndex" in GESTAO_HTML
+    assert "window.abrirModalAtendimentosMedicoByIndex" in GESTAO_HTML
     assert "executarFiltroAtendimentosMedico" in GESTAO_HTML
+
+    # 4. Verificação de integridade e aninhamento dos modais
+    idx_bench = GESTAO_HTML.find('id="modalBenchmarkGestao"')
+    idx_medico = GESTAO_HTML.find('id="modalAtendimentosMedico"')
+    assert idx_bench != -1 and idx_medico != -1
+    # Deve haver fechamento do modalBenchmarkGestao antes de modalAtendimentosMedico
+    bench_segment = GESTAO_HTML[idx_bench:idx_medico]
+    assert "</div>\n  </div>\n</div>" in bench_segment or "</div>\r\n  </div>\r\n</div>" in bench_segment
+    # O modalAtendimentosMedico não deve ter style="display:none" inline impeditivo
+    assert '<div class="modal" id="modalAtendimentosMedico">' in GESTAO_HTML

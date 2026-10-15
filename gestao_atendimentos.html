@@ -3594,8 +3594,11 @@ body.modal-lock { overscroll-behavior: none; }
     <div class="dialog-foot">
       <button class="btn" onclick="closeModal('modalBenchmarkGestao')">Fechar</button>
     </div>
+  </div>
+</div>
+
 <!-- Modal Personalizado para Ver Atendimentos do Médico -->
-<div class="modal" id="modalAtendimentosMedico" style="display:none">
+<div class="modal" id="modalAtendimentosMedico">
   <div class="dialog modal-atendimentos-dialog">
     <!-- Header -->
     <div class="dialog-head doc-modal-head">
@@ -4432,8 +4435,10 @@ function setDocViewMode(mode) {
     if (cards) cards.style.display = (mode === 'cards') ? 'grid' : 'none';
     if (table) table.style.display = (mode === 'table') ? 'block' : 'none';
 }
+window.setDocViewMode = setDocViewMode;
 
 let currentSelectedDoctor = null;
+window._doctorProductionList = [];
 
 function abrirModalAtendimentosMedico(nome, crm, total, rawMedico) {
     currentSelectedDoctor = { nome, crm, total, rawMedico };
@@ -4462,6 +4467,19 @@ function abrirModalAtendimentosMedico(nome, crm, total, rawMedico) {
     
     setModal('modalAtendimentosMedico', true);
 }
+window.abrirModalAtendimentosMedico = abrirModalAtendimentosMedico;
+
+function abrirModalAtendimentosMedicoByIndex(idx) {
+    const list = window._doctorProductionList || [];
+    const d = list[idx];
+    if (!d) return;
+    const rawMed = String(d.medico || '');
+    const cleanName = d.nome || rawMed.replace(/\s*-\s*CRM.*$/i, '').replace(/\s*CRM[:\s]*\d+.*$/i, '').trim() || 'Médico não informado';
+    const crmMatch = rawMed.match(/CRM[:\s]*([0-9A-Z\/\-]+)/i);
+    const crmVal = d.crm || (crmMatch ? crmMatch[1] : '');
+    abrirModalAtendimentosMedico(cleanName, crmVal, d.total || 0, rawMed);
+}
+window.abrirModalAtendimentosMedicoByIndex = abrirModalAtendimentosMedicoByIndex;
 
 function executarFiltroAtendimentosMedico(tipo) {
     if (!currentSelectedDoctor) return;
@@ -4532,27 +4550,46 @@ function executarFiltroAtendimentosMedico(tipo) {
     const iniInput = document.getElementById('periodoInicio');
     const fimInput = document.getElementById('periodoFim');
     const searchInput = document.getElementById('search');
+    const filterInput = document.getElementById('filter');
+    const cidInput = document.getElementById('cid');
+    const unidadeInput = document.getElementById('unidade');
     
     if (medicoInput) medicoInput.value = nome;
     if (iniInput) iniInput.value = ini;
     if (fimInput) fimInput.value = fim;
     if (searchInput) searchInput.value = '';
+    if (filterInput) filterInput.value = 'all';
+    if (cidInput) cidInput.value = '';
+    if (unidadeInput) unidadeInput.value = '';
+
+    tab = 'all';
+    document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === 'all'));
     
     goToSection('atendimentos');
+    
+    refresh(false);
     
     fetchServer({ force: true }).then(() => {
         refresh(false);
         if (window.AmbientalUtils?.toast) {
             AmbientalUtils.toast(toastMsg, 'info');
         }
+    }).catch(() => {
+        if (window.AmbientalUtils?.toast) {
+            AmbientalUtils.toast(toastMsg, 'info');
+        }
     });
 }
+window.executarFiltroAtendimentosMedico = executarFiltroAtendimentosMedico;
 
 function renderDoctorProduction(rows) {
     const cardsContainer = document.getElementById('doctorCardsGrid');
     const tableBody = document.getElementById('doctorDashboardBody');
     
-    if (!rows || !rows.length) {
+    const validRows = Array.isArray(rows) ? rows : [];
+    window._doctorProductionList = validRows;
+    
+    if (!validRows.length) {
         if (cardsContainer) cardsContainer.innerHTML = '<div class="empty" style="grid-column:1/-1;padding:32px;text-align:center;color:#8A99AC">Nenhum atendimento disponível no escopo atual.</div>';
         if (tableBody) tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#8A99AC;padding:20px">Nenhum atendimento disponível no escopo atual.</td></tr>';
         return;
@@ -4564,7 +4601,7 @@ function renderDoctorProduction(rows) {
     let totalFav = 0;
     let totalContra = 0;
 
-    rows.forEach(d => {
+    validRows.forEach(d => {
         if (d.nome !== 'Não identificado' && d.medico !== 'Não identificado') {
             totalMedicos++;
         }
@@ -4599,7 +4636,7 @@ function renderDoctorProduction(rows) {
     if (viewCount) viewCount.textContent = `${totalMedicos} médico${totalMedicos === 1 ? '' : 's'} ativo${totalMedicos === 1 ? '' : 's'}`;
 
     if (cardsContainer) {
-        cardsContainer.innerHTML = rows.map(d => {
+        cardsContainer.innerHTML = validRows.map((d, idx) => {
             const rawMed = String(d.medico || '');
             const cleanName = d.nome || rawMed.replace(/\s*-\s*CRM.*$/i, '').replace(/\s*CRM[:\s]*\d+.*$/i, '').trim() || 'Médico não informado';
             const crmMatch = rawMed.match(/CRM[:\s]*([0-9A-Z\/\-]+)/i);
@@ -4658,7 +4695,7 @@ function renderDoctorProduction(rows) {
                     </div>
 
                     <div class="doc-card-foot">
-                        <button type="button" class="btn-ver-atendimentos" onclick="abrirModalAtendimentosMedico('${esc(cleanName)}', '${esc(crmVal)}', ${d.total || 0}, '${esc(rawMed)}')">
+                        <button type="button" class="btn-ver-atendimentos" onclick="window.abrirModalAtendimentosMedicoByIndex(${idx})">
                             <svg class="btn-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                 <polyline points="14 2 14 8 20 8"></polyline>
@@ -4676,7 +4713,7 @@ function renderDoctorProduction(rows) {
     }
 
     if (tableBody) {
-        tableBody.innerHTML = rows.map(d => {
+        tableBody.innerHTML = validRows.map((d, idx) => {
             const rawMed = String(d.medico || '');
             const cleanName = d.nome || rawMed.replace(/\s*-\s*CRM.*$/i, '').replace(/\s*CRM[:\s]*\d+.*$/i, '').trim() || 'Médico não informado';
             const crmMatch = rawMed.match(/CRM[:\s]*([0-9A-Z\/\-]+)/i);
@@ -4708,7 +4745,7 @@ function renderDoctorProduction(rows) {
                     <td style="text-align:center"><span class="badge-num red">${d.contrarios || 0}</span></td>
                     <td style="text-align:center"><span class="badge-num gray">${emAberto}</span></td>
                     <td style="text-align:right">
-                        <button type="button" class="btn-ver-atendimentos-sm" onclick="abrirModalAtendimentosMedico('${esc(cleanName)}', '${esc(crmVal)}', ${d.total || 0}, '${esc(rawMed)}')">
+                        <button type="button" class="btn-ver-atendimentos-sm" onclick="window.abrirModalAtendimentosMedicoByIndex(${idx})">
                             <span>Ver atendimentos</span>
                             <span class="btn-arrow">→</span>
                         </button>

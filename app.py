@@ -631,6 +631,8 @@ def _init_db():
         CREATE INDEX IF NOT EXISTS idx_auditoria_atd_id ON auditoria_acessos(atendimento_id);
         CREATE INDEX IF NOT EXISTS idx_auditoria_usr_id ON auditoria_acessos(usuario_id);
         CREATE INDEX IF NOT EXISTS idx_auditoria_criado ON auditoria_acessos(criado_em DESC);
+        CREATE INDEX IF NOT EXISTS idx_historico_atd_id ON historico_atendimento(atendimento_id);
+        CREATE INDEX IF NOT EXISTS idx_historico_criado ON historico_atendimento(criado_em DESC);
         """)
         conn.commit()
         cur.close()
@@ -825,20 +827,60 @@ def _sync_child_tables(db, rid, payload):
         cur.execute("INSERT INTO quesitos(atendimento_id, numero, pergunta, resposta, atualizado_em) VALUES(%s, %s, %s, %s, %s) ON CONFLICT (atendimento_id, numero) DO UPDATE SET pergunta=EXCLUDED.pergunta, resposta=EXCLUDED.resposta, atualizado_em=EXCLUDED.atualizado_em", (rid, i, str(q.get("pergunta") or ""), str(q.get("resposta") or ""), now))
     cur.close()
 
+_IGNORED_AUDIT_KEYS = {
+    "aux", "validation", "__serverSyncedAt", "__serverVersion", "__serverId",
+    "current", "aiAlertas", "inconsistencias", "completude", "statusHistory"
+}
+
 def _audit_record(db, rid, old, new, origin="MANUAL"):
     cur = db.cursor()
     user_id = getattr(request, "user_id", None)
     user_name = getattr(request, "user_name", "Sistema")
+    now = _utc_now()
     if not old:
-        cur.execute("INSERT INTO historico_atendimento(atendimento_id, usuario_id, usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em) VALUES(%s, %s, %s, %s, %s, %s, %s, %s)", (rid, user_id, user_name, "__ATENDIMENTO__", "", json.dumps(new, ensure_ascii=False), origin, _utc_now()))
+        clean_new = {k: v for k, v in new.items() if k not in _IGNORED_AUDIT_KEYS}
+        cur.execute(
+            "INSERT INTO historico_atendimento(atendimento_id, usuario_id, usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em) "
+            "VALUES(%s, %s, %s, %s, %s, %s, %s, %s)",
+            (rid, user_id, user_name, "__ATENDIMENTO__", "", json.dumps(clean_new, ensure_ascii=False)[:2000], origin, now)
+        )
         cur.close()
         return
-    keys = sorted(set(old.keys()) | set(new.keys()))
+
+    keys = sorted((set(old.keys()) | set(new.keys())) - _IGNORED_AUDIT_KEYS)
     for k in keys:
         ov = json.dumps(old.get(k), ensure_ascii=False, sort_keys=True)
         nv = json.dumps(new.get(k), ensure_ascii=False, sort_keys=True)
         if ov != nv:
-            cur.execute("INSERT INTO historico_atendimento(atendimento_id, usuario_id, usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em) VALUES(%s, %s, %s, %s, %s, %s, %s, %s)", (rid, user_id, user_name, k, ov[:8000], nv[:8000], origin, _utc_now()))
+            # Proteção contra flood de auto-save: agrupar edições contínuas do mesmo campo/usuário dentro de 120s
+            cur.execute(
+                "SELECT id, valor_anterior, criado_em FROM historico_atendimento "
+                "WHERE atendimento_id=%s AND campo=%s AND usuario_id IS NOT DISTINCT FROM %s "
+                "ORDER BY id DESC LIMIT 1",
+                (rid, k, user_id)
+            )
+            recent = cur.fetchone()
+            should_update = False
+            if recent and recent.get("criado_em"):
+                try:
+                    c_dt = datetime.fromisoformat(str(recent["criado_em"]).replace("Z", "+00:00"))
+                    n_dt = datetime.fromisoformat(now.replace("Z", "+00:00"))
+                    if (n_dt - c_dt).total_seconds() < 120:
+                        should_update = True
+                except Exception:
+                    pass
+            
+            if should_update:
+                cur.execute(
+                    "UPDATE historico_atendimento SET novo_valor=%s, criado_em=%s WHERE id=%s",
+                    (nv[:2000], now, recent["id"])
+                )
+            else:
+                cur.execute(
+                    "INSERT INTO historico_atendimento(atendimento_id, usuario_id, usuario_nome, campo, valor_anterior, novo_valor, origem, criado_em) "
+                    "VALUES(%s, %s, %s, %s, %s, %s, %s, %s)",
+                    (rid, user_id, user_name, k, ov[:2000], nv[:2000], origin, now)
+                )
     cur.close()
 
 class AIResult(BaseModel):

@@ -4364,11 +4364,6 @@ function renderAIResult(result,target="aiOutput"){
 }
 function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
 async function apiAI(path, payload, action, label, target = "aiOutput") {
-  if (!navigator.onLine) {
-    setAIState("Sem conexão", "error");
-    toast("Sem conexão. A sugestão de IA requer conexão com a internet.");
-    return null;
-  }
   if (aiInFlight) {
     toast("Já existe uma sugestão de IA em andamento.");
     return null;
@@ -4718,7 +4713,7 @@ async function applyFinalReportAI(){
 }
 
 function getApiBase(){return location.protocol==="file:"?API_FALLBACK:location.origin;}
-function refreshAIStatus(){if(!navigator.onLine){setAIStatus("offline","IA Indisponível");return;}AmbientalAuth.authFetch(`${getApiBase()}/status-ia`,{headers:{"Accept":"application/json"},cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject()).then(d=>{aiBackendOnline=!!d?.backend_online;aiGeminiAvailable=!!d?.gemini_disponivel;setAIStatus(aiGeminiAvailable?"online":"offline",aiGeminiAvailable?"IA Online":"IA Indisponível");}).catch(()=>{aiBackendOnline=false;aiGeminiAvailable=false;setAIStatus("offline","IA Indisponível");});}
+function refreshAIStatus(){AmbientalAuth.authFetch(`${getApiBase()}/status-ia`,{headers:{"Accept":"application/json"},cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject()).then(d=>{aiBackendOnline=!!d?.backend_online;aiGeminiAvailable=!!d?.gemini_disponivel;setAIStatus(aiGeminiAvailable?"online":"offline",aiGeminiAvailable?"IA Online":"IA Indisponível");}).catch(()=>{aiBackendOnline=false;aiGeminiAvailable=false;setAIStatus("offline","IA Indisponível");});}
 function formatApiError(data,status){const err=data?.error||{};const d=String(err?.message||data?.detail||data?.error?.detail||"").trim();const details=err?.details||{};const g=details?.status_gemini??data?.status_gemini;const ra=Number(details?.retry_after_seconds||data?.retry_after_seconds||0);if(g===404)return `Modelo Gemini indisponível (HTTP ${g}). ${d}`;if(g===401||g===403)return `Chave Gemini inválida ou sem permissão (HTTP ${g}). ${d}`;if(g===429||status===429)return `IA temporariamente ocupada. ${d||"Aguarde alguns segundos e tente novamente."}${ra?` Aguarde ${ra}s.`:""}`;if(g>=500&&g<=599)return `Indisponibilidade temporária da IA. ${d||"Tente novamente em instantes."}`;return d||`Erro HTTP ${status||"desconhecido"}.`;}
 
 function openDiagnostic(){$("diagnosticModal").classList.add("show");renderDiagnosticBase();runDiagnostics();}
@@ -6388,7 +6383,7 @@ function openManagement() {
 function workflowStatus(){return String(state.workflowStatus||(state.finalizado?"FINALIZADO":"RASCUNHO")).toUpperCase();}
 function setPersistStatus(kind,text){if($("saveDot"))$("saveDot").className=`save-dot ${kind||""}`;if($("saveText"))$("saveText").textContent=text;}
 async function tryServerLoad(id){
-  if(!id || !navigator.onLine) return false;
+  if(!id) return false;
   try{
     const d=await AmbientalAPI.atendimento.get(id);
     if(d?.payload){
@@ -6422,11 +6417,6 @@ async function syncToServer(manual=false){
   if(isFinalizedReadOnly()){
     console.log("Atendimento em modo leitura. Sincronização de background ignorada.");
     return {ok: true, readonly: true};
-  }
-
-  if(!navigator.onLine){
-    setPersistStatus("","Offline — salvo localmente");
-    return {ok:false,offline:true};
   }
   
   try{
@@ -6510,13 +6500,12 @@ async function syncToServer(manual=false){
     
   } catch(e) {
     console.warn("Persistência API indisponível",e);
-    setPersistStatus("","Falha ao sincronizar");
+    setPersistStatus("","Offline — salvo localmente");
     if(manual)toast(e.message||"Falha ao salvar no servidor.");
-    return {ok:false,error:e};
+    return {ok:false,error:e,offline:true};
   }
 }
 async function flushOfflineQueue(){
-  if(!navigator.onLine) return false;
   const queue=window.AmbientalUtils?.SyncQueue;
   if(!queue) return false;
   const items=await queue.list();
@@ -6580,30 +6569,23 @@ async function persistNow(updateStatus=false){
     const queue = window.AmbientalUtils?.SyncQueue;
     const snapshot = JSON.parse(JSON.stringify(state));
     if(updateStatus){
-      setPersistStatus("saving",navigator.onLine?"Sincronizando...":"Offline — salvo localmente");
-      if(!navigator.onLine){
-        if(queue) await queue.put(`atendimento:${state.atendimento}`, snapshot, {endpoint:"/api/atendimentos"});
-        return {ok:true,local:true,offline:true};
-      }
+      setPersistStatus("saving","Sincronizando...");
       const result = await syncToServer(false);
       if(!result.ok && !result.readonly && queue){
         await queue.put(`atendimento:${state.atendimento}`, snapshot, {endpoint:"/api/atendimentos", lastError:result.error?.message||"Falha de sincronização"});
+        setPersistStatus("","Offline — salvo localmente");
       }
       return result;
     }
-    if(navigator.onLine){
-      clearTimeout(window.__serverSaveTimer);
-      window.__serverSaveTimer=setTimeout(async()=>{
-        const result=await syncToServer(false);
-        if(!result.ok && !result.readonly && queue){
-          await queue.put(`atendimento:${state.atendimento}`, JSON.parse(JSON.stringify(state)), {endpoint:"/api/atendimentos", lastError:result.error?.message||"Falha de sincronização"});
-        }
-      },50);
-    }else if(queue){
-      await queue.put(`atendimento:${state.atendimento}`, snapshot, {endpoint:"/api/atendimentos"});
-      setPersistStatus("","Offline — salvo localmente");
-    }
-    return {ok:true,local:true,offline:!navigator.onLine};
+    clearTimeout(window.__serverSaveTimer);
+    window.__serverSaveTimer=setTimeout(async()=>{
+      const result=await syncToServer(false);
+      if(!result.ok && !result.readonly && queue){
+        await queue.put(`atendimento:${state.atendimento}`, JSON.parse(JSON.stringify(state)), {endpoint:"/api/atendimentos", lastError:result.error?.message||"Falha de sincronização"});
+        setPersistStatus("","Offline — salvo localmente");
+      }
+    },50);
+    return {ok:true,local:true};
   }catch(error){
     console.warn("Falha no armazenamento local:", error?.name || "StorageError");
     setPersistStatus("","Erro ao salvar");

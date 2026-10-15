@@ -2400,6 +2400,548 @@ details.more[open] .more-caret {
   gap: 8px;
 }
 
+/* ==========================================================================
+   PAINEL EXECUTIVO & DOSSIÊ DO MÉDICO (PRODUÇÃO POR MÉDICO DEDICADA)
+   ========================================================================== */
+.doc-detail-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 12px 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  flex-wrap: wrap;
+}
+.doc-detail-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.doc-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #0284C7;
+  border: 1.5px solid #BAE6FD;
+  background: #F0F9FF;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all .16s ease;
+}
+.doc-back-btn:hover {
+  background: #0284C7;
+  color: #FFFFFF;
+  border-color: #0284C7;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
+  transform: translateX(-2px);
+}
+.doc-breadcrumb-trail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #64748B;
+}
+.doc-breadcrumb-trail .sep { color: #CBD5E1; }
+.doc-breadcrumb-trail strong { color: #0F172A; font-weight: 800; }
+.doc-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.doc-btn-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.doc-btn-tool:hover {
+  background: #F8FAFC;
+  border-color: #94A3B8;
+  color: #0F172A;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+}
+
+/* Hero Card do Médico */
+.doc-profile-hero {
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 18px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.doc-profile-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+.doc-profile-avatar {
+  width: 62px;
+  height: 62px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
+  color: #FFFFFF;
+  font-size: 22px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.28);
+  flex-shrink: 0;
+}
+.doc-profile-text {
+  min-width: 0;
+}
+.doc-profile-kicker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #0284C7;
+}
+.doc-profile-name {
+  margin: 4px 0 6px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #0F172A;
+  letter-spacing: -.02em;
+}
+.doc-profile-tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.doc-profile-crm {
+  font-size: 11px;
+  font-weight: 700;
+  color: #0284C7;
+  background: #E0F2FE;
+  padding: 2px 8px;
+  border-radius: 5px;
+}
+.doc-profile-unit {
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  background: #F1F5F9;
+  padding: 2px 8px;
+  border-radius: 5px;
+}
+.doc-profile-rate {
+  font-size: 11px;
+  font-weight: 800;
+  color: #059669;
+  background: #DCFCE7;
+  padding: 2px 8px;
+  border-radius: 5px;
+}
+.doc-profile-quickstats {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 12px 18px;
+}
+.doc-quick-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.doc-quick-kpi .label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #64748B;
+  letter-spacing: 0.04em;
+}
+.doc-quick-kpi .val {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0F172A;
+}
+.doc-quick-kpi .sub {
+  font-size: 11px;
+  color: #059669;
+  font-weight: 700;
+}
+.mini-bar {
+  width: 90px;
+  height: 6px;
+  background: #E2E8F0;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+.mini-bar-fill {
+  height: 100%;
+  background: #10B981;
+  border-radius: 999px;
+}
+
+/* Métricas Clínicas em Grid */
+.doc-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.doc-metric-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.doc-metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+.doc-metric-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.doc-metric-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+.doc-metric-icon.green { background: #DCFCE7; color: #16A34A; }
+.doc-metric-icon.amber { background: #FEF3C7; color: #D97706; }
+.doc-metric-icon.blue { background: #E0F2FE; color: #0284C7; }
+.doc-metric-icon.purple { background: #F3E8FF; color: #7E22CE; }
+.doc-metric-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.doc-metric-body {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.doc-metric-val {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0F172A;
+}
+.doc-metric-sub {
+  font-size: 11px;
+  color: #64748B;
+}
+.doc-metric-bar {
+  width: 100%;
+  height: 5px;
+  background: #F1F5F9;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+.doc-metric-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width .3s ease;
+}
+.doc-metric-fill.green { background: #10B981; }
+.doc-metric-fill.amber { background: #F59E0B; }
+.doc-metric-tag {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #0284C7;
+  background: #F0F9FF;
+  padding: 3px 8px;
+  border-radius: 5px;
+  width: fit-content;
+  margin-top: 2px;
+}
+.doc-top-cids {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.doc-cid-chip {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  transition: all .15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.doc-cid-chip:hover {
+  background: #E0F2FE;
+  border-color: #0284C7;
+  color: #0284C7;
+  transform: translateY(-1px);
+}
+.doc-cid-chip.active {
+  background: #0284C7;
+  border-color: #0284C7;
+  color: #FFFFFF;
+}
+.doc-cid-chip small {
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+/* Filtros Avançados do Médico */
+.doc-filters-container {
+  padding: 16px 20px;
+  background: #F8FAFC;
+  border-bottom: 1.5px solid #E2E8F0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.doc-filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.doc-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.doc-filter-label {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #475569;
+  white-space: nowrap;
+}
+.doc-filter-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.doc-chip-btn {
+  border: 1px solid #CBD5E1;
+  background: #FFFFFF;
+  padding: 5px 11px;
+  border-radius: 7px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.doc-chip-btn:hover {
+  border-color: #0284C7;
+  color: #0284C7;
+  background: #F0F9FF;
+}
+.doc-chip-btn.active {
+  background: #0284C7;
+  border-color: #0284C7;
+  color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+}
+.doc-date-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.doc-date-picker-sm {
+  padding: 4px 8px;
+  font-size: 11.5px;
+  border-radius: 6px;
+  border: 1px solid #CBD5E1;
+  background: #FFFFFF;
+}
+.doc-btn-clear-date {
+  border: 1px solid #CBD5E1;
+  background: #FFFFFF;
+  color: #64748B;
+  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 11px;
+}
+.doc-btn-clear-date:hover {
+  background: #F1F5F9;
+  color: #0F172A;
+}
+.doc-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  max-width: 440px;
+}
+.doc-search-input {
+  flex: 1;
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 8px;
+  border: 1px solid #CBD5E1;
+  background: #FFFFFF;
+}
+.doc-filter-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 6px;
+  border-top: 1px solid #E2E8F0;
+  font-size: 11.5px;
+}
+.doc-filter-summary {
+  color: #64748B;
+  font-weight: 600;
+}
+.doc-filter-count-badge {
+  background: #E0F2FE;
+  color: #0284C7;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+}
+
+/* Tabela de Atendimentos */
+.doc-table-responsive {
+  overflow-x: auto;
+  max-height: 640px;
+}
+.doc-atendimentos-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.doc-atendimentos-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #F8FAFC;
+  padding: 11px 14px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1.5px solid #E2E8F0;
+  white-space: nowrap;
+}
+.doc-atendimentos-table td {
+  padding: 12px 14px;
+  font-size: 12px;
+  border-bottom: 1px solid #F1F5F9;
+  vertical-align: middle;
+}
+.doc-atendimentos-table tr:hover td {
+  background: #F8FAFC;
+}
+.doc-act-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all .15s ease;
+  white-space: nowrap;
+}
+.doc-act-btn.esisla {
+  background: #0284C7;
+  color: #FFFFFF;
+}
+.doc-act-btn.esisla:hover {
+  background: #0369A1;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+}
+.doc-act-btn.detail {
+  background: #FFFFFF;
+  border-color: #CBD5E1;
+  color: #334155;
+}
+.doc-act-btn.detail:hover {
+  background: #F1F5F9;
+  color: #0F172A;
+}
+.doc-act-btn.eval {
+  background: #ECFDF5;
+  border-color: #A7F3D0;
+  color: #047857;
+}
+.doc-act-btn.eval:hover {
+  background: #D1FAE5;
+}
+.doc-actions-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+/* Empty State */
+.doc-empty-state {
+  padding: 48px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.doc-empty-icon { font-size: 36px; margin-bottom: 4px; }
+.doc-empty-state strong { font-size: 15px; color: #0F172A; }
+.doc-empty-state p { margin: 0 0 12px; font-size: 12.5px; color: #64748B; max-width: 480px; }
+
 .history-panel { margin: 0 0 20px; }
 .history-list {
   display: grid;
@@ -3443,105 +3985,304 @@ body.modal-lock { overscroll-behavior: none; }
 <div class="admin-view" id="view-historico"><div class="view-header"><div><div class="view-kicker">Auditoria e rastreabilidade</div><h2>Histórico de atendimento</h2><p>Consulte rapidamente as atualizações recentes e abra o histórico completo de cada atendimento.</p></div><span class="view-count">Últimos registros</span></div>
 <section class="dash-card history-panel anchor-target" id="historico" style="margin-bottom:18px"><div class="dash-card-head"><div><strong>Histórico recente de atendimentos</strong><span style="display:block;margin-top:3px">Acesso rápido ao histórico de auditoria dos últimos registros atualizados</span></div><button class="admin-btn" type="button" onclick="goToSection('atendimentos')">Ver todos</button></div><div class="history-list" id="recentHistoryList"><div class="empty" style="grid-column:1/-1;padding:24px">Carregando histórico recente...</div></div></section></div>
 <div class="admin-view" id="view-medicos">
-  <div class="view-header">
-    <div>
-      <div class="view-kicker">Produtividade & Desempenho Clínico</div>
-      <h2>Produção por médico</h2>
-      <p>Gestão executiva de volume pericial, taxas de conclusão e distribuição dos pareceres com acesso direto aos atendimentos por data ou visão geral.</p>
+  <!-- Visão 1: Visão Geral de Todos os Médicos (Cards & Tabela) -->
+  <div id="doctorListContainer">
+    <div class="view-header">
+      <div>
+        <div class="view-kicker">Produtividade & Desempenho Clínico</div>
+        <h2>Produção por médico</h2>
+        <p>Gestão executiva de volume pericial, taxas de conclusão e distribuição dos pareceres com acesso direto aos atendimentos por data ou visão geral.</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="search-refresh-btn" type="button" onclick="triggerRefresh(true)" title="Sincronizar dados em tempo real">
+          <span class="refresh-ico">↻</span> <span>Atualizar dados</span>
+        </button>
+        <span class="view-count" id="medicosViewCount">Médicos ativos</span>
+      </div>
     </div>
-    <div style="display:flex;align-items:center;gap:10px">
-      <button class="search-refresh-btn" type="button" onclick="triggerRefresh(true)" title="Sincronizar dados em tempo real">
-        <span class="refresh-ico">↻</span> <span>Atualizar dados</span>
-      </button>
-      <span class="view-count" id="medicosViewCount">Médicos ativos</span>
-    </div>
+
+    <!-- KPI Strip Executivo de Médicos -->
+    <section class="doctor-kpi-strip" aria-label="Resumo geral dos médicos">
+      <div class="doc-kpi-card">
+        <div class="doc-kpi-icon blue">👨‍⚕️</div>
+        <div class="doc-kpi-info">
+          <span class="doc-kpi-label">Médicos Ativos</span>
+          <b class="doc-kpi-val" id="docKpiTotalMedicos">0</b>
+          <small class="doc-kpi-sub">Profissionais no escopo</small>
+        </div>
+      </div>
+      <div class="doc-kpi-card">
+        <div class="doc-kpi-icon indigo">📊</div>
+        <div class="doc-kpi-info">
+          <span class="doc-kpi-label">Total Atendimentos</span>
+          <b class="doc-kpi-val" id="docKpiTotalAtd">0</b>
+          <small class="doc-kpi-sub">Volume total registrado</small>
+        </div>
+      </div>
+      <div class="doc-kpi-card">
+        <div class="doc-kpi-icon green">✅</div>
+        <div class="doc-kpi-info">
+          <span class="doc-kpi-label">Total Finalizados</span>
+          <b class="doc-kpi-val" id="docKpiTotalFin" style="color:#059669">0</b>
+          <small class="doc-kpi-sub" id="docKpiTaxaFin">0% concluídos</small>
+        </div>
+      </div>
+      <div class="doc-kpi-card">
+        <div class="doc-kpi-icon emerald">👍</div>
+        <div class="doc-kpi-info">
+          <span class="doc-kpi-label">Parecer Favorável</span>
+          <b class="doc-kpi-val" id="docKpiTotalFav" style="color:#10B981">0</b>
+          <small class="doc-kpi-sub" id="docKpiTaxaFav">0% do total</small>
+        </div>
+      </div>
+      <div class="doc-kpi-card">
+        <div class="doc-kpi-icon amber">⚖️</div>
+        <div class="doc-kpi-info">
+          <span class="doc-kpi-label">Parecer Contrário</span>
+          <b class="doc-kpi-val" id="docKpiTotalContra" style="color:#D97706">0</b>
+          <small class="doc-kpi-sub" id="docKpiTaxaContra">0% do total</small>
+        </div>
+      </div>
+    </section>
+
+    <!-- Painel Principal de Médicos Peritos -->
+    <section class="dash-card anchor-target" id="medicos" style="margin-bottom:18px">
+      <div class="dash-card-head">
+        <div>
+          <strong>Painel de Médicos Peritos</strong>
+          <span style="display:block;margin-top:3px;color:#64748B;font-size:12px">Clique em <strong>Ver atendimentos</strong> em qualquer médico para abrir o dossiê clínico completo e consultar laudos, filtros e pauta.</span>
+        </div>
+        <div class="doc-view-toggle">
+          <button type="button" class="doc-toggle-btn active" id="btnToggleCards" onclick="setDocViewMode('cards')" title="Exibir em cards detalhados">Cards</button>
+          <button type="button" class="doc-toggle-btn" id="btnToggleTable" onclick="setDocViewMode('table')" title="Exibir em tabela comparativa">Tabela</button>
+        </div>
+      </div>
+
+      <!-- Cards Container -->
+      <div class="doctor-cards-grid" id="doctorCardsGrid">
+        <div class="empty" style="grid-column:1/-1;padding:32px;text-align:center;color:#64748B">
+          Carregando profissionais...
+        </div>
+      </div>
+
+      <!-- Tabela Comparativa (Visível no modo tabela) -->
+      <div class="doctor-table-wrap" id="doctorTableWrap" style="display:none;margin-top:8px">
+        <table class="doctor-super-table">
+          <thead>
+            <tr>
+              <th>Profissional</th>
+              <th style="text-align:center">Total</th>
+              <th style="text-align:center">Finalizados</th>
+              <th style="text-align:center">Conclusão</th>
+              <th style="text-align:center">Favoráveis</th>
+              <th style="text-align:center">Contrários</th>
+              <th style="text-align:center">Em Aberto</th>
+              <th style="text-align:right">Ação</th>
+            </tr>
+          </thead>
+          <tbody id="doctorDashboardBody">
+            <tr><td colspan="8" style="text-align:center;color:#8A99AC;padding:20px">Carregando indicadores...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
-  <!-- KPI Strip Executivo de Médicos -->
-  <section class="doctor-kpi-strip" aria-label="Resumo geral dos médicos">
-    <div class="doc-kpi-card">
-      <div class="doc-kpi-icon blue">👨‍⚕️</div>
-      <div class="doc-kpi-info">
-        <span class="doc-kpi-label">Médicos Ativos</span>
-        <b class="doc-kpi-val" id="docKpiTotalMedicos">0</b>
-        <small class="doc-kpi-sub">Profissionais no escopo</small>
+  <!-- Visão 2: Dossiê e Painel Clínico Executivo do Médico Selecionado -->
+  <div id="doctorDetailContainer" style="display:none">
+    <!-- Barra de Retorno e Ações Rápidas -->
+    <div class="doc-detail-topbar">
+      <div class="doc-detail-breadcrumb">
+        <button type="button" class="doc-back-btn" onclick="voltarParaListaMedicos()" title="Voltar para a visão geral de todos os médicos">
+          <span>←</span>
+          <span>Voltar para Médicos</span>
+        </button>
+        <div class="doc-breadcrumb-trail">
+          <span>Produção por médico</span>
+          <span class="sep">/</span>
+          <strong id="docDetailBreadcrumbName">Dra. PATRICIA NALIN DE LUCENA</strong>
+        </div>
       </div>
-    </div>
-    <div class="doc-kpi-card">
-      <div class="doc-kpi-icon indigo">📊</div>
-      <div class="doc-kpi-info">
-        <span class="doc-kpi-label">Total Atendimentos</span>
-        <b class="doc-kpi-val" id="docKpiTotalAtd">0</b>
-        <small class="doc-kpi-sub">Volume total registrado</small>
-      </div>
-    </div>
-    <div class="doc-kpi-card">
-      <div class="doc-kpi-icon green">✅</div>
-      <div class="doc-kpi-info">
-        <span class="doc-kpi-label">Total Finalizados</span>
-        <b class="doc-kpi-val" id="docKpiTotalFin" style="color:#059669">0</b>
-        <small class="doc-kpi-sub" id="docKpiTaxaFin">0% concluídos</small>
-      </div>
-    </div>
-    <div class="doc-kpi-card">
-      <div class="doc-kpi-icon emerald">👍</div>
-      <div class="doc-kpi-info">
-        <span class="doc-kpi-label">Parecer Favorável</span>
-        <b class="doc-kpi-val" id="docKpiTotalFav" style="color:#10B981">0</b>
-        <small class="doc-kpi-sub" id="docKpiTaxaFav">0% do total</small>
-      </div>
-    </div>
-    <div class="doc-kpi-card">
-      <div class="doc-kpi-icon amber">⚖️</div>
-      <div class="doc-kpi-info">
-        <span class="doc-kpi-label">Parecer Contrário</span>
-        <b class="doc-kpi-val" id="docKpiTotalContra" style="color:#D97706">0</b>
-        <small class="doc-kpi-sub" id="docKpiTaxaContra">0% do total</small>
-      </div>
-    </div>
-  </section>
-
-  <!-- Painel Principal de Médicos Peritos -->
-  <section class="dash-card anchor-target" id="medicos" style="margin-bottom:18px">
-    <div class="dash-card-head">
-      <div>
-        <strong>Painel de Médicos Peritos</strong>
-        <span style="display:block;margin-top:3px;color:#64748B;font-size:12px">Clique em <strong>Ver atendimentos</strong> em qualquer médico para filtrar por data específica ou consultar todos os laudos.</span>
-      </div>
-      <div class="doc-view-toggle">
-        <button type="button" class="doc-toggle-btn active" id="btnToggleCards" onclick="setDocViewMode('cards')" title="Exibir em cards detalhados">Cards</button>
-        <button type="button" class="doc-toggle-btn" id="btnToggleTable" onclick="setDocViewMode('table')" title="Exibir em tabela comparativa">Tabela</button>
+      <div class="doc-detail-actions">
+        <button type="button" class="doc-btn-tool" onclick="imprimirPautaMedico()" title="Imprimir pauta pericial completa do médico com cabeçalho oficial e campo de assinatura">
+          <span>🖨️</span> <span>Imprimir Pauta Pericial</span>
+        </button>
+        <button type="button" class="doc-btn-tool" onclick="exportarPautaMedicoCSV()" title="Exportar atendimentos filtrados deste médico em formato CSV para Excel">
+          <span>📥</span> <span>Exportar Planilha (CSV)</span>
+        </button>
+        <button type="button" class="search-refresh-btn" onclick="triggerRefresh(true)" title="Sincronizar dados em tempo real com o banco">
+          <span class="refresh-ico">↻</span> <span>Atualizar</span>
+        </button>
       </div>
     </div>
 
-    <!-- Cards Container -->
-    <div class="doctor-cards-grid" id="doctorCardsGrid">
-      <div class="empty" style="grid-column:1/-1;padding:32px;text-align:center;color:#64748B">
-        Carregando profissionais...
+    <!-- Hero Card do Médico com Identidade Visual Clínica -->
+    <div class="doc-profile-hero">
+      <div class="doc-profile-main">
+        <div class="doc-profile-avatar" id="docDetailAvatar">PN</div>
+        <div class="doc-profile-text">
+          <div class="doc-profile-kicker">
+            <span class="doc-online-dot"></span>
+            <span>Perito Médico Oficial DPME/SP • Ambiental</span>
+          </div>
+          <h2 class="doc-profile-name" id="docDetailName">Dra. PATRICIA NALIN DE LUCENA</h2>
+          <div class="doc-profile-tags">
+            <span class="doc-profile-crm" id="docDetailCrm">CRM: 145669</span>
+            <span class="doc-profile-unit" id="docDetailTotalAtd">0 atendimentos registrados</span>
+            <span class="doc-profile-rate" id="docDetailRate">0% concluídos</span>
+          </div>
+        </div>
+      </div>
+      <div class="doc-profile-quickstats">
+        <div class="doc-quick-kpi">
+          <span class="label">Taxa de Conclusão</span>
+          <strong class="val" id="docDetailQuickRate">0%</strong>
+          <div class="mini-bar"><div class="mini-bar-fill" id="docDetailQuickRateBar" style="width:0%"></div></div>
+        </div>
+        <div class="doc-quick-kpi">
+          <span class="label">Decisão Pericial</span>
+          <strong class="val" id="docDetailQuickPareceres">0 pareceres</strong>
+          <small class="sub" id="docDetailQuickDefRate">0% favorabilidade</small>
+        </div>
       </div>
     </div>
 
-    <!-- Tabela Comparativa (Visível no modo tabela) -->
-    <div class="doctor-table-wrap" id="doctorTableWrap" style="display:none;margin-top:8px">
-      <table class="doctor-super-table">
-        <thead>
-          <tr>
-            <th>Profissional</th>
-            <th style="text-align:center">Total</th>
-            <th style="text-align:center">Finalizados</th>
-            <th style="text-align:center">Conclusão</th>
-            <th style="text-align:center">Favoráveis</th>
-            <th style="text-align:center">Contrários</th>
-            <th style="text-align:center">Em Aberto</th>
-            <th style="text-align:right">Ação</th>
-          </tr>
-        </thead>
-        <tbody id="doctorDashboardBody">
-          <tr><td colspan="8" style="text-align:center;color:#8A99AC;padding:20px">Carregando indicadores...</td></tr>
-        </tbody>
-      </table>
+    <!-- Métricas Clínicas Exclusivas do Médico (Diferentes da Busca Geral) -->
+    <div class="doc-metrics-grid">
+      <div class="doc-metric-card">
+        <div class="doc-metric-head">
+          <span class="doc-metric-icon green">👍</span>
+          <span class="doc-metric-label">Pareceres Favoráveis</span>
+        </div>
+        <div class="doc-metric-body">
+          <strong class="doc-metric-val" id="docDetailFavVal">0</strong>
+          <span class="doc-metric-sub" id="docDetailFavSub">0% dos laudos</span>
+        </div>
+        <div class="doc-metric-bar"><div class="doc-metric-fill green" id="docDetailFavBar" style="width:0%"></div></div>
+      </div>
+
+      <div class="doc-metric-card">
+        <div class="doc-metric-head">
+          <span class="doc-metric-icon amber">⚖️</span>
+          <span class="doc-metric-label">Pareceres Contrários</span>
+        </div>
+        <div class="doc-metric-body">
+          <strong class="doc-metric-val" id="docDetailContraVal">0</strong>
+          <span class="doc-metric-sub" id="docDetailContraSub">0% dos laudos</span>
+        </div>
+        <div class="doc-metric-bar"><div class="doc-metric-fill amber" id="docDetailContraBar" style="width:0%"></div></div>
+      </div>
+
+      <div class="doc-metric-card">
+        <div class="doc-metric-head">
+          <span class="doc-metric-icon blue">⏱️</span>
+          <span class="doc-metric-label">Afastamento Médio</span>
+        </div>
+        <div class="doc-metric-body">
+          <strong class="doc-metric-val" id="docDetailMediaDias">—</strong>
+          <span class="doc-metric-sub" id="docDetailTotalDiasSub">dias sugeridos por perícia</span>
+        </div>
+        <div class="doc-metric-tag" id="docDetailFaixaDias">Referência clínica habitual</div>
+      </div>
+
+      <div class="doc-metric-card cids-card">
+        <div class="doc-metric-head">
+          <span class="doc-metric-icon purple">🩺</span>
+          <span class="doc-metric-label">Top Diagnósticos / CIDs</span>
+        </div>
+        <div class="doc-top-cids" id="docDetailTopCids">
+          <span style="font-size:11px;color:#94A3B8">Nenhum CID registrado</span>
+        </div>
+      </div>
     </div>
-  </section>
+
+    <!-- Painel de Atendimentos com Filtros Clínicos Especializados -->
+    <section class="dash-card" style="margin-bottom:24px">
+      <div class="doc-filters-container">
+        <div class="doc-filter-row">
+          <!-- Filtro de Período -->
+          <div class="doc-filter-group">
+            <label class="doc-filter-label">📅 Período:</label>
+            <div class="doc-filter-chips" id="docPeriodChips">
+              <button type="button" class="doc-chip-btn active" data-period="todos" onclick="setDocFilterPeriod('todos')">Todos os registros</button>
+              <button type="button" class="doc-chip-btn" data-period="hoje" onclick="setDocFilterPeriod('hoje')">Hoje</button>
+              <button type="button" class="doc-chip-btn" data-period="ontem" onclick="setDocFilterPeriod('ontem')">Ontem</button>
+              <button type="button" class="doc-chip-btn" data-period="7dias" onclick="setDocFilterPeriod('7dias')">Últimos 7 dias</button>
+              <button type="button" class="doc-chip-btn" data-period="mes" onclick="setDocFilterPeriod('mes')">Este mês</button>
+            </div>
+          </div>
+
+          <!-- Seletor de Data Específica -->
+          <div class="doc-date-select-wrap">
+            <label class="doc-filter-label">Data específica:</label>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="date" id="docFilterDataInput" class="input doc-date-picker-sm" onchange="setDocFilterCustomDate(this.value)" aria-label="Filtrar por data específica">
+              <button type="button" class="doc-btn-clear-date" onclick="limparDocDataInput()" title="Limpar data">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="doc-filter-row secondary">
+          <!-- Filtro por Parecer / Status -->
+          <div class="doc-filter-group">
+            <label class="doc-filter-label">⚖️ Decisão / Parecer:</label>
+            <div class="doc-filter-chips" id="docParecerChips">
+              <button type="button" class="doc-chip-btn active" data-parecer="todos" onclick="setDocFilterParecer('todos')">Todos</button>
+              <button type="button" class="doc-chip-btn" data-parecer="favoravel" onclick="setDocFilterParecer('favoravel')">👍 Favoráveis</button>
+              <button type="button" class="doc-chip-btn" data-parecer="contrario" onclick="setDocFilterParecer('contrario')">⚖️ Contrários</button>
+              <button type="button" class="doc-chip-btn" data-parecer="finalizado" onclick="setDocFilterParecer('finalizado')">✅ Finalizados</button>
+              <button type="button" class="doc-chip-btn" data-parecer="aberto" onclick="setDocFilterParecer('aberto')">📝 Em Aberto</button>
+            </div>
+          </div>
+
+          <!-- Live Search -->
+          <div class="doc-search-wrap">
+            <input type="text" id="docLocalSearch" class="input doc-search-input" placeholder="🔍 Filtrar por paciente, CPF, CID, cargo ou unidade..." oninput="filtrarAtendimentosMedicoLocalmente()" autocomplete="off">
+            <button type="button" class="btn btn-outline" style="padding:5px 10px;font-size:11.5px;font-weight:700" onclick="limparTodosFiltrosMedico()" title="Limpar todos os filtros deste médico">Limpar</button>
+          </div>
+        </div>
+
+        <!-- Barra de Status do Filtro -->
+        <div class="doc-filter-status-bar">
+          <div class="doc-filter-summary" id="docFilterSummaryText">
+            Exibindo todos os atendimentos
+          </div>
+          <div class="doc-filter-count-badge" id="docFilterCountBadge">
+            0 registros
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela Detalhada de Atendimentos do Médico -->
+      <div class="doc-table-responsive">
+        <table class="doc-atendimentos-table">
+          <thead>
+            <tr>
+              <th style="width:115px">Data & Horário</th>
+              <th>Periciado / Paciente</th>
+              <th>Cargo & Lotação</th>
+              <th>Diagnóstico (CID-10)</th>
+              <th style="text-align:center;width:95px">Afastamento</th>
+              <th style="text-align:center;width:110px">Parecer</th>
+              <th style="text-align:center;width:95px">Status</th>
+              <th style="text-align:right;width:240px">Ações Periciais</th>
+            </tr>
+          </thead>
+          <tbody id="docAtendimentosTbody">
+            <tr><td colspan="8" style="text-align:center;padding:24px;color:#94A3B8">Carregando atendimentos...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Estado Vazio -->
+      <div id="docAtendimentosEmpty" class="doc-empty-state" style="display:none">
+        <div class="doc-empty-icon">📂</div>
+        <strong>Nenhum atendimento encontrado para os filtros selecionados</strong>
+        <p>Não há atendimentos para este perito com os critérios aplicados (período, parecer ou termo de busca).</p>
+        <button type="button" class="btn btn-primary" onclick="limparTodosFiltrosMedico()">Exibir todos os atendimentos deste médico</button>
+      </div>
+    </section>
+  </div>
 </div>
 <div class="admin-view" id="view-indicadores"><div class="view-header"><div><div class="view-kicker">Performance operacional</div><h2>Indicadores e resultados</h2><p>Resumo operacional dos atendimentos, pendências, finalizações e atualizações recentes.</p></div><span class="view-count">Leitura executiva</span></div>
 <section class="stats anchor-target" id="indicadores"><div class="stat"><span>Total</span><b id="statTotal">—</b></div><div class="stat"><span>Rascunhos</span><b id="statDraft">—</b></div><div class="stat"><span>Em revisão</span><b id="statReview">—</b></div><div class="stat"><span>Finalizados</span><b id="statDone">—</b></div><div class="stat"><span>Arquivados</span><b id="statArchived">—</b></div><div class="stat"><span>Pendências</span><b id="statPending">—</b></div><div class="stat"><span>Atualizados hoje</span><b id="statRecent">—</b></div></section></div>
@@ -4439,37 +5180,186 @@ window.setDocViewMode = setDocViewMode;
 
 let currentSelectedDoctor = null;
 window._doctorProductionList = [];
+let currentDoctorWorkspace = null;
 
-function abrirModalAtendimentosMedico(nome, crm, total, rawMedico) {
-    currentSelectedDoctor = { nome, crm, total, rawMedico };
-    
-    const cleanName = String(nome || 'Médico').trim();
-    const initials = cleanName.split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase() || 'MD';
-    const avEl = document.getElementById('modalDocAvatar');
-    if (avEl) avEl.textContent = initials;
-    
-    const nomeEl = document.getElementById('modalDocNome');
-    if (nomeEl) nomeEl.textContent = cleanName;
-    
-    const crmEl = document.getElementById('modalDocCrm');
-    if (crmEl) crmEl.textContent = crm ? `CRM: ${crm}` : 'CRM pendente';
-    
-    const pillEl = document.getElementById('modalDocTotalPill');
-    if (pillEl) pillEl.textContent = `${total} atendimento${total === 1 ? '' : 's'} registrado${total === 1 ? '' : 's'}`;
-    
-    const heroCount = document.getElementById('modalDocHeroCount');
-    if (heroCount) heroCount.textContent = `${total} registro${total === 1 ? '' : 's'}`;
-    
-    const dp = document.getElementById('modalDocDataEspecifica');
-    if (dp) {
-        dp.value = new Date().toISOString().split('T')[0];
-    }
-    
-    setModal('modalAtendimentosMedico', true);
+function voltarParaListaMedicos() {
+    const list = document.getElementById('doctorListContainer');
+    const detail = document.getElementById('doctorDetailContainer');
+    if (list) list.style.display = 'block';
+    if (detail) detail.style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-window.abrirModalAtendimentosMedico = abrirModalAtendimentosMedico;
+window.voltarParaListaMedicos = voltarParaListaMedicos;
 
-function abrirModalAtendimentosMedicoByIndex(idx) {
+function abrirPainelDossieMedico(nome, crm, total, rawMedico, options = {}) {
+    const cleanName = String(nome || rawMedico || 'Médico').replace(/\s*-\s*CRM.*$/i, '').replace(/\s*CRM[:\s]*\d+.*$/i, '').trim() || 'Médico';
+    const crmVal = crm || (String(rawMedico || '').match(/CRM[:\s]*([0-9A-Z\/\-]+)/i)?.[1] || '');
+
+    currentSelectedDoctor = { nome: cleanName, crm: crmVal, total: Number(total || 0), rawMedico };
+
+    // Filtrar atendimentos deste médico em serverItems
+    const cleanTarget = cleanName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    const crmTarget = String(crmVal).trim().toLowerCase();
+
+    const doctorItems = (serverItems || []).filter(r => {
+        const v = values(r);
+        const doc = String(v.doctor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        const rawCrm = String(v.crm || '').toLowerCase();
+        if (crmTarget && (rawCrm.includes(crmTarget) || doc.includes(crmTarget))) return true;
+        if (cleanTarget && doc.includes(cleanTarget)) return true;
+        return false;
+    });
+
+    // Ordenar do mais recente para o mais antigo
+    doctorItems.sort((a, b) => {
+        const da = String(values(a).date || '');
+        const db = String(values(b).date || '');
+        return db.localeCompare(da);
+    });
+
+    currentDoctorWorkspace = {
+        doctor: { nome: cleanName, crm: crmVal, total: doctorItems.length, rawMedico },
+        allItems: doctorItems,
+        filteredItems: [...doctorItems],
+        filterPeriod: options.period || 'todos',
+        filterCustomDate: options.customDate || '',
+        filterParecer: 'todos',
+        searchQuery: ''
+    };
+
+    // Calcular Métricas Clínicas
+    const totalAtd = doctorItems.length;
+    let finCount = 0;
+    let favCount = 0;
+    let contraCount = 0;
+    let somaDias = 0;
+    let countDias = 0;
+    const cidCounts = {};
+
+    doctorItems.forEach(r => {
+        const v = values(r);
+        const st = statusOf(r);
+        if (st === 'FINALIZADO') finCount++;
+
+        const parecer = String(v.parecer || '').toUpperCase();
+        if (parecer.includes('FAVORÁVEL') || parecer.includes('FAVORAVEL')) favCount++;
+        if (parecer.includes('CONTRÁRIO') || parecer.includes('CONTRARIO')) contraCount++;
+
+        const dNum = parseInt(v.dias, 10);
+        if (!isNaN(dNum) && dNum > 0) {
+            somaDias += dNum;
+            countDias++;
+        }
+
+        const cidStr = String(v.cid || '').trim().toUpperCase();
+        if (cidStr && cidStr !== '—' && cidStr !== '-' && cidStr !== 'SEM CID') {
+            const baseCid = cidStr.split(/[\s,;-]+/)[0];
+            if (baseCid) {
+                cidCounts[baseCid] = (cidCounts[baseCid] || 0) + 1;
+            }
+        }
+    });
+
+    const taxaConclusao = pct(finCount, totalAtd);
+    const mediaDiasVal = countDias > 0 ? (somaDias / countDias).toFixed(1).replace('.', ',') : '—';
+    const totalPareceres = favCount + contraCount;
+    const taxaFav = pct(favCount, totalPareceres || totalAtd);
+    const taxaContra = pct(contraCount, totalPareceres || totalAtd);
+
+    // Atualizar UI do Topbar e Hero
+    const initials = cleanName.split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase() || 'MD';
+    const av = document.getElementById('docDetailAvatar');
+    if (av) av.textContent = initials;
+
+    const bName = document.getElementById('docDetailBreadcrumbName');
+    if (bName) bName.textContent = cleanName;
+
+    const dName = document.getElementById('docDetailName');
+    if (dName) dName.textContent = cleanName;
+
+    const dCrm = document.getElementById('docDetailCrm');
+    if (dCrm) dCrm.textContent = crmVal ? `CRM: ${crmVal}` : 'CRM pendente';
+
+    const dTot = document.getElementById('docDetailTotalAtd');
+    if (dTot) dTot.textContent = `${totalAtd} atendimento${totalAtd === 1 ? '' : 's'} registrado${totalAtd === 1 ? '' : 's'}`;
+
+    const dRate = document.getElementById('docDetailRate');
+    if (dRate) dRate.textContent = `${taxaConclusao}% concluídos`;
+
+    const qRate = document.getElementById('docDetailQuickRate');
+    if (qRate) qRate.textContent = `${taxaConclusao}%`;
+
+    const qBar = document.getElementById('docDetailQuickRateBar');
+    if (qBar) qBar.style.width = `${taxaConclusao}%`;
+
+    const qPar = document.getElementById('docDetailQuickPareceres');
+    if (qPar) qPar.textContent = `${totalPareceres} pareceres`;
+
+    const qDef = document.getElementById('docDetailQuickDefRate');
+    if (qDef) qDef.textContent = `${taxaFav}% favorabilidade`;
+
+    // Atualizar Cards de Métricas
+    const fVal = document.getElementById('docDetailFavVal');
+    if (fVal) fVal.textContent = favCount;
+    const fSub = document.getElementById('docDetailFavSub');
+    if (fSub) fSub.textContent = `${taxaFav}% dos pareceres`;
+    const fBar = document.getElementById('docDetailFavBar');
+    if (fBar) fBar.style.width = `${taxaFav}%`;
+
+    const cVal = document.getElementById('docDetailContraVal');
+    if (cVal) cVal.textContent = contraCount;
+    const cSub = document.getElementById('docDetailContraSub');
+    if (cSub) cSub.textContent = `${taxaContra}% dos pareceres`;
+    const cBar = document.getElementById('docDetailContraBar');
+    if (cBar) cBar.style.width = `${taxaContra}%`;
+
+    const mDias = document.getElementById('docDetailMediaDias');
+    if (mDias) mDias.textContent = mediaDiasVal !== '—' ? `${mediaDiasVal} dias` : '—';
+    const mSub = document.getElementById('docDetailTotalDiasSub');
+    if (mSub) mSub.textContent = countDias > 0 ? `baseado em ${countDias} laudos com dias` : 'sem dias registrados';
+
+    // Top CIDs
+    const topCidsContainer = document.getElementById('docDetailTopCids');
+    if (topCidsContainer) {
+        const sorted = Object.entries(cidCounts).sort((a, b) => b[1] - a[1]).slice(0, 4);
+        if (sorted.length > 0) {
+            topCidsContainer.innerHTML = sorted.map(([cid, count]) => {
+                return `<button type="button" class="doc-cid-chip" onclick="filtrarPorCidDoMedico('${esc(cid)}')" title="Filtrar laudos com CID ${esc(cid)}"><span>${esc(cid)}</span> <small>(${count})</small></button>`;
+            }).join('');
+        } else {
+            topCidsContainer.innerHTML = '<span style="font-size:11px;color:#94A3B8">Nenhum CID informado nos atendimentos</span>';
+        }
+    }
+
+    // Resetar Filtros na UI
+    const searchInput = document.getElementById('docLocalSearch');
+    if (searchInput) searchInput.value = '';
+
+    const dateInput = document.getElementById('docFilterDataInput');
+    if (dateInput) dateInput.value = options.customDate || '';
+
+    // Alternar visibilidade
+    const list = document.getElementById('doctorListContainer');
+    const detail = document.getElementById('doctorDetailContainer');
+    if (list) list.style.display = 'none';
+    if (detail) detail.style.display = 'block';
+
+    // Aplicar filtro de período inicial
+    if (options.period) {
+        setDocFilterPeriod(options.period);
+    } else if (options.customDate) {
+        setDocFilterCustomDate(options.customDate);
+    } else {
+        setDocFilterPeriod('todos');
+    }
+
+    // Rolagem suave até o topo da seção
+    const viewEl = document.getElementById('view-medicos');
+    if (viewEl) viewEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+window.abrirPainelDossieMedico = abrirPainelDossieMedico;
+
+function abrirPainelDossieMedicoByIndex(idx, options = {}) {
     const list = window._doctorProductionList || [];
     const d = list[idx];
     if (!d) return;
@@ -4477,18 +5367,119 @@ function abrirModalAtendimentosMedicoByIndex(idx) {
     const cleanName = d.nome || rawMed.replace(/\s*-\s*CRM.*$/i, '').replace(/\s*CRM[:\s]*\d+.*$/i, '').trim() || 'Médico não informado';
     const crmMatch = rawMed.match(/CRM[:\s]*([0-9A-Z\/\-]+)/i);
     const crmVal = d.crm || (crmMatch ? crmMatch[1] : '');
-    abrirModalAtendimentosMedico(cleanName, crmVal, d.total || 0, rawMed);
+    abrirPainelDossieMedico(cleanName, crmVal, d.total || 0, rawMed, options);
+}
+window.abrirPainelDossieMedicoByIndex = abrirPainelDossieMedicoByIndex;
+
+// Compatibilidade e integração do Modal legado
+function abrirModalAtendimentosMedico(nome, crm, total, rawMedico) {
+    abrirPainelDossieMedico(nome, crm, total, rawMedico);
+}
+window.abrirModalAtendimentosMedico = abrirModalAtendimentosMedico;
+
+function abrirModalAtendimentosMedicoByIndex(idx) {
+    abrirPainelDossieMedicoByIndex(idx);
 }
 window.abrirModalAtendimentosMedicoByIndex = abrirModalAtendimentosMedicoByIndex;
 
 function executarFiltroAtendimentosMedico(tipo) {
+    closeModal('modalAtendimentosMedico');
     if (!currentSelectedDoctor) return;
-    const { nome, total } = currentSelectedDoctor;
-    
-    let ini = '';
-    let fim = '';
-    let toastMsg = '';
-    
+    const { nome, crm, total, rawMedico } = currentSelectedDoctor;
+    abrirPainelDossieMedico(nome, crm, total, rawMedico, { period: tipo });
+}
+window.executarFiltroAtendimentosMedico = executarFiltroAtendimentosMedico;
+
+function setDocFilterPeriod(period) {
+    if (!currentDoctorWorkspace) return;
+    currentDoctorWorkspace.filterPeriod = period;
+    currentDoctorWorkspace.filterCustomDate = '';
+
+    const dateInput = document.getElementById('docFilterDataInput');
+    if (dateInput) dateInput.value = '';
+
+    document.querySelectorAll('#docPeriodChips .doc-chip-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.period === period);
+    });
+
+    filtrarAtendimentosMedicoLocalmente();
+}
+window.setDocFilterPeriod = setDocFilterPeriod;
+
+function setDocFilterCustomDate(dateVal) {
+    if (!currentDoctorWorkspace) return;
+    if (!dateVal) {
+        setDocFilterPeriod('todos');
+        return;
+    }
+    currentDoctorWorkspace.filterPeriod = 'custom';
+    currentDoctorWorkspace.filterCustomDate = dateVal;
+
+    document.querySelectorAll('#docPeriodChips .doc-chip-btn').forEach(b => {
+        b.classList.remove('active');
+    });
+
+    filtrarAtendimentosMedicoLocalmente();
+}
+window.setDocFilterCustomDate = setDocFilterCustomDate;
+
+function limparDocDataInput() {
+    const dateInput = document.getElementById('docFilterDataInput');
+    if (dateInput) dateInput.value = '';
+    setDocFilterPeriod('todos');
+}
+window.limparDocDataInput = limparDocDataInput;
+
+function setDocFilterParecer(parecer) {
+    if (!currentDoctorWorkspace) return;
+    currentDoctorWorkspace.filterParecer = parecer;
+
+    document.querySelectorAll('#docParecerChips .doc-chip-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.parecer === parecer);
+    });
+
+    filtrarAtendimentosMedicoLocalmente();
+}
+window.setDocFilterParecer = setDocFilterParecer;
+
+function filtrarPorCidDoMedico(cidCode) {
+    const search = document.getElementById('docLocalSearch');
+    if (search) search.value = cidCode;
+    filtrarAtendimentosMedicoLocalmente();
+}
+window.filtrarPorCidDoMedico = filtrarPorCidDoMedico;
+
+function limparTodosFiltrosMedico() {
+    if (!currentDoctorWorkspace) return;
+    const search = document.getElementById('docLocalSearch');
+    if (search) search.value = '';
+    const dateInput = document.getElementById('docFilterDataInput');
+    if (dateInput) dateInput.value = '';
+
+    currentDoctorWorkspace.filterPeriod = 'todos';
+    currentDoctorWorkspace.filterCustomDate = '';
+    currentDoctorWorkspace.filterParecer = 'todos';
+    currentDoctorWorkspace.searchQuery = '';
+
+    document.querySelectorAll('#docPeriodChips .doc-chip-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.period === 'todos');
+    });
+    document.querySelectorAll('#docParecerChips .doc-chip-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.parecer === 'todos');
+    });
+
+    filtrarAtendimentosMedicoLocalmente();
+}
+window.limparTodosFiltrosMedico = limparTodosFiltrosMedico;
+
+function filtrarAtendimentosMedicoLocalmente() {
+    if (!currentDoctorWorkspace) return;
+
+    const searchInput = document.getElementById('docLocalSearch');
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    currentDoctorWorkspace.searchQuery = query;
+
+    const { allItems, filterPeriod, filterCustomDate, filterParecer, doctor } = currentDoctorWorkspace;
     const now = new Date();
     const formatYMD = d => {
         const y = d.getFullYear();
@@ -4496,91 +5487,332 @@ function executarFiltroAtendimentosMedico(tipo) {
         const day = String(d.getDate()).padStart(2, '0');
         return `${y}-${m}-${day}`;
     };
-    const formatDMY = ymd => {
-        if (!ymd) return '';
-        const parts = ymd.split('-');
-        if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-        return ymd;
-    };
 
-    if (tipo === 'todos') {
-        ini = '';
-        fim = '';
-        toastMsg = `Exibindo todos os ${total} atendimentos de ${nome}`;
-    } else if (tipo === 'hoje') {
+    let ini = '';
+    let fim = '';
+    let periodText = 'todos os registros';
+
+    if (filterPeriod === 'hoje') {
         ini = formatYMD(now);
         fim = formatYMD(now);
-        toastMsg = `Exibindo atendimentos de hoje (${formatDMY(ini)}) de ${nome}`;
-    } else if (tipo === 'ontem') {
+        periodText = 'de hoje';
+    } else if (filterPeriod === 'ontem') {
         const ontem = new Date(now);
         ontem.setDate(ontem.getDate() - 1);
         ini = formatYMD(ontem);
         fim = formatYMD(ontem);
-        toastMsg = `Exibindo atendimentos de ontem (${formatDMY(ini)}) de ${nome}`;
-    } else if (tipo === '7dias') {
+        periodText = 'de ontem';
+    } else if (filterPeriod === '7dias') {
         const d7 = new Date(now);
         d7.setDate(d7.getDate() - 7);
         ini = formatYMD(d7);
         fim = formatYMD(now);
-        toastMsg = `Exibindo atendimentos dos últimos 7 dias de ${nome}`;
-    } else if (tipo === 'mes') {
-        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-        ini = formatYMD(firstDay);
+        periodText = 'dos últimos 7 dias';
+    } else if (filterPeriod === 'mes') {
+        const d1 = new Date(now.getFullYear(), now.getMonth(), 1);
+        ini = formatYMD(d1);
         fim = formatYMD(now);
-        toastMsg = `Exibindo atendimentos deste mês de ${nome}`;
-    } else if (tipo === 'data') {
-        const dp = document.getElementById('modalDocDataEspecifica');
-        const picked = dp ? dp.value : '';
-        if (!picked) {
-            if (window.AmbientalUtils?.toast) {
-                AmbientalUtils.toast('Selecione uma data para filtrar', 'warning');
-            } else {
-                alert('Por favor, selecione uma data válida.');
-            }
-            return;
-        }
-        ini = picked;
-        fim = picked;
-        toastMsg = `Exibindo atendimentos de ${formatDMY(picked)} de ${nome}`;
+        periodText = 'deste mês';
+    } else if (filterPeriod === 'custom' && filterCustomDate) {
+        ini = filterCustomDate;
+        fim = filterCustomDate;
+        const parts = filterCustomDate.split('-');
+        periodText = parts.length === 3 ? `de ${parts[2]}/${parts[1]}/${parts[0]}` : `de ${filterCustomDate}`;
     }
-    
-    closeModal('modalAtendimentosMedico');
-    
-    const medicoInput = document.getElementById('medico');
-    const iniInput = document.getElementById('periodoInicio');
-    const fimInput = document.getElementById('periodoFim');
-    const searchInput = document.getElementById('search');
-    const filterInput = document.getElementById('filter');
-    const cidInput = document.getElementById('cid');
-    const unidadeInput = document.getElementById('unidade');
-    
-    if (medicoInput) medicoInput.value = nome;
-    if (iniInput) iniInput.value = ini;
-    if (fimInput) fimInput.value = fim;
-    if (searchInput) searchInput.value = '';
-    if (filterInput) filterInput.value = 'all';
-    if (cidInput) cidInput.value = '';
-    if (unidadeInput) unidadeInput.value = '';
 
-    tab = 'all';
-    document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === 'all'));
-    
-    goToSection('atendimentos');
-    
-    refresh(false);
-    
-    fetchServer({ force: true }).then(() => {
-        refresh(false);
-        if (window.AmbientalUtils?.toast) {
-            AmbientalUtils.toast(toastMsg, 'info');
+    const filtered = allItems.filter(r => {
+        const v = values(r);
+        const st = statusOf(r);
+        const d = String(v.date || '');
+
+        if (ini && d < ini) return false;
+        if (fim && d > fim) return false;
+
+        if (filterParecer === 'favoravel') {
+            const p = String(v.parecer || '').toUpperCase();
+            if (!p.includes('FAVORÁVEL') && !p.includes('FAVORAVEL')) return false;
+        } else if (filterParecer === 'contrario') {
+            const p = String(v.parecer || '').toUpperCase();
+            if (!p.includes('CONTRÁRIO') && !p.includes('CONTRARIO')) return false;
+        } else if (filterParecer === 'finalizado') {
+            if (st !== 'FINALIZADO') return false;
+        } else if (filterParecer === 'aberto') {
+            if (st === 'FINALIZADO' || st === 'ARQUIVADO') return false;
         }
-    }).catch(() => {
-        if (window.AmbientalUtils?.toast) {
-            AmbientalUtils.toast(toastMsg, 'info');
+
+        if (query) {
+            const blob = `${v.patient} ${v.cpf} ${v.cid} ${v.cargo} ${v.unidade} ${v.doenca} ${v.parecer} ${v.atd}`.toLowerCase();
+            const cleanCpf = query.replace(/\D/g, '');
+            const matchQuery = blob.includes(query) || (cleanCpf.length >= 3 && String(v.cpf || '').replace(/\D/g, '').includes(cleanCpf));
+            if (!matchQuery) return false;
         }
+
+        return true;
     });
+
+    currentDoctorWorkspace.filteredItems = filtered;
+
+    // Atualizar Barra de Status
+    const summaryEl = document.getElementById('docFilterSummaryText');
+    if (summaryEl) {
+        let txt = `Exibindo ${filtered.length} atendimento${filtered.length === 1 ? '' : 's'} (${periodText})`;
+        if (filterParecer !== 'todos') {
+            const pLabel = { favoravel: 'Favoráveis', contrario: 'Contrários', finalizado: 'Finalizados', aberto: 'Em Aberto' }[filterParecer] || filterParecer;
+            txt += ` • ${pLabel}`;
+        }
+        if (query) {
+            txt += ` • busca: "${query}"`;
+        }
+        summaryEl.textContent = txt;
+    }
+
+    const countEl = document.getElementById('docFilterCountBadge');
+    if (countEl) {
+        countEl.textContent = `${filtered.length} registro${filtered.length === 1 ? '' : 's'}`;
+    }
+
+    // Renderizar Tabela
+    renderTabelaAtendimentosMedico(filtered);
 }
-window.executarFiltroAtendimentosMedico = executarFiltroAtendimentosMedico;
+window.filtrarAtendimentosMedicoLocalmente = filtrarAtendimentosMedicoLocalmente;
+
+function renderTabelaAtendimentosMedico(items) {
+    const tbody = document.getElementById('docAtendimentosTbody');
+    const emptyBox = document.getElementById('docAtendimentosEmpty');
+    if (!tbody) return;
+
+    if (!items || !items.length) {
+        tbody.innerHTML = '';
+        if (emptyBox) emptyBox.style.display = 'flex';
+        return;
+    }
+
+    if (emptyBox) emptyBox.style.display = 'none';
+
+    tbody.innerHTML = items.map(r => {
+        const v = values(r);
+        const st = statusOf(r);
+        const id = v.atd || r.atendimento || r.id || '';
+        const encId = encodeURIComponent(String(id));
+
+        const nameParts = String(v.patient || 'P').trim().split(/\s+/).filter(Boolean);
+        const ini = ((nameParts[0] ? nameParts[0][0] : '') + (nameParts[1] ? nameParts[1][0] : '')).toUpperCase() || 'P';
+
+        // Parecer Tag
+        let parecerBadge = '<span class="badge" style="background:#F1F5F9;color:#64748B;font-size:11px">Em avaliação</span>';
+        const parUpper = String(v.parecer || '').toUpperCase();
+        if (parUpper.includes('FAVORÁVEL') || parUpper.includes('FAVORAVEL')) {
+            parecerBadge = '<span class="badge" style="background:#DCFCE7;color:#15803D;font-size:11px;font-weight:800">👍 Favorável</span>';
+        } else if (parUpper.includes('CONTRÁRIO') || parUpper.includes('CONTRARIO')) {
+            parecerBadge = '<span class="badge" style="background:#FEE2E2;color:#B91C1C;font-size:11px;font-weight:800">⚖️ Contrário</span>';
+        }
+
+        // Status Tag
+        const stCls = st === 'FINALIZADO' ? 'done' : st === 'EM_REVISÃO' ? 'review' : st === 'REABERTO' ? 'reopened' : 'archived';
+
+        return `
+            <tr>
+                <td>
+                    <strong style="color:#0F172A;font-size:12.5px">${esc(date(v.date))}</strong>
+                    <div style="margin-top:3px">${v.time ? `<span class="time-badge">⏰ ${esc(v.time)}</span>` : '<small style="color:#94A3B8">Início pendente</small>'}</div>
+                </td>
+                <td>
+                    <div class="patient-cell-wrap">
+                        <div class="patient-avatar">${esc(ini)}</div>
+                        <div class="patient-info">
+                            <span class="main-id">${esc(v.patient || 'Paciente não informado')}</span>
+                            ${v.cpf ? `<span class="patient-cpf-pill">CPF ${esc(v.cpf)}</span>` : ''}
+                            <span class="sub sub-clamp" title="${esc(v.doenca || 'Avaliação médico-pericial')}">${esc(v.doenca || 'Avaliação médico-pericial')}</span>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <b class="cargo-title">${esc(v.cargo && v.cargo !== '—' && v.cargo !== '-' ? v.cargo : 'Cargo não informado')}</b>
+                    ${v.unidade ? `<div class="unit-row" title="${esc(v.unidade)}">🏢 ${esc(String(v.unidade).replace(/^0+\d*\s*-\s*/, ''))}</div>` : ''}
+                </td>
+                <td>
+                    <div>
+                        <span class="sub-tag-cid" style="font-weight:800">CID ${esc(v.cid || '—')}</span>
+                    </div>
+                </td>
+                <td style="text-align:center">
+                    ${v.dias ? `<span class="sub-tag-days" style="font-weight:800">⏱️ ${esc(v.dias)} dias</span>` : '<span style="color:#94A3B8">—</span>'}
+                </td>
+                <td style="text-align:center">
+                    ${parecerBadge}
+                </td>
+                <td style="text-align:center">
+                    <span class="badge ${stCls}"><span class="dot"></span>${esc(stateLabel[st] || st)}</span>
+                </td>
+                <td style="text-align:right">
+                    <div class="doc-actions-cell">
+                        <button type="button" class="doc-act-btn esisla" onclick="generateEsisla('${encId}')" title="Gerar e abrir Ficha e-SISLA oficial via IA">
+                            <span>📋 Ficha</span>
+                        </button>
+                        <button type="button" class="doc-act-btn detail" onclick="view('${encId}')" title="Abrir prontuário completo deste atendimento">
+                            <span>👁️ Prontuário</span>
+                        </button>
+                        <button type="button" class="doc-act-btn eval" onclick="openEval('${encId}')" title="Continuar atendimento">
+                            <span>✏️ Abrir</span>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+window.renderTabelaAtendimentosMedico = renderTabelaAtendimentosMedico;
+
+function imprimirPautaMedico() {
+    if (!currentDoctorWorkspace || !currentDoctorWorkspace.doctor) return;
+    const d = currentDoctorWorkspace.doctor;
+    const items = currentDoctorWorkspace.filteredItems || [];
+    const periodLabel = document.getElementById('docFilterSummaryText')?.textContent || 'Período Geral';
+
+    const printWin = window.open('', '_blank', 'width=950,height=750');
+    if (!printWin) {
+        alert('Por favor, permita popups para imprimir a pauta médica.');
+        return;
+    }
+
+    const rowsHtml = items.map((r, idx) => {
+        const v = values(r);
+        const st = statusOf(r);
+        return `
+            <tr>
+                <td style="text-align:center">${idx + 1}</td>
+                <td><strong>${esc(date(v.date))}</strong><br><small>${v.time ? `⏰ ${esc(v.time)}` : 'Horário pendente'}</small></td>
+                <td><strong>${esc(v.patient || 'Não informado')}</strong><br><small>${v.cpf ? `CPF: ${esc(v.cpf)}` : ''}</small></td>
+                <td>${esc(v.cargo || '—')}<br><small>${esc(v.unidade || '')}</small></td>
+                <td><strong>${esc(v.cid || '—')}</strong><br><small>${esc(v.dias ? `${v.dias} dias` : '—')}</small></td>
+                <td style="text-align:center">${esc(v.parecer || '—')}</td>
+                <td style="text-align:center">${esc(stateLabel[st] || st)}</td>
+                <td style="border-bottom:1px solid #999;min-width:120px">&nbsp;</td>
+            </tr>
+        `;
+    }).join('');
+
+    printWin.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>Pauta de Atendimentos - ${esc(d.nome)}</title>
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 24px; color: #1e293b; font-size: 11px; }
+                .pauta-head { border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; }
+                .pauta-title h1 { margin: 0 0 4px; font-size: 18px; color: #0f172a; text-transform: uppercase; }
+                .pauta-title p { margin: 0; color: #64748b; font-size: 12px; }
+                .pauta-meta { text-align: right; font-size: 11px; color: #475569; }
+                .pauta-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                .pauta-table th { background: #f1f5f9; padding: 8px 6px; font-size: 9.5px; text-transform: uppercase; border: 1px solid #cbd5e1; text-align: left; }
+                .pauta-table td { padding: 6px; border: 1px solid #cbd5e1; font-size: 10.5px; vertical-align: top; }
+                .pauta-table tr:nth-child(even) td { background: #f8fafc; }
+                .pauta-foot { margin-top: 36px; display: flex; justify-content: space-between; align-items: flex-end; page-break-inside: avoid; }
+                .sig-box { text-align: center; width: 280px; }
+                .sig-line { border-top: 1.5px solid #0f172a; margin-top: 40px; padding-top: 4px; font-weight: bold; }
+                @media print {
+                    @page { margin: 12mm; size: landscape; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="pauta-head">
+                <div class="pauta-title">
+                    <h1>Ambiental • Saúde Ocupacional & Perícias Médicas</h1>
+                    <p>Pauta Oficial de Atendimentos Periciais DPME / SP</p>
+                </div>
+                <div class="pauta-meta">
+                    <strong>${esc(d.nome)}</strong><br>
+                    <span>${d.crm ? `CRM: ${esc(d.crm)}` : 'Perito Oficial'}</span><br>
+                    <span>${esc(periodLabel)} • Total: ${items.length} atendimentos</span>
+                </div>
+            </div>
+            <table class="pauta-table">
+                <thead>
+                    <tr>
+                        <th style="width:24px;text-align:center">#</th>
+                        <th style="width:90px">Data / Hora</th>
+                        <th>Periciado / Paciente</th>
+                        <th>Cargo / Lotação</th>
+                        <th style="width:100px">CID / Dias</th>
+                        <th style="width:90px;text-align:center">Parecer</th>
+                        <th style="width:90px;text-align:center">Status</th>
+                        <th style="width:130px;text-align:center">Assinatura Periciado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml || '<tr><td colspan="8" style="text-align:center;padding:16px">Nenhum atendimento listado.</td></tr>'}
+                </tbody>
+            </table>
+            <div class="pauta-foot">
+                <div>
+                    <small>Documento emitido em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</small><br>
+                    <small>Sistema Ambiental Atendimentos • Gestão Integrada</small>
+                </div>
+                <div class="sig-box">
+                    <div class="sig-line">${esc(d.nome)}<br><span style="font-weight:normal;font-size:10px">${d.crm ? `CRM ${esc(d.crm)}` : 'Médico Perito Oficial'}</span></div>
+                </div>
+            </div>
+        </body>
+        </html>
+    `);
+    printWin.document.close();
+    printWin.focus();
+    setTimeout(() => { printWin.print(); }, 250);
+}
+window.imprimirPautaMedico = imprimirPautaMedico;
+
+function exportarPautaMedicoCSV() {
+    if (!currentDoctorWorkspace || !currentDoctorWorkspace.doctor) return;
+    const d = currentDoctorWorkspace.doctor;
+    const items = currentDoctorWorkspace.filteredItems || [];
+    if (!items.length) {
+        if (window.AmbientalUtils?.toast) AmbientalUtils.toast('Nenhum atendimento para exportar no filtro atual.', 'warning');
+        return;
+    }
+
+    const headers = ["Atendimento", "Data", "Horário", "Médico", "CRM", "Paciente", "CPF", "Cargo", "Unidade", "CID", "Dias Afastamento", "Parecer", "Status", "Última Atualização"];
+    const csvRows = [headers.join(';')];
+
+    items.forEach(r => {
+        const v = values(r);
+        const st = statusOf(r);
+        const cleanCol = s => `"${String(s || '').replace(/"/g, '""').trim()}"`;
+        csvRows.push([
+            cleanCol(v.atd),
+            cleanCol(v.date),
+            cleanCol(v.time),
+            cleanCol(d.nome),
+            cleanCol(d.crm),
+            cleanCol(v.patient),
+            cleanCol(v.cpf),
+            cleanCol(v.cargo),
+            cleanCol(v.unidade),
+            cleanCol(v.cid),
+            cleanCol(v.dias),
+            cleanCol(v.parecer),
+            cleanCol(stateLabel[st] || st),
+            cleanCol(v.updated)
+        ].join(';'));
+    });
+
+    const csvContent = "\uFEFF" + csvRows.join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    const safeName = d.nome.replace(/[^a-zA-Z0-9]/g, '_');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `pauta_${safeName}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    if (window.AmbientalUtils?.toast) {
+        AmbientalUtils.toast('Pauta médica exportada em CSV com sucesso!', 'success');
+    }
+}
+window.exportarPautaMedicoCSV = exportarPautaMedicoCSV;
 
 function renderDoctorProduction(rows) {
     const cardsContainer = document.getElementById('doctorCardsGrid');

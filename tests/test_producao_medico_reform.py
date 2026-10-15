@@ -69,3 +69,23 @@ def test_gestao_atendimentos_producao_por_medico_elements():
     assert "</div>\n  </div>\n</div>" in bench_segment or "</div>\r\n  </div>\r\n</div>" in bench_segment
     # O modalAtendimentosMedico não deve ter style="display:none" inline impeditivo
     assert '<div class="modal" id="modalAtendimentosMedico">' in GESTAO_HTML
+
+    # 5. Dossiê e Painel Clínico Executivo do Médico (Visão dedicada sem mudar de aba)
+    assert 'id="doctorListContainer"' in GESTAO_HTML
+    assert 'id="doctorDetailContainer"' in GESTAO_HTML
+    assert 'id="docDetailBreadcrumbName"' in GESTAO_HTML
+    assert 'id="docDetailAvatar"' in GESTAO_HTML
+    assert 'id="docDetailName"' in GESTAO_HTML
+    assert 'id="docDetailCrm"' in GESTAO_HTML
+    assert 'id="docDetailFavVal"' in GESTAO_HTML
+    assert 'id="docDetailContraVal"' in GESTAO_HTML
+    assert 'id="docDetailMediaDias"' in GESTAO_HTML
+    assert 'id="docDetailTopCids"' in GESTAO_HTML
+    assert 'id="docPeriodChips"' in GESTAO_HTML
+    assert 'id="docParecerChips"' in GESTAO_HTML
+    assert 'id="docLocalSearch"' in GESTAO_HTML
+    assert 'id="docAtendimentosTbody"' in GESTAO_HTML
+    assert "voltarParaListaMedicos" in GESTAO_HTML
+    assert "abrirPainelDossieMedico" in GESTAO_HTML
+    assert "imprimirPautaMedico" in GESTAO_HTML
+    assert "exportarPautaMedicoCSV" in GESTAO_HTML

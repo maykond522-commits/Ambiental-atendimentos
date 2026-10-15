@@ -2339,6 +2339,9 @@ def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
         ),
         "crm_cro": payload.get("crm_cro") or payload.get("crmCro") or a.get("crmCro"),
         "data_documento": _format_date_br(payload.get("data_documento") or payload.get("dataDocumento") or a.get("dataDocumento")),
+        "data_expedicao": _format_date_br(payload.get("data_expedicao") or a.get("dataExpedicao") or a.get("dataExpedicaoIso")),
+        "retroacao_invalida": bool(payload.get("retroacao_invalida") or a.get("retroacaoInvalida")),
+        "retroacao_dias": payload.get("retroacao_dias") or a.get("retroacaoDias"),
         "observacoes_documentos": obs_docs,
         "documentos_complementares": sanitized_docs,
         "exame_fisico_tipo": (
@@ -4664,9 +4667,56 @@ def parse_esisla_text(text: str) -> dict:
     m = re.search(r'Finalidade:\s*([^\n\r]+)', text, re.I)
     if m: data['finalidade'] = re.sub(r'\s+', ' ', m.group(1)).strip()
 
-    # 17. Data Expedição
-    m = re.search(r'Data Expedi[çc\ufffd]?[ãa\ufffd]?o:\s*(\d{2}/\d{2}/\d{4})', text, re.I)
-    if m: data['data_expedicao'] = m.group(1).strip()
+    # 17. Data Expedição & Local da Expedição (e-SISLA)
+    exp_snippet = ""
+    m_exp_sec = re.search(r'Local\s+e\s+Data\s+(?:da\s+)?Expedi[çc\ufffd]?[ãa\ufffd]?o', text, re.I)
+    if m_exp_sec:
+        start_pos = max(0, m_exp_sec.start() - 150)
+        end_pos = min(len(text), m_exp_sec.end() + 250)
+        exp_snippet = text[start_pos:end_pos]
+    else:
+        m_exp_direct = re.search(r'Data\s+Expedi[çc\ufffd]?[ãa\ufffd]?o', text, re.I)
+        if m_exp_direct:
+            start_pos = max(0, m_exp_direct.start() - 50)
+            end_pos = min(len(text), m_exp_direct.end() + 150)
+            exp_snippet = text[start_pos:end_pos]
+
+    meses_pt = {
+        'janeiro': 1, 'fevereiro': 2, 'marco': 3, 'março': 3,
+        'abril': 4, 'maio': 5, 'junho': 6, 'julho': 7,
+        'agosto': 8, 'setembro': 9, 'outubro': 10, 'novembro': 11, 'dezembro': 12,
+        'jan': 1, 'fev': 2, 'mar': 3, 'abr': 4, 'mai': 5, 'jun': 6,
+        'jul': 7, 'ago': 8, 'set': 9, 'out': 10, 'nov': 11, 'dez': 12
+    }
+
+    found_exp_br = None
+    found_exp_iso = None
+    targets = [exp_snippet] if exp_snippet else [text]
+
+    for target in targets:
+        m_txt = re.search(r'(?:[A-Za-zÀ-ÖØ-öø-ÿ\s]{2,40},\s*)?(\d{1,2})\s+(?:de\s+)?([A-Za-zçÇ]+)\s+(?:de\s+)?(\d{4})', target, re.I)
+        if m_txt and m_txt.group(2).lower() in meses_pt:
+            d = int(m_txt.group(1))
+            mo = meses_pt[m_txt.group(2).lower()]
+            y = int(m_txt.group(3))
+            found_exp_br = f"{d:02d}/{mo:02d}/{y}"
+            found_exp_iso = f"{y}-{mo:02d}-{d:02d}"
+            break
+
+        m_num = re.search(r'(?:Data\s+Expedi[çc\ufffd]?[ãa\ufffd]?o:?\s*|[A-Za-zÀ-ÖØ-öø-ÿ\s]{2,40},\s*)?(\d{1,2})[/\-\.](\d{1,2})[/\-\.](\d{4})', target, re.I)
+        if m_num:
+            d = int(m_num.group(1))
+            mo = int(m_num.group(2))
+            y = int(m_num.group(3))
+            if 1 <= d <= 31 and 1 <= mo <= 12 and 1990 <= y <= 2100:
+                found_exp_br = f"{d:02d}/{mo:02d}/{y}"
+                found_exp_iso = f"{y}-{mo:02d}-{d:02d}"
+                break
+
+    if found_exp_br:
+        data['data_expedicao'] = found_exp_br
+        data['data_expedicao_br'] = found_exp_br
+        data['data_expedicao_iso'] = found_exp_iso
 
     # 18. Última Licença
     m = re.search(r'[ÚU\ufffd]?ltima Licen[çc\ufffd]?a:\s*(\d+)?.*?In[íi\ufffd]?cio:\s*(\d{2}/\d{2}/\d{4})\s*Fim:\s*(\d{2}/\d{2}/\d{4})', text, re.I)
@@ -4714,6 +4764,50 @@ def parse_esisla_text(text: str) -> dict:
         data['cid_descricao'] = 'Pessoa em boa saúde acompanhando pessoa doente'
         dep_str = f" do(a) dependente {nome_dep}" if nome_dep else ""
         data['doenca_motivo'] = f"Acompanhamento e assistência ao tratamento de saúde{dep_str} (CID Z76.3), nos termos do art. 199 da Lei Estadual nº 10.261/68."
+
+    # 20. Validação de Retroação de Guia e Sugestão de Parecer Conforme Normativo DPME
+    # Referência: Data da Expedição da Guia (e não a data atual). Compara com a Data de Emissão do Atestado.
+    # Se intervalo entre Expedição e Emissão do Atestado for superior a 3 dias: retroação inválida -> Parecer CONTRÁRIO
+    data_ref_date = None
+    if data.get('data_expedicao_iso'):
+        try:
+            data_ref_date = datetime.strptime(data['data_expedicao_iso'], "%Y-%m-%d").date()
+        except Exception:
+            pass
+    elif data.get('data_expedicao'):
+        try:
+            data_ref_date = datetime.strptime(data['data_expedicao'], "%d/%m/%Y").date()
+        except Exception:
+            pass
+
+    data_doc_date = None
+    if data.get('data_documento'):
+        try:
+            data_doc_date = datetime.strptime(data['data_documento'], "%Y-%m-%d").date()
+        except Exception:
+            pass
+    elif data.get('data_documento_br'):
+        try:
+            data_doc_date = datetime.strptime(data['data_documento_br'], "%d/%m/%Y").date()
+        except Exception:
+            pass
+
+    if data_ref_date and data_doc_date:
+        diff_days = (data_ref_date - data_doc_date).days
+        data['retroacao_dias'] = diff_days
+        if diff_days > 3:
+            data['retroacao_invalida'] = True
+            data['parecer'] = 'CONTRÁRIO'
+            data['sugestao_parecer'] = 'CONTRÁRIO'
+            just_retro = 'Guia com mais de 3 dias de retroação, não havendo comprovação de internamento hospitalar ou impedimento absoluto do servidor para emissão da guia.'
+            data['justificativa'] = just_retro
+            data['sugestao_justificativa'] = just_retro
+            data['retroacao_motivo'] = (
+                f"Guia expedida em {data.get('data_expedicao', data_ref_date.strftime('%d/%m/%Y'))} e atestado emitido em "
+                f"{data.get('data_documento_br', data_doc_date.strftime('%d/%m/%Y'))} ({diff_days} dias de retroação > limite regulamentar de 3 dias)."
+            )
+        else:
+            data['retroacao_invalida'] = False
 
     return data
 
@@ -4763,7 +4857,8 @@ def api_esisla_parse_pdf():
                     "Extraia todos os dados do formulário Consulta Perícia Licença do e-SISLA / DPME em anexo. "
                     "Preencha rigorosamente conforme os campos do documento: Protocolo, CPF, RG, Nome Completo, "
                     "Data de Nascimento, Idade, Sexo, NI, Órgão, UA, Município, Regime Jurídico, Cargo, Situação, "
-                    "Readaptação (Sim ou Não), CRM Médico, Nome do Médico Assistente, CID 10, Nº Dias, Data de emissão do atestado."
+                    "Readaptação (Sim ou Não), CRM Médico, Nome do Médico Assistente, CID 10, Nº Dias, Data de emissão do atestado, "
+                    "Local e Data da Expedição (campo data_expedicao no formato DD/MM/AAAA)."
                 )
                 config = types.GenerateContentConfig(
                     system_instruction="Você é um assistente pericial especializado na extração exata de documentos e-SISLA.",
@@ -4783,6 +4878,22 @@ def api_esisla_parse_pdf():
                             for k, v in ai_dict.items():
                                 if v and not dados.get(k):
                                     dados[k] = str(v)
+                            # Recalcular retroação caso a data de expedição tenha sido obtida via IA
+                            if dados.get("data_expedicao") and (dados.get("data_documento") or dados.get("data_documento_br")) and not dados.get("retroacao_dias"):
+                                try:
+                                    d_ref = datetime.strptime(dados["data_expedicao"], "%d/%m/%Y").date()
+                                    doc_s = dados.get("data_documento") or dados.get("data_documento_br")
+                                    d_doc = datetime.strptime(doc_s, "%Y-%m-%d").date() if "-" in doc_s else datetime.strptime(doc_s, "%d/%m/%Y").date()
+                                    diff = (d_ref - d_doc).days
+                                    dados["retroacao_dias"] = diff
+                                    if diff > 3:
+                                        dados["retroacao_invalida"] = True
+                                        dados["parecer"] = "CONTRÁRIO"
+                                        dados["sugestao_parecer"] = "CONTRÁRIO"
+                                        dados["justificativa"] = "Guia com mais de 3 dias de retroação, não havendo comprovação de internamento hospitalar ou impedimento absoluto do servidor para emissão da guia."
+                                        dados["sugestao_justificativa"] = dados["justificativa"]
+                                except Exception:
+                                    pass
                         break
                     except Exception:
                         continue
@@ -4877,6 +4988,12 @@ def api_esisla_criar_atendimento():
                 "ultimaLicencaInicio": dados.get("ultima_licenca_inicio", ""),
                 "ultimaLicencaFim": dados.get("ultima_licenca_fim", ""),
                 "dataExpedicao": dados.get("data_expedicao", ""),
+                "dataExpedicaoIso": dados.get("data_expedicao_iso", ""),
+                "retroacaoInvalida": bool(dados.get("retroacao_invalida")),
+                "retroacaoDias": dados.get("retroacao_dias", 0),
+                "retroacaoMotivo": dados.get("retroacao_motivo", ""),
+                "sugestaoParecer": dados.get("sugestao_parecer", ""),
+                "sugestaoJustificativa": dados.get("sugestao_justificativa", ""),
                 "origemCriacao": "IMPORTACAO_ESISLA",
                 "exameFisicoTipo": "",
                 "exameFisicoDescricao": "",
@@ -5181,8 +5298,8 @@ def api_esisla_vincular_agenda_batch():
                         "doencaMotivo": dados.get("doenca_motivo") if (dados.get("tipo_atendimento_pericia") == "ACOMPANHANTE" or dados.get("is_acompanhante")) else "",
                         "exameFisicoTipo": "",
                         "exameFisicoDescricao": "",
-                        "parecer": "",
-                        "justificativa": "",
+                        "parecer": dados.get("parecer", ""),
+                        "justificativa": dados.get("justificativa", ""),
                         "isAcompanhante": bool(dados.get("is_acompanhante")),
                         "nomeDependente": dados.get("nome_dependente", ""),
                         "pessoa": dados.get("pessoa", "O PROPRIO"),
@@ -5226,14 +5343,18 @@ def api_esisla_vincular_agenda_batch():
                             "ultimaLicencaInicio": dados.get("ultima_licenca_inicio", ""),
                             "ultimaLicencaFim": dados.get("ultima_licenca_fim", ""),
                             "dataExpedicao": dados.get("data_expedicao", ""),
+                            "dataExpedicaoIso": dados.get("data_expedicao_iso", ""),
+                            "retroacaoInvalida": bool(dados.get("retroacao_invalida")),
+                            "retroacaoDias": dados.get("retroacao_dias", 0),
+                            "retroacaoMotivo": dados.get("retroacao_motivo", ""),
                             "origemCriacao": "IMPORTACAO_ESISLA_AGENDA_BATCH",
                             "exameFisicoTipo": "",
                             "exameFisicoDescricao": "",
                             "exameMentalResultado": "",
                             "outrosSubtipo": "",
                             "outrosResultado": "",
-                            "justificativa": "",
-                            "parecer": ""
+                            "justificativa": dados.get("justificativa", ""),
+                            "parecer": dados.get("parecer", "")
                         }
                     }
 

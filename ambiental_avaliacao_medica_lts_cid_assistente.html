@@ -2259,36 +2259,43 @@ body:not(.mode-agil-active) #containerModoAgil {
                   </div>
                 </div>
                 <div class="form-grid">
-                  <div class="field col-4">
-                    <label>CRM/CRO do médico assistente</label>
+                  <div class="field col-3">
+                    <label>CRM/CRO assistente</label>
                     <input class="input" id="agilCrmCro" value="Em anexo" placeholder="Ex: CRM/SP 123456" oninput="syncAgilField('crmCro', this.value)">
                   </div>
-                  <div class="field col-4">
-                    <label>Data do atestado/relatório</label>
-                    <input class="input" type="date" id="agilDataDocumento" oninput="syncAgilField('dataDocumento', this.value); calcularDatasAtestado();">
+                  <div class="field col-3">
+                    <label>Data expedição da guia</label>
+                    <input class="input" type="date" id="agilDataExpedicao" oninput="syncAgilField('dataExpedicao', this.value); calcularDatasAtestado();" title="Local e Data da Expedição da Guia e-SISLA">
                   </div>
-                  <div class="field col-4">
+                  <div class="field col-3">
+                    <label>Data emissão atestado</label>
+                    <input class="input" type="date" id="agilDataDocumento" oninput="syncAgilField('dataDocumento', this.value); calcularDatasAtestado();" title="Data no Parecer do Médico Assistente">
+                  </div>
+                  <div class="field col-3">
                     <label>Dias solicitados</label>
                     <input class="input" type="number" min="0" id="agilDiasSolicitados" placeholder="Ex: 15" oninput="syncAgilField('diasSolicitados', this.value); calcularDatasAtestado();">
                   </div>
                 </div>
                 
-                <!-- Resumo e Calculadora Dinâmica -->
+                <!-- Resumo e Calculadora Dinâmica de Prazos e Retroação -->
                 <div id="calcDatasResumoBox" style="margin-top:12px;padding:10px 14px;background:#FFFFFF;border:1px solid #E2E8F0;border-radius:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
                   <div style="display:flex;align-items:center;gap:14px;font-size:12.5px;color:#334155;flex-wrap:wrap">
-                    <div><span>Data Início:</span> <strong id="calcDataInicioTxt">--/--/----</strong></div>
+                    <div><span>Expedição Guia:</span> <strong id="calcDataExpedicaoTxt">--/--/----</strong></div>
+                    <div><span>Emissão Atestado:</span> <strong id="calcDataInicioTxt">--/--/----</strong></div>
                     <div><span>Término previsto:</span> <strong id="calcDataTerminoTxt" style="color:#0F52BA">--/--/----</strong></div>
-                    <div><span>Dias:</span> <strong id="calcDiasTxt">--</strong></div>
+                    <div><span>Prazo:</span> <strong id="calcDiasTxt">--</strong></div>
+                    <div><span>Intervalo Retroação:</span> <strong id="calcRetroacaoTxt">--</strong></div>
                   </div>
-                  <div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button type="button" id="btnAplicarContrarioRetroacao" class="btn" style="display:none;background:#DC2626;color:#FFFFFF;font-size:11.5px;padding:4px 10px;font-weight:700;border:none;border-radius:6px;cursor:pointer" onclick="aplicarParecerContrarioRetroacao()" title="Aplica parecer contrário devido a retroação inválida (> 3 dias)">
+                      <span>⛔</span> Aplicar Parecer CONTRÁRIO
+                    </button>
                     <button type="button" class="btn btn-outline" style="font-size:11.5px;padding:4px 10px;background:#F1F5F9;font-weight:700" onclick="concederMesmosDiasAtestado()" title="Preenche o parecer com os mesmos dias e data do atestado">
                       <span>✓</span> Conceder mesmos dias no parecer
                     </button>
                   </div>
                 </div>
-                <div id="retroacaoExplicacao" style="display:none;margin-top:8px;font-size:11.5px;color:#9A3412;line-height:1.4">
-                  <strong>Atenção DPME:</strong> A data do atestado possui mais de 3 dias úteis anteriores à data de hoje. Caso concedido, o DPME exige comprovação documental de internamento hospitalar ou justificativa pericial formal.
-                </div>
+                <div id="retroacaoExplicacao" style="display:none;margin-top:8px;font-size:11.5px;color:#9A3412;line-height:1.4"></div>
               </div>
             </div>
 
@@ -5656,6 +5663,18 @@ function aplicarDadosEsisla(dados) {
 
     if (dados.nome_medico_assistente) state.aux.medicoAssistenteNome = dados.nome_medico_assistente;
 
+    const isoExp = toIsoDate(dados.data_expedicao_iso || dados.data_expedicao);
+    if (isoExp) {
+      state.aux.dataExpedicao = dados.data_expedicao || isoExp;
+      state.aux.dataExpedicaoIso = isoExp;
+      state.dataExpedicao = dados.data_expedicao || isoExp;
+      if ($("dataExpedicao")) $("dataExpedicao").value = isoExp;
+      if ($("agilDataExpedicao")) $("agilDataExpedicao").value = isoExp;
+    } else if (dados.data_expedicao) {
+      state.aux.dataExpedicao = dados.data_expedicao;
+      state.dataExpedicao = dados.data_expedicao;
+    }
+
     const isoDoc = toIsoDate(dados.data_documento || dados.data_documento_br);
     if (isoDoc) {
       state.aux.dataDocumento = isoDoc;
@@ -5695,7 +5714,7 @@ function aplicarDadosEsisla(dados) {
       if ($("agilDoencaMotivo")) $("agilDoencaMotivo").value = dados.doenca_motivo;
     }
 
-    // 5. Limpar rigorosamente campos clínicos e parecer para não preencher apenas ao jogar o PDF
+    // 5. Configurar parecer ou limpar campos clínicos conforme regra de retroação DPME
     state.exameFisicoTipo = "";
     state.exameFisicoDescricao = "";
     state.exameMentalResultado = "";
@@ -5705,8 +5724,6 @@ function aplicarDadosEsisla(dados) {
     state.outrosSubtipo = "";
     state.outrosResultado = "";
     state.areaExameClinico = "";
-    state.parecer = "";
-    state.justificativa = "";
     if (state.aux) {
       state.aux.exameFisicoTipo = "";
       state.aux.exameFisicoDescricao = "";
@@ -5715,8 +5732,6 @@ function aplicarDadosEsisla(dados) {
       state.aux.descLimitacao = "";
       state.aux.outrosSubtipo = "";
       state.aux.outrosResultado = "";
-      state.aux.parecer = "";
-      state.aux.justificativa = "";
     }
     if ($("exameFisicoTipo")) $("exameFisicoTipo").value = "";
     if ($("agilExameFisicoTipo")) $("agilExameFisicoTipo").value = "";
@@ -5726,15 +5741,59 @@ function aplicarDadosEsisla(dados) {
     if ($("agilExameMentalResultado")) $("agilExameMentalResultado").value = "";
     if ($("outrosSubtipo")) $("outrosSubtipo").value = "";
     if ($("agilOutrosSubtipo")) $("agilOutrosSubtipo").value = "";
-    if ($("justificativa")) $("justificativa").value = "";
-    if ($("agilJustificativa")) $("agilJustificativa").value = "";
-    if ($("parecer")) $("parecer").value = "";
-    if ($("agilParecer")) $("agilParecer").value = "";
     if ($("agilOutrosSelector")) $("agilOutrosSelector").style.display = "none";
     if ($("agilMentalWrap")) $("agilMentalWrap").style.display = "none";
     if ($("agilOsteoWrap")) $("agilOsteoWrap").style.display = "none";
     if ($("agilOutrosWrap")) $("agilOutrosWrap").style.display = "none";
     if ($("btnIaJustificativa")) $("btnIaJustificativa").style.display = "none";
+
+    // Regra DPME: Se a retroação entre Local e Data da Expedição e Data de Emissão for > 3 dias, definir Parecer CONTRÁRIO
+    const isRetroInvalida = Boolean(dados.retroacao_invalida || (dados.retroacao_dias && dados.retroacao_dias > 3));
+    if (isRetroInvalida) {
+      const retroJust = dados.justificativa || "Guia com mais de 3 dias de retroação, não havendo comprovação de internamento hospitalar ou impedimento absoluto do servidor para emissão da guia.";
+      state.parecer = "CONTRÁRIO";
+      state.justificativa = retroJust;
+      if (!state.aux) state.aux = {};
+      state.aux.parecer = "CONTRÁRIO";
+      state.aux.justificativa = retroJust;
+      state.aux.retroacaoInvalida = true;
+      state.aux.retroacaoDias = dados.retroacao_dias;
+      if ($("parecer")) $("parecer").value = "CONTRÁRIO";
+      if ($("agilParecer")) $("agilParecer").value = "CONTRÁRIO";
+      setRadio("parecer", "CONTRÁRIO");
+      setRadio("agilParecer", "CONTRÁRIO");
+      if ($("justificativa")) $("justificativa").value = retroJust;
+      if ($("agilJustificativa")) $("agilJustificativa").value = retroJust;
+      state.capacidade = "Capacidade laborativa preservada";
+      setRadio("capacidade", "Capacidade laborativa preservada");
+      state.limitacaoFuncional = "Não";
+      state.limitacaoRol = "Não";
+      setRadio("limitacaoFuncional", "Não");
+      setRadio("limitacaoRol", "Não");
+      const cNome = state.aux?.cargo || state.cargo || "servidor";
+      const dLim = `Do ponto de vista médico não se observa limitações físicas ou mentais funcionais incapacitantes para as atribuições do cargo de ${cNome}, constantes no rol de atividades.`;
+      state.descLimitacao = dLim;
+      state.aux.descLimitacao = dLim;
+      if ($("descLimitacao")) $("descLimitacao").value = dLim;
+      const isRd = (state.readaptado === "Sim" || state.aux?.readaptado === "Sim");
+      if (typeof QuesitoService !== "undefined") {
+        QuesitoService.set(0, "Sim");
+        QuesitoService.set(1, isRd ? "Sim" : "Não");
+        QuesitoService.set(2, "Não");
+        if (typeof renderQuesitos === "function") renderQuesitos();
+      }
+    } else {
+      state.parecer = "";
+      state.justificativa = "";
+      if (state.aux) {
+        state.aux.parecer = "";
+        state.aux.justificativa = "";
+      }
+      if ($("justificativa")) $("justificativa").value = "";
+      if ($("agilJustificativa")) $("agilJustificativa").value = "";
+      if ($("parecer")) $("parecer").value = "";
+      if ($("agilParecer")) $("agilParecer").value = "";
+    }
 
     syncExtendedToAgil();
     applyState();
@@ -8523,10 +8582,12 @@ function syncExtendedToAgil() {
   }
 
   setVal("agilCrmCro", state.aux.crmCro || state.crmCro || $("crmCro")?.value || "");
+  const isoExp = toIsoDate(state.aux.dataExpedicao || state.aux.dataExpedicaoIso || state.dataExpedicao || "");
+  setVal("agilDataExpedicao", isoExp);
   setVal("agilDataDocumento", state.aux.dataDocumento || state.dataDocumento || $("dataDocumento")?.value || "");
   setVal("agilDiasSolicitados", state.aux.diasSolicitados || state.diasSolicitados || $("diasSolicitados")?.value || "");
   
-  const temDadosAtestado = !!(state.aux?.crmCro || state.crmCro || $("crmCro")?.value || state.aux?.dataDocumento || state.dataDocumento || $("dataDocumento")?.value || state.aux?.diasSolicitados || state.diasSolicitados || $("diasSolicitados")?.value);
+  const temDadosAtestado = !!(state.aux?.crmCro || state.crmCro || $("crmCro")?.value || state.aux?.dataDocumento || state.dataDocumento || $("dataDocumento")?.value || state.aux?.diasSolicitados || state.diasSolicitados || $("diasSolicitados")?.value || state.aux?.dataExpedicao || state.dataExpedicao);
   if (typeof toggleAtestadoAssistente === "function") {
     toggleAtestadoAssistente(temDadosAtestado);
   }
@@ -8796,7 +8857,7 @@ function syncAgilField(field, value) {
   if (field === "altura" || field === "peso") {
     if (typeof calcularIMC === "function") calcularIMC();
   }
-  if (field === "dataDocumento" || field === "diasSolicitados") {
+  if (field === "dataDocumento" || field === "diasSolicitados" || field === "dataExpedicao") {
     if (typeof calcularDatasAtestado === "function") calcularDatasAtestado();
     if (typeof verificarRegraJuntaMedica === "function") verificarRegraJuntaMedica();
   }
@@ -10321,60 +10382,182 @@ function atualizarDiasConcedidosAutomatico() {
 }
 
 function calcularDatasAtestado() {
-  const dtDoc = $("agilDataDocumento")?.value || state.aux?.dataDocumento || "";
-  const diasStr = $("agilDiasSolicitados")?.value || state.aux?.diasSolicitados || "";
+  const dtDoc = $("agilDataDocumento")?.value || state.aux?.dataDocumento || $("dataDocumento")?.value || "";
+  const diasStr = $("agilDiasSolicitados")?.value || state.aux?.diasSolicitados || $("diasSolicitados")?.value || "";
   const dias = parseInt(diasStr, 10);
+  
+  // Data de Expedição da Guia (prioridade absoluta sobre a data atual conforme regra DPME)
+  const dtExpRaw = $("agilDataExpedicao")?.value || state.aux?.dataExpedicao || state.aux?.dataExpedicaoIso || state.dataExpedicao || "";
   
   const alertBadge = $("retroacaoAlertaBadge");
   const alertExp = $("retroacaoExplicacao");
   const inicioTxt = $("calcDataInicioTxt");
+  const expedicaoTxt = $("calcDataExpedicaoTxt");
   const terminoTxt = $("calcDataTerminoTxt");
   const diasTxt = $("calcDiasTxt");
+  const retroacaoTxt = $("calcRetroacaoTxt");
+  const btnContrario = $("btnAplicarContrarioRetroacao");
 
-  if (!dtDoc) {
+  // Helper para converter string de data para Date a meia-noite
+  function parseDateToMidnight(str) {
+    if (!str) return null;
+    const s = String(str).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+      const [y, m, d] = s.split("-").map(Number);
+      return new Date(y, m - 1, d);
+    }
+    const mBr = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
+    if (mBr) {
+      return new Date(parseInt(mBr[3], 10), parseInt(mBr[2], 10) - 1, parseInt(mBr[1], 10));
+    }
+    const mesMap = { janeiro: 0, fevereiro: 1, marco: 2, março: 2, abril: 3, maio: 4, junho: 5, julho: 6, agosto: 7, setembro: 8, outubro: 9, novembro: 10, dezembro: 11 };
+    const mTxt = s.match(/(\d{1,2})\s+(?:de\s+)?([A-Za-zçÇ]+)\s+(?:de\s+)?(\d{4})/i);
+    if (mTxt && mesMap[mTxt[2].toLowerCase()] !== undefined) {
+      return new Date(parseInt(mTxt[3], 10), mesMap[mTxt[2].toLowerCase()], parseInt(mTxt[1], 10));
+    }
+    return null;
+  }
+
+  const docDate = parseDateToMidnight(dtDoc);
+  const expDate = parseDateToMidnight(dtExpRaw);
+  const now = new Date();
+  const todayZero = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  // A referência para a retroação é SEMPRE a data de expedição da guia no e-SISLA. Fallback para hoje somente se não informada.
+  const refDate = expDate || todayZero;
+  const isUsingExpedicao = !!expDate;
+
+  if (expedicaoTxt) {
+    if (expDate) {
+      const eD = String(expDate.getDate()).padStart(2, "0");
+      const eM = String(expDate.getMonth() + 1).padStart(2, "0");
+      expedicaoTxt.textContent = `${eD}/${eM}/${expDate.getFullYear()}`;
+    } else {
+      expedicaoTxt.textContent = "--/--/----";
+    }
+  }
+
+  if (!docDate) {
     if (alertBadge) alertBadge.style.display = "none";
     if (alertExp) alertExp.style.display = "none";
     if (inicioTxt) inicioTxt.textContent = "--/--/----";
     if (terminoTxt) terminoTxt.textContent = "--/--/----";
     if (diasTxt) diasTxt.textContent = "--";
+    if (retroacaoTxt) retroacaoTxt.textContent = "--";
+    if (btnContrario) btnContrario.style.display = "none";
     return;
   }
 
-  const parts = dtDoc.split("-");
-  if (parts.length === 3) {
-    const docDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-    const now = new Date();
-    const todayZero = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    // Diferença em dias corridos entre hoje e a data do documento
-    const diffTime = todayZero.getTime() - docDate.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  const fmtDoc = `${String(docDate.getDate()).padStart(2, "0")}/${String(docDate.getMonth() + 1).padStart(2, "0")}/${docDate.getFullYear()}`;
+  if (inicioTxt) inicioTxt.textContent = fmtDoc;
 
-    if (diffDays > 3) {
-      if (alertBadge) alertBadge.style.display = "inline-flex";
-      if (alertExp) alertExp.style.display = "block";
+  // Diferença em dias corridos entre a referência (Expedição da Guia) e a emissão do atestado
+  const diffTime = refDate.getTime() - docDate.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  if (retroacaoTxt) {
+    if (diffDays > 0) {
+      retroacaoTxt.textContent = `${diffDays} dia${diffDays > 1 ? "s" : ""}`;
+      retroacaoTxt.style.color = diffDays > 3 ? "#DC2626" : "#16A34A";
     } else {
-      if (alertBadge) alertBadge.style.display = "none";
-      if (alertExp) alertExp.style.display = "none";
-    }
-
-    const fmtDoc = `${String(parts[2]).padStart(2, "0")}/${String(parts[1]).padStart(2, "0")}/${parts[0]}`;
-    if (inicioTxt) inicioTxt.textContent = fmtDoc;
-
-    if (!isNaN(dias) && dias > 0) {
-      if (diasTxt) diasTxt.textContent = `${dias} dia${dias > 1 ? "s" : ""}`;
-      const endDate = new Date(docDate.getTime());
-      endDate.setDate(endDate.getDate() + (dias - 1));
-      const endDay = String(endDate.getDate()).padStart(2, "0");
-      const endMonth = String(endDate.getMonth() + 1).padStart(2, "0");
-      const endYear = endDate.getFullYear();
-      if (terminoTxt) terminoTxt.textContent = `${endDay}/${endMonth}/${endYear}`;
-    } else {
-      if (diasTxt) diasTxt.textContent = "--";
-      if (terminoTxt) terminoTxt.textContent = "--/--/----";
+      retroacaoTxt.textContent = "0 dias";
+      retroacaoTxt.style.color = "#16A34A";
     }
   }
+
+  if (diffDays > 3) {
+    if (alertBadge) {
+      alertBadge.style.display = "inline-flex";
+      alertBadge.innerHTML = `⚠️ Retroação Inválida: ${diffDays} dias (> 3 dias)`;
+      alertBadge.style.background = "#FEE2E2";
+      alertBadge.style.color = "#991B1B";
+      alertBadge.style.borderColor = "#F87171";
+    }
+    if (alertExp) {
+      alertExp.style.display = "block";
+      const fmtRef = `${String(refDate.getDate()).padStart(2, "0")}/${String(refDate.getMonth() + 1).padStart(2, "0")}/${refDate.getFullYear()}`;
+      const refDesc = isUsingExpedicao ? `Data da Expedição da Guia (${fmtRef})` : `Data atual de hoje (${fmtRef})`;
+      alertExp.innerHTML = `
+        <div style="background:#FFF7ED;border:1.5px solid #FDBA74;border-radius:8px;padding:10px 14px;margin-top:6px">
+          <div style="font-weight:800;color:#9A3412;display:flex;align-items:center;gap:6px">
+            <span>⛔</span>
+            <span>Atenção DPME — Retroação Inválida (${diffDays} dias):</span>
+          </div>
+          <div style="font-size:12px;color:#7C2D12;line-height:1.45;margin-top:4px">
+            O intervalo entre a <strong>${refDesc}</strong> e a <strong>Data de Emissão do Atestado (${fmtDoc})</strong> é de <strong>${diffDays} dias</strong> (superior ao limite regulamentar de 3 dias).
+            Conforme normativo oficial do DPME/SP, guias com mais de 3 dias de retroação sem comprovação documental de internamento hospitalar ou impedimento absoluto ensejam <strong>PARECER CONTRÁRIO</strong>.
+          </div>
+        </div>
+      `;
+    }
+    if (btnContrario) btnContrario.style.display = "inline-flex";
+  } else {
+    if (alertBadge) {
+      alertBadge.style.display = "none";
+      alertBadge.style.background = "#FFEDD5";
+      alertBadge.style.color = "#9A3412";
+      alertBadge.style.borderColor = "#FDBA74";
+    }
+    if (alertExp) alertExp.style.display = "none";
+    if (btnContrario) btnContrario.style.display = "none";
+  }
+
+  if (!isNaN(dias) && dias > 0) {
+    if (diasTxt) diasTxt.textContent = `${dias} dia${dias > 1 ? "s" : ""}`;
+    const endDate = new Date(docDate.getTime());
+    endDate.setDate(endDate.getDate() + (dias - 1));
+    const endDay = String(endDate.getDate()).padStart(2, "0");
+    const endMonth = String(endDate.getMonth() + 1).padStart(2, "0");
+    const endYear = endDate.getFullYear();
+    if (terminoTxt) terminoTxt.textContent = `${endDay}/${endMonth}/${endYear}`;
+  } else {
+    if (diasTxt) diasTxt.textContent = "--";
+    if (terminoTxt) terminoTxt.textContent = "--/--/----";
+  }
 }
+
+function aplicarParecerContrarioRetroacao() {
+  const justTexto = "Guia com mais de 3 dias de retroação, não havendo comprovação de internamento hospitalar ou impedimento absoluto do servidor para emissão da guia.";
+  state.parecer = "CONTRÁRIO";
+  state.justificativa = justTexto;
+  if (!state.aux) state.aux = {};
+  state.aux.parecer = "CONTRÁRIO";
+  state.aux.justificativa = justTexto;
+  state.aux.retroacaoInvalida = true;
+  
+  if ($("parecer")) $("parecer").value = "CONTRÁRIO";
+  if ($("agilParecer")) $("agilParecer").value = "CONTRÁRIO";
+  setRadio("parecer", "CONTRÁRIO");
+  setRadio("agilParecer", "CONTRÁRIO");
+  
+  if ($("justificativa")) $("justificativa").value = justTexto;
+  if ($("agilJustificativa")) $("agilJustificativa").value = justTexto;
+
+  state.capacidade = "Capacidade laborativa preservada";
+  setRadio("capacidade", "Capacidade laborativa preservada");
+  state.limitacaoFuncional = "Não";
+  state.limitacaoRol = "Não";
+  setRadio("limitacaoFuncional", "Não");
+  setRadio("limitacaoRol", "Não");
+
+  const cargo = state.aux?.cargo || state.cargo || "servidor";
+  const descLim = `Do ponto de vista médico não se observa limitações físicas ou mentais funcionais incapacitantes para as atribuições do cargo de ${cargo}, constantes no rol de atividades.`;
+  state.descLimitacao = descLim;
+  state.aux.descLimitacao = descLim;
+  if ($("descLimitacao")) $("descLimitacao").value = descLim;
+
+  const isReadap = (state.readaptado === "Sim" || state.aux?.readaptado === "Sim");
+  if (typeof QuesitoService !== "undefined") {
+    QuesitoService.set(0, "Sim");
+    QuesitoService.set(1, isReadap ? "Sim" : "Não");
+    QuesitoService.set(2, "Não");
+    if (typeof renderQuesitos === "function") renderQuesitos();
+  }
+
+  autoSave();
+  toast("⛔ Parecer CONTRÁRIO aplicado por retroação inválida (> 3 dias).");
+}
+window.aplicarParecerContrarioRetroacao = aplicarParecerContrarioRetroacao;
 
 function concederMesmosDiasAtestado() {
   const dtDoc = $("agilDataDocumento")?.value || state.aux?.dataDocumento || "";

@@ -4761,13 +4761,22 @@ body.modal-lock { overscroll-behavior: none; }
           </div>
 
           <div style="background:#fff;border:1px solid #E2E8F0;border-radius:8px;padding:10px;grid-column:1 / -1">
-            <span style="font-size:11px;color:#64748B;font-weight:700;display:block">ATESTADO DO MÉDICO ASSISTENTE</span>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+              <span style="font-size:11px;color:#64748B;font-weight:700">ATESTADO DO MÉDICO ASSISTENTE &amp; EXPEDIÇÃO</span>
+              <span id="prevDataExpedicaoBadge" class="badge" style="background:#E0F2FE;color:#0369A1;font-weight:700;font-size:11px">Expedição: —</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
               <span id="prevCidPill" class="badge" style="background:#FEF3C7;color:#92400E;font-weight:800;font-size:12px">CID: —</span>
               <strong id="prevCidDesc" style="color:#1E293B;font-size:12.5px">—</strong>
             </div>
             <div id="prevDiasData" style="color:#475569;font-size:11.5px;margin-top:4px">—</div>
             <div id="prevMedicoAssistente" style="color:#475569;font-size:11.5px">—</div>
+
+            <!-- Alerta de Retroação Inválida se intervalo > 3 dias -->
+            <div id="prevRetroacaoAlert" style="display:none;margin-top:10px;padding:10px 12px;background:#FEF2F2;border:1.5px solid #FCA5A5;border-radius:8px;color:#991B1B;font-size:12px;line-height:1.4">
+              <strong style="display:block;margin-bottom:2px">⛔ Atenção DPME — Retroação Inválida (&gt; 3 dias):</strong>
+              <span id="prevRetroacaoTexto"></span>
+            </div>
           </div>
         </div>
 
@@ -9800,6 +9809,20 @@ window.processarArquivoEsislaGestao = async function(file) {
     document.getElementById('prevCidDesc').textContent = dados.cid_descricao || '—';
     document.getElementById('prevDiasData').textContent = `Prazo: ${dados.dias_solicitados || '—'} dia(s) · Emitido em: ${dados.data_documento_br || dados.data_documento || '—'}`;
     document.getElementById('prevMedicoAssistente').textContent = `Médico Assistente: ${dados.nome_medico_assistente || '—'} (CRM: ${dados.crm_cro || '—'})`;
+
+    const expBadge = document.getElementById('prevDataExpedicaoBadge');
+    if (expBadge) expBadge.textContent = `Expedição Guia: ${dados.data_expedicao || 'Não informada'}`;
+
+    const retroAlert = document.getElementById('prevRetroacaoAlert');
+    const retroTxt = document.getElementById('prevRetroacaoTexto');
+    if (dados.retroacao_invalida || (dados.retroacao_dias && dados.retroacao_dias > 3)) {
+      if (retroAlert && retroTxt) {
+        retroAlert.style.display = 'block';
+        retroTxt.innerHTML = `O intervalo entre a expedição da guia (<strong>${dados.data_expedicao || '—'}</strong>) e a emissão do atestado (<strong>${dados.data_documento_br || dados.data_documento || '—'}</strong>) é de <strong>${dados.retroacao_dias} dias</strong>. Por exceder o limite de 3 dias do DPME, o atendimento receberá sugestão de <strong>PARECER CONTRÁRIO</strong> por retroação inválida.`;
+      }
+    } else if (retroAlert) {
+      retroAlert.style.display = 'none';
+    }
 
     if (loading) loading.style.display = 'none';
     if (preview) preview.style.display = 'block';

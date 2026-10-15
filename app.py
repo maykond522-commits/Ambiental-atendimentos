@@ -581,6 +581,7 @@ def _init_db():
         ALTER TABLE atendimentos ADD COLUMN IF NOT EXISTS usuario_id TEXT;
         CREATE INDEX IF NOT EXISTS idx_atd_usuario ON atendimentos(usuario_id);
         CREATE INDEX IF NOT EXISTS idx_atd_usuario_status_updated ON atendimentos(usuario_id, status, atualizado_em DESC);
+        CREATE INDEX IF NOT EXISTS idx_atd_aux_data_atd ON atendimentos(((payload_json->'aux'->>'dataAtd')));
         -- Materializa os dados de identificação do paciente em colunas próprias
         -- para busca rápida na Gestão, mantendo o payload_json como fonte completa.
         UPDATE atendimentos
@@ -6853,30 +6854,34 @@ def api_dashboard():
     owner_clause = " WHERE usuario_id=%s" if scoped else ""
     owner_args = (eff["id"],) if scoped else ()
 
-    def fetch_val(q, p=()):
-        cur.execute(q, p)
-        res = cur.fetchone()
-        return list(res.values())[0] if res else 0
-
-    def count_status(value):
-        return fetch_val(
-            "SELECT COUNT(*) FROM atendimentos" + owner_clause + (" AND " if owner_clause else " WHERE ") + "status=%s",
-            owner_args + (value,),
-        )
-
+    cur.execute(
+        f"""
+        SELECT
+            COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE status = 'RASCUNHO') AS rascunhos,
+            COUNT(*) FILTER (WHERE status = 'EM_REVISÃO') AS revisao,
+            COUNT(*) FILTER (WHERE status = 'PENDENTE') AS pendentes,
+            COUNT(*) FILTER (WHERE status = 'FINALIZADO') AS finalizados,
+            COUNT(*) FILTER (WHERE status = 'ARQUIVADO') AS arquivados,
+            COUNT(*) FILTER (WHERE criado_em LIKE %s) AS atendimentos_hoje,
+            COALESCE(SUM(alertas), 0) AS alertas,
+            COALESCE(SUM(inconsistencias), 0) AS inconsistencias
+        FROM atendimentos
+        {owner_clause}
+        """,
+        [f"{today}%"] + list(owner_args),
+    )
+    srow = cur.fetchone() or {}
     stats = {
-        "total": fetch_val("SELECT COUNT(*) FROM atendimentos" + owner_clause, owner_args),
-        "rascunhos": count_status("RASCUNHO"),
-        "revisao": count_status("EM_REVISÃO"),
-        "pendentes": count_status("PENDENTE"),
-        "finalizados": count_status("FINALIZADO"),
-        "arquivados": count_status("ARQUIVADO"),
-        "atendimentos_hoje": fetch_val(
-            "SELECT COUNT(*) FROM atendimentos" + owner_clause + (" AND " if owner_clause else " WHERE ") + "SUBSTR(criado_em, 1, 10)=%s",
-            owner_args + (today,),
-        ),
-        "alertas": fetch_val("SELECT COALESCE(SUM(alertas), 0) FROM atendimentos" + owner_clause, owner_args),
-        "inconsistencias": fetch_val("SELECT COALESCE(SUM(inconsistencias), 0) FROM atendimentos" + owner_clause, owner_args),
+        "total": int(srow.get("total") or 0),
+        "rascunhos": int(srow.get("rascunhos") or 0),
+        "revisao": int(srow.get("revisao") or 0),
+        "pendentes": int(srow.get("pendentes") or 0),
+        "finalizados": int(srow.get("finalizados") or 0),
+        "arquivados": int(srow.get("arquivados") or 0),
+        "atendimentos_hoje": int(srow.get("atendimentos_hoje") or 0),
+        "alertas": int(srow.get("alertas") or 0),
+        "inconsistencias": int(srow.get("inconsistencias") or 0),
     }
 
     # Distribuição global/individual por status.

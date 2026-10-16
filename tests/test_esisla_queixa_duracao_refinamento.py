@@ -322,5 +322,129 @@ def test_caso_servidora_peb_ii_multiplas_medicacoes_sem_dosagem():
     assert "dor generalizada" not in resultado
 
 
+def test_refinamento_6_pacientes_queixa_e_antecedentes():
+    # Paciente 1
+    q1 = (
+        "Servidora de 48 anos, relatou ser readaptada, é Professora de Educação Básica II há 20 anos, "
+        "com queixa de dificuldade de locomoção e alteração comportamentais, choro fácil, sintomas depressivos e amnésia, sendo avaliada por psiquiatra. "
+        "Refere sintomas depressivos, angústia, amnésia, menos valia, dores generalizadas e instabilidade motora. "
+        "Em uso de Clonazepam 2 mg/dia, Lítio 300 mg/dia, Duloxetina, não informada sua dosagem, e Bupropiona 300 mg/dia. "
+        "Não relatou troca de alteração de dosagem da medicação. Não alegou fazer fisioterapia e psicoterapia."
+    )
+    a1 = (
+        "Refere histórico relacionado a Pericianda apresenta dificuldade de locomoção e alteração comportamentais, choro fácil, "
+        "sintomas depressivos, amnésia sendo avaliada por psiquiatra em uso de duloxetina, clonazepan, lítio, bupropiona prescritos por médico. "
+        "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
+    )
+    rq1 = _clean_queixa_duracao_text(q1)
+    ra1 = _clean_antecedentes_morbidos_text(a1)
+    assert "alterações comportamentais" in rq1
+    assert "alteração comportamentais" not in rq1
+    assert "menos-valia" in rq1
+    assert "Refere angústia, menos-valia, dores generalizadas e instabilidade motora." in rq1
+    assert "Refere histórico de dificuldade de locomoção e alterações comportamentais, choro fácil, sintomas depressivos e amnésia, sendo avaliada por psiquiatra, em uso de Duloxetina, Clonazepam, Lítio e Bupropiona." in ra1
+    assert "Pericianda apresenta" not in ra1
+    assert "prescritos por médico" not in ra1
 
+    # Paciente 2
+    q2 = (
+        "Servidor de 46 anos, relatou não ser readaptado, é Policial Penal VI, "
+        "com queixa de periciando submetido a blefaroplastia apresenta edema e hematomas palpebrais. "
+        "Refere dor de edema palpebral. Em uso de Dipirona 1 g se dor até 6/6h. "
+        "Não relatou troca de alteração de dosagem da medicação. Não alegou fazer fisioterapia e psicoterapia."
+    )
+    a2 = (
+        "Refere histórico relacionado de blefaroplastia apresenta edema e hematomas pálpebrais, "
+        "recebeu prescrição de amoxacilina, alivium, diprospan. "
+        "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
+    )
+    rq2 = _clean_queixa_duracao_text(q2)
+    ra2 = _clean_antecedentes_morbidos_text(a2)
+    assert "com queixa de edema e hematomas palpebrais no pós-operatório de blefaroplastia." in rq2
+    assert "periciando submetido a" not in rq2
+    assert "Refere dor e edema palpebral." in rq2
+    assert "dor de edema" not in rq2
+    assert "Refere histórico de pós-operatório de blefaroplastia, apresentando edema e hematomas palpebrais, tendo recebido prescrição de Amoxicilina, Alivium e Diprospan." in ra2
+    assert "pálpebrais" not in ra2
+    assert "amoxacilina" not in ra2
 
+    # Paciente 3
+    q3 = (
+        "Servidora de 34 anos, relatou não ser readaptada, é Agente de Organização Escolar há 13 anos, "
+        "com queixa de sangramento uterino no início da gestação associado a alteração pressórica, desde 2026. "
+        "Em uso de Ultragestan, não informada sua dosagem. "
+        "Não relatou troca de alteração de dosagem da medicação. Não alegou fazer fisioterapia e psicoterapia."
+    )
+    a3 = (
+        "Servidora gestante de 14 semanas apresentou sangramento uterino e alteração pressórico, "
+        "passou por atendimento médico e foi prescrito ultragestan por médico. "
+        "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
+    )
+    rq3 = _clean_queixa_duracao_text(q3)
+    ra3 = _clean_antecedentes_morbidos_text(a3)
+    assert "associado a alteração pressórica." in rq3
+    assert "desde 2026" not in rq3
+    assert "Em uso de Utrogestan, não informada sua dosagem." in rq3
+    assert "Ultragestan" not in rq3
+    assert "Servidora gestante de 14 semanas, apresentou sangramento uterino e alteração pressórica, passou por atendimento médico, sendo prescrito Utrogestan." in ra3
+    assert "alteração pressórico" not in ra3
+    assert "por médico" not in ra3
+
+    # Paciente 4
+    q4 = (
+        "Servidor de 33 anos, relatou não ser readaptado, é Professor de Ensino Fundamental e Médio há 14 anos, "
+        "com queixa de acidente de trânsito e contusão pulmonar. "
+        "Periciando apresenta dor em lombar. "
+        "Apresenta limitação funcional temporária para esforços físicos e manutenção de fala prolongada, em decorrência de dor torácica e dispneia após contusão pulmonar, comprometendo o desempenho das atividades docentes. "
+        "Não relatou troca de alteração de dosagem da medicação. Não alegou fazer fisioterapia e psicoterapia."
+    )
+    a4 = (
+        "Servidor relata que sofreu acidente de trânsito, mas não se lembra do ocorrido em relatório médico consta contusão pulmonar, "
+        "foi atendido em urgência e emergência e ficou um dia internado recebendo um atestado de mais sete dias. "
+        "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
+    )
+    rq4 = _clean_queixa_duracao_text(q4)
+    ra4 = _clean_antecedentes_morbidos_text(a4)
+    assert "Periciando apresenta" not in rq4
+    assert "Refere dor em região lombar, dor torácica e dispneia, com limitação para esforços físicos e manutenção de fala prolongada." in rq4
+    assert "Negou uso de medicações. Não relatou troca de alteração de dosagem da medicação." in rq4
+    assert "O servidor relata que sofreu acidente de trânsito, mas não se lembra do ocorrido; em relatório médico consta contusão pulmonar, tendo sido atendido em serviço de urgência e emergência, onde permaneceu um dia internado." in ra4
+    assert "atestado de mais sete dias" not in ra4
+
+    # Paciente 5
+    q5 = (
+        "Servidor de 38 anos, relatou não ser readaptado, é Policial Penal IV há 15 anos, "
+        "com queixa de dor e edema em região escrotal no pós-operatório de vasectomia. "
+        "Em uso de Doxiciclina e Dipirona, e não foram informadas suas dosagens. "
+        "Não relatou troca de alteração de dosagem da medicação. Não alegou fazer fisioterapia e psicoterapia."
+    )
+    a5 = (
+        "Refere que após vasectomia permanece com dor e edema testicular, passou em atendimento médico e fez uso de doxaciclina e dipirona, "
+        "porém não apresenta receitas. Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
+    )
+    rq5 = _clean_queixa_duracao_text(q5)
+    ra5 = _clean_antecedentes_morbidos_text(a5)
+    assert "Doxiciclina e Dipirona" in rq5
+    assert "Refere que, após vasectomia, permanece com dor e edema testicular, passou por atendimento médico e fez uso de Doxiciclina e Dipirona, porém sem apresentação de receituário médico no ato pericial." in ra5
+    assert "doxaciclina" not in ra5
+    assert "passou em atendimento" not in ra5
+
+    # Paciente 6
+    q6 = (
+        "Servidor de 47 anos, relatou não ser readaptado, é Policial Penal I há 4 anos, "
+        "com queixa de contusão em terceiro quirodáctilo da mão esquerda ocorrida ao fechar o portão da penitenciária. "
+        "Relata que passou por atendimento médico, fez uso de Dipirona 1 g se dor até 6/6h e Tramadol 50 mg se dor intensa até 8/8h, e está com o quirodáctilo imobilizado. "
+        "Apresenta dor e edema em terceiro quirodáctilo da mão esquerda. "
+        "Não relatou troca de alteração de dosagem da medicação. Não alegou fazer fisioterapia e psicoterapia."
+    )
+    a6 = (
+        "Refere que estava fechando portão da penitenciária e um detento o chamou, nesta hora contundiu o terceiro quirodáctilo da mão esquerda "
+        "passou por atendimento médico fez uso de dipirona e tramal e está com o quirodáctilo imobilizado. "
+        "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
+    )
+    rq6 = _clean_queixa_duracao_text(q6)
+    ra6 = _clean_antecedentes_morbidos_text(a6)
+    assert "Refere dor e edema no local afetado." in rq6
+    assert "Apresenta dor e edema em terceiro quirodáctilo da mão esquerda." not in rq6
+    assert "Refere que estava fechando o portão da penitenciária e um detento o chamou, momento em que contundiu o terceiro quirodáctilo da mão esquerda, passou por atendimento médico, fez uso de Dipirona e Tramadol, permanecendo com o quirodáctilo imobilizado." in ra6
+    assert "tramal" not in ra6

@@ -6412,10 +6412,15 @@ function cleanQueixaDuracao(text) {
     t = t.replace(/\bQueixa-se de\s+[Qq]ueixa-se de\b/gi, "Queixa-se de");
     t = t.replace(/\bQueixa-se de\s+[Aa]presenta\b/gi, "Apresenta");
 
+    // 6b. Corrige estrutura colada em "com queixa de periciando submetido a [procedimento] apresenta [achados]"
+    t = t.replace(/\bcom\s+queixa\s+de\s+(?:o\s+|a\s+)?(?:periciand[oa]|periciad[oa]|servidor[a]?|paciente)\s+submetid[oa]\s+a\s+([^,.]+?)\s+(?:que\s+)?apresenta(?:ndo)?\s+([^.,;]+)/gi, "com queixa de $2 no pós-operatório de $1");
+    t = t.replace(/\bcom\s+queixa\s+de\s+(?:o\s+|a\s+)?(?:periciand[oa]|periciad[oa]|servidor[a]?|paciente)\s+(?:apresenta(?:ndo)?|relata(?:ndo)?|refere|com)\s+/gi, "com queixa de ");
+
     // 7. Unifica início de tratamento/acompanhamento quebrado por ponto final indevido
     t = t.replace(/([\w\)])\.\s*[Dd]esde\s+(\d{4})\b/gi, "$1 desde $2");
     t = t.replace(/([\w\)])\.\s*[Dd]esde\s+(\d{1,2}\/\d{1,2}\/\d{4})/gi, "$1, desde $2");
     t = t.replace(/([\w\)])\s+desde\s+(\d{1,2}\/\d{1,2}\/\d{4})/gi, "$1, desde $2");
+    t = t.replace(/(com\s+queixa\s+de\s+[^.]*?\b(?:in[íi]cio\s+da\s+gesta[çc][ãa]o|gesta[çc][ãa]o|sangramento\s+uterino|acidente\s+de\s+tr[âa]nsito|contus[ãa]o|entorse|fratura|p[óo]s-operat[óo]rio\s+de\s+(?:vasectomia|blefaroplastia))[^.]*?),\s*desde\s+\d{4}(?=\s*\.)/gi, "$1");
     t = t.replace(/,\s*,+/g, ",");
 
     // 8. Normalização de perícia de Acompanhante (CID Z76.3 / dependente enfermo)
@@ -6435,6 +6440,7 @@ function cleanQueixaDuracao(text) {
         t = t.replace(/\bé\s+T[ée]cnico\s+em\b/gi, "é Técnica em");
         t = t.replace(/\bé\s+T[ée]cnico\b/gi, "é Técnica");
         t = t.replace(/\bé\s+Professor\s+(?:de\s+)?Educa[çc][ãa]o\s+B[áa]sica(?:\s+([IVXLCDM]+))?\b/gi, "é Professora de Educação Básica $1");
+        t = t.replace(/\bé\s+Professor\s+de\s+Ensino\s+Fundamental\s+e\s+M[ée]dio\b/gi, "é Professora de Ensino Fundamental e Médio");
         t = t.replace(/\bé\s+Professor\b/gi, "é Professora");
         t = t.replace(/\bé\s+Enfermeiro\b/gi, "é Enfermeira");
         t = t.replace(/\bé\s+M[ée]dico\b/gi, "é Médica");
@@ -6454,6 +6460,42 @@ function cleanQueixaDuracao(text) {
 
     // Preposição em "Professor(a) Educação Básica" -> "Professor(a) de Educação Básica"
     t = t.replace(/\bé\s+(Professora?)\s+Educa[çc][ãa]o\s+B[áa]sica(?:\s+([IVXLCDM]+))?\b/gi, "é $1 de Educação Básica $2");
+
+    // Concordância nominal e ortografia clínica em Queixa e Duração
+    t = t.replace(/\baltera[çc][ãa]o\s+([a-zà-ú]+ais)\b/gi, "alterações $1");
+    t = t.replace(/\baltera[çc][ãa]o\s+press[óo]rico\b/gi, "alteração pressórica");
+    t = t.replace(/\bmenos\s+valia\b/gi, "menos-valia");
+    t = t.replace(/\bdor\s+de\s+edema\b/gi, "dor e edema");
+    t = t.replace(/\bp[áa]lpebrais\b/gi, "palpebrais");
+    t = t.replace(/\bp[áa]lpebral\b/gi, "palpebral");
+    t = t.replace(/\bdor\s+em\s+lombar\b/gi, "dor em região lombar");
+
+    // Normalização de "Periciando(a) apresenta" e frases formais de limitação vazadas na Queixa e Duração
+    t = t.replace(/([\.\;]\s*)(?:[Oo]\s+|[Aa]\s+)?Periciand[oa]\s+apresenta\b/gi, "$1Refere");
+    t = t.replace(/Refere\s+([^.]+)\.\s*Apresenta\s+limita[çc][ãa]o\s+funcional\s+tempor[áa]ria\s+para\s+([^,]+),\s*em\s+decorr[êe]ncia\s+de\s+([^,.]+?)(?:\s+ap[óo]s\s+[^,.]+)?(?:,\s*comprometendo\s+[^.]+)?\./gi, "Refere $1, $3, com limitação para $2.");
+    t = t.replace(/([\.\;]\s*)Apresenta\s+limita[çc][ãa]o\s+funcional\s+tempor[áa]ria\s+para\s+([^,]+),\s*em\s+decorr[êe]ncia\s+de\s+([^,.]+?)(?:\s+ap[óo]s\s+[^,.]+)?(?:,\s*comprometendo\s+[^.]+)?\./gi, "$1Refere $3, com limitação para $2.");
+
+    t = t.replace(/([\.\;]\s*)Apresenta\s+(dor\s+e\s+edema|dor|edema)\s+em\s+([^.]+)\./gi, function(m, punct, achado, local, offset) {
+        const prefixText = t.slice(0, offset).toLowerCase();
+        if (prefixText.includes(String(local || "").trim().toLowerCase())) {
+            return `${punct}Refere ${achado} no local afetado.`;
+        }
+        return `${punct}Refere ${achado} em ${String(local || "").trim()}.`;
+    });
+
+    // Deduplicação de sintomas repetidos entre "com queixa de [X]." e "Refere [Y]."
+    t = t.replace(/(com\s+queixa\s+de\s+[^.]+\.)(\s*Refere\s+)([^.]+)\./gi, function(m, queixaPart, referePrefix, sintomasPart) {
+        const rawItems = sintomasPart.split(/,\s*|\s+e\s+/).map(x => x.trim()).filter(Boolean);
+        if (rawItems.length >= 4) {
+            const qLow = queixaPart.toLowerCase();
+            const filtered = rawItems.filter(it => !(it.length >= 4 && qLow.includes(it.toLowerCase())));
+            if (filtered.length >= 3 && filtered.length < rawItems.length) {
+                const joined = filtered.slice(0, -1).join(", ") + " e " + filtered[filtered.length - 1];
+                return `${queixaPart}${referePrefix}${joined}.`;
+            }
+        }
+        return m;
+    });
 
     // Deduplicação de sintomas repetidos ou sinônimos no mesmo parágrafo
     if (/dor\s+na\s+regi[ãa]o\s+cervical|cervicalgia/i.test(t) && /dor\s+(?:em|no)\s+ouvido/i.test(t)) {
@@ -6530,6 +6572,13 @@ function cleanQueixaDuracao(text) {
         t = t.replace(/\s*\(?\s*Não relatou troca de alteração de dosagem da medicação\.?\s*\)?\s*/gi, " ");
     }
 
+    // 14b. Quando não há menção a uso ou negação de medicações mas consta "Não relatou troca de alteração de dosagem da medicação.", insere "Negou uso de medicações."
+    if (/\bcom\s+queixa\s+de\b/i.test(t) && /Não relatou troca de alteração de dosagem da medicação/i.test(t)) {
+        if (!/\b(?:Em\s+uso\s+de|fez\s+uso\s+de|faz\s+uso\s+de|uso\s+de\s+medica|Negou\s+uso\s+de\s+medica|negou\s+uso\s+de\s+medica)\b/i.test(t)) {
+            t = t.replace(/(Não relatou troca de alteração de dosagem da medicação\.?)/i, "Negou uso de medicações. $1");
+        }
+    }
+
     // 15. Elimina repetição de "com queixa de ... Queixa-se de"
     if (/\bcom\s+queixa\b/i.test(t)) {
         t = t.replace(/([\.\;]\s*)[Qq]ueixa-se\s+de\s+(?!des[âa]nimo\b)/g, "$1Refere ");
@@ -6541,7 +6590,7 @@ function cleanQueixaDuracao(text) {
     t = t.replace(/([\.\;]\s*)Servidor\s+refere\b/g, "$1O servidor refere");
     t = t.replace(/([\.\;]\s*)Servidora\s+refere\b/g, "$1A servidora refere");
 
-    // 16. Jargões, parênteses e crase
+    // 16. Jargões, grafia de medicamentos, parênteses e crase
     t = t.replace(/\bsensibilidade\s+a\s+luz\b/gi, "sensibilidade à luz");
     t = t.replace(/\(\s*Uso\s+sintom[áa]tico\s+s\/n\s*\)/gi, "(uso sintomático se necessário)");
     t = t.replace(/\(\s*Sintom[áa]tico\s*\)/gi, "(para alívio sintomático)");
@@ -6549,6 +6598,10 @@ function cleanQueixaDuracao(text) {
     t = t.replace(/\(\s*e\s+cessou\s+terapia[^\)]*\.?\s*\)/gi, (m) => m.replace(/[\(\)]/g, '').trim() + '.');
     t = t.replace(/\blaser\s+terapia\b/gi, "laserterapia");
     t = t.replace(/\bceacalm\b/gi, "Seacalm");
+    t = t.replace(/\bultragestan\b/gi, "Utrogestan");
+    t = t.replace(/\bdoxaciclina\b/gi, "Doxiciclina");
+    t = t.replace(/\bclonazepan\b/gi, "Clonazepam");
+    t = t.replace(/\bamoxacilina\b/gi, "Amoxicilina");
 
     t = t.replace(/\s{2,}/g, ' ');
     t = t.replace(/\.\s*\./g, '.');
@@ -6566,8 +6619,8 @@ function cleanAntecedentesMorbidos(text) {
     t = t.replace(/(?:^|\r?\n)\s*Atestado\/Relat[óo]rio[^\n\r]*[\s\S]*$/gi, '');
     t = t.replace(/(?:^|\r?\n)\s*Atestados?[^\n\r]*[\s\S]*$/gi, '');
     t = t.replace(/\bEm anexo\.?\b/gi, '');
-    t = t.replace(/[\s\.\,]*\b(?:[Vv]em\s+com\s+atestado|[Aa]testado)\s+de\s+\d+\s+dias[^\.\n\r]*[\.\,]?/gi, '.');
-    t = t.replace(/\s+([\.\,;:])/, '$1');
+    t = t.replace(/[\s\.\,]*\b(?:recebendo|recebeu|tendo\s+recebido|sendo\s+concedido|[Vv]em\s+com|com)?\s*(?:um\s+|novo\s+)?atestado(?:\s+m[ée]dico)?\s+de\s+(?:mais\s+)?(?:\d+|um|uma|dois|duas|tr[êe]s|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|quatorze|catorze|quinze|vinte|trinta|quarenta|cinquenta|sessenta|noventa)\s+dias?\b[^\.\n\r]*[\.\,]?/gi, '.');
+    t = t.replace(/\s+([\.\,;:])/g, '$1');
     t = t.replace(/\.{2,}/g, '.');
     t = t.replace(/^[\s\.\,;]+/, '');
     t = t.replace(/[\s\.\,;]+$/, '.');
@@ -6575,10 +6628,63 @@ function cleanAntecedentesMorbidos(text) {
     t = t.trim();
 
     // Prefixos anômalos em antecedentes mórbidos
-    t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+a\s+(?:Alega\s+ter\s+apresentado|Relata\s+ter\s+apresentado|Refere\s+ter\s+apresentado)\b/gi, "Refere histórico de");
-    t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+a\s+(?:Alega\s+que|Relata\s+que|Refere\s+que)\b/gi, "Relata que");
-    t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+a\s+Alega\s+ter\b/gi, "Refere histórico de");
+    t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+(?:a|de|ao|à)\s+(?:Alega\s+ter\s+apresentado|Relata\s+ter\s+apresentado|Refere\s+ter\s+apresentado)\b/gi, "Refere histórico de");
+    t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+(?:a|de|ao|à)\s+(?:Alega\s+que|Relata\s+que|Refere\s+que)\b/gi, "Relata que");
+    t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+(?:a|de|ao|à)\s+Alega\s+ter\b/gi, "Refere histórico de");
+    t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+(?:a|de|ao|à)\s+(?:[Aa]\s+|[Oo]\s+)?(?:[Pp]ericiand[oa]|[Pp]ericiad[oa]|[Ss]ervidor[a]?|[Pp]aciente)\s+submetid[oa]\s+a\s+([a-zà-úç\s]+?)\s+apresenta(?:ndo)?\b/gi, "Refere histórico de pós-operatório de $1, apresentando");
+    t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+(?:a|de|ao|à)\s+(?:[Aa]\s+|[Oo]\s+)?(?:[Pp]ericiand[oa]|[Pp]ericiad[oa]|[Ss]ervidor[a]?|[Pp]aciente)\s+(?:que\s+)?(?:apresenta|relata|refere|queixa-se\s+de|informa)\b/gi, "Refere histórico de");
+    t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+(?:a|de|ao|à)\s+(?:p[óo]s-operat[óo]rio\s+de\s+)?(blefaroplastia|vasectomia|mastopexia|histerectomia|colecistectomia|artroplastia|herniorrafia|apendicectomia|cirurgia[^\s,]*)\s+apresenta(?:ndo)?\b/gi, "Refere histórico de pós-operatório de $1, apresentando");
+    t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+de\s+([a-zà-úç]+)\s+apresenta(?:ndo)?\b/gi, "Refere histórico de $1, apresentando");
     t = t.replace(/\bdor\s+e\s+rangendo\s+os\s+dentes\b/gi, "dor e bruxismo (ranger de dentes)");
+
+    // Correções gramaticais, clínicas e de pontuação de anotações brutas nos antecedentes
+    t = t.replace(/\baltera[çc][ãa]o\s+([a-zà-ú]+ais)\b/gi, "alterações $1");
+    t = t.replace(/\baltera[çc][ãa]o\s+press[óo]rico\b/gi, "alteração pressórica");
+    t = t.replace(/\bp[áa]lpebrais\b/gi, "palpebrais");
+    t = t.replace(/\bp[áa]lpebral\b/gi, "palpebral");
+    t = t.replace(/\bsintomas\s+depressivos,\s*amn[ée]sia\s+sendo\b/gi, "sintomas depressivos e amnésia, sendo");
+    t = t.replace(/([^\s,;])\s+\bsendo\s+(avaliad[oa]|acompanhad[oa]|atendid[oa]|encaminhad[oa])\b/gi, "$1, sendo $2");
+    t = t.replace(/(psiquiatra|m[ée]dico|especialista|ortopedista|neurologista)\s+em\s+uso\s+de\b/gi, "$1, em uso de");
+    t = t.replace(/,\s*recebeu\s+prescri[çc][ãa]o\s+de\b/gi, ", tendo recebido prescrição de");
+    t = t.replace(/\b(Servidora\s+gestante\s+de\s+\d+\s+semanas)\s+apresentou\b/gi, "$1, apresentou");
+    t = t.replace(/\bpassou\s+em\s+atendimento\s+m[ée]dico\b/gi, "passou por atendimento médico");
+    t = t.replace(/\bpassou\s+por\s+atendimento\s+m[ée]dico\s+e\s+foi\s+prescrit([oa])\b/gi, "passou por atendimento médico, sendo prescrit$1");
+    t = t.replace(/([^\s,;])\s+\bpassou\s+por\s+atendimento\s+m[ée]dico\b/gi, "$1, passou por atendimento médico");
+    t = t.replace(/(\bpassou\s+por\s+atendimento\s+m[ée]dico)\s+fez\s+uso\s+de\b/gi, "$1, fez uso de");
+    t = t.replace(/\s*\bprescrit[oa]s?\s+por\s+m[ée]dico\b/gi, "");
+    t = t.replace(/\b(sendo\s+prescrit[oa]|foi\s+prescrit[oa])\s+([^,.;]+?)\s+por\s+m[ée]dico\b/gi, "$1 $2");
+    t = t.replace(/^\s*Servidor\s+relata\s+que\b/i, "O servidor relata que");
+    t = t.replace(/^\s*Servidora\s+relata\s+que\b/i, "A servidora relata que");
+    t = t.replace(/\bn[ãa]o\s+se\s+lembra\s+do\s+ocorrido\s+em\s+relat[óo]rio\s+m[ée]dico\s+consta\b/gi, "não se lembra do ocorrido; em relatório médico consta");
+    t = t.replace(/,\s*foi\s+atendid([oa])\s+em\s+urg[êe]ncia\s+e\s+emerg[êe]ncia\s+e\s+ficou\s+(um\s+dia|\d+\s+dias?)\s+internad([oa])\b/gi, ", tendo sido atendid$1 em serviço de urgência e emergência, onde permaneceu $2 internad$3");
+    t = t.replace(/\bRefere\s+que\s+ap[óo]s\s+([a-zà-úç]+)\s+permanece\b/gi, "Refere que, após $1, permanece");
+    t = t.replace(/\bpor[ée]m\s+n[ãa]o\s+apresenta\s+receitas?\b/gi, "porém sem apresentação de receituário médico no ato pericial");
+    t = t.replace(/\bfechando\s+port[ãa]o\b/gi, "fechando o portão");
+    t = t.replace(/,\s*nesta\s+hora\s+/gi, ", momento em que ");
+    t = t.replace(/\s+e\s+est[áa]\s+com\s+(o\s+quirod[áa]ctilo\s+imobilizado)\b/gi, ", permanecendo com $1");
+
+    // Padronização ortográfica e capitalização de fármacos em Antecedentes Mórbidos
+    t = t.replace(/\bultragestan\b|\butrogestan\b/gi, "Utrogestan");
+    t = t.replace(/\bdoxaciclina\b|\bdoxiciclina\b/gi, "Doxiciclina");
+    t = t.replace(/\bclonazepan\b|\bclonazepam\b/gi, "Clonazepam");
+    t = t.replace(/\bamoxacilina\b|\bamoxicilina\b/gi, "Amoxicilina");
+    t = t.replace(/\bduloxetina\b/gi, "Duloxetina");
+    t = t.replace(/\bl[íi]tio\b/gi, "Lítio");
+    t = t.replace(/\bbupropiona\b/gi, "Bupropiona");
+    t = t.replace(/\balivium\b/gi, "Alivium");
+    t = t.replace(/\bdiprospan\b/gi, "Diprospan");
+    t = t.replace(/\bdipirona\b/gi, "Dipirona");
+    t = t.replace(/\btramal\b|\btramadol\b/gi, "Tramadol");
+
+    t = t.replace(/(\b(?:em\s+uso\s+de|fez\s+uso\s+de|prescri[çc][ãa]o\s+de|sendo\s+prescrit[oa])\s+)([A-ZÁ-Ú][a-zà-ú]+(?:,\s*[A-ZÁ-Ú][a-zà-ú]+)+)(?=\s*[\.\,;]|$)/g, function(m, prefix, medsStr) {
+        if (!medsStr.includes(" e ") && medsStr.includes(",")) {
+            const parts = medsStr.split(",").map(p => p.trim()).filter(Boolean);
+            if (parts.length >= 2) {
+                return prefix + parts.slice(0, -1).join(", ") + " e " + parts[parts.length - 1];
+            }
+        }
+        return m;
+    });
 
     if (t === '.' || !t) return '';
     const fraseNegaCompleta = "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas.";
@@ -6587,9 +6693,9 @@ function cleanAntecedentesMorbidos(text) {
     }
 
     // Desduplica caso venha "Nega [algo]. Nega demais antecedentes..."
-    t = t.replace(/\b(Nega\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?/gi, '$1, cirurgias prévias e neoplasias.');
-    t = t.replace(/\b(N[ãa]o\s+refere\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?/gi, '$1, cirurgias prévias e neoplasias.');
-    t = t.replace(/\b(Sem\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?/gi, '$1, cirurgias prévias e neoplasias.');
+    t = t.replace(/(^|[\.\;]\s*)(Nega\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?/gi, '$1$2, cirurgias prévias e neoplasias.');
+    t = t.replace(/(^|[\.\;]\s*)(N[ãa]o\s+refere\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?/gi, '$1$2, cirurgias prévias e neoplasias.');
+    t = t.replace(/(^|[\.\;]\s*)(Sem\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?/gi, '$1$2, cirurgias prévias e neoplasias.');
 
     const low = t.toLowerCase();
     const temCirurgias = low.includes("cirurgias") || low.includes("cirurgia");

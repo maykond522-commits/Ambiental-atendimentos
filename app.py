@@ -1440,8 +1440,9 @@ REGRA MANDATÓRIA DE DATAS NO PADRÃO OFICIAL E-SISLA (DD/MM/AAAA):
    Fontes a integrar: antecedentes, historico_pregresso, outras_doencas, condicoes.
    ATENÇÃO: O conteúdo registrado em antecedentes / historico_pregresso ("Histórico pregresso" no questionário) DEVE OBRIGATORIAMENTE ser integrado e considerado nesta seção de Antecedentes Mórbidos.
    Antecedentes Mórbidos destinam-se EXCLUSIVAMENTE ao histórico pregresso clínico da patologia (ex.: "Hipertenso desde os 29 anos, em tratamento medicamentoso. Nega cirurgias prévias ou hábitos tóxicos."). Informações sobre atestados e afastamentos pertencem exclusivamente aos campos documentais e parecer.
-   REGRA OBRIGATÓRIA DE EXCLUSÃO DE ATESTADO NOS ANTECEDENTES MÓRBIDOS:
-   NUNCA mencione dias de atestado, afastamento ou concessões ("Vem com atestado de X dias...", "atestado de...", "com atestado de...") nesta seção de Antecedentes Mórbidos. Informações sobre atestados e afastamentos pertencem exclusivamente aos campos documentais e parecer.
+   REGRA OBRIGATÓRIA DE EXCLUSÃO DE ATESTADO E FORMALIZAÇÃO VERNACULAR NOS ANTECEDENTES MÓRBIDOS:
+   - NUNCA mencione dias de atestado, afastamento ou concessões ("Vem com atestado de X dias...", "atestado de...", "com atestado de...") nesta seção de Antecedentes Mórbidos. Informações sobre atestados e afastamentos (como "recebendo um atestado de mais sete dias") pertencem exclusivamente aos campos documentais e parecer.
+   - NUNCA copie anotações brutas com erros gramaticais ou colagens mecânicas como "Refere histórico relacionado a Pericianda apresenta...", "Refere histórico relacionado de blefaroplastia apresenta...", "alteração comportamentais", "alteração pressórico", "prescritos por médico" ou fármacos com grafia incorreta ("ultragestan" -> "Utrogestan", "doxaciclina" -> "Doxiciclina", "clonazepan" -> "Clonazepam", "amoxacilina" -> "Amoxicilina", "tramal" -> "Tramadol"). Redija sempre em prosa clínica culta, pontuada e com conjunção "e" antes do último item de qualquer enumeração.
    REGRA OBRIGATÓRIA DE COMPLEMENTAÇÃO EXAUSTIVA:
    - Se houver histórico relatado (pelo médico ou histórico de lesões/comorbidades): conclua obrigatoriamente a narrativa com: "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
      Exemplo de referência oficial do sistema:
@@ -1644,7 +1645,8 @@ DIRETRIZES DE EXTRAÇÃO E REDAÇÃO:
 2. QUEIXA E DURAÇÃO & ANTECEDENTES:
 - doenca_motivo: CAMPO OBRIGATÓRIO — Responde diretamente à pergunta: "Qual a doença está tratando que motivou o afastamento?".
   * Identifique com precisão a doença, patologia, diagnóstico, CID, queixa motivadora ou motivo do atestado/afastamento presente nas anotações do médico ou dados do atendimento.
-  * Formule uma síntese diagnóstica formal, robusta, técnica e gramaticalmente perfeita no padrão DPME (ex.: "Transtorno interno do menisco em joelho direito com lesão meniscal pós-traumática e dor articular", "Episódio depressivo grave com sintomas ansiosos associados", "Tendinopatia do manguito rotador em ombro direito associada a bursite subacromial", "Lombalgia aguda incapacitante com radiculopatia", "Pós-operatório de mastopexia e ressecção de nódulos mamários com deiscência parcial de sutura cirúrgica").
+  * Formule um sintagma nominal diagnóstico formal, técnico e gramaticalmente perfeito que se encaixe naturalmente após "com queixa de ..." (ex.: "edema e hematomas palpebrais no pós-operatório de blefaroplastia", "dor e edema em região escrotal no pós-operatório de vasectomia", "sangramento uterino no início da gestação associado a alteração pressórica", "contusão em terceiro quirodáctilo da mão esquerda", "dificuldade de locomoção, alterações comportamentais e sintomas depressivos").
+  * NUNCA inicie doenca_motivo com sujeito ou verbo ("periciando submetido a...", "servidora apresenta...", "paciente relata..."), pois o sistema já antepõe "com queixa de ".
   * Se for perícia de acompanhante (Artigo 199), registre: "Perícia médica para acompanhamento de dependente enfermo com fundamento no Artigo 199 da Lei Estadual nº 10.261/1968".
   * NUNCA DEIXE doenca_motivo VAZIO quando houver menção a qualquer doença, CID, dor, queixa clínica, atestado ou diagnóstico no texto.
 - inicio_tratamento: CAMPO OBRIGATÓRIO — Responde à pergunta: "Quando começou o tratamento?".
@@ -1655,18 +1657,18 @@ DIRETRIZES DE EXTRAÇÃO E REDAÇÃO:
   * Identifique a frequência com que o periciado realiza consultas de acompanhamento (ex.: "Mensal", "Quinzenal", "Semanal", "Bimestral", "Conforme acompanhamento clínico").
   * Se não vier explícito nas anotações do médico, utilize a frequência ambulatorial padrão compatível com a gravidade da patologia: "Mensal" (ou "Quinzenal" para quadros psiquiátricos/agudos). NUNCA DEIXE ESTE CAMPO VAZIO.
 - sintomas_limitacao: CAMPO OBRIGATÓRIO — Responde à pergunta: "Quais sintomas / limitações são referidos?".
-  * Formule uma descrição profissional, técnica, formal e robusta dos sintomas clínicos alegados e das limitações funcionais referidas pelo servidor periciado, corrigindo erros de português, concordância e pontuação.
-  * Extraia e sintetize detalhadamente a partir das queixas, dores, sintomas físicos/psíquicos, limitações de movimento e relatos do médico perito (ex.: "Refere dor lombossacra de intensidade moderada com irradiação para membro inferior esquerdo, rigidez matinal e parestesias, acarretando importante limitação funcional antálgica para permanência sentada por períodos prolongados, agachamento e carregamento de peso.").
+  * Formule uma descrição profissional, técnica, formal e robusta dos sintomas clínicos alegados e das limitações funcionais subjetivas referidas pelo servidor periciado, corrigindo erros de português, concordância ("alterações comportamentais", "menos-valia", "dor e edema") e pontuação.
+  * NÃO repita literalmente os mesmos termos já listados em doenca_motivo e NÃO cole frases formais de conclusão do rol ("Apresenta limitação funcional temporária para..., comprometendo o desempenho das atividades...").
   * Em perícias de acompanhante (Artigo 199 / CID Z76.3), relate os cuidados prestados ao dependente e o quadro clínico do familiar dependente (ex.: "A periciada refere que acompanha a filha menor, a qual iniciou com febre, tosse e odinofagia, estando em uso de amoxicilina e apresentando melhora da febre no dia da avaliação, com orofaringe hiperemiada."), sem duplicar prefixos mecânicos ("Queixa-se de A periciada refere que").
   * NUNCA DEIXE ESTE CAMPO VAZIO quando houver menção a qualquer queixa, dor, sintoma, limitação ou enfermidade nas anotações.
-- medications: Lista de medicamentos em uso. Se informado nome informal ou sem dose (ex.: "dipirona"), padronize tecnicamente: medicamento "Dipirona", dosagem "1 g", frequencia "se dor até 6/6h", observacao "analgesia".
+- medications: Lista de medicamentos em uso. Corrija sempre a grafia comercial/farmacológica ("Utrogestan", "Doxiciclina", "Clonazepam", "Amoxicilina", "Duloxetina", "Lítio", "Bupropiona", "Tramadol", "Dipirona"). Se informado nome informal ou sem dose (ex.: "dipirona"), padronize tecnicamente: medicamento "Dipirona", dosagem "1 g", frequencia "se dor até 6/6h", observacao "analgesia".
 - alteracao_med: "Não" (ou "Sim" se relatada troca recente).
 - psicoterapia: false ou true (se negado, false).
 - fisioterapia: false ou true (se negado, false).
 - obs_terapias: Redação formal pericial (ex.: "Não alegou fazer fisioterapia e psicoterapia.").
 - outras_doencas: "Sim" se houver outras patologias informadas, senão "Não".
 - conditions: Lista de comorbidades prévias estruturadas com tratamento.
-- historico_pregresso: Histórico pregresso formal (ex.: "Nega outras comorbidades crônicas, outras cirurgias pregressas além da atual ou uso de substâncias ilícitas.").
+- historico_pregresso: Histórico patológico pregresso formalmente redigido em linguagem médica culta, sem copiar anotações telegráficas brutas, sem erros de concordância e NUNCA mencionando dias de atestado concedidos (ex.: "Refere histórico de pós-operatório de blefaroplastia, apresentando edema e hematomas palpebrais, tendo recebido prescrição de Amoxicilina, Alivium e Diprospan. Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias.").
 
 3. ATESTADO DO MÉDICO ASSISTENTE E CID:
 - cid: Código CID-10 oficial pontuado (ex.: "Z98.8", "F32.1", "M54.5"). Se vier sem ponto (ex.: "Z988"), formate com ponto ("Z98.8").
@@ -2892,12 +2894,33 @@ def _clean_queixa_duracao_text(text: str) -> str:
     t = re.sub(r"\bQueixa-se\s+de\s+[Qq]ueixa-se\s+de\b", "Queixa-se de", t, flags=re.IGNORECASE)
     t = re.sub(r"\bQueixa-se\s+de\s+[Aa]presenta\b", "Apresenta", t, flags=re.IGNORECASE)
 
+    # 6b. Corrige estrutura colada em "com queixa de periciando submetido a [procedimento] apresenta [achados]"
+    t = re.sub(
+        r"\bcom\s+queixa\s+de\s+(?:o\s+|a\s+)?(?:periciand[oa]|periciad[oa]|servidor[a]?|paciente)\s+submetid[oa]\s+a\s+([^,.]+?)\s+(?:que\s+)?apresenta(?:ndo)?\s+([^.,;]+)",
+        r"com queixa de \2 no pós-operatório de \1",
+        t,
+        flags=re.IGNORECASE
+    )
+    t = re.sub(
+        r"\bcom\s+queixa\s+de\s+(?:o\s+|a\s+)?(?:periciand[oa]|periciad[oa]|servidor[a]?|paciente)\s+(?:apresenta(?:ndo)?|relata(?:ndo)?|refere|com)\s+",
+        "com queixa de ",
+        t,
+        flags=re.IGNORECASE
+    )
+
     # 7. Unifica início de tratamento/acompanhamento quebrado por ponto final indevido
     # Quando for ano (4 dígitos), preserva união direta: "... dor local desde 2026"
     t = re.sub(r"([\w\)])\.\s*[Dd]esde\s+(\d{4})\b", r"\1 desde \2", t, flags=re.IGNORECASE)
     # Quando for data completa com dia/mês/ano: "... Braga, desde 02/10/2026"
     t = re.sub(r"([\w\)])\.\s*[Dd]esde\s+(\d{1,2}/\d{1,2}/\d{4})", r"\1, desde \2", t, flags=re.IGNORECASE)
     t = re.sub(r"([\w\)])\s+desde\s+(\d{1,2}/\d{1,2}/\d{4})", r"\1, desde \2", t, flags=re.IGNORECASE)
+    # Remove ", desde AAAA" artificial em eventos agudos/gestacionais/traumáticos quando seguido de ponto final
+    t = re.sub(
+        r"(com\s+queixa\s+de\s+[^.]*?\b(?:in[íi]cio\s+da\s+gesta[çc][ãa]o|gesta[çc][ãa]o|sangramento\s+uterino|acidente\s+de\s+tr[âa]nsito|contus[ãa]o|entorse|fratura|p[óo]s-operat[óo]rio\s+de\s+(?:vasectomia|blefaroplastia))[^.]*?),\s*desde\s+\d{4}(?=\s*\.)",
+        r"\1",
+        t,
+        flags=re.IGNORECASE
+    )
     t = re.sub(r",\s*,+", ",", t)
 
     # 8. Normalização de perícia de Acompanhante (CID Z76.3 / dependente enfermo)
@@ -2932,6 +2955,7 @@ def _clean_queixa_duracao_text(text: str) -> str:
         t = re.sub(r"\bé\s+T[ée]cnico\s+em\b", "é Técnica em", t, flags=re.IGNORECASE)
         t = re.sub(r"\bé\s+T[ée]cnico\b", "é Técnica", t, flags=re.IGNORECASE)
         t = re.sub(r"\bé\s+Professor\s+(?:de\s+)?Educa[çc][ãa]o\s+B[áa]sica(?:\s+([IVXLCDM]+))?\b", r"é Professora de Educação Básica \1", t, flags=re.IGNORECASE)
+        t = re.sub(r"\bé\s+Professor\s+de\s+Ensino\s+Fundamental\s+e\s+M[ée]dio\b", "é Professora de Ensino Fundamental e Médio", t, flags=re.IGNORECASE)
         t = re.sub(r"\bé\s+Professor\b", "é Professora", t, flags=re.IGNORECASE)
         t = re.sub(r"\bé\s+Enfermeiro\b", "é Enfermeira", t, flags=re.IGNORECASE)
         t = re.sub(r"\bé\s+M[ée]dico\b", "é Médica", t, flags=re.IGNORECASE)
@@ -2950,6 +2974,68 @@ def _clean_queixa_duracao_text(text: str) -> str:
 
     # Preposição em "Professor(a) Educação Básica" -> "Professor(a) de Educação Básica"
     t = re.sub(r"\bé\s+(Professora?)\s+Educa[çc][ãa]o\s+B[áa]sica(?:\s+([IVXLCDM]+))?\b", r"é \1 de Educação Básica \2", t, flags=re.IGNORECASE)
+
+    # Concordância nominal e ortografia clínica em Queixa e Duração
+    t = re.sub(r"\baltera[çc][ãa]o\s+([a-zà-ú]+ais)\b", r"alterações \1", t, flags=re.IGNORECASE)
+    t = re.sub(r"\baltera[çc][ãa]o\s+press[óo]rico\b", "alteração pressórica", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bmenos\s+valia\b", "menos-valia", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bdor\s+de\s+edema\b", "dor e edema", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bp[áa]lpebrais\b", "palpebrais", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bp[áa]lpebral\b", "palpebral", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bdor\s+em\s+lombar\b", "dor em região lombar", t, flags=re.IGNORECASE)
+
+    # Normalização de "Periciando(a) apresenta" e frases formais de limitação vazadas na Queixa e Duração
+    t = re.sub(r"([\.\;]\s*)(?:[Oo]\s+|[Aa]\s+)?Periciand[oa]\s+apresenta\b", r"\1Refere", t, flags=re.IGNORECASE)
+    t = re.sub(
+        r"Refere\s+([^.]+)\.\s*Apresenta\s+limita[çc][ãa]o\s+funcional\s+tempor[áa]ria\s+para\s+([^,]+),\s*em\s+decorr[êe]ncia\s+de\s+([^,.]+?)(?:\s+ap[óo]s\s+[^,.]+)?(?:,\s*comprometendo\s+[^.]+)?\.",
+        r"Refere \1, \3, com limitação para \2.",
+        t,
+        flags=re.IGNORECASE
+    )
+    t = re.sub(
+        r"([\.\;]\s*)Apresenta\s+limita[çc][ãa]o\s+funcional\s+tempor[áa]ria\s+para\s+([^,]+),\s*em\s+decorr[êe]ncia\s+de\s+([^,.]+?)(?:\s+ap[óo]s\s+[^,.]+)?(?:,\s*comprometendo\s+[^.]+)?\.",
+        r"\1Refere \3, com limitação para \2.",
+        t,
+        flags=re.IGNORECASE
+    )
+
+    # Quando "Apresenta dor e edema em [local]." repete o mesmo sítio anatômico já citado na queixa
+    def _repl_apresenta_local(m):
+        punct = m.group(1)
+        achado = m.group(2)
+        local = m.group(3).strip()
+        prefix_text = t[:m.start()].lower()
+        if local.lower() in prefix_text:
+            return f"{punct}Refere {achado} no local afetado."
+        return f"{punct}Refere {achado} em {local}."
+
+    t = re.sub(
+        r"([\.\;]\s*)Apresenta\s+(dor\s+e\s+edema|dor|edema)\s+em\s+([^.]+)\.",
+        _repl_apresenta_local,
+        t,
+        flags=re.IGNORECASE
+    )
+
+    # Deduplicação de sintomas repetidos entre "com queixa de [X]." e "Refere [Y]."
+    def _dedup_queixa_refere(m):
+        queixa_part = m.group(1)
+        refere_prefix = m.group(2)
+        sintomas_part = m.group(3)
+        raw_items = [x.strip() for x in re.split(r",\s*|\s+e\s+", sintomas_part) if x.strip()]
+        if len(raw_items) >= 4:
+            q_low = queixa_part.lower()
+            filtered = [it for it in raw_items if not (len(it) >= 4 and it.lower() in q_low)]
+            if len(filtered) >= 3 and len(filtered) < len(raw_items):
+                joined = ", ".join(filtered[:-1]) + " e " + filtered[-1]
+                return f"{queixa_part}{refere_prefix}{joined}."
+        return m.group(0)
+
+    t = re.sub(
+        r"(com\s+queixa\s+de\s+[^.]+\.)(\s*Refere\s+)([^.]+)\.",
+        _dedup_queixa_refere,
+        t,
+        flags=re.IGNORECASE
+    )
 
     # Deduplicação de sintomas repetidos ou sinônimos no mesmo parágrafo
     if re.search(r"dor\s+na\s+regi[ãa]o\s+cervical|cervicalgia", t, re.IGNORECASE) and re.search(r"dor\s+(?:em|no)\s+ouvido", t, re.IGNORECASE):
@@ -3032,6 +3118,17 @@ def _clean_queixa_duracao_text(text: str) -> str:
     if tem_relato_alteracao_dose:
         t = re.sub(r"\s*\(?\s*Não relatou troca de alteração de dosagem da medicação\.?\s*\)?\s*", " ", t, flags=re.IGNORECASE)
 
+    # 14b. Quando não há menção a uso ou negação de medicações mas consta "Não relatou troca de alteração de dosagem da medicação.", insere "Negou uso de medicações."
+    if re.search(r"\bcom\s+queixa\s+de\b", t, re.IGNORECASE) and re.search(r"Não relatou troca de alteração de dosagem da medicação", t, re.IGNORECASE):
+        if not re.search(r"\b(?:Em\s+uso\s+de|fez\s+uso\s+de|faz\s+uso\s+de|uso\s+de\s+medica|Negou\s+uso\s+de\s+medica|negou\s+uso\s+de\s+medica)\b", t, re.IGNORECASE):
+            t = re.sub(
+                r"(Não relatou troca de alteração de dosagem da medicação\.?)",
+                r"Negou uso de medicações. \1",
+                t,
+                count=1,
+                flags=re.IGNORECASE
+            )
+
     # 15. Elimina repetição de "com queixa de ... Queixa-se de"
     if re.search(r"\bcom\s+queixa\b", t, re.IGNORECASE):
         t = re.sub(r"([\.\;]\s*)[Qq]ueixa-se\s+de\s+(?!des[âa]nimo\b)", r"\1Refere ", t)
@@ -3042,7 +3139,7 @@ def _clean_queixa_duracao_text(text: str) -> str:
     t = re.sub(r"([\.\;]\s*)Servidor\s+refere\b", r"\1O servidor refere", t)
     t = re.sub(r"([\.\;]\s*)Servidora\s+refere\b", r"\1A servidora refere", t)
 
-    # 16. Jargões, parênteses e crase
+    # 16. Jargões, grafia de medicamentos, parênteses e crase
     t = re.sub(r"\bsensibilidade\s+a\s+luz\b", "sensibilidade à luz", t, flags=re.IGNORECASE)
     t = re.sub(r"\(\s*Uso\s+sintom[áa]tico\s+s/n\s*\)", "(uso sintomático se necessário)", t, flags=re.IGNORECASE)
     t = re.sub(r"\(\s*Sintom[áa]tico\s*\)", "(para alívio sintomático)", t, flags=re.IGNORECASE)
@@ -3050,6 +3147,10 @@ def _clean_queixa_duracao_text(text: str) -> str:
     t = re.sub(r"\(\s*e\s+cessou\s+terapia[^\)]*\.?\s*\)", lambda m: m.group(0).strip("()").strip() + ".", t, flags=re.IGNORECASE)
     t = re.sub(r"\blaser\s+terapia\b", "laserterapia", t, flags=re.IGNORECASE)
     t = re.sub(r"\bceacalm\b", "Seacalm", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bultragestan\b", "Utrogestan", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bdoxaciclina\b", "Doxiciclina", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bclonazepan\b", "Clonazepam", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bamoxacilina\b", "Amoxicilina", t, flags=re.IGNORECASE)
 
     t = re.sub(r"\s{2,}", " ", t)
     t = re.sub(r"\.\s*\.", ".", t)
@@ -3069,33 +3170,126 @@ def _clean_antecedentes_morbidos_text(text: str) -> str:
     t = re.sub(r"(?:^|\r?\n)\s*Atestados?[^\n\r]*[\s\S]*$", "", t, flags=re.IGNORECASE)
     t = re.sub(r"\bEm anexo\.?\b", "", t, flags=re.IGNORECASE)
 
-    # 2. Remove menções a dias de atestado e espaços antes de pontuação
-    t = re.sub(r"[\s\.\,]*\b(?:[Vv]em\s+com\s+atestado|[Aa]testado)\s+de\s+\d+\s+dias[^\.\n\r]*[\.\,]?", ".", t)
+    # 2. Remove menções a dias de atestado (numéricos ou por extenso) e espaços antes de pontuação
+    t = re.sub(
+        r"[\s\.\,]*\b(?:recebendo|recebeu|tendo\s+recebido|sendo\s+concedido|[Vv]em\s+com|com)?\s*(?:um\s+|novo\s+)?atestado(?:\s+m[ée]dico)?\s+de\s+(?:mais\s+)?(?:\d+|um|uma|dois|duas|tr[êe]s|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|quatorze|catorze|quinze|vinte|trinta|quarenta|cinquenta|sessenta|noventa)\s+dias?\b[^\.\n\r]*[\.\,]?",
+        ".",
+        t,
+        flags=re.IGNORECASE
+    )
     t = re.sub(r"\s+([\.\,;:])", r"\1", t)
     t = re.sub(r"\.{2,}", ".", t).strip()
     t = re.sub(r"^[\s\.\,;]+", "", t).strip()
     t = re.sub(r"\s{2,}", " ", t).strip()
 
-    # Prefixos anômalos em antecedentes mórbidos (ex: "Refere histórico relacionado a Alega ter apresentado...")
+    # 2b. Prefixos anômalos e colagens de texto bruto em antecedentes mórbidos
     t = re.sub(
-        r"\bRefere\s+hist[óo]rico\s+relacionado\s+a\s+(?:Alega\s+ter\s+apresentado|Relata\s+ter\s+apresentado|Refere\s+ter\s+apresentado)\b",
+        r"\bRefere\s+hist[óo]rico\s+relacionado\s+(?:a|de|ao|à)\s+(?:Alega\s+ter\s+apresentado|Relata\s+ter\s+apresentado|Refere\s+ter\s+apresentado)\b",
         "Refere histórico de",
         t,
         flags=re.IGNORECASE
     )
     t = re.sub(
-        r"\bRefere\s+hist[óo]rico\s+relacionado\s+a\s+(?:Alega\s+que|Relata\s+que|Refere\s+que)\b",
+        r"\bRefere\s+hist[óo]rico\s+relacionado\s+(?:a|de|ao|à)\s+(?:Alega\s+que|Relata\s+que|Refere\s+que)\b",
         "Relata que",
         t,
         flags=re.IGNORECASE
     )
     t = re.sub(
-        r"\bRefere\s+hist[óo]rico\s+relacionado\s+a\s+Alega\s+ter\b",
+        r"\bRefere\s+hist[óo]rico\s+relacionado\s+(?:a|de|ao|à)\s+Alega\s+ter\b",
         "Refere histórico de",
         t,
         flags=re.IGNORECASE
     )
+    t = re.sub(
+        r"\bRefere\s+hist[óo]rico\s+relacionado\s+(?:a|de|ao|à)\s+(?:[Aa]\s+|[Oo]\s+)?(?:[Pp]ericiand[oa]|[Pp]ericiad[oa]|[Ss]ervidor[a]?|[Pp]aciente)\s+submetid[oa]\s+a\s+([a-zà-úç\s]+?)\s+apresenta(?:ndo)?\b",
+        r"Refere histórico de pós-operatório de \1, apresentando",
+        t,
+        flags=re.IGNORECASE
+    )
+    t = re.sub(
+        r"\bRefere\s+hist[óo]rico\s+relacionado\s+(?:a|de|ao|à)\s+(?:[Aa]\s+|[Oo]\s+)?(?:[Pp]ericiand[oa]|[Pp]ericiad[oa]|[Ss]ervidor[a]?|[Pp]aciente)\s+(?:que\s+)?(?:apresenta|relata|refere|queixa-se\s+de|informa)\b",
+        "Refere histórico de",
+        t,
+        flags=re.IGNORECASE
+    )
+    t = re.sub(
+        r"\bRefere\s+hist[óo]rico\s+relacionado\s+(?:a|de|ao|à)\s+(?:p[óo]s-operat[óo]rio\s+de\s+)?(blefaroplastia|vasectomia|mastopexia|histerectomia|colecistectomia|artroplastia|herniorrafia|apendicectomia|cirurgia[^\s,]*)\s+apresenta(?:ndo)?\b",
+        r"Refere histórico de pós-operatório de \1, apresentando",
+        t,
+        flags=re.IGNORECASE
+    )
+    t = re.sub(
+        r"\bRefere\s+hist[óo]rico\s+relacionado\s+de\s+([a-zà-úç]+)\s+apresenta(?:ndo)?\b",
+        r"Refere histórico de \1, apresentando",
+        t,
+        flags=re.IGNORECASE
+    )
     t = re.sub(r"\bdor\s+e\s+rangendo\s+os\s+dentes\b", "dor e bruxismo (ranger de dentes)", t, flags=re.IGNORECASE)
+
+    # 2c. Correções gramaticais, clínicas e de pontuação de anotações brutas nos antecedentes
+    t = re.sub(r"\baltera[çc][ãa]o\s+([a-zà-ú]+ais)\b", r"alterações \1", t, flags=re.IGNORECASE)
+    t = re.sub(r"\baltera[çc][ãa]o\s+press[óo]rico\b", "alteração pressórica", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bp[áa]lpebrais\b", "palpebrais", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bp[áa]lpebral\b", "palpebral", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bsintomas\s+depressivos,\s*amn[ée]sia\s+sendo\b", "sintomas depressivos e amnésia, sendo", t, flags=re.IGNORECASE)
+    t = re.sub(r"(?<![,;])\s+\bsendo\s+(avaliad[oa]|acompanhad[oa]|atendid[oa]|encaminhad[oa])\b", r", sendo \1", t, flags=re.IGNORECASE)
+    t = re.sub(r"(psiquiatra|m[ée]dico|especialista|ortopedista|neurologista)\s+em\s+uso\s+de\b", r"\1, em uso de", t, flags=re.IGNORECASE)
+    t = re.sub(r",\s*recebeu\s+prescri[çc][ãa]o\s+de\b", ", tendo recebido prescrição de", t, flags=re.IGNORECASE)
+    t = re.sub(r"\b(Servidora\s+gestante\s+de\s+\d+\s+semanas)\s+apresentou\b", r"\1, apresentou", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bpassou\s+em\s+atendimento\s+m[ée]dico\b", "passou por atendimento médico", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bpassou\s+por\s+atendimento\s+m[ée]dico\s+e\s+foi\s+prescrit([oa])\b", r"passou por atendimento médico, sendo prescrit\1", t, flags=re.IGNORECASE)
+    t = re.sub(r"(?<![,;])\s+\bpassou\s+por\s+atendimento\s+m[ée]dico\b", ", passou por atendimento médico", t, flags=re.IGNORECASE)
+    t = re.sub(r"(\bpassou\s+por\s+atendimento\s+m[ée]dico)\s+fez\s+uso\s+de\b", r"\1, fez uso de", t, flags=re.IGNORECASE)
+    t = re.sub(r"\s*\bprescrit[oa]s?\s+por\s+m[ée]dico\b", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"\b(sendo\s+prescrit[oa]|foi\s+prescrit[oa])\s+([^,.;]+?)\s+por\s+m[ée]dico\b", r"\1 \2", t, flags=re.IGNORECASE)
+    t = re.sub(r"^\s*Servidor\s+relata\s+que\b", "O servidor relata que", t, flags=re.IGNORECASE)
+    t = re.sub(r"^\s*Servidora\s+relata\s+que\b", "A servidora relata que", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bn[ãa]o\s+se\s+lembra\s+do\s+ocorrido\s+em\s+relat[óo]rio\s+m[ée]dico\s+consta\b", "não se lembra do ocorrido; em relatório médico consta", t, flags=re.IGNORECASE)
+    t = re.sub(
+        r",\s*foi\s+atendid([oa])\s+em\s+urg[êe]ncia\s+e\s+emerg[êe]ncia\s+e\s+ficou\s+(um\s+dia|\d+\s+dias?)\s+internad([oa])\b",
+        r", tendo sido atendid\1 em serviço de urgência e emergência, onde permaneceu \2 internad\3",
+        t,
+        flags=re.IGNORECASE
+    )
+    t = re.sub(r"\bRefere\s+que\s+ap[óo]s\s+([a-zà-úç]+)\s+permanece\b", r"Refere que, após \1, permanece", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bpor[ée]m\s+n[ãa]o\s+apresenta\s+receitas?\b", "porém sem apresentação de receituário médico no ato pericial", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bfechando\s+port[ãa]o\b", "fechando o portão", t, flags=re.IGNORECASE)
+    t = re.sub(r",\s*nesta\s+hora\s+", ", momento em que ", t, flags=re.IGNORECASE)
+    t = re.sub(r"\s+e\s+est[áa]\s+com\s+(o\s+quirod[áa]ctilo\s+imobilizado)\b", r", permanecendo com \1", t, flags=re.IGNORECASE)
+
+    # Padronização ortográfica e capitalização de fármacos em Antecedentes Mórbidos
+    med_replacements = [
+        (r"\bultragestan\b|\butrogestan\b", "Utrogestan"),
+        (r"\bdoxaciclina\b|\bdoxiciclina\b", "Doxiciclina"),
+        (r"\bclonazepan\b|\bclonazepam\b", "Clonazepam"),
+        (r"\bamoxacilina\b|\bamoxicilina\b", "Amoxicilina"),
+        (r"\bduloxetina\b", "Duloxetina"),
+        (r"\bl[íi]tio\b", "Lítio"),
+        (r"\bbupropiona\b", "Bupropiona"),
+        (r"\balivium\b", "Alivium"),
+        (r"\bdiprospan\b", "Diprospan"),
+        (r"\bdipirona\b", "Dipirona"),
+        (r"\btramal\b|\btramadol\b", "Tramadol"),
+    ]
+    for pat, repl in med_replacements:
+        t = re.sub(pat, repl, t, flags=re.IGNORECASE)
+
+    # Conjunção "e" antes do último medicamento em enumerações ("em uso de A, B, C" -> "em uso de A, B e C")
+    def _fix_med_list_conjunction(m):
+        prefix = m.group(1)
+        meds_str = m.group(2)
+        if " e " not in meds_str and "," in meds_str:
+            parts = [p.strip() for p in meds_str.split(",") if p.strip()]
+            if len(parts) >= 2:
+                return prefix + ", ".join(parts[:-1]) + " e " + parts[-1]
+        return m.group(0)
+
+    t = re.sub(
+        r"(\b(?:em\s+uso\s+de|fez\s+uso\s+de|prescri[çc][ãa]o\s+de|sendo\s+prescrit[oa])\s+)([A-ZÁ-Ú][a-zà-ú]+(?:,\s*[A-ZÁ-Ú][a-zà-ú]+)+)(?=\s*[\.\,;]|$)",
+        _fix_med_list_conjunction,
+        t
+    )
 
     frase_nega_completa = "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas."
     frase_complemento_positivo = "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
@@ -3106,25 +3300,25 @@ def _clean_antecedentes_morbidos_text(text: str) -> str:
 
     # 3. Eliminar duplicidade explícita de "Nega [algo]. Nega demais antecedentes..."
     duplicidade_pattern = re.compile(
-        r"\b(Nega\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?",
+        r"(^|[\.\;]\s*)(Nega\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?",
         re.IGNORECASE
     )
     if duplicidade_pattern.search(t):
-        t = duplicidade_pattern.sub(r"\1, cirurgias prévias e neoplasias.", t)
+        t = duplicidade_pattern.sub(r"\1\2, cirurgias prévias e neoplasias.", t)
 
     duplicidade_nao_refere = re.compile(
-        r"\b(N[ãa]o\s+refere\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?",
+        r"(^|[\.\;]\s*)(N[ãa]o\s+refere\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?",
         re.IGNORECASE
     )
     if duplicidade_nao_refere.search(t):
-        t = duplicidade_nao_refere.sub(r"\1, cirurgias prévias e neoplasias.", t)
+        t = duplicidade_nao_refere.sub(r"\1\2, cirurgias prévias e neoplasias.", t)
 
     duplicidade_sem = re.compile(
-        r"\b(Sem\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?",
+        r"(^|[\.\;]\s*)(Sem\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?",
         re.IGNORECASE
     )
     if duplicidade_sem.search(t):
-        t = duplicidade_sem.sub(r"\1, cirurgias prévias e neoplasias.", t)
+        t = duplicidade_sem.sub(r"\1\2, cirurgias prévias e neoplasias.", t)
 
     # 4. Verificar termos presentes
     low = t.lower()
@@ -4335,7 +4529,25 @@ def api_ai_preencher_ficha():
             if d_motivo:
                 if d_motivo.isupper() and len(d_motivo) > 4:
                     d_motivo = d_motivo.capitalize()
-                result.doenca_motivo = d_motivo
+                d_motivo = re.sub(
+                    r"^(?:o\s+|a\s+)?(?:periciand[oa]|periciad[oa]|servidor[a]?|paciente)\s+submetid[oa]\s+a\s+([^,.]+?)\s+(?:que\s+)?apresenta(?:ndo)?\s+([^.,;]+)",
+                    r"\2 no pós-operatório de \1",
+                    d_motivo,
+                    flags=re.IGNORECASE
+                )
+                d_motivo = re.sub(
+                    r"^(?:o\s+|a\s+)?(?:periciand[oa]|periciad[oa]|servidor[a]?|paciente)\s+(?:apresenta(?:ndo)?|relata(?:ndo)?|refere|com)\s+",
+                    "",
+                    d_motivo,
+                    flags=re.IGNORECASE
+                )
+                d_motivo = re.sub(r"\baltera[çc][ãa]o\s+([a-zà-ú]+ais)\b", r"alterações \1", d_motivo, flags=re.IGNORECASE)
+                d_motivo = re.sub(r"\baltera[çc][ãa]o\s+press[óo]rico\b", "alteração pressórica", d_motivo, flags=re.IGNORECASE)
+                d_motivo = re.sub(r"\bp[áa]lpebrais\b", "palpebrais", d_motivo, flags=re.IGNORECASE)
+                result.doenca_motivo = d_motivo.strip()
+
+            if result.historico_pregresso:
+                result.historico_pregresso = _clean_antecedentes_morbidos_text(result.historico_pregresso)
 
             if result.cargo and result.cargo.isupper() and len(result.cargo) > 4:
                 result.cargo = result.cargo.title()

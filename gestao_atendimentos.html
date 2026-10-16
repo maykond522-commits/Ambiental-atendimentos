@@ -6469,6 +6469,12 @@ function cleanQueixaDuracao(text) {
     t = t.replace(/\bp[áa]lpebrais\b/gi, "palpebrais");
     t = t.replace(/\bp[áa]lpebral\b/gi, "palpebral");
     t = t.replace(/\bdor\s+em\s+lombar\b/gi, "dor em região lombar");
+    t = t.replace(/\bdevido\s+c[âa]ncer\b/gi, "devido a câncer");
+    t = t.replace(/\bdevido\s+neoplasia\b/gi, "devido a neoplasia");
+    t = t.replace(/\bimuno\s+biol[óo]gic([oa]s?)\b/gi, "imunobiológic$1");
+    t = t.replace(/\bpembrulizumab([e]?)\b/gi, "pembrolizumab$1");
+    t = t.replace(/\bmal\s+estar\b/gi, "mal-estar");
+    t = t.replace(/\bbem\s+estar\b/gi, "bem-estar");
 
     // Normalização de "Periciando(a) apresenta" e frases formais de limitação vazadas na Queixa e Duração
     t = t.replace(/([\.\;]\s*)(?:[Oo]\s+|[Aa]\s+)?Periciand[oa]\s+apresenta\b/gi, "$1Refere");
@@ -6573,11 +6579,17 @@ function cleanQueixaDuracao(text) {
     }
 
     // 14b. Quando não há menção a uso ou negação de medicações mas consta "Não relatou troca de alteração de dosagem da medicação.", insere "Negou uso de medicações."
-    if (/\bcom\s+queixa\s+de\b/i.test(t) && /Não relatou troca de alteração de dosagem da medicação/i.test(t)) {
-        if (!/\b(?:Em\s+uso\s+de|fez\s+uso\s+de|faz\s+uso\s+de|uso\s+de\s+medica|Negou\s+uso\s+de\s+medica|negou\s+uso\s+de\s+medica)\b/i.test(t)) {
+    const hasAntineoplasicoDuracao = /\b(?:infus[ãa]o|infus[õo]es|imunobiol[óo]gic[oa]|imunoterapia|quimioterapia|quimioter[áa]pic[oa]|antineopl[áa]sic[oa]|bevacizumab[e]?|pembrolizumab[e]?|trastuzumab[e]?|rituximab[e]?)\b/i.test(t);
+    if (hasAntineoplasicoDuracao) {
+        t = t.replace(/\b(?:[Aa]\s+servidora|[Oo]\s+servidor)?\s*Negou\s+uso\s+de\s+medica[çc][õo]es(?:\s+pr[óo]prias\s+de\s+uso\s+cont[íi]nuo)?\.?\s*/gi, "");
+    } else if (/\bcom\s+queixa\s+de\b/i.test(t) && /Não relatou troca de alteração de dosagem da medicação/i.test(t)) {
+        if (!/\b(?:Em\s+uso\s+de|fez\s+uso\s+de|faz\s+uso\s+de|uso\s+de\s+medica[çc][õo]es|Negou\s+uso\s+de\s+medica[çc][õo]es|negou\s+uso\s+de\s+medica[çc][õo]es)\b/i.test(t)) {
             t = t.replace(/(Não relatou troca de alteração de dosagem da medicação\.?)/i, "Negou uso de medicações. $1");
         }
     }
+
+    t = t.replace(/(?:\bNegou\s+uso\s+de\s+medica[çc][õo]es\.?\s*){2,}/gi, "Negou uso de medicações. ");
+    t = t.replace(/(\b(?:A\s+servidora|O\s+servidor)\s+negou\s+uso\s+de\s+medica[çc][õo]es\s+pr[óo]prias\s+de\s+uso\s+cont[íi]nuo\.?\s*){2,}/gi, "$1");
 
     // 15. Elimina repetição de "com queixa de ... Queixa-se de"
     if (/\bcom\s+queixa\b/i.test(t)) {
@@ -6602,6 +6614,8 @@ function cleanQueixaDuracao(text) {
     t = t.replace(/\bdoxaciclina\b/gi, "Doxiciclina");
     t = t.replace(/\bclonazepan\b/gi, "Clonazepam");
     t = t.replace(/\bamoxacilina\b/gi, "Amoxicilina");
+    t = t.replace(/\bbevacizumab[e]?\b/gi, "bevacizumabe");
+    t = t.replace(/\bpembrolizumab[e]?\b|\bpembrulizumab[e]?\b/gi, "pembrolizumabe");
 
     t = t.replace(/\s{2,}/g, ' ');
     t = t.replace(/\.\s*\./g, '.');
@@ -6620,6 +6634,9 @@ function cleanAntecedentesMorbidos(text) {
     t = t.replace(/(?:^|\r?\n)\s*Atestados?[^\n\r]*[\s\S]*$/gi, '');
     t = t.replace(/\bEm anexo\.?\b/gi, '');
     t = t.replace(/[\s\.\,]*\b(?:recebendo|recebeu|tendo\s+recebido|sendo\s+concedido|[Vv]em\s+com|com)?\s*(?:um\s+|novo\s+)?atestado(?:\s+m[ée]dico)?\s+de\s+(?:mais\s+)?(?:\d+|um|uma|dois|duas|tr[êe]s|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|quatorze|catorze|quinze|vinte|trinta|quarenta|cinquenta|sessenta|noventa)\s+dias?\b[^\.\n\r]*[\.\,]?/gi, '.');
+    t = t.replace(/[\s,;]*\b(?:e\s+)?(?:o\s+|a\s+)?m[ée]dico(?:\s+assistente)?\s+(?:o|a)\s+afastou\s+por\s+\d+\s+dias?[^\.\n\r]*/gi, "");
+    t = t.replace(/[\s,;]*\b(?:e\s+)?(?:com\s+)?afastament[oa]\s+(?:m[ée]dic[oa]\s+)?(?:de|por)\s+\d+\s+dias?[^\.\n\r]*/gi, "");
+    t = t.replace(/[\s,;]*\b(?:e\s+)?(?:com\s+)?afastad[oa]\s+por\s+\d+\s+dias?[^\.\n\r]*/gi, "");
     t = t.replace(/\s+([\.\,;:])/g, '$1');
     t = t.replace(/\.{2,}/g, '.');
     t = t.replace(/^[\s\.\,;]+/, '');
@@ -6632,12 +6649,20 @@ function cleanAntecedentesMorbidos(text) {
     t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+(?:a|de|ao|à)\s+(?:Alega\s+que|Relata\s+que|Refere\s+que)\b/gi, "Relata que");
     t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+(?:a|de|ao|à)\s+Alega\s+ter\b/gi, "Refere histórico de");
     t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+(?:a|de|ao|à)\s+(?:[Aa]\s+|[Oo]\s+)?(?:[Pp]ericiand[oa]|[Pp]ericiad[oa]|[Ss]ervidor[a]?|[Pp]aciente)\s+submetid[oa]\s+a\s+([a-zà-úç\s]+?)\s+apresenta(?:ndo)?\b/gi, "Refere histórico de pós-operatório de $1, apresentando");
-    t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+(?:a|de|ao|à)\s+(?:[Aa]\s+|[Oo]\s+)?(?:[Pp]ericiand[oa]|[Pp]ericiad[oa]|[Ss]ervidor[a]?|[Pp]aciente)\s+(?:que\s+)?(?:apresenta|relata|refere|queixa-se\s+de|informa)\b/gi, "Refere histórico de");
+    t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+(?:a|de|ao|à)\s+(?:[Aa]\s+|[Oo]\s+)?(?:[Pp]ericiand[oa]|[Pp]ericiad[oa]|[Ss]ervidor[a]?|[Pp]aciente)\s+(?:est[áa]\s+em|se\s+encontra\s+em|em\s+tratamento|diagnosticad[oa]|apresenta|relata|refere|queixa-se\s+de|informa)\b/gi, "Refere histórico de");
+    t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+(?:a|de|ao|à)\s+(?:est[áa]\s+em|se\s+encontra\s+em)\b/gi, "Refere histórico de");
     t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+(?:a|de|ao|à)\s+(?:p[óo]s-operat[óo]rio\s+de\s+)?(blefaroplastia|vasectomia|mastopexia|histerectomia|colecistectomia|artroplastia|herniorrafia|apendicectomia|cirurgia[^\s,]*)\s+apresenta(?:ndo)?\b/gi, "Refere histórico de pós-operatório de $1, apresentando");
     t = t.replace(/\bRefere\s+hist[óo]rico\s+relacionado\s+de\s+([a-zà-úç]+)\s+apresenta(?:ndo)?\b/gi, "Refere histórico de $1, apresentando");
     t = t.replace(/\bdor\s+e\s+rangendo\s+os\s+dentes\b/gi, "dor e bruxismo (ranger de dentes)");
 
     // Correções gramaticais, clínicas e de pontuação de anotações brutas nos antecedentes
+    t = t.replace(/\bdevido\s+c[âa]ncer\b/gi, "devido a câncer");
+    t = t.replace(/\bdevido\s+neoplasia\b/gi, "devido a neoplasia");
+    t = t.replace(/\bimuno\s+biol[óo]gic([oa]s?)\b/gi, "imunobiológic$1");
+    t = t.replace(/\bpembrulizumab([e]?)\b/gi, "pembrolizumab$1");
+    t = t.replace(/\bmal\s+estar\b/gi, "mal-estar");
+    t = t.replace(/\bbem\s+estar\b/gi, "bem-estar");
+    t = t.replace(/\btem\s+astenia\s*,\s*tontura\s*,\s*mal-estar\s*,\s*inapet[êe]ncia\b/gi, "apresenta astenia, tontura, mal-estar e inapetência");
     t = t.replace(/\baltera[çc][ãa]o\s+([a-zà-ú]+ais)\b/gi, "alterações $1");
     t = t.replace(/\baltera[çc][ãa]o\s+press[óo]rico\b/gi, "alteração pressórica");
     t = t.replace(/\bp[áa]lpebrais\b/gi, "palpebrais");
@@ -6675,6 +6700,8 @@ function cleanAntecedentesMorbidos(text) {
     t = t.replace(/\bdiprospan\b/gi, "Diprospan");
     t = t.replace(/\bdipirona\b/gi, "Dipirona");
     t = t.replace(/\btramal\b|\btramadol\b/gi, "Tramadol");
+    t = t.replace(/\bbevacizumab[e]?\b/gi, "bevacizumabe");
+    t = t.replace(/\bpembrolizumab[e]?\b|\bpembrulizumab[e]?\b/gi, "pembrolizumabe");
 
     t = t.replace(/(\b(?:em\s+uso\s+de|fez\s+uso\s+de|prescri[çc][ãa]o\s+de|sendo\s+prescrit[oa])\s+)([A-ZÁ-Ú][a-zà-ú]+(?:,\s*[A-ZÁ-Ú][a-zà-ú]+)+)(?=\s*[\.\,;]|$)/g, function(m, prefix, medsStr) {
         if (!medsStr.includes(" e ") && medsStr.includes(",")) {
@@ -6692,34 +6719,61 @@ function cleanAntecedentesMorbidos(text) {
         return fraseNegaCompleta;
     }
 
-    // Desduplica caso venha "Nega [algo]. Nega demais antecedentes..."
-    t = t.replace(/(^|[\.\;]\s*)(Nega\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?/gi, '$1$2, cirurgias prévias e neoplasias.');
-    t = t.replace(/(^|[\.\;]\s*)(N[ãa]o\s+refere\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?/gi, '$1$2, cirurgias prévias e neoplasias.');
-    t = t.replace(/(^|[\.\;]\s*)(Sem\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?/gi, '$1$2, cirurgias prévias e neoplasias.');
-
     const low = t.toLowerCase();
-    const temCirurgias = low.includes("cirurgias") || low.includes("cirurgia");
-    const temNeoplasias = low.includes("neoplasias") || low.includes("neoplasia");
+    const lowAfirmativo = low.replace(/\b(?:nega|sem|n[ãa]o\s+refere|n[ãa]o\s+apresenta)\b[^\.\n\r]*/gi, "");
+    const temCancer = /\b(?:c[âa]ncer|carcinoma|tumor|tumores|oncol[óo]gic[oa]|linfoma|leucemia|melanoma|met[áa]stase|met[áa]stases|metast[áa]tic[oa]|sarcoma|antineopl[áa]sic[oa]|bevacizumab[e]?|pembrolizumab[e]?|trastuzumab[e]?|rituximab[e]?)\b/i.test(lowAfirmativo) || /\bneopl[áa]s(?:ia|ias|ic[oa])\b/i.test(lowAfirmativo);
+    const temCirurgias = /\b(?:cirurgias|cirurgia|cir[úu]rgic[oa]|p[óo]s-operat[óo]rio|operad[oa]|mastectomia|histerectomia|artroplastia|colecistectomia|apendicectomia|herniorrafia|vasectomia|blefaroplastia)\b/i.test(lowAfirmativo);
+    const temNeoplasias = temCancer || /\bneopl[áa]s(?:ia|ias)\b/i.test(low);
+    const temCirurgiasMencao = temCirurgias || /\bcirurg(?:ia|ias)\b/i.test(low);
     const temNegaDemais = low.includes("nega demais");
 
-    if ((temCirurgias && temNeoplasias) || (temNegaDemais && temCirurgias)) {
+    // Se o paciente tem câncer/neoplasia, remove menção contraditória de negar neoplasias
+    if (temCancer) {
+        t = t.replace(/,\s*cirurgias\s+pr[ée]vias\s+e\s+neoplasias\.?/gi, " e cirurgias prévias.");
+        t = t.replace(/,\s*neoplasias\s+e\s+cirurgias\s+pr[ée]vias\.?/gi, " e cirurgias prévias.");
+        t = t.replace(/\s+e\s+neoplasias\.?/gi, ".");
+        t = t.replace(/,\s*neoplasias\b/gi, "");
+        t = t.replace(/\bNega\s+demais\s+antecedentes\s+m[óo]rbidos\s+relevantes,\s*cirurgias\s+pr[ée]vias\s+e\s+neoplasias\.?/gi, "Nega demais antecedentes mórbidos relevantes e cirurgias prévias.");
+    }
+
+    let fraseComplementoFinal = "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias.";
+    if (temCancer) {
+        fraseComplementoFinal = temCirurgias ? "Nega demais antecedentes mórbidos relevantes." : "Nega demais antecedentes mórbidos relevantes e cirurgias prévias.";
+    } else {
+        fraseComplementoFinal = temCirurgias ? "Nega demais antecedentes mórbidos relevantes e neoplasias." : "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias.";
+    }
+
+    // Desduplica caso venha "Nega [algo]. Nega demais antecedentes..."
+    const duplicidadeRepl = temCancer ? '$1$2 e cirurgias prévias.' : '$1$2, cirurgias prévias e neoplasias.';
+    t = t.replace(/(^|[\.\;]\s*)(Nega\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?/gi, duplicidadeRepl);
+    t = t.replace(/(^|[\.\;]\s*)(N[ãa]o\s+refere\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?/gi, duplicidadeRepl);
+    t = t.replace(/(^|[\.\;]\s*)(Sem\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?/gi, duplicidadeRepl);
+
+    if (temNegaDemais || (temCancer && t.toLowerCase().includes("nega demais antecedentes")) || (!temCancer && temCirurgiasMencao && temNeoplasias)) {
         return t.replace(/[\s\.\,;]+$/, '') + '.';
     }
 
     const isNegacao = /^\s*(?:Nega\b|N[ãa]o\s+refere\b|N[ãa]o\s+apresenta\b|Sem\b)/i.test(t);
     t = t.replace(/[\s\.\,;]+$/, '');
     if (isNegacao) {
-        if (!temCirurgias && !temNeoplasias) {
-            t += ", cirurgias prévias e neoplasias.";
-        } else if (!temCirurgias) {
-            t += " e cirurgias prévias.";
-        } else if (!temNeoplasias) {
-            t += " e neoplasias.";
+        if (temCancer) {
+            if (!temCirurgias) t += " e cirurgias prévias.";
+            else t += ".";
         } else {
-            t += ".";
+            if (!temCirurgiasMencao && !temNeoplasias) {
+                t += ", cirurgias prévias e neoplasias.";
+            } else if (!temCirurgiasMencao) {
+                t += " e cirurgias prévias.";
+            } else if (!temNeoplasias) {
+                t += " e neoplasias.";
+            } else {
+                t += ".";
+            }
         }
     } else {
-        t += ". Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias.";
+        if (!t.toLowerCase().includes("nega demais") && !t.toLowerCase().includes("nega outras")) {
+            t += ". " + fraseComplementoFinal;
+        }
     }
 
     t = t.replace(/\s{2,}/g, ' ').replace(/,\s*,+/g, ',').replace(/\.\s*\./g, '.').replace(/,\s*\./g, '.');

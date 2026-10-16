@@ -448,3 +448,52 @@ def test_refinamento_6_pacientes_queixa_e_antecedentes():
     assert "Apresenta dor e edema em terceiro quirodáctilo da mão esquerda." not in rq6
     assert "Refere que estava fechando o portão da penitenciária e um detento o chamou, momento em que contundiu o terceiro quirodáctilo da mão esquerda, passou por atendimento médico, fez uso de Dipirona e Tramadol, permanecendo com o quirodáctilo imobilizado." in ra6
     assert "tramal" not in ra6
+
+def test_caso_oncologia_pembrolizumabe_e_antecedentes():
+    # Caso oncológico com infusão de biológicos/anticorpos monoclonais
+    q_onco = (
+        "Servidora de 47 anos, relatou não ser readaptada, é Supervisora Educacional há 21 anos, "
+        "com queixa de tratamento oncológico desde 2021 devido câncer de colo de útero com metástase. "
+        "Refere que recebe imuno biológico a cada 30 dias e que, após as infusões de bevacizumabe e pembrulizumabe, "
+        "apresenta astenia, tontura, mal estar e inapetência, com duração aproximada de dois dias e redução transitória da tolerância às atividades laborais nesse período. "
+        "Negou uso de medicações. Negou uso de medicações. Negou uso de medicações. "
+        "Não relatou troca de alteração de dosagem da medicação. Não alegou fazer fisioterapia e psicoterapia."
+    )
+    rq = _clean_queixa_duracao_text(q_onco)
+
+    # 1. Eliminação total de 'Negou uso de medicações' em vigência de tratamento oncológico/infusões
+    assert "Negou uso de medicações" not in rq
+    # 2. Correções ortográficas e preposição
+    assert "devido a câncer de colo de útero com metástase" in rq
+    assert "devido câncer" not in rq
+    assert "imunobiológico" in rq
+    assert "imuno biológico" not in rq
+    assert "pembrolizumabe" in rq
+    assert "pembrulizumabe" not in rq
+    assert "mal-estar" in rq
+    assert "mal estar" not in rq
+
+    # Antecedentes Mórbidos no caso oncológico
+    a_onco = (
+        "Refere histórico relacionado a Pericianda está em tratamento oncológico desde 2021 devido câncer de colo de útero com metástase, "
+        "recebe imuno biológico a cada 30 dias e após as infusões de bevacizumabe e pembrulizumabe tem astenia , tontura , mal estar , inapetência e médico a afastou por 2 dias. "
+        "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
+    )
+    ra = _clean_antecedentes_morbidos_text(a_onco)
+
+    # 1. Remoção de vazamento de afastamento prescrito por médico nos antecedentes
+    assert "afastou por 2 dias" not in ra
+    assert "médico a afastou" not in ra
+    # 2. Correção de prefixo cru
+    assert "Refere histórico de tratamento oncológico" in ra
+    assert "Refere histórico relacionado a Pericianda está" not in ra
+    # 3. Correção de fonoaudiologia/ortografia médica
+    assert "imunobiológico" in ra
+    assert "pembrolizumabe" in ra
+    assert "mal-estar" in ra
+    assert "devido a câncer" in ra
+    # 4. Eliminação de contradição clínica: paciente com câncer metastático NUNCA nega neoplasias
+    assert "e neoplasias" not in ra
+    assert "cirurgias prévias e neoplasias" not in ra
+    assert "Nega demais antecedentes mórbidos relevantes e cirurgias prévias." in ra
+

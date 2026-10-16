@@ -1441,12 +1441,14 @@ REGRA MANDATÓRIA DE DATAS NO PADRÃO OFICIAL E-SISLA (DD/MM/AAAA):
    ATENÇÃO: O conteúdo registrado em antecedentes / historico_pregresso ("Histórico pregresso" no questionário) DEVE OBRIGATORIAMENTE ser integrado e considerado nesta seção de Antecedentes Mórbidos.
    Antecedentes Mórbidos destinam-se EXCLUSIVAMENTE ao histórico pregresso clínico da patologia (ex.: "Hipertenso desde os 29 anos, em tratamento medicamentoso. Nega cirurgias prévias ou hábitos tóxicos."). Informações sobre atestados e afastamentos pertencem exclusivamente aos campos documentais e parecer.
    REGRA OBRIGATÓRIA DE EXCLUSÃO DE ATESTADO E FORMALIZAÇÃO VERNACULAR NOS ANTECEDENTES MÓRBIDOS:
-   - NUNCA mencione dias de atestado, afastamento ou concessões ("Vem com atestado de X dias...", "atestado de...", "com atestado de...") nesta seção de Antecedentes Mórbidos. Informações sobre atestados e afastamentos (como "recebendo um atestado de mais sete dias") pertencem exclusivamente aos campos documentais e parecer.
-   - NUNCA copie anotações brutas com erros gramaticais ou colagens mecânicas como "Refere histórico relacionado a Pericianda apresenta...", "Refere histórico relacionado de blefaroplastia apresenta...", "alteração comportamentais", "alteração pressórico", "prescritos por médico" ou fármacos com grafia incorreta ("ultragestan" -> "Utrogestan", "doxaciclina" -> "Doxiciclina", "clonazepan" -> "Clonazepam", "amoxacilina" -> "Amoxicilina", "tramal" -> "Tramadol"). Redija sempre em prosa clínica culta, pontuada e com conjunção "e" antes do último item de qualquer enumeração.
-   REGRA OBRIGATÓRIA DE COMPLEMENTAÇÃO EXAUSTIVA:
-   - Se houver histórico relatado (pelo médico ou histórico de lesões/comorbidades): conclua obrigatoriamente a narrativa com: "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
+   - NUNCA mencione dias de atestado, afastamento ou concessões ("Vem com atestado de X dias...", "atestado de...", "com atestado de...") nesta seção de Antecedentes Mórbidos. Informações sobre atestados e afastamentos (como "recebendo um atestado de mais sete dias" ou "afastou por 2 dias") pertencem exclusivamente aos campos documentais e parecer.
+   - NUNCA copie anotações brutas com erros gramaticais ou colagens mecânicas como "Refere histórico relacionado a Pericianda apresenta...", "Refere histórico relacionado de blefaroplastia apresenta...", "alteração comportamentais", "alteração pressórico", "prescritos por médico" ou fármacos com grafia incorreta ("ultragestan" -> "Utrogestan", "doxaciclina" -> "Doxiciclina", "clonazepan" -> "Clonazepam", "amoxacilina" -> "Amoxicilina", "tramal" -> "Tramadol", "imuno biológico" -> "imunobiológico", "pembrulizumabe" -> "pembrolizumabe", "mal estar" -> "mal-estar"). Redija sempre em prosa clínica culta, pontuada e com conjunção "e" antes do último item de qualquer enumeração.
+   REGRA OBRIGATÓRIA DE COMPLEMENTAÇÃO EXAUSTIVA E NÃO CONTRADIÇÃO:
+   - Se houver histórico relatado (pelo médico ou histórico de lesões/comorbidades):
+     * Se NÃO houver diagnóstico de câncer/neoplasia no caso: conclua obrigatoriamente a narrativa com: "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
+     * Se HOUVER histórico de câncer, neoplasia ou tratamento oncológico: É expressamente proibido afirmar "nega neoplasias" (pois constitui contradição clínica direta grave!). Conclua obrigatoriamente com: "Nega demais antecedentes mórbidos relevantes e cirurgias prévias."
      Exemplo de referência oficial do sistema:
-     "Refere histórico relacionado a Artrose avançada no joelho direito com lesão crônica no menisco e entorse feia nesse mesmo joelho há cerca de 5 anos. Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
+     "Refere histórico de artrose avançada no joelho direito com lesão crônica no menisco e entorse prévia há cerca de 5 anos. Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
    - ATENÇÃO CONTRA DUPLICIDADE DE NEGAÇÃO: Se o relato do servidor já for de negação de comorbidades (ex.: "Nega outras comorbidades crônicas relevantes"), NUNCA gere uma segunda frase iniciando com "Nega...". Una em uma única oração: "Nega outras comorbidades crônicas relevantes, cirurgias prévias e neoplasias."
    - REGRA MANDATÓRIA QUANDO EM BRANCO / NÃO INFORMADO / NEGA: Se não houver histórico pregresso ou se o médico registrar "nega" ou deixar em branco, PREENCHA OBRIGATORIAMENTE COM A FRASE ROBUSTA PADRÃO: "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas."
 
@@ -2983,6 +2985,12 @@ def _clean_queixa_duracao_text(text: str) -> str:
     t = re.sub(r"\bp[áa]lpebrais\b", "palpebrais", t, flags=re.IGNORECASE)
     t = re.sub(r"\bp[áa]lpebral\b", "palpebral", t, flags=re.IGNORECASE)
     t = re.sub(r"\bdor\s+em\s+lombar\b", "dor em região lombar", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bdevido\s+c[âa]ncer\b", "devido a câncer", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bdevido\s+neoplasia\b", "devido a neoplasia", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bimuno\s+biol[óo]gic([oa]s?)\b", r"imunobiológic\1", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bpembrulizumab([e]?)\b", r"pembrolizumab\1", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bmal\s+estar\b", "mal-estar", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bbem\s+estar\b", "bem-estar", t, flags=re.IGNORECASE)
 
     # Normalização de "Periciando(a) apresenta" e frases formais de limitação vazadas na Queixa e Duração
     t = re.sub(r"([\.\;]\s*)(?:[Oo]\s+|[Aa]\s+)?Periciand[oa]\s+apresenta\b", r"\1Refere", t, flags=re.IGNORECASE)
@@ -3119,8 +3127,21 @@ def _clean_queixa_duracao_text(text: str) -> str:
         t = re.sub(r"\s*\(?\s*Não relatou troca de alteração de dosagem da medicação\.?\s*\)?\s*", " ", t, flags=re.IGNORECASE)
 
     # 14b. Quando não há menção a uso ou negação de medicações mas consta "Não relatou troca de alteração de dosagem da medicação.", insere "Negou uso de medicações."
-    if re.search(r"\bcom\s+queixa\s+de\b", t, re.IGNORECASE) and re.search(r"Não relatou troca de alteração de dosagem da medicação", t, re.IGNORECASE):
-        if not re.search(r"\b(?:Em\s+uso\s+de|fez\s+uso\s+de|faz\s+uso\s+de|uso\s+de\s+medica|Negou\s+uso\s+de\s+medica|negou\s+uso\s+de\s+medica)\b", t, re.IGNORECASE):
+    has_antineoplasico = bool(re.search(
+        r"\b(?:infus[ãa]o|infus[õo]es|imunobiol[óo]gic[oa]|imunoterapia|quimioterapia|quimioter[áa]pic[oa]|antineopl[áa]sic[oa]|bevacizumab[e]?|pembrolizumab[e]?|trastuzumab[e]?|rituximab[e]?)\b",
+        t,
+        re.IGNORECASE
+    ))
+    if has_antineoplasico:
+        # Paciente com infusões/imunobiológico/quimioterapia não nega medicações
+        t = re.sub(
+            r"\b(?:[Aa]\s+servidora|[Oo]\s+servidor)?\s*Negou\s+uso\s+de\s+medica[çc][õo]es(?:\s+pr[óo]prias\s+de\s+uso\s+cont[íi]nuo)?\.?\s*",
+            "",
+            t,
+            flags=re.IGNORECASE
+        )
+    elif re.search(r"\bcom\s+queixa\s+de\b", t, re.IGNORECASE) and re.search(r"Não relatou troca de alteração de dosagem da medicação", t, re.IGNORECASE):
+        if not re.search(r"\b(?:Em\s+uso\s+de|fez\s+uso\s+de|faz\s+uso\s+de|uso\s+de\s+medica[çc][õo]es|Negou\s+uso\s+de\s+medica[çc][õo]es|negou\s+uso\s+de\s+medica[çc][õo]es)\b", t, re.IGNORECASE):
             t = re.sub(
                 r"(Não relatou troca de alteração de dosagem da medicação\.?)",
                 r"Negou uso de medicações. \1",
@@ -3128,6 +3149,10 @@ def _clean_queixa_duracao_text(text: str) -> str:
                 count=1,
                 flags=re.IGNORECASE
             )
+
+    # 14c. Deduplicação de frases repetidas de negação de medicação
+    t = re.sub(r"(?:\bNegou\s+uso\s+de\s+medica[çc][õo]es\.?\s*){2,}", "Negou uso de medicações. ", t, flags=re.IGNORECASE)
+    t = re.sub(r"(\b(?:A\s+servidora|O\s+servidor)\s+negou\s+uso\s+de\s+medica[çc][õo]es\s+pr[óo]prias\s+de\s+uso\s+cont[íi]nuo\.?\s*){2,}", r"\1", t, flags=re.IGNORECASE)
 
     # 15. Elimina repetição de "com queixa de ... Queixa-se de"
     if re.search(r"\bcom\s+queixa\b", t, re.IGNORECASE):
@@ -3151,6 +3176,8 @@ def _clean_queixa_duracao_text(text: str) -> str:
     t = re.sub(r"\bdoxaciclina\b", "Doxiciclina", t, flags=re.IGNORECASE)
     t = re.sub(r"\bclonazepan\b", "Clonazepam", t, flags=re.IGNORECASE)
     t = re.sub(r"\bamoxacilina\b", "Amoxicilina", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bbevacizumab[e]?\b", "bevacizumabe", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bpembrolizumab[e]?\b|\bpembrulizumab[e]?\b", "pembrolizumabe", t, flags=re.IGNORECASE)
 
     t = re.sub(r"\s{2,}", " ", t)
     t = re.sub(r"\.\s*\.", ".", t)
@@ -3174,6 +3201,24 @@ def _clean_antecedentes_morbidos_text(text: str) -> str:
     t = re.sub(
         r"[\s\.\,]*\b(?:recebendo|recebeu|tendo\s+recebido|sendo\s+concedido|[Vv]em\s+com|com)?\s*(?:um\s+|novo\s+)?atestado(?:\s+m[ée]dico)?\s+de\s+(?:mais\s+)?(?:\d+|um|uma|dois|duas|tr[êe]s|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|quatorze|catorze|quinze|vinte|trinta|quarenta|cinquenta|sessenta|noventa)\s+dias?\b[^\.\n\r]*[\.\,]?",
         ".",
+        t,
+        flags=re.IGNORECASE
+    )
+    t = re.sub(
+        r"[\s,;]*\b(?:e\s+)?(?:o\s+|a\s+)?m[ée]dico(?:\s+assistente)?\s+(?:o|a)\s+afastou\s+por\s+\d+\s+dias?[^\.\n\r]*",
+        "",
+        t,
+        flags=re.IGNORECASE
+    )
+    t = re.sub(
+        r"[\s,;]*\b(?:e\s+)?(?:com\s+)?afastament[oa]\s+(?:m[ée]dic[oa]\s+)?(?:de|por)\s+\d+\s+dias?[^\.\n\r]*",
+        "",
+        t,
+        flags=re.IGNORECASE
+    )
+    t = re.sub(
+        r"[\s,;]*\b(?:e\s+)?(?:com\s+)?afastad[oa]\s+por\s+\d+\s+dias?[^\.\n\r]*",
+        "",
         t,
         flags=re.IGNORECASE
     )
@@ -3208,7 +3253,13 @@ def _clean_antecedentes_morbidos_text(text: str) -> str:
         flags=re.IGNORECASE
     )
     t = re.sub(
-        r"\bRefere\s+hist[óo]rico\s+relacionado\s+(?:a|de|ao|à)\s+(?:[Aa]\s+|[Oo]\s+)?(?:[Pp]ericiand[oa]|[Pp]ericiad[oa]|[Ss]ervidor[a]?|[Pp]aciente)\s+(?:que\s+)?(?:apresenta|relata|refere|queixa-se\s+de|informa)\b",
+        r"\bRefere\s+hist[óo]rico\s+relacionado\s+(?:a|de|ao|à)\s+(?:[Aa]\s+|[Oo]\s+)?(?:[Pp]ericiand[oa]|[Pp]ericiad[oa]|[Ss]ervidor[a]?|[Pp]aciente)\s+(?:est[áa]\s+em|se\s+encontra\s+em|em\s+tratamento|diagnosticad[oa]|apresenta|relata|refere|queixa-se\s+de|informa)\b",
+        "Refere histórico de",
+        t,
+        flags=re.IGNORECASE
+    )
+    t = re.sub(
+        r"\bRefere\s+hist[óo]rico\s+relacionado\s+(?:a|de|ao|à)\s+(?:est[áa]\s+em|se\s+encontra\s+em)\b",
         "Refere histórico de",
         t,
         flags=re.IGNORECASE
@@ -3225,9 +3276,17 @@ def _clean_antecedentes_morbidos_text(text: str) -> str:
         t,
         flags=re.IGNORECASE
     )
+
     t = re.sub(r"\bdor\s+e\s+rangendo\s+os\s+dentes\b", "dor e bruxismo (ranger de dentes)", t, flags=re.IGNORECASE)
 
     # 2c. Correções gramaticais, clínicas e de pontuação de anotações brutas nos antecedentes
+    t = re.sub(r"\bdevido\s+c[âa]ncer\b", "devido a câncer", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bdevido\s+neoplasia\b", "devido a neoplasia", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bimuno\s+biol[óo]gic([oa]s?)\b", r"imunobiológic\1", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bpembrulizumab([e]?)\b", r"pembrolizumab\1", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bmal\s+estar\b", "mal-estar", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bbem\s+estar\b", "bem-estar", t, flags=re.IGNORECASE)
+    t = re.sub(r"\btem\s+astenia\s*,\s*tontura\s*,\s*mal-estar\s*,\s*inapet[êe]ncia\b", "apresenta astenia, tontura, mal-estar e inapetência", t, flags=re.IGNORECASE)
     t = re.sub(r"\baltera[çc][ãa]o\s+([a-zà-ú]+ais)\b", r"alterações \1", t, flags=re.IGNORECASE)
     t = re.sub(r"\baltera[çc][ãa]o\s+press[óo]rico\b", "alteração pressórica", t, flags=re.IGNORECASE)
     t = re.sub(r"\bp[áa]lpebrais\b", "palpebrais", t, flags=re.IGNORECASE)
@@ -3271,6 +3330,8 @@ def _clean_antecedentes_morbidos_text(text: str) -> str:
         (r"\bdiprospan\b", "Diprospan"),
         (r"\bdipirona\b", "Dipirona"),
         (r"\btramal\b|\btramadol\b", "Tramadol"),
+        (r"\bbevacizumab[e]?\b", "bevacizumabe"),
+        (r"\bpembrolizumab[e]?\b|\bpembrulizumab[e]?\b", "pembrolizumabe"),
     ]
     for pat, repl in med_replacements:
         t = re.sub(pat, repl, t, flags=re.IGNORECASE)
@@ -3292,11 +3353,52 @@ def _clean_antecedentes_morbidos_text(text: str) -> str:
     )
 
     frase_nega_completa = "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas."
-    frase_complemento_positivo = "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
 
     # Se vazio, ponto ou termo simples de negação concisa
     if not t or t == "." or t.lower() in ("nega", "nega.", "não refere", "nao refere", "-", "sem antecedentes", "nenhum", "nenhuma"):
         return "Nega."
+
+    low = t.lower()
+    low_afirmativo = re.sub(
+        r"\b(?:nega|sem|n[ãa]o\s+refere|n[ãa]o\s+apresenta)\b[^\.\n\r]*",
+        "",
+        low,
+        flags=re.IGNORECASE
+    )
+    tem_cancer = bool(re.search(
+        r"\b(?:c[âa]ncer|carcinoma|tumor|tumores|oncol[óo]gic[oa]|linfoma|leucemia|melanoma|met[áa]stase|met[áa]stases|metast[áa]tic[oa]|sarcoma|antineopl[áa]sic[oa]|bevacizumab[e]?|pembrolizumab[e]?|trastuzumab[e]?|rituximab[e]?)\b",
+        low_afirmativo,
+        re.IGNORECASE
+    )) or (
+        bool(re.search(r"\bneopl[áa]s(?:ia|ias|ic[oa])\b", low_afirmativo, re.IGNORECASE))
+    )
+    tem_cirurgias = bool(re.search(
+        r"\b(?:cirurgias|cirurgia|cir[úu]rgic[oa]|p[óo]s-operat[óo]rio|operad[oa]|mastectomia|histerectomia|artroplastia|colecistectomia|apendicectomia|herniorrafia|vasectomia|blefaroplastia)\b",
+        low_afirmativo,
+        re.IGNORECASE
+    ))
+    tem_neoplasias = tem_cancer or bool(re.search(r"\bneopl[áa]s(?:ia|ias)\b", low))
+    tem_cirurgias_mencao = tem_cirurgias or bool(re.search(r"\bcirurg(?:ia|ias)\b", low))
+    tem_nega_demais = "nega demais" in low
+
+    # Se o paciente TEM histórico de câncer/neoplasia, ELIMINA qualquer negação contraditória de neoplasia
+    if tem_cancer:
+        t = re.sub(r",\s*cirurgias\s+pr[ée]vias\s+e\s+neoplasias\.?", " e cirurgias prévias.", t, flags=re.IGNORECASE)
+        t = re.sub(r",\s*neoplasias\s+e\s+cirurgias\s+pr[ée]vias\.?", " e cirurgias prévias.", t, flags=re.IGNORECASE)
+        t = re.sub(r"\s+e\s+neoplasias\.?", ".", t, flags=re.IGNORECASE)
+        t = re.sub(r",\s*neoplasias\b", "", t, flags=re.IGNORECASE)
+        t = re.sub(r"\bNega\s+demais\s+antecedentes\s+m[óo]rbidos\s+relevantes,\s*cirurgias\s+pr[ée]vias\s+e\s+neoplasias\.?", "Nega demais antecedentes mórbidos relevantes e cirurgias prévias.", t, flags=re.IGNORECASE)
+
+    if tem_cancer:
+        if tem_cirurgias:
+            frase_complemento_positivo = "Nega demais antecedentes mórbidos relevantes."
+        else:
+            frase_complemento_positivo = "Nega demais antecedentes mórbidos relevantes e cirurgias prévias."
+    else:
+        if tem_cirurgias:
+            frase_complemento_positivo = "Nega demais antecedentes mórbidos relevantes e neoplasias."
+        else:
+            frase_complemento_positivo = "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
 
     # 3. Eliminar duplicidade explícita de "Nega [algo]. Nega demais antecedentes..."
     duplicidade_pattern = re.compile(
@@ -3304,30 +3406,34 @@ def _clean_antecedentes_morbidos_text(text: str) -> str:
         re.IGNORECASE
     )
     if duplicidade_pattern.search(t):
-        t = duplicidade_pattern.sub(r"\1\2, cirurgias prévias e neoplasias.", t)
+        if tem_cancer:
+            t = duplicidade_pattern.sub(r"\1\2 e cirurgias prévias.", t)
+        else:
+            t = duplicidade_pattern.sub(r"\1\2, cirurgias prévias e neoplasias.", t)
 
     duplicidade_nao_refere = re.compile(
         r"(^|[\.\;]\s*)(N[ãa]o\s+refere\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?",
         re.IGNORECASE
     )
     if duplicidade_nao_refere.search(t):
-        t = duplicidade_nao_refere.sub(r"\1\2, cirurgias prévias e neoplasias.", t)
+        if tem_cancer:
+            t = duplicidade_nao_refere.sub(r"\1\2 e cirurgias prévias.", t)
+        else:
+            t = duplicidade_nao_refere.sub(r"\1\2, cirurgias prévias e neoplasias.", t)
 
     duplicidade_sem = re.compile(
         r"(^|[\.\;]\s*)(Sem\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?",
         re.IGNORECASE
     )
     if duplicidade_sem.search(t):
-        t = duplicidade_sem.sub(r"\1\2, cirurgias prévias e neoplasias.", t)
+        if tem_cancer:
+            t = duplicidade_sem.sub(r"\1\2 e cirurgias prévias.", t)
+        else:
+            t = duplicidade_sem.sub(r"\1\2, cirurgias prévias e neoplasias.", t)
 
     # 4. Verificar termos presentes
-    low = t.lower()
-    tem_cirurgias = "cirurgias" in low or "cirurgia" in low
-    tem_neoplasias = "neoplasias" in low or "neoplasia" in low
-    tem_nega_demais = "nega demais" in low
-
-    # Se já tem cirurgias e neoplasias, ou nega demais com cirurgias:
-    if (tem_cirurgias and tem_neoplasias) or (tem_nega_demais and tem_cirurgias):
+    # Se já tem o que precisa ou já tem "nega demais"
+    if tem_nega_demais or (tem_cancer and "nega demais antecedentes" in t.lower()) or (not tem_cancer and tem_cirurgias_mencao and tem_neoplasias):
         t = re.sub(r"[\s\.\,;]+$", "", t).strip()
         t = re.sub(r"\s{2,}", " ", t)
         t = re.sub(r",\s*,+", ",", t)
@@ -3340,16 +3446,23 @@ def _clean_antecedentes_morbidos_text(text: str) -> str:
     t = re.sub(r"[\s\.\,;]+$", "", t).strip()
 
     if is_negacao:
-        if not tem_cirurgias and not tem_neoplasias:
-            t += ", cirurgias prévias e neoplasias."
-        elif not tem_cirurgias:
-            t += " e cirurgias prévias."
-        elif not tem_neoplasias:
-            t += " e neoplasias."
+        if tem_cancer:
+            if not tem_cirurgias:
+                t += " e cirurgias prévias."
+            else:
+                t += "."
         else:
-            t += "."
+            if not tem_cirurgias_mencao and not tem_neoplasias:
+                t += ", cirurgias prévias e neoplasias."
+            elif not tem_cirurgias_mencao:
+                t += " e cirurgias prévias."
+            elif not tem_neoplasias:
+                t += " e neoplasias."
+            else:
+                t += "."
     else:
-        t += ". " + frase_complemento_positivo
+        if not ("nega demais" in t.lower() or "nega outras" in t.lower()):
+            t += ". " + frase_complemento_positivo
 
     t = re.sub(r"\s{2,}", " ", t)
     t = re.sub(r",\s*,+", ",", t)
@@ -3476,6 +3589,13 @@ def _sanitizar_texto_portugues_esisla(texto: str) -> str:
     ]
     for padrao, forma in palavras_a_corrigir:
         t = _corrigir_palavra(t, padrao, forma)
+
+    t = re.sub(r"\bdevido\s+c[âa]ncer\b", "devido a câncer", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bdevido\s+neoplasia\b", "devido a neoplasia", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bimuno\s+biol[óo]gic([oa]s?)\b", r"imunobiológic\1", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bpembrulizumab([e]?)\b", r"pembrolizumab\1", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bmal\s+estar\b", "mal-estar", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bbem\s+estar\b", "bem-estar", t, flags=re.IGNORECASE)
 
     return t
 

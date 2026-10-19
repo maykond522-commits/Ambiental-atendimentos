@@ -1108,7 +1108,7 @@ class PreenchimentoCompletoResult(BaseModel):
     crm_cro: str
     nome_medico_assistente: str
     data_documento: str
-    data_expedicao: str = ""
+    data_expedicao: str
     dias_solicitados: str
     obs_documentos: str
 
@@ -1117,7 +1117,7 @@ class PreenchimentoCompletoResult(BaseModel):
     outros_resultado: str
     exame_mental_resultado: str
     exame_fisico_descricao: str
-    alteracoes_clinicas_exames: str = ""
+    alteracoes_clinicas_exames: str
     pressao_sistolica: str
     pressao_diastolica: str
     pulso: str

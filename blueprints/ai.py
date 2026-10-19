@@ -25,18 +25,18 @@ class RefinarFichaEsislaResult(BaseModel):
 
 class DadosExtraidosAudio(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    queixa_duracao: str = Field(default="", description="Queixa principal e tempo de evolução")
-    antecedentes: str = Field(default="", description="Histórico patológico pregresso e comorbidades")
-    exame_fisico: str = Field(default="", description="Achados semiológicos observados")
-    parecer: str = Field(default="NÃO INFORMADO", description="'FAVORÁVEL', 'CONTRÁRIO' ou 'NÃO INFORMADO'")
-    dias: int = Field(default=0, description="Dias concedidos ou sugeridos")
-    cid: str = Field(default="", description="Código CID-10 estimado ou citado")
+    queixa_duracao: str = Field(description="Queixa principal e tempo de evolução")
+    antecedentes: str = Field(description="Histórico patológico pregresso e comorbidades")
+    exame_fisico: str = Field(description="Achados semiológicos observados")
+    parecer: str = Field(description="'FAVORÁVEL', 'CONTRÁRIO' ou 'NÃO INFORMADO'")
+    dias: int = Field(description="Dias concedidos ou sugeridos")
+    cid: str = Field(description="Código CID-10 estimado ou citado")
 
 
 class AudioTranscricaoAtendimentoResult(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    transcricao: str = Field(default="", description="Texto completo e literal da fala transcrita")
-    dados_extraidos: DadosExtraidosAudio = Field(default_factory=DadosExtraidosAudio)
+    transcricao: str = Field(description="Texto completo e literal da fala transcrita")
+    dados_extraidos: DadosExtraidosAudio
 
 
 class JustificationResult(BaseModel):

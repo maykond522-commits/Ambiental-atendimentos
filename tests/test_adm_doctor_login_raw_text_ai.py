@@ -113,3 +113,20 @@ def test_gestao_medicos_and_adm_shared_esisla_ui():
     assert 'id="btnDoctorRegenerateEsisla"' in gestao_medicos_html
     assert 'payload.force_refresh = Boolean(forceRefresh);' in gestao_adm_html
 
+
+def test_gemini_response_schemas_have_no_default_values():
+    """Gemini API explicitly forbids 'default' in response_schema JSON schemas:
+    'Default value is not supported in the response schema for the Gemini API.'
+    Ensure all models passed to response_schema in app.py have zero default values.
+    """
+    import app
+    from pydantic import BaseModel
+    models = [
+        getattr(app, m) for m in dir(app)
+        if isinstance(getattr(app, m), type) and issubclass(getattr(app, m), BaseModel) and getattr(app, m) is not BaseModel
+    ]
+    for m in models:
+        s = m.model_json_schema()
+        keys_with_default = [k for k, v in s.get("properties", {}).items() if "default" in v]
+        assert not keys_with_default, f"Model {m.__name__} has fields with default values: {keys_with_default}, which breaks Gemini API response_schema!"
+

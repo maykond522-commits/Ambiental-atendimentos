@@ -3845,6 +3845,17 @@ function formatDate(v){
   }
   return s;
 }
+function toIsoDate(dStr) {
+  if (!dStr) return "";
+  const s = String(dStr).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const m = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
+  if (m) {
+    return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  }
+  return s;
+}
+window.toIsoDate = toIsoDate;
 $("logoHeader").src = LOGO_DATA;
 
 
@@ -9964,10 +9975,15 @@ function gerarNarrativaAntecedentesMelhoriaContinua(st, v) {
       return m;
     });
 
+    // Normalização de posologias aglutinadas
+    t = t.replace(/\b(\d+(?:[.,]\d+)?)\s*(mg|g|mcg|ml|gotas?|comp(?:rimidos?)?|c[áa]ps(?:ulas?)?)dia\b/gi, "$1 $2/dia");
+    t = t.replace(/\b(mg|g|mcg|ml)dia\b/gi, "$1/dia");
+    t = t.replace(/\b(\d+(?:[.,]\d+)?)\s*(mg|g|mcg|ml)(?:\/)?(noite|m[eê]s|semana)\b/gi, "$1 $2/$3");
+
     const low = t.toLowerCase();
     const lowAfirmativo = low.replace(/\b(?:nega|sem|n[ãa]o\s+refere|n[ãa]o\s+apresenta)\b[^\.\n\r]*/gi, "");
     const temCancer = /\b(?:c[âa]ncer|carcinoma|tumor|tumores|oncol[óo]gic[oa]|linfoma|leucemia|melanoma|met[áa]stase|met[áa]stases|metast[áa]tic[oa]|sarcoma|antineopl[áa]sic[oa]|bevacizumab[e]?|pembrolizumab[e]?|trastuzumab[e]?|rituximab[e]?)\b/i.test(lowAfirmativo) || /\bneopl[áa]s(?:ia|ias|ic[oa])\b/i.test(lowAfirmativo);
-    const temCirurgias = /\b(?:cirurgias|cirurgia|cir[úu]rgic[oa]|p[óo]s-operat[óo]rio|operad[oa]|mastectomia|histerectomia|artroplastia|colecistectomia|apendicectomia|herniorrafia|vasectomia|blefaroplastia)\b/i.test(lowAfirmativo);
+    const temCirurgias = /\b(?:cirurgias|cirurgia|cir[úu]rgic[oa]|p[óo]s-operat[óo]rio|operad[oa]|mastectomia|histerectomia|artroplastia|colecistectomia|apendicectomia|herniorrafia|vasectomia|blefaroplastia|tenorrafia)\b/i.test(lowAfirmativo);
     const temNeoplasias = temCancer || /\bneopl[áa]s(?:ia|ias)\b/i.test(low);
     const temCirurgiasMencao = temCirurgias || /\bcirurg(?:ia|ias)\b/i.test(low);
     const temNegaDemais = low.includes("nega demais");
@@ -9981,6 +9997,16 @@ function gerarNarrativaAntecedentesMelhoriaContinua(st, v) {
       t = t.replace(/\bNega\s+demais\s+antecedentes\s+m[óo]rbidos\s+relevantes,\s*cirurgias\s+pr[ée]vias\s+e\s+neoplasias\.?/gi, "Nega demais antecedentes mórbidos relevantes e cirurgias prévias.");
     }
 
+    // Se o paciente tem histórico de cirurgia, remove menção contraditória de negar cirurgias prévias
+    if (temCirurgias) {
+      t = t.replace(/,\s*cirurgias\s+pr[ée]vias\s+e\s+neoplasias\.?/gi, " e neoplasias.");
+      t = t.replace(/,\s*neoplasias\s+e\s+cirurgias\s+pr[ée]vias\.?/gi, " e neoplasias.");
+      t = t.replace(/\s+e\s+cirurgias\s+pr[ée]vias\.?/gi, ".");
+      t = t.replace(/,\s*cirurgias\s+pr[ée]vias\b/gi, "");
+      t = t.replace(/\bNega\s+demais\s+antecedentes\s+m[óo]rbidos\s+relevantes,\s*cirurgias\s+pr[ée]vias\s+e\s+neoplasias\.?/gi, "Nega demais antecedentes mórbidos relevantes e neoplasias.");
+      t = t.replace(/\bNega\s+demais\s+antecedentes\s+m[óo]rbidos\s+relevantes\s+e\s+cirurgias\s+pr[ée]vias\.?/gi, "Nega demais antecedentes mórbidos relevantes.");
+    }
+
     let fraseComplementoFinal = fraseComplemento;
     if (temCancer) {
       fraseComplementoFinal = temCirurgias ? "Nega demais antecedentes mórbidos relevantes." : "Nega demais antecedentes mórbidos relevantes e cirurgias prévias.";
@@ -9989,10 +10015,10 @@ function gerarNarrativaAntecedentesMelhoriaContinua(st, v) {
     }
 
     // Desduplica caso venha "Nega [algo]. Nega demais antecedentes..."
-    const duplicidadeRepl = temCancer ? '$1$2 e cirurgias prévias.' : '$1$2, cirurgias prévias e neoplasias.';
-    t = t.replace(/(^|[\.\;]\s*)(Nega\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?/gi, duplicidadeRepl);
-    t = t.replace(/(^|[\.\;]\s*)(N[ãa]o\s+refere\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?/gi, duplicidadeRepl);
-    t = t.replace(/(^|[\.\;]\s*)(Sem\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?/gi, duplicidadeRepl);
+    const duplicidadeRepl = temCancer ? (temCirurgias ? '$1$2.' : '$1$2 e cirurgias prévias.') : (temCirurgias ? '$1$2 e neoplasias.' : '$1$2, cirurgias prévias e neoplasias.');
+    t = t.replace(/(^|[\.\;]\s*)(Nega\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?|e\s+neoplasias\.?)?/gi, duplicidadeRepl);
+    t = t.replace(/(^|[\.\;]\s*)(N[ãa]o\s+refere\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?|e\s+neoplasias\.?)?/gi, duplicidadeRepl);
+    t = t.replace(/(^|[\.\;]\s*)(Sem\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?|e\s+neoplasias\.?)?/gi, duplicidadeRepl);
 
     if (temNegaDemais || (temCancer && t.toLowerCase().includes("nega demais antecedentes")) || (!temCancer && temCirurgiasMencao && temNeoplasias)) {
       return t.replace(/[\s\.\,;]+$/, '') + '.';
@@ -10021,6 +10047,7 @@ function gerarNarrativaAntecedentesMelhoriaContinua(st, v) {
       }
     }
     t = t.replace(/\s{2,}/g, ' ').replace(/,\s*,+/g, ',').replace(/\.\s*\./g, '.').replace(/,\s*\./g, '.');
+    if (t && !t.endsWith(".")) t += ".";
     return t.trim();
   }
   
@@ -12734,6 +12761,12 @@ function cleanQueixaDuracao(text, atdDate) {
   t = t.replace(/\bamoxacilina\b/gi, "Amoxicilina");
   t = t.replace(/\bbevacizumab[e]?\b/gi, "bevacizumabe");
   t = t.replace(/\bpembrolizumab[e]?\b|\bpembrulizumab[e]?\b/gi, "pembrolizumabe");
+
+  // Deduplicação de indicação medicamentosa repetida (ex: "A para tratamento psiquiátrico e B para tratamento psiquiátrico" -> "A e B para tratamento psiquiátrico")
+  t = t.replace(/(\bpara\s+tratamento\s+([a-zà-ú]+))\s+e\s+([^,.]+?)\s+para\s+tratamento\s+\2\b/gi, "e $3 $1");
+  // Deduplicação de especificação redundante na alteração de dose quando já informada na medicação
+  t = t.replace(/,\s*com\s+(aumento|redução|reducao|ajuste|troca)\s+de\s+dose\s+recente\s+no\s+tratamento\s+([a-zà-ú]+)/gi, ", com $1 de dose recente");
+  t = t.replace(/,\s*para\s+analgesia\s+e\s+/gi, ", para analgesia, e ");
 
   t = t.replace(/\s{2,}/g, ' ');
   t = t.replace(/\.\s*\./g, '.');

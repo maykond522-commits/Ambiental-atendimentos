@@ -3179,6 +3179,22 @@ def _clean_queixa_duracao_text(text: str) -> str:
     t = re.sub(r"\bbevacizumab[e]?\b", "bevacizumabe", t, flags=re.IGNORECASE)
     t = re.sub(r"\bpembrolizumab[e]?\b|\bpembrulizumab[e]?\b", "pembrolizumabe", t, flags=re.IGNORECASE)
 
+    # Deduplicação de indicação medicamentosa repetida (ex: "A para tratamento psiquiátrico e B para tratamento psiquiátrico" -> "A e B para tratamento psiquiátrico")
+    t = re.sub(
+        r"(\bpara\s+tratamento\s+([a-zà-ú]+))\s+e\s+([^,.]+?)\s+para\s+tratamento\s+\2\b",
+        r"e \3 \1",
+        t,
+        flags=re.IGNORECASE
+    )
+    # Deduplicação de especificação redundante na alteração de dose quando já informada na medicação
+    t = re.sub(
+        r",\s*com\s+(aumento|redução|reducao|ajuste|troca)\s+de\s+dose\s+recente\s+no\s+tratamento\s+([a-zà-ú]+)",
+        r", com \1 de dose recente",
+        t,
+        flags=re.IGNORECASE
+    )
+    t = re.sub(r",\s*para\s+analgesia\s+e\s+", ", para analgesia, e ", t, flags=re.IGNORECASE)
+
     t = re.sub(r"\s{2,}", " ", t)
     t = re.sub(r"\.\s*\.", ".", t)
     t = re.sub(r",\s*,+", ",", t)
@@ -3352,6 +3368,11 @@ def _clean_antecedentes_morbidos_text(text: str) -> str:
         t
     )
 
+    # Normalização de posologias aglutinadas
+    t = re.sub(r"\b(\d+(?:[.,]\d+)?)\s*(mg|g|mcg|ml|gotas?|comp(?:rimidos?)?|c[áa]ps(?:ulas?)?)dia\b", r"\1 \2/dia", t, flags=re.IGNORECASE)
+    t = re.sub(r"\b(mg|g|mcg|ml)dia\b", r"\1/dia", t, flags=re.IGNORECASE)
+    t = re.sub(r"\b(\d+(?:[.,]\d+)?)\s*(mg|g|mcg|ml)(?:/)?(noite|m[eê]s|semana)\b", r"\1 \2/\3", t, flags=re.IGNORECASE)
+
     frase_nega_completa = "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas."
 
     # Se vazio, ponto ou termo simples de negação concisa
@@ -3373,7 +3394,7 @@ def _clean_antecedentes_morbidos_text(text: str) -> str:
         bool(re.search(r"\bneopl[áa]s(?:ia|ias|ic[oa])\b", low_afirmativo, re.IGNORECASE))
     )
     tem_cirurgias = bool(re.search(
-        r"\b(?:cirurgias|cirurgia|cir[úu]rgic[oa]|p[óo]s-operat[óo]rio|operad[oa]|mastectomia|histerectomia|artroplastia|colecistectomia|apendicectomia|herniorrafia|vasectomia|blefaroplastia)\b",
+        r"\b(?:cirurgias|cirurgia|cir[úu]rgic[oa]|p[óo]s-operat[óo]rio|operad[oa]|mastectomia|histerectomia|artroplastia|colecistectomia|apendicectomia|herniorrafia|vasectomia|blefaroplastia|tenorrafia)\b",
         low_afirmativo,
         re.IGNORECASE
     ))
@@ -3389,6 +3410,15 @@ def _clean_antecedentes_morbidos_text(text: str) -> str:
         t = re.sub(r",\s*neoplasias\b", "", t, flags=re.IGNORECASE)
         t = re.sub(r"\bNega\s+demais\s+antecedentes\s+m[óo]rbidos\s+relevantes,\s*cirurgias\s+pr[ée]vias\s+e\s+neoplasias\.?", "Nega demais antecedentes mórbidos relevantes e cirurgias prévias.", t, flags=re.IGNORECASE)
 
+    # Se o paciente TEM histórico de cirurgia, ELIMINA qualquer negação contraditória de cirurgias prévias
+    if tem_cirurgias:
+        t = re.sub(r",\s*cirurgias\s+pr[ée]vias\s+e\s+neoplasias\.?", " e neoplasias.", t, flags=re.IGNORECASE)
+        t = re.sub(r",\s*neoplasias\s+e\s+cirurgias\s+pr[ée]vias\.?", " e neoplasias.", t, flags=re.IGNORECASE)
+        t = re.sub(r"\s+e\s+cirurgias\s+pr[ée]vias\.?", ".", t, flags=re.IGNORECASE)
+        t = re.sub(r",\s*cirurgias\s+pr[ée]vias\b", "", t, flags=re.IGNORECASE)
+        t = re.sub(r"\bNega\s+demais\s+antecedentes\s+m[óo]rbidos\s+relevantes,\s*cirurgias\s+pr[ée]vias\s+e\s+neoplasias\.?", "Nega demais antecedentes mórbidos relevantes e neoplasias.", t, flags=re.IGNORECASE)
+        t = re.sub(r"\bNega\s+demais\s+antecedentes\s+m[óo]rbidos\s+relevantes\s+e\s+cirurgias\s+pr[ée]vias\.?", "Nega demais antecedentes mórbidos relevantes.", t, flags=re.IGNORECASE)
+
     if tem_cancer:
         if tem_cirurgias:
             frase_complemento_positivo = "Nega demais antecedentes mórbidos relevantes."
@@ -3402,34 +3432,34 @@ def _clean_antecedentes_morbidos_text(text: str) -> str:
 
     # 3. Eliminar duplicidade explícita de "Nega [algo]. Nega demais antecedentes..."
     duplicidade_pattern = re.compile(
-        r"(^|[\.\;]\s*)(Nega\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?",
+        r"(^|[\.\;]\s*)(Nega\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?|e\s+neoplasias\.?)?",
         re.IGNORECASE
     )
     if duplicidade_pattern.search(t):
         if tem_cancer:
-            t = duplicidade_pattern.sub(r"\1\2 e cirurgias prévias.", t)
+            t = duplicidade_pattern.sub(r"\1\2." if tem_cirurgias else r"\1\2 e cirurgias prévias.", t)
         else:
-            t = duplicidade_pattern.sub(r"\1\2, cirurgias prévias e neoplasias.", t)
+            t = duplicidade_pattern.sub(r"\1\2 e neoplasias." if tem_cirurgias else r"\1\2, cirurgias prévias e neoplasias.", t)
 
     duplicidade_nao_refere = re.compile(
-        r"(^|[\.\;]\s*)(N[ãa]o\s+refere\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?",
+        r"(^|[\.\;]\s*)(N[ãa]o\s+refere\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?|e\s+neoplasias\.?)?",
         re.IGNORECASE
     )
     if duplicidade_nao_refere.search(t):
         if tem_cancer:
-            t = duplicidade_nao_refere.sub(r"\1\2 e cirurgias prévias.", t)
+            t = duplicidade_nao_refere.sub(r"\1\2." if tem_cirurgias else r"\1\2 e cirurgias prévias.", t)
         else:
-            t = duplicidade_nao_refere.sub(r"\1\2, cirurgias prévias e neoplasias.", t)
+            t = duplicidade_nao_refere.sub(r"\1\2 e neoplasias." if tem_cirurgias else r"\1\2, cirurgias prévias e neoplasias.", t)
 
     duplicidade_sem = re.compile(
-        r"(^|[\.\;]\s*)(Sem\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?)?",
+        r"(^|[\.\;]\s*)(Sem\s+[^.\n\r]+?)\.\s*Nega\s+demais\s+antecedentes\s+mórbidos\s+relevantes,?\s*(?:cirurgias\s+prévias\s+e\s+neoplasias\.?|e\s+cirurgias\s+prévias\.?|cirurgias\s+prévias\.?|e\s+neoplasias\.?)?",
         re.IGNORECASE
     )
     if duplicidade_sem.search(t):
         if tem_cancer:
-            t = duplicidade_sem.sub(r"\1\2 e cirurgias prévias.", t)
+            t = duplicidade_sem.sub(r"\1\2." if tem_cirurgias else r"\1\2 e cirurgias prévias.", t)
         else:
-            t = duplicidade_sem.sub(r"\1\2, cirurgias prévias e neoplasias.", t)
+            t = duplicidade_sem.sub(r"\1\2 e neoplasias." if tem_cirurgias else r"\1\2, cirurgias prévias e neoplasias.", t)
 
     # 4. Verificar termos presentes
     # Se já tem o que precisa ou já tem "nega demais"
@@ -3468,7 +3498,10 @@ def _clean_antecedentes_morbidos_text(text: str) -> str:
     t = re.sub(r",\s*,+", ",", t)
     t = re.sub(r"\.\s*\.", ".", t)
     t = re.sub(r",\s*\.", ".", t)
-    return t.strip()
+    t = t.strip()
+    if t and not t.endswith((".", "!", "?")):
+        t += "."
+    return t
 
 def _sanitizar_texto_portugues_esisla(texto: str) -> str:
     if not texto:
@@ -3767,6 +3800,37 @@ def _clean_esisla_text(text: str) -> str:
         text,
         flags=re.IGNORECASE
     )
+
+    # Resolução de contradições clínicas entre template padrão e achados reais no Exame Físico Geral
+    m_ef = re.search(r"(\(\*\)\s*Exame Físico Geral:?\s*\n)(.*?)(\n\s*Descrição das Alterações)", text, re.DOTALL | re.IGNORECASE)
+    if m_ef:
+        h1_ef, b_ef, h2_ef = m_ef.groups()
+        # 1. Se relata cicatrizes cirúrgicas ou pós-operatório, remove "sem cicatrizes" / "ausência de cicatrizes" do template normal
+        if re.search(r"\b(?:cicatriz(?:es)?|p[óo]s-operat[óo]ri[oa]|tenorrafia|incis[ãa]o)\b", b_ef, re.IGNORECASE):
+            b_ef = re.sub(r",\s*sem\s+cicatrizes\b", "", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\bsem\s+cicatrizes,?\s*", "", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r",\s*aus[êe]ncia\s+de\s+cicatrizes\b", "", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\baus[êe]ncia\s+de\s+cicatrizes,?\s*", "", b_ef, flags=re.IGNORECASE)
+        # 2. Se relata contratura paravertebral, remove "coluna sem contraturas paravertebrais" do template normal
+        if re.search(r"\bcontratura\b", b_ef, re.IGNORECASE):
+            b_ef = re.sub(r",\s*coluna\s+sem\s+contraturas(?:\s+paravertebrais)?\b", "", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\bcoluna\s+sem\s+contraturas(?:\s+paravertebrais)?,?\s*", "", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r",\s*sem\s+contraturas(?:\s+paravertebrais)?\b", "", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\bsem\s+contraturas(?:\s+paravertebrais)?,?\s*", "", b_ef, flags=re.IGNORECASE)
+        # 3. Se mobilidade está abolida por cirurgia/imobilização/tipoia, remove afirmações de mobilidade normal e testes de amplitude
+        if re.search(r"\b(?:mobilidade\s+(?:ativamente\s+)?abolida|imobilizad[oa]|tipoia|limita[çc][ãa]o\s+(?:severa|importante|completa))\b", b_ef, re.IGNORECASE):
+            b_ef = re.sub(
+                r",?\s*com\s+mobilidade\s+ativa\s+e\s+passiva\s+normais\s+e\s+capacidade\s+de\s+movimentos\s+ativos\s+com\s+amplitude\s+de\s+Flex[ãa]o[^\.\n\r]*\.",
+                ".",
+                b_ef,
+                flags=re.IGNORECASE
+            )
+            b_ef = re.sub(r",?\s*com\s+mobilidade\s+ativa\s+e\s+passiva\s+normais,?\s*", ". ", b_ef, flags=re.IGNORECASE)
+        b_ef = re.sub(r",\s*,+", ",", b_ef)
+        b_ef = re.sub(r",\s*\.", ".", b_ef)
+        b_ef = re.sub(r"\s{2,}", " ", b_ef)
+        b_ef = re.sub(r"\.\s*\.", ".", b_ef)
+        text = text[:m_ef.start()] + h1_ef + b_ef.strip() + "\n\n" + h2_ef + text[m_ef.end():]
 
     # Limpeza da seção (*)Justificativa Parecer Médico na ficha e-SISLA
     m_just = re.search(
@@ -4102,6 +4166,8 @@ def api_ai_esisla():
                     q_rx = re.compile(rf"^({q_num}[ \t]*[\)\.\-](?:[^\r\n\?]*\?)?)[ \t]*(?:Sim|Não|Nao)?[ \t]*$", re.MULTILINE | re.IGNORECASE)
                     if q_rx.search(q_block):
                         q_block = q_rx.sub(rf"\1 {q_ans}", q_block, count=1)
+                clean_lines = [ln for ln in q_block.splitlines() if ln.strip().lower() not in ("sim", "não", "nao")]
+                q_block = "\n".join(clean_lines).strip() + "\n\n"
                 ficha_text = ficha_text[:q_section.start(1)] + q_block + ficha_text[q_section.end(1):]
             ficha_text = re.sub(r"\bApresentas-e\b", "Apresenta-se", ficha_text)
             m_queixa_final = re.search(r"(\(\*\)\s*Queixa e Dura[çc][ãa]o:?\s*\n)(.*?)(\n\s*Antecedentes Mórbidos)", ficha_text, re.DOTALL | re.IGNORECASE)

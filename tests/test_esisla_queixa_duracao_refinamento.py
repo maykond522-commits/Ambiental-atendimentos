@@ -497,3 +497,89 @@ def test_caso_oncologia_pembrolizumabe_e_antecedentes():
     assert "cirurgias prévias e neoplasias" not in ra
     assert "Nega demais antecedentes mórbidos relevantes e cirurgias prévias." in ra
 
+
+def test_caso1_psiquiatria_deduplicacao_e_antecedentes():
+    # Caso 1 do usuário: depressão recorrente em servidora readaptada
+    q_texto = (
+        "Servidora de 49 anos, relatou ser readaptada, exercendo atualmente as atividades de Atividades de suporte pedagógico, "
+        "é Professora de Educação Básica II há 22 anos, com queixa de piora do quadro depressivo com ideação suicida passiva, "
+        "choro imotivado, anedonia e fadiga extrema, desde 2018, realizando consultas quinzenalmente. "
+        "Apresenta embotamento afetivo, lentificação psicomotora e déficit de concentração. "
+        "Em uso de Venlafaxina 150 mg/dia para tratamento psiquiátrico e Quetiapina 100 mg/dia para tratamento psiquiátrico, "
+        "com aumento de dose recente no tratamento psiquiátrico. Não alegou fazer fisioterapia e psicoterapia."
+    )
+    rq = _clean_queixa_duracao_text(q_texto)
+    # Deduplica "para tratamento psiquiátrico" repetido
+    assert "Venlafaxina 150 mg/dia e Quetiapina 100 mg/dia para tratamento psiquiátrico" in rq
+    assert "com aumento de dose recente." in rq or "com aumento de dose recente," in rq
+    assert "no tratamento psiquiátrico" not in rq
+
+    # Antecedentes com posologia aglutinada ("mgdia") e sem ponto final
+    ant_texto = (
+        "Tratamento psiquiátrico desde 2018 para depressão recorrente. "
+        "Em uso de Venlafaxina 150 mgdia e Quetiapina 100 mgdia. "
+        "Nega outras comorbidades crônicas relevantes"
+    )
+    ra = _clean_antecedentes_morbidos_text(ant_texto)
+    assert "150 mg/dia" in ra
+    assert "100 mg/dia" in ra
+    assert "mgdia" not in ra
+    assert ra.endswith(".")
+
+
+def test_caso2_pos_operatorio_ombro_cirurgia_e_exame_fisico():
+    # Caso 2 do usuário: pós-op tenorrafia ombro direito
+    ant_cirurgia = (
+        "Refere que realizou cirurgia no ombro direito há 15 dias, em uso de Dipirona e Tramadol se dor. "
+        "Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
+    )
+    ra = _clean_antecedentes_morbidos_text(ant_cirurgia)
+    # O paciente REALIZOU cirurgia há 15 dias, portanto NÃO PODE negar cirurgias prévias!
+    assert "cirurgias prévias" not in ra
+    assert "Nega demais antecedentes mórbidos relevantes e neoplasias." in ra
+
+    # Exame físico com contradição entre template normal e achados cirúrgicos reais
+    ficha_caso2 = (
+        "Registro da perícia Médica para Licença\n\n"
+        "(*) Queixa e Duração:\n"
+        "Servidor de 41 anos, relatou não ser readaptado, é Policial Penal IV há 16 anos, com queixa de dor.\n\n"
+        "Antecedentes Mórbidos:\n"
+        "Refere que realizou cirurgia no ombro direito há 15 dias. Nega demais antecedentes mórbidos relevantes e neoplasias.\n\n"
+        "Atestado/Relatório/Exames Complementares:\n"
+        "Em anexo.\n\n"
+        "(*)Exame Físico Geral\n"
+        "Ombro direito: Ausência de deformidades ou hipotrofias musculares, sem alterações de pele, sem cicatrizes, com mobilidade ativa e passiva normais e capacidade de movimentos ativos com amplitude de Flexão (90°) - extensão (180°) Abudção (180°) - adução (30°) Rotação interna (90°) - rotação externa (90°) tendo os testes Neer, Jobe, Patte, Gerber, Howkins e Queda negativos. Cicatrizes cirúrgicas puntiformes limpas, em uso de tipoia americana, dor viva à palpação de tubérculo maior, mobilidade ativamente abolida no momento por prescrição pós-operatória.\n\n"
+        "Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:\n"
+        "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial.\n\n"
+        "(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):\n"
+        "Apresenta limitações físicas temporárias.\n\n"
+        "(*)Parecer Médico\n"
+        "Parecer: FAVORÁVEL\n"
+        "Nº Dias: 60\n"
+        "Data Início: 08/10/2026\n"
+        "CID 10: M75.1\n\n"
+        "(*)Resposta aos quesitos\n"
+        "1) Há doença(s) ou sequela(s) de doença(s) prévia(s)? Sim\n"
+        "2) A(s) doença(s) ou sequela(s) de doença(s) prévia(s) gera(m) limitação(ões) para periciando(a)? Sim\n"
+        "3) A(s) limitação(ões) impede(m) o(a) periciando(a) de exercer alguma atividade do rol? Sim\n\n"
+        "(*)Justificativa Parecer Médico\n"
+        "Capacidade laborativa temporariamente prejudicada.\n\n"
+        "(*) Parecer Final\n"
+        "Nº Dias: 60\n"
+        "Data Início: 08/10/2026\n"
+        "CID 10: M75.1\n"
+    )
+    limpa2 = _clean_esisla_text(ficha_caso2)
+    # Contradição removida: não diz "sem cicatrizes" quando há cicatrizes puntiformes
+    assert "sem cicatrizes" not in limpa2
+    # Não diz "com mobilidade ativa e passiva normais" quando mobilidade está ativamente abolida
+    assert "com mobilidade ativa e passiva normais" not in limpa2
+    assert "Cicatrizes cirúrgicas puntiformes limpas, em uso de tipoia americana" in limpa2
+
+
+def test_global_to_iso_date_in_frontend():
+    # Verifica se toIsoDate está exposto globalmente e no escopo window do assistente
+    assert "function toIsoDate(dStr)" in ATTENDANCE_HTML
+    assert "window.toIsoDate = toIsoDate;" in ATTENDANCE_HTML
+
+

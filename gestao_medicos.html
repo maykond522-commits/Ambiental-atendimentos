@@ -1215,6 +1215,70 @@ main { min-width: 0; }
   color: #fff;
   border-color: var(--brand-blue);
 }
+.btn-esisla-doc {
+  border: 1px solid #bae6fd;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  padding: 6px 11px;
+  border-radius: 9px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #0369a1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all .15s ease;
+  white-space: nowrap;
+}
+.btn-esisla-doc:hover {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #fff;
+  border-color: #0284c7;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(2, 132, 199, 0.22);
+}
+.btn-esisla-doc.saved {
+  border-color: #a7f3d0;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  color: #047857;
+}
+.btn-esisla-doc.saved:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #fff;
+  border-color: #059669;
+  box-shadow: 0 3px 8px rgba(5, 150, 105, 0.24);
+}
+.doc-esisla-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+}
+.doc-esisla-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.doc-esisla-card-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #0f2744;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.doc-esisla-card-body {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #1e293b;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 .btn-sm {
   padding: 6px 12px;
   font-size: 11px;
@@ -2499,8 +2563,15 @@ main { min-width: 0; }
       <!-- View: Histórico -->
       <section id="view-historico" hidden>
         <div class="panel">
-          <div class="panel-head">
-            <div><b>Histórico de Atendimentos</b><span>Registros concluídos ou arquivados</span></div>
+          <div class="panel-head" style="flex-wrap:wrap;gap:12px">
+            <div>
+              <b>Histórico de Atendimentos &amp; Fichas e-Sisla</b>
+              <span>Registros concluídos ou arquivados — gere ou reutilize a Ficha e-Sisla oficial (compartilhada com a Gestão Adm sem recriação)</span>
+            </div>
+            <div style="width:min(380px, 50%)" class="search-box">
+              <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input id="historySearch" class="search" placeholder="Filtrar histórico por periciado, protocolo ou CID...">
+            </div>
           </div>
           <div class="panel-body">
             <div class="list" id="historyList"></div>
@@ -2525,10 +2596,76 @@ main { min-width: 0; }
       <div style="text-align:center;padding:40px;color:var(--text-muted)">Carregando dados detalhados do atendimento…</div>
     </div>
     <div class="modal-foot">
-      <button class="btn-sm" type="button" onclick="printQuickView()">🖨 Imprimir Laudo</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-sm" type="button" onclick="printQuickView()">🖨 Imprimir Laudo</button>
+        <button class="btn-esisla-doc" type="button" id="quickViewEsislaBtn" onclick="if(activeQuickRecord) openDoctorEsisla(activeQuickRecord.atendimento || activeQuickRecord.id, false)">📋 Ficha e-Sisla</button>
+      </div>
       <div style="display:flex;gap:8px">
         <button class="btn-sm" type="button" onclick="closeQuickView()">Fechar</button>
         <button class="btn primary" type="button" id="quickViewOpenFullBtn" style="padding:7px 14px;font-size:11px">Abrir Completo →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Ficha e-Sisla Oficial no Portal Médico (Compartilhada com Gestão Adm) -->
+<div id="esislaDoctorModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="doctorEsislaTitle">
+  <div class="modal-box" style="width:min(980px, 96vw);max-height:92vh;display:flex;flex-direction:column">
+    <div class="modal-head" style="background:linear-gradient(135deg, #f8fafc 0%, #f0f9ff 100%);border-bottom:1.5px solid #dbeafe">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <h3 id="doctorEsislaTitle" style="margin:0;color:#0f2744;font-size:16px">📋 Ficha e-Sisla (DPME / SP)</h3>
+          <span id="doctorEsislaReuseBadge" class="badge green" style="font-size:10px;font-weight:800">✓ Padrão Oficial DPME</span>
+        </div>
+        <span id="doctorEsislaSub" style="display:block;font-size:11.5px;color:var(--text-muted);margin-top:3px">Carregando ficha pericial…</span>
+      </div>
+      <button type="button" class="modal-close-btn" onclick="closeDoctorEsislaModal()" aria-label="Fechar modal">✕</button>
+    </div>
+
+    <div class="modal-body" style="padding:18px 22px;overflow-y:auto;flex:1;background:#f8fafc;display:flex;flex-direction:column;gap:14px">
+      <!-- Banner Anti-Glosa e Conformidade DPME -->
+      <div id="doctorEsislaComplianceBanner" style="padding:10px 14px;border-radius:10px;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:11.5px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div>
+          <strong>🛡️ Proteção Anti-Glosa DPME / SP:</strong>
+          <span id="doctorEsislaComplianceText">Ficha sincronizada entre Gestão Médica e Gestão Administrativa (evita recriação duplicada).</span>
+        </div>
+        <span id="doctorEsislaStatsChip" style="font-weight:700;font-size:10.5px;color:#15803d">0 caracteres</span>
+      </div>
+
+      <!-- Barra de Ferramentas e Alternância de Modo -->
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;background:#fff;padding:8px 12px;border-radius:10px;border:1px solid #e2e8f0">
+        <div style="display:flex;gap:6px;background:#f1f5f9;padding:3px;border-radius:8px">
+          <button type="button" class="btn-sm" id="btnDocEsislaBlocos" onclick="setDoctorEsislaMode('blocos')" style="border:0;background:#fff;color:var(--brand-blue);font-weight:800;box-shadow:0 1px 2px rgba(0,0,0,0.06)">🗂️ Versão em Blocos (Copiar por Campo)</button>
+          <button type="button" class="btn-sm" id="btnDocEsislaTxt" onclick="setDoctorEsislaMode('txt')" style="border:0;background:transparent;color:var(--text-muted)">📄 Texto Completo (.TXT)</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <button type="button" class="btn-sm" id="btnDoctorRefinarEsislaIA" onclick="refinarDoctorEsislaComIA()" style="background:linear-gradient(135deg, #4f46e5, #7c3aed);color:#fff;border:none;font-weight:800" title="Refinar e padronizar texto com IA Sênior">
+            ✨ Otimizar com IA
+          </button>
+          <button type="button" class="btn-sm" onclick="printDoctorEsisla()" title="Imprimir ou salvar PDF da Ficha e-Sisla">
+            🖨️ Gerar PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Container de Blocos -->
+      <div id="doctorEsislaBlocosContainer" style="display:grid;gap:12px"></div>
+
+      <!-- Textarea Completo -->
+      <textarea id="doctorEsislaText" spellcheck="false" style="display:none;width:100%;min-height:420px;padding:16px;border-radius:12px;border:1px solid #cbd5e1;font:12.5px/1.65 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;background:#fff;color:#0f172a;resize:vertical" oninput="updateDoctorEsislaStats(this.value)"></textarea>
+    </div>
+
+    <div class="modal-foot" style="background:#fff;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <button type="button" class="btn-sm" id="btnDoctorRegenerateEsisla" onclick="if(window.currentDoctorEsislaId) openDoctorEsisla(window.currentDoctorEsislaId, true)" title="Recriar a ficha do zero a partir dos dados atuais do atendimento">
+          🔄 Refazer Ficha
+        </button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button type="button" class="btn-sm" onclick="closeDoctorEsislaModal()">Fechar</button>
+        <button type="button" class="btn primary" id="btnDoctorCopyEsislaFull" onclick="copyDoctorEsislaFull()" style="padding:8px 16px;font-size:11.5px;font-weight:800">
+          📋 Copiar Ficha Completa
+        </button>
       </div>
     </div>
   </div>
@@ -2838,18 +2975,21 @@ main { min-width: 0; }
     const cidVal = r.cid || a.cid || p.cid || '';
     const dataVal = dateDisplay(atdDate(r));
     const horaVal = atdTime(r);
+    const hasFicha = Boolean(String(r.ficha_esisla || p.ficha_esisla || a.fichaEsisla || a.ficha_esisla || '').trim().length > 40);
     return `<div class="row">
       <div class="row-main">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <b>${displayTitle}</b>
           ${proto ? `<span class="badge" style="font-size:9.5px;padding:2px 7px;font-weight:700">#${esc(proto)}</span>` : ''}
+          ${hasFicha ? `<span class="badge green" style="font-size:9px;padding:2px 7px;font-weight:800" title="Ficha e-Sisla já gerada e salva">✓ e-Sisla Salva</span>` : ''}
         </div>
         <span>${esc(dataVal)}${horaVal ? ' · ' + esc(horaVal) : ''}${unid ? ' · ' + esc(unid) : ''}${cidVal ? ' · CID: ' + esc(cidVal) : ''}</span>
       </div>
       <span class="badge ${statusClass(r.status)}"><i class="dot"></i>${esc(statusLabel(r.status))}</span>
-      <div style="display:flex;gap:6px">
-        <button class="btn-sm" data-preview="${id}">Visualizar</button>
-        <button class="open-link" data-open="${id}">Abrir</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn-esisla-doc ${hasFicha ? 'saved' : ''}" type="button" data-esisla="${id}" title="${hasFicha ? 'Abrir Ficha e-Sisla já gerada (sem recriação)' : 'Gerar Ficha e-Sisla oficial deste atendimento'}">${hasFicha ? '✓ Ficha e-Sisla' : '📋 Ficha e-Sisla'}</button>
+        <button class="btn-sm" type="button" data-preview="${id}">Visualizar</button>
+        <button class="open-link" type="button" data-open="${id}">Abrir</button>
       </div>
     </div>`;
   }
@@ -2865,7 +3005,357 @@ main { min-width: 0; }
       e.stopPropagation();
       openQuickView(b.dataset.preview);
     });
+    scope.querySelectorAll('[data-esisla]').forEach(b => b.onclick = (e) => {
+      e.stopPropagation();
+      openDoctorEsisla(b.dataset.esisla, false);
+    });
   }
+
+  window.currentDoctorEsislaId = null;
+  window.currentDoctorEsislaRecord = null;
+  window.currentDoctorEsislaMode = 'blocos';
+
+  function normalizeDoctorRecordForEsisla(r) {
+    const p = (r?.payload && typeof r.payload === 'object') ? r.payload : (r || {});
+    const a = p?.aux || r?.aux || {};
+    return {
+      ...r,
+      ...p,
+      ...a,
+      aux: { ...a, ...(p.aux || {}) },
+      atendimento: r?.atendimento || p?.atendimento || a?.atendimento || r?.id,
+      exameFisicoTipo: p?.exameFisicoTipo || a?.exameFisicoTipo || p?.agilExameFisicoTipo || r?.exameFisicoTipo || '',
+      outrosSubtipo: p?.outrosSubtipo || a?.outrosSubtipo || p?.areaExameClinico || a?.areaExameClinico || r?.outrosSubtipo || '',
+      areaExameClinico: p?.areaExameClinico || a?.areaExameClinico || p?.outrosSubtipo || a?.outrosSubtipo || r?.areaExameClinico || '',
+      outrosResultado: p?.outrosResultado || a?.outrosResultado || p?.resultadoAvaliacao || a?.resultadoAvaliacao || r?.outrosResultado || '',
+      resultadoAvaliacao: p?.resultadoAvaliacao || a?.resultadoAvaliacao || p?.outrosResultado || a?.outrosResultado || r?.resultadoAvaliacao || '',
+      exameFisicoDescricao: p?.exameFisicoDescricao || a?.exameFisicoDescricao || p?.agilExameFisicoDescricao || a?.agilExameFisicoDescricao || r?.exameFisicoDescricao || '',
+      historicoPregresso: p?.historicoPregresso || a?.historicoPregresso || p?.agilHistoricoPregresso || a?.agilHistoricoPregresso || r?.historicoPregresso || '',
+      antecedentes: p?.antecedentes || a?.antecedentes || p?.historicoPregresso || a?.historicoPregresso || r?.antecedentes || '',
+      altura: p?.altura || a?.altura || p?.agilAltura || a?.agilAltura || p?.biotipoAltura || r?.altura || '',
+      peso: p?.peso || a?.peso || p?.agilPeso || a?.agilPeso || p?.biotipoPeso || r?.peso || '',
+      pressaoSistolica: p?.pressaoSistolica || a?.pressaoSistolica || r?.pressaoSistolica || '',
+      pressaoDiastolica: p?.pressaoDiastolica || a?.pressaoDiastolica || r?.pressaoDiastolica || '',
+      pulso: p?.pulso || a?.pulso || r?.pulso || '',
+      descLimitacao: p?.descLimitacao || a?.descLimitacao || r?.descLimitacao || '',
+      justificativa: p?.justificativa || a?.justificativa || p?.agilJustificativa || a?.agilJustificativa || r?.justificativa || '',
+      parecer: p?.parecer || a?.parecer || r?.parecer || '',
+      cid: p?.cid || a?.cid || r?.cid || '',
+      diasSolicitados: p?.diasSolicitados || a?.diasSolicitados || r?.diasSolicitados || '',
+      dataExpedicao: p?.dataExpedicao || a?.dataExpedicao || p?.data_expedicao || a?.data_expedicao || r?.dataExpedicao || '',
+      ficha_esisla: p?.ficha_esisla || a?.fichaEsisla || a?.ficha_esisla || r?.ficha_esisla || ''
+    };
+  }
+
+  function extractSectionDoctorEsisla(text, startHeaders, endHeaders) {
+    const str = String(text || '');
+    if (!str) return '';
+    const starts = Array.isArray(startHeaders) ? startHeaders : [startHeaders];
+    const ends = Array.isArray(endHeaders) ? endHeaders : (endHeaders ? [endHeaders] : []);
+    const escRx = s => String(s).replace(/:+$/, '').trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&').replace(/\\\(\\\*\\\)\s*/g, '\\(\\s*\\*\\s*\\)\\s*');
+    const startPat = '(?:(?:\\r?\\n|^)\\s*)?(?:' + starts.map(escRx).join('|') + ')[^\\r\\n:]*:?';
+    const endPat = ends.length ? '(?=(?:\\r?\\n|^)\\s*(?:' + ends.map(escRx).join('|') + ')[^\\r\\n:]*:?)' : '(?=$)';
+    const rx = new RegExp(startPat + '\\s*([\\s\\S]*?)\\s*' + endPat, 'i');
+    const m = str.match(rx);
+    return m ? m[1].trim() : '';
+  }
+
+  window.copyDoctorEsislaBlock = async function(btn, customText) {
+    let textToCopy = customText;
+    if (typeof textToCopy !== 'string' || !textToCopy.trim()) {
+      const card = btn?.closest('.doc-esisla-card');
+      const bodyEl = card?.querySelector('.doc-esisla-card-body');
+      textToCopy = bodyEl ? (bodyEl.innerText || bodyEl.textContent || '') : '';
+    }
+    textToCopy = String(textToCopy || '').trim();
+    if (!textToCopy) return;
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+    } catch (_) {
+      const ta = document.createElement('textarea');
+      ta.value = textToCopy;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (_) {}
+      ta.remove();
+    }
+    if (btn) {
+      const old = btn.innerHTML;
+      btn.innerHTML = '✓ Copiado';
+      btn.style.background = '#ecfdf5';
+      btn.style.color = '#047857';
+      btn.style.borderColor = '#a7f3d0';
+      setTimeout(() => {
+        btn.innerHTML = old;
+        btn.style.background = '';
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }, 1800);
+    }
+    showToast('Bloco copiado para a área de transferência.');
+  };
+
+  window.updateDoctorEsislaStats = function(text) {
+    const str = String(text || '');
+    const chip = $('doctorEsislaStatsChip');
+    if (chip) {
+      const lines = str ? str.split('\n').length : 0;
+      chip.textContent = `${str.length.toLocaleString('pt-BR')} caracteres · ${lines} linhas`;
+    }
+  };
+
+  window.renderDoctorEsislaBlocos = function(textoFicha) {
+    const container = $('doctorEsislaBlocosContainer');
+    if (!container) return;
+    const str = String(textoFicha || '').trim();
+    if (!str) {
+      container.innerHTML = '<div class="empty">Nenhum conteúdo disponível para exibir em blocos.</div>';
+      return;
+    }
+
+    const queixa = extractSectionDoctorEsisla(str, ['(*) Queixa e Duração', 'Queixa e Duração'], ['Antecedentes Mórbidos']);
+    const antecedentes = extractSectionDoctorEsisla(str, ['Antecedentes Mórbidos'], ['Atestado/Relatório/Exames Complementares', 'Atestado/Relatório', 'Pressão Arterial']);
+    const atestado = extractSectionDoctorEsisla(str, ['Atestado/Relatório/Exames Complementares', 'Atestado/Relatório'], ['Pressão Arterial', 'Sistólica', '(*)Exame Físico Geral']) || 'Em anexo.';
+    const exameFisico = extractSectionDoctorEsisla(str, ['(*)Exame Físico Geral', 'Exame Físico Geral'], [
+      'Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares',
+      'Descrição das Alterações Clínicas',
+      '(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)',
+      '(*)Descrição da(s) Limitação',
+      '(*)Parecer Médico'
+    ]);
+    const limitacoes = extractSectionDoctorEsisla(str, [
+      '(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)',
+      '(*)Descrição da(s) Limitação',
+      'Descrição da(s) Limitação'
+    ], ['(*)Parecer Médico', 'Parecer Médico']);
+    const parecerBloco = extractSectionDoctorEsisla(str, ['(*)Parecer Médico', 'Parecer Médico'], ['(*)Resposta aos quesitos', 'Resposta aos quesitos']);
+    const quesitosBloco = extractSectionDoctorEsisla(str, ['(*)Resposta aos quesitos', 'Resposta aos quesitos'], ['(*)Justificativa Parecer Médico', 'Justificativa Parecer Médico']);
+    const justificativa = extractSectionDoctorEsisla(str, ['(*)Justificativa Parecer Médico', 'Justificativa Parecer Médico'], ['(*) Parecer Final', '(*)Parecer Final']);
+
+    const blocks = [
+      { icon: '🗣️', title: '(*) Queixa e Duração', content: queixa },
+      { icon: '📜', title: 'Antecedentes Mórbidos', content: antecedentes },
+      { icon: '📑', title: 'Atestado / Relatório / Exames Complementares', content: atestado },
+      { icon: '🩺', title: '(*) Exame Físico Geral', content: exameFisico },
+      { icon: '⚠️', title: '(*) Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is)', content: limitacoes },
+      { icon: '⚖️', title: '(*) Parecer Médico', content: parecerBloco },
+      { icon: '❓', title: '(*) Resposta aos Quesitos', content: quesitosBloco },
+      { icon: '📝', title: '(*) Justificativa Parecer Médico', content: justificativa }
+    ].filter(b => b.content);
+
+    container.innerHTML = blocks.map(b => `
+      <div class="doc-esisla-card">
+        <div class="doc-esisla-card-head">
+          <div class="doc-esisla-card-title"><span>${b.icon}</span><span>${esc(b.title)}</span></div>
+          <button type="button" class="btn-sm" onclick="copyDoctorEsislaBlock(this)">📋 Copiar Bloco</button>
+        </div>
+        <div class="doc-esisla-card-body">${esc(b.content)}</div>
+      </div>
+    `).join('');
+  };
+
+  window.setDoctorEsislaMode = function(mode) {
+    window.currentDoctorEsislaMode = mode;
+    const isBlocos = mode === 'blocos';
+    const blocosEl = $('doctorEsislaBlocosContainer');
+    const txtEl = $('doctorEsislaText');
+    const btnBlocos = $('btnDocEsislaBlocos');
+    const btnTxt = $('btnDocEsislaTxt');
+    if (blocosEl) blocosEl.style.display = isBlocos ? 'grid' : 'none';
+    if (txtEl) txtEl.style.display = isBlocos ? 'none' : 'block';
+    if (btnBlocos) {
+      btnBlocos.style.background = isBlocos ? '#fff' : 'transparent';
+      btnBlocos.style.color = isBlocos ? 'var(--brand-blue)' : 'var(--text-muted)';
+      btnBlocos.style.fontWeight = isBlocos ? '800' : '600';
+      btnBlocos.style.boxShadow = isBlocos ? '0 1px 2px rgba(0,0,0,0.06)' : 'none';
+    }
+    if (btnTxt) {
+      btnTxt.style.background = !isBlocos ? '#fff' : 'transparent';
+      btnTxt.style.color = !isBlocos ? 'var(--brand-blue)' : 'var(--text-muted)';
+      btnTxt.style.fontWeight = !isBlocos ? '800' : '600';
+      btnTxt.style.boxShadow = !isBlocos ? '0 1px 2px rgba(0,0,0,0.06)' : 'none';
+    }
+    if (isBlocos && txtEl) {
+      renderDoctorEsislaBlocos(txtEl.value);
+    }
+  };
+
+  window.openDoctorEsisla = async function(id, forceRefresh = false) {
+    if (!id) {
+      showToast('Atendimento não identificado.');
+      return;
+    }
+    window.currentDoctorEsislaId = id;
+    const modal = $('esislaDoctorModal');
+    if (modal) modal.style.display = 'grid';
+
+    const subEl = $('doctorEsislaSub');
+    const badgeEl = $('doctorEsislaReuseBadge');
+    const txtEl = $('doctorEsislaText');
+    const blocosEl = $('doctorEsislaBlocosContainer');
+    const regenBtn = $('btnDoctorRegenerateEsisla');
+
+    if (regenBtn) regenBtn.disabled = true;
+    if (subEl) subEl.textContent = forceRefresh ? `Refazendo Ficha e-Sisla do atendimento ${id}…` : `Verificando Ficha e-Sisla do atendimento ${id}…`;
+    if (blocosEl) blocosEl.innerHTML = `<div style="text-align:center;padding:36px;color:var(--text-muted)">${forceRefresh ? '↻ Recriando ficha e-Sisla com os dados mais recentes…' : '⚡ Carregando ficha e-Sisla (reutiliza automaticamente se já gerada)…'}</div>`;
+
+    let r = records.find(x => String(x.atendimento || x.id) === String(id)) || { atendimento: id, id };
+    try {
+      const detailRes = await AmbientalAuth.authFetch('/api/atendimentos/' + encodeURIComponent(id), { cache: 'no-store' });
+      const detailBody = await detailRes.json().catch(() => null);
+      if (detailRes.ok && detailBody?.data?.payload) {
+        r = { ...r, ...detailBody.data.payload, payload: detailBody.data.payload, status: detailBody.data.workflow_status || r?.status };
+        const idx = records.findIndex(x => String(x.atendimento || x.id) === String(id));
+        if (idx >= 0) records[idx] = { ...records[idx], ...r };
+      }
+    } catch (_) {}
+
+    window.currentDoctorEsislaRecord = r;
+    const normPayload = normalizeDoctorRecordForEsisla(r);
+    normPayload.data_hora_atual = new Date().toISOString();
+    normPayload.force_refresh = Boolean(forceRefresh);
+
+    try {
+      const response = await AmbientalAuth.authFetch('/api/ai/esisla', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(normPayload),
+        cache: 'no-store'
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.ficha_esisla) {
+        throw new Error(data?.detail || data?.error?.detail || data?.error?.message || 'Não foi possível gerar a Ficha e-Sisla.');
+      }
+
+      const ficha = data.ficha_esisla;
+      const wasReused = Boolean(data?.reused_from_atendimento || data?.meta?.reused);
+
+      if (txtEl) txtEl.value = ficha;
+      updateDoctorEsislaStats(ficha);
+      renderDoctorEsislaBlocos(ficha);
+      setDoctorEsislaMode(window.currentDoctorEsislaMode || 'blocos');
+
+      const pName = normPayload.nomePaciente || normPayload.paciente_nome || 'Servidor(a)';
+      if (subEl) {
+        subEl.textContent = `Atendimento ${id} · ${pName} · ${wasReused ? '✓ Ficha já criada reutilizada (sem recriação)' : (forceRefresh ? '↻ Ficha refeita agora' : '✨ Ficha gerada e salva')}`;
+      }
+      if (badgeEl) {
+        badgeEl.textContent = wasReused ? '✓ Reutilizada (Sem Duplicação)' : (forceRefresh ? '↻ Refeita Agora' : '✨ Gerada e Salva');
+        badgeEl.className = 'badge ' + (wasReused ? 'green' : 'blue');
+      }
+
+      // Atualiza registro em memória para exibir o selo "✓ Ficha e-Sisla" na lista
+      r.ficha_esisla = ficha;
+      if (r.aux) r.aux.fichaEsisla = ficha;
+      if (r.payload) r.payload.ficha_esisla = ficha;
+      const idx = records.findIndex(x => String(x.atendimento || x.id) === String(id));
+      if (idx >= 0) {
+        records[idx].ficha_esisla = ficha;
+        if (records[idx].aux) records[idx].aux.fichaEsisla = ficha;
+        if (records[idx].payload) records[idx].payload.ficha_esisla = ficha;
+      }
+      renderLists();
+    } catch (err) {
+      if (blocosEl) blocosEl.innerHTML = `<div style="text-align:center;padding:28px;color:var(--accent-red)">Erro ao gerar Ficha e-Sisla: ${esc(err.message || err)}</div>`;
+      showToast(err.message || 'Erro ao gerar Ficha e-Sisla.');
+    } finally {
+      if (regenBtn) regenBtn.disabled = false;
+    }
+  };
+
+  window.closeDoctorEsislaModal = function() {
+    const modal = $('esislaDoctorModal');
+    if (modal) modal.style.display = 'none';
+  };
+
+  window.copyDoctorEsislaFull = async function() {
+    const txt = $('doctorEsislaText')?.value || '';
+    if (!txt.trim()) return;
+    try {
+      await navigator.clipboard.writeText(txt);
+    } catch (_) {
+      const el = $('doctorEsislaText');
+      if (el) {
+        el.style.display = 'block';
+        el.select();
+        document.execCommand('copy');
+        if (window.currentDoctorEsislaMode === 'blocos') el.style.display = 'none';
+      }
+    }
+    const btn = $('btnDoctorCopyEsislaFull');
+    if (btn) {
+      const old = btn.innerHTML;
+      btn.innerHTML = '✓ Ficha Copiada!';
+      setTimeout(() => { btn.innerHTML = old; }, 2000);
+    }
+    showToast('Ficha e-Sisla completa copiada para a área de transferência!');
+  };
+
+  window.refinarDoctorEsislaComIA = async function() {
+    const el = $('doctorEsislaText');
+    const texto = el?.value || '';
+    if (!texto.trim() || texto.trim().length < 30) {
+      showToast('Gere a Ficha e-Sisla antes de otimizar com IA.');
+      return;
+    }
+    const btn = $('btnDoctorRefinarEsislaIA');
+    const oldHtml = btn?.innerHTML;
+    if (btn) { btn.disabled = true; btn.innerHTML = '✨ Otimizando...'; }
+    try {
+      const atdId = window.currentDoctorEsislaId;
+      const resp = await AmbientalAuth.authFetch('/api/ai/refinar-ficha-esisla', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ficha_esisla: texto,
+          texto_ficha: texto,
+          texto: texto,
+          atendimento_id: atdId,
+          atendimento: atdId
+        })
+      });
+      const resData = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(resData?.error?.message || resData?.detail || 'Erro ao otimizar ficha.');
+      const otimizado = resData?.data?.ficha_esisla_otimizada || resData?.data?.texto_otimizado || resData?.ficha_esisla_otimizada || resData?.texto_otimizado;
+      if (!otimizado) throw new Error('Não foi possível obter a ficha otimizada.');
+      if (el) el.value = otimizado;
+      updateDoctorEsislaStats(otimizado);
+      renderDoctorEsislaBlocos(otimizado);
+      if (window.currentDoctorEsislaRecord) {
+        window.currentDoctorEsislaRecord.ficha_esisla = otimizado;
+      }
+      const idx = records.findIndex(x => String(x.atendimento || x.id) === String(atdId));
+      if (idx >= 0) records[idx].ficha_esisla = otimizado;
+      showToast('✨ Ficha e-Sisla otimizada e salva com sucesso!');
+    } catch (err) {
+      showToast(err.message || 'Erro ao otimizar ficha com IA.');
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = oldHtml || '✨ Otimizar com IA'; }
+    }
+  };
+
+  window.printDoctorEsisla = function() {
+    const text = $('doctorEsislaText')?.value || '';
+    if (!text.trim()) {
+      showToast('Aguarde o carregamento da ficha para imprimir.');
+      return;
+    }
+    const r = window.currentDoctorEsislaRecord || {};
+    const p = payload(r);
+    const a = aux(r);
+    const patient = p.nomePaciente || a.nomePaciente || r.nomePaciente || 'Servidor(a)';
+    const atdId = window.currentDoctorEsislaId || r.atendimento || '';
+    const win = window.open('', '_blank', 'width=900,height=800');
+    if (!win) {
+      showToast('Permita pop-ups para gerar o PDF.');
+      return;
+    }
+    win.document.open();
+    win.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Ficha e-Sisla - ${esc(patient)}</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#0f172a;line-height:1.55}h1{font-size:15pt;color:#0f2744;margin:0 0 4px}h2{font-size:11pt;color:#334155;margin:0 0 16px}pre{font-family:"Courier New",monospace;font-size:10pt;white-space:pre-wrap;word-break:break-word;border:1px solid #cbd5e1;padding:16px;border-radius:8px}</style></head><body><h1>Diretoria de Perícias Médicas do Estado — DPME / SP</h1><h2>Ficha e-Sisla · Atendimento ${esc(atdId)} · ${esc(patient)}</h2><pre>${esc(text)}</pre><script>window.onload=function(){setTimeout(function(){window.print();},350);};<\/script></body></html>`);
+    win.document.close();
+  };
 
   window.openQuickView = async function(id) {
     const modal = $('quickViewModal');
@@ -3068,14 +3558,19 @@ main { min-width: 0; }
   }
   
   function renderLists() {
-    const q = String($('search').value || '').trim().toLowerCase();
-    let list = records.filter(r => {
+    const q = String($('search')?.value || '').trim().toLowerCase();
+    const hq = String($('historySearch')?.value || '').trim().toLowerCase();
+    const matchesSearch = (r, queryStr) => {
+      if (!queryStr) return true;
       const p = payload(r);
       const a = aux(r);
       const name = r.nomePaciente || r.paciente_nome || p.nomePaciente || a.nomePaciente || '';
       const proto = a.protocolo || p.protocolo || '';
-      return !q || `${r.atendimento || ''} ${name} ${proto} ${r.medico || ''} ${r.cid || ''} ${r.unidade || ''}`.toLowerCase().includes(q);
-    }).sort((a, b) => String(b.atualizado_em || '').localeCompare(String(a.atualizado_em || '')));
+      return `${r.atendimento || ''} ${name} ${proto} ${r.medico || ''} ${r.cid || ''} ${r.unidade || ''}`.toLowerCase().includes(queryStr);
+    };
+
+    let list = records.filter(r => matchesSearch(r, q))
+      .sort((a, b) => String(b.atualizado_em || '').localeCompare(String(a.atualizado_em || '')));
     $('allList').innerHTML = list.length ? list.map(rowHtml).join('') : '<div class="empty">Nenhum atendimento encontrado.</div>';
     wireButtons($('allList'));
     
@@ -3083,8 +3578,14 @@ main { min-width: 0; }
     $('pendingList').innerHTML = pend.length ? pend.map(rowHtml).join('') : '<div class="empty">Nenhuma pendência encontrada.</div>';
     wireButtons($('pendingList'));
     
-    const hist = records.filter(r => r.status === 'FINALIZADO' || r.status === 'ARQUIVADO').slice(0, 50);
-    $('historyList').innerHTML = hist.length ? hist.map(rowHtml).join('') : '<div class="empty">Nenhum registro concluído encontrado.</div>';
+    let histPool = records.filter(r => r.status === 'FINALIZADO' || r.status === 'ARQUIVADO' || Boolean(r.ficha_esisla || payload(r).ficha_esisla || aux(r).fichaEsisla));
+    if (!histPool.length && records.length) {
+      histPool = records;
+    }
+    const hist = histPool.filter(r => matchesSearch(r, hq))
+      .sort((a, b) => String(b.atualizado_em || '').localeCompare(String(a.atualizado_em || '')))
+      .slice(0, 60);
+    $('historyList').innerHTML = hist.length ? hist.map(rowHtml).join('') : '<div class="empty">Nenhum registro concluído encontrado no histórico.</div>';
     wireButtons($('historyList'));
   }
   
@@ -3146,6 +3647,11 @@ main { min-width: 0; }
           </div>
           <div class="agenda-patient-actions">
             ${isFinalizado ? `
+              ${hasAtd ? `
+                <button class="btn-esisla-doc" type="button" onclick="openDoctorEsisla('${esc(atdNum)}', false)" title="Abrir ou gerar Ficha e-Sisla deste atendimento">
+                  📋 Ficha e-Sisla
+                </button>
+              ` : ''}
               <button class="btn-agenda-finalizado" type="button" disabled title="Atendimento finalizado - laudo concluído">
                 🔒 Atendimento Concluído
               </button>
@@ -3658,6 +4164,10 @@ main { min-width: 0; }
       records = Array.isArray(list?.items) ? list.items : [];
       totalItems = Number(list?.total || records.length);
       totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+      try {
+        const cKey = 'ambiental.medico.dashboard_cache_' + (sessionStorage.getItem('ambiental.impersonate_medico_id') || profile?.id || '');
+        localStorage.setItem(cKey, JSON.stringify({ dash: dashboard, list: records, total: totalItems, ts: Date.now() }));
+      } catch (_) {}
       
       renderKpis();
       renderBars();
@@ -3697,12 +4207,16 @@ main { min-width: 0; }
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       closeQuickView();
+      closeDoctorEsislaModal();
       closeAgendaDoDiaModal();
       fecharModalImportarEsislaAgenda();
     }
   });
   $('quickViewModal').addEventListener('click', e => {
     if (e.target === $('quickViewModal')) closeQuickView();
+  });
+  $('esislaDoctorModal')?.addEventListener('click', e => {
+    if (e.target === $('esislaDoctorModal')) closeDoctorEsislaModal();
   });
   $('modalAgendaDoDia').addEventListener('click', e => {
     if (e.target === $('modalAgendaDoDia')) closeAgendaDoDiaModal();
@@ -3788,20 +4302,49 @@ main { min-width: 0; }
 
       setIdentity();
       
-      updateSyncLoader('Sincronizando Atendimentos', 'Carregando agenda, laudos e indicadores periciais…', 'Buscando registros autorizados no prontuário...', 65);
+      // Hidratação instantânea via cache local
+      const cacheKey = 'ambiental.medico.dashboard_cache_' + (sessionStorage.getItem('ambiental.impersonate_medico_id') || profile?.id || '');
+      let hadLocalCache = false;
+      try {
+        const cachedRaw = localStorage.getItem(cacheKey);
+        if (cachedRaw) {
+          const cached = JSON.parse(cachedRaw);
+          if (cached && cached.dash && Array.isArray(cached.list)) {
+            dashboard = cached.dash;
+            records = cached.list;
+            totalItems = Number(cached.total || records.length);
+            totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+            renderKpis();
+            renderBars();
+            renderDonut();
+            renderUpcoming();
+            renderAlerts();
+            renderLists();
+            renderCalendar();
+            updateDoctorPaginationUI();
+            $('appShell').hidden = false;
+            $('authLoading')?.remove();
+            hadLocalCache = true;
+          }
+        }
+      } catch (_) {}
+
+      if (!hadLocalCache) {
+        updateSyncLoader('Sincronizando Atendimentos', 'Carregando agenda, laudos e indicadores periciais…', 'Buscando registros autorizados no prontuário...', 65);
+      }
       await load();
       
-      updateSyncLoader('Portal Sincronizado', 'Tudo pronto! Carregando seu painel pericial…', 'Liberando tela...', 100);
-      
-      // Animação graciosa de liberação da tela já com todos os dados renderizados
-      setTimeout(() => {
-        $('appShell').hidden = false;
-        const loader = $('authLoading');
-        if (loader) {
-          loader.classList.add('fade-out');
-          setTimeout(() => loader.remove(), 420);
-        }
-      }, 350);
+      if (!hadLocalCache) {
+        updateSyncLoader('Portal Sincronizado', 'Tudo pronto! Carregando seu painel pericial…', 'Liberando tela...', 100);
+        setTimeout(() => {
+          $('appShell').hidden = false;
+          const loader = $('authLoading');
+          if (loader) {
+            loader.classList.add('fade-out');
+            setTimeout(() => loader.remove(), 420);
+          }
+        }, 200);
+      }
     } catch(e) {
       if (e.message !== 'AUTH_REQUIRED' && e.message !== 'PERMISSION_DENIED') {
         showToast('Não foi possível iniciar o Portal Médico.');
@@ -3829,6 +4372,7 @@ main { min-width: 0; }
   if (topbarToggle) topbarToggle.onclick = () => toggleSidebar();
   $('refreshBtn').onclick = load;
   $('search').oninput = renderLists;
+  if ($('historySearch')) $('historySearch').oninput = renderLists;
   $('logoutBtn').onclick = () => {
     sessionStorage.removeItem('ambiental.impersonate_medico_id');
     sessionStorage.removeItem('ambiental.impersonate_medico_nome');

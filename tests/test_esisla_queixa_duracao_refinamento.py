@@ -583,3 +583,177 @@ def test_global_to_iso_date_in_frontend():
     assert "window.toIsoDate = toIsoDate;" in ATTENDANCE_HTML
 
 
+def test_caso4_neoplasia_supervisora_mastectomia_cross_field():
+    # Caso 4: Servidora Supervisora Educacional com Neoplasia, Mastectomia no exame físico e antineoplásicos
+    queixa_bruta = (
+        "Servidora de 52 anos, relatou não ser readaptada, é Supervisor Educacional há 25 anos, "
+        "com queixa de neoplasia maligna de mama com metástase hepática em tratamento oncológico, desde 2023, realizando consultas mensalmente. "
+        "A periciada refere mal-estar, astenia intensa e episódios de náuseas decorrentes das infusões periódicas de imunobiológicos. "
+        "Em uso de Trastuzumabe Conforme prescrição médica Mensal, para terapia antineoplásica, e pembrolizumabe Conforme prescrição médica Mensal, para terapia antineoplásica. "
+        "Não relatou troca de alteração de dosagem da medicação. "
+        "Não alegou fazer fisioterapia e psicoterapia."
+    )
+    queixa_limpa = _clean_queixa_duracao_text(queixa_bruta)
+
+    # 1. Cargo feminizado: Supervisora Educacional
+    assert "é Supervisora Educacional há 25 anos" in queixa_limpa
+    assert "é Supervisor Educacional" not in queixa_limpa
+
+    # 2. Medicação antineoplásica desduplicada e sem repetição
+    assert "conforme prescrição médica mensal, para terapia antineoplásica" in queixa_limpa
+    assert "Em uso de trastuzumabe e pembrolizumabe conforme prescrição médica mensal, para terapia antineoplásica" in queixa_limpa
+
+    # 3. Ficha completa: validação cruzada entre Antecedentes ("Nega cirurgias prévias") e Exame Físico ("mastectomia")
+    ficha_bruta = (
+        "Registro da perícia Médica para Licença\n\n"
+        "(*) Queixa e Duração:\n" + queixa_limpa + "\n\n"
+        "Antecedentes Mórbidos:\n"
+        "Refere histórico de neoplasia maligna de mama com metástase hepática em tratamento oncológico sistêmico endovenoso. "
+        "Nega demais antecedentes mórbidos relevantes e cirurgias prévias.\n\n"
+        "Atestado/Relatório/Exames Complementares:\nEm anexo.\n\n"
+        "(*)Exame Físico Geral\n"
+        "Bom estado geral, corada, eupneica, abdome sem visceromegalias dolorosas, ausência de sinais flogísticos locais, cicatriz de mastectomia prévia sem deiscência.\n\n"
+        "Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:\n"
+        "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial.\n\n"
+        "(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):\n"
+        "Apresenta limitações físicas e orgânicas temporárias, atividades estas constantes no Rol de Atividades do cargo de Supervisor Educacional.\n\n"
+        "(*)Parecer Médico\n"
+        "Parecer: FAVORÁVEL\n"
+        "Nº Dias: 15\n"
+        "Data Início: 17/10/2026\n"
+        "CID 10: C50.9\n"
+        "Descrição: Neoplasia maligna de mama\n"
+        "Médico Perito: Dr. Maykon\n"
+        "CRM: 123456\n"
+        "Dt/Hr Perícia: 19/10/2026 11:15\n\n"
+        "(*)Resposta aos quesitos\n"
+        "1) Sim\n2) Sim\n3) Sim\n\n"
+        "(*)Justificativa Parecer Médico\n"
+        "Considero a capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol do cargo de Supervisor Educacional.\n\n"
+        "(*) Parecer Final\n"
+        "Nº Dias: 15\n"
+        "Data Início: 17/10/2026\n"
+        "CID 10: C50.9\n"
+    )
+
+    ficha_limpa = _clean_esisla_text(ficha_bruta)
+
+    # Glosa evitada: Antecedentes NÃO pode negar cirurgias prévias quando há cicatriz de mastectomia no exame físico!
+    assert "cirurgias prévias" not in ficha_limpa.split("Atestado/Relatório")[0]
+    assert "Nega demais antecedentes mórbidos relevantes." in ficha_limpa
+
+    # Gênero do cargo na limitação e justificativa
+    assert "cargo de Supervisora Educacional" in ficha_limpa
+    assert "cargo de Supervisor Educacional" not in ficha_limpa
+
+
+def test_caso5_acompanhante_parecer_contrario_dpme_dias_zero():
+    # Caso 5: Técnica de Enfermagem com Parecer CONTRÁRIO (CID Z76.3)
+    ficha_contrario_com_erro = (
+        "Registro da perícia Médica para Licença\n\n"
+        "(*) Queixa e Duração:\n"
+        "Servidora de 37 anos, relatou não ser readaptada, é Técnica de Enfermagem há 6 anos, para acompanhamento de familiar enfermo, referente ao filho menor internado por bronquiolite viral aguda, desde 2026.\n\n"
+        "Antecedentes Mórbidos:\n"
+        "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas.\n\n"
+        "Atestado/Relatório/Exames Complementares:\nEm anexo.\n\n"
+        "(*)Exame Físico Geral\n"
+        "Servidora eupneica, lúcida e orientada, fácies atípica, afebril, acianótica. Sem sinais de incapacidade física ou mental própria.\n\n"
+        "Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:\n"
+        "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial.\n\n"
+        "(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):\n"
+        "Do ponto de vista médico não se observa limitações físicas ou mentais funcionais para o cargo de Técnico de Enfermagem.\n\n"
+        "(*)Parecer Médico\n"
+        "Parecer: CONTRÁRIO\n"
+        "Nº Dias: 5\n"
+        "Data Início: 18/10/2026\n"
+        "CID 10: Z76.3\n"
+        "Descrição: Acompanhante de pessoa doente\n"
+        "Médico Perito: Dr. Maykon\n"
+        "CRM: 123456\n"
+        "Dt/Hr Perícia: 19/10/2026 11:20\n\n"
+        "(*)Resposta aos quesitos\n"
+        "1) Sim\n2) Não\n3) Não\n\n"
+        "(*)Justificativa Parecer Médico\n"
+        "Considero a capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol do cargo de Técnico de Enfermagem.\n\n"
+        "(*) Parecer Final\n"
+        "Nº Dias: 5\n"
+        "Data Início: 18/10/2026\n"
+        "CID 10: Z76.3\n"
+    )
+
+    limpa_contrario = _clean_esisla_text(ficha_contrario_com_erro)
+
+    # Glosa Fatal DPME evitada: quando Parecer é CONTRÁRIO, Nº Dias DEVE ser 0
+    assert "Nº Dias: 0" in limpa_contrario
+    assert "Nº Dias: 5" not in limpa_contrario
+
+    # Justificativa não pode dizer 'prejudicada' em parecer contrário; para Z76.3 deve citar Artigo 199
+    assert "prejudicada" not in limpa_contrario
+    assert "Capacidade laborativa própria preservada, não restando preenchidos os requisitos médico-periciais para concessão de licença nos termos do Artigo 199" in limpa_contrario
+
+    # Gênero: Técnica de Enfermagem
+    assert "cargo de Técnica de Enfermagem" in limpa_contrario
+    assert "cargo de Técnico de Enfermagem" not in limpa_contrario
+
+
+def test_caso6_exame_fisico_concordancia_genero_masculino():
+    # Caso 6: Investigador de Polícia (Homem) com adjetivo feminino no exame físico
+    ficha_homem = (
+        "Registro da perícia Médica para Licença\n\n"
+        "(*) Queixa e Duração:\n"
+        "Servidor de 44 anos, relatou não ser readaptado, é Investigador de Polícia II há 12 anos, com queixa de fratura.\n\n"
+        "Antecedentes Mórbidos:\n"
+        "Nega antecedentes mórbidos relevantes.\n\n"
+        "Atestado/Relatório/Exames Complementares:\nEm anexo.\n\n"
+        "(*)Exame Físico Geral\n"
+        "Servidor lúcida, consciente e orientada, corada, eupneica, calma e acianótica.\n\n"
+        "Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:\n"
+        "Não foram apresentados exames complementares.\n\n"
+        "(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):\n"
+        "Limitação temporária.\n\n"
+        "(*)Parecer Médico\n"
+        "Parecer: FAVORÁVEL\n"
+        "Nº Dias: 30\n"
+        "Data Início: 19/10/2026\n"
+        "CID 10: S62.6\n"
+        "Médico Perito: Dr. Maykon\n"
+        "CRM: 123456\n"
+        "Dt/Hr Perícia: 19/10/2026 11:30\n\n"
+        "(*)Resposta aos quesitos\n"
+        "1) Sim\n2) Sim\n3) Sim\n\n"
+        "(*)Justificativa Parecer Médico\n"
+        "Capacidade laborativa prejudicada.\n\n"
+        "(*) Parecer Final\n"
+        "Nº Dias: 30\n"
+        "Data Início: 19/10/2026\n"
+        "CID 10: S62.6\n"
+    )
+
+    limpa_homem = _clean_esisla_text(ficha_homem)
+
+    # Concordância de gênero corrigida: adjetivos no masculino para Servidor
+    assert "eupneico" in limpa_homem
+    assert "eupneica" not in limpa_homem
+    assert "corado" in limpa_homem
+    assert "corada" not in limpa_homem
+    assert "orientado" in limpa_homem
+    assert "orientada" not in limpa_homem
+    assert "lúcido" in limpa_homem
+    assert "lúcida" not in limpa_homem
+    assert "calmo" in limpa_homem
+    assert "calma" not in limpa_homem
+    assert "acianótico" in limpa_homem
+    assert "acianótica" not in limpa_homem
+
+
+def test_caso7_readaptacao_concordancia_masculino():
+    # Caso 7: Servidor masculino com "relatou não ser readaptada"
+    queixa_m = (
+        "Servidor de 58 anos, relatou não ser readaptada, é Agente de Segurança Penitenciária há 18 anos, "
+        "com queixa de picos hipertensivos sintomáticos."
+    )
+    limpa_m = _clean_queixa_duracao_text(queixa_m)
+    assert "relatou não ser readaptado" in limpa_m
+    assert "readaptada" not in limpa_m
+
+

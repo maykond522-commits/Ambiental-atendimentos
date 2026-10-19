@@ -6188,7 +6188,9 @@ function normalizeRecordPayload(r){
         justificativa: p?.justificativa || a?.justificativa || p?.agilJustificativa || a?.agilJustificativa || r?.justificativa || "",
         parecer: p?.parecer || a?.parecer || r?.parecer || "",
         cid: p?.cid || a?.cid || r?.cid || "",
-        diasSolicitados: p?.diasSolicitados || a?.diasSolicitados || r?.diasSolicitados || ""
+        diasSolicitados: p?.diasSolicitados || a?.diasSolicitados || r?.diasSolicitados || "",
+        dataExpedicao: p?.dataExpedicao || a?.dataExpedicao || p?.data_expedicao || a?.data_expedicao || r?.dataExpedicao || "",
+        ficha_esisla: p?.ficha_esisla || a?.fichaEsisla || a?.ficha_esisla || r?.ficha_esisla || ""
     };
 }
 function currentRecord(enc){return find(decodeURIComponent(enc));}
@@ -6203,11 +6205,11 @@ async function generateEsisla(enc, forceRefresh = false){
     const stages=[1,2,3,4].map(i=>document.getElementById('esislaStage'+i)); const setStage=(n,title,text,p)=>{stages.forEach((el,i)=>{if(el){el.classList.toggle('active',i===n-1);el.classList.toggle('done',i<n-1)}});if(gTitle)gTitle.textContent=title;if(gText)gText.textContent=text;if(bar)bar.style.width=(p||10)+'%';};
     const old = btn?.textContent;
     try {
-        if(btn){btn.disabled=true;btn.textContent='Gerando ficha...';} if(regen)regen.disabled=true;
+        if(btn){btn.disabled=true;btn.textContent=forceRefresh?'Refazendo ficha...':'Abrindo ficha...';} if(regen)regen.disabled=true;
         // Abre a ficha imediatamente para que o usuário veja o progresso da geração.
         setModal('esislaModal',true);
         if(overlay){overlay.classList.add('show');overlay.setAttribute('aria-busy','true');}
-        setStage(1,'Gerando ficha eSisla','Lendo os dados completos do atendimento...',18);
+        setStage(1, forceRefresh ? 'Refazendo ficha e-Sisla' : 'Verificando ficha e-Sisla', forceRefresh ? 'Recriando a ficha com os dados mais recentes...' : 'Verificando se já existe ficha gerada para este atendimento...', 18);
         let full = r;
         try {
             const detailResponse = await AmbientalAuth.authFetch('/api/atendimentos/' + encodeURIComponent(id), {cache:'no-store'});
@@ -6218,9 +6220,18 @@ async function generateEsisla(enc, forceRefresh = false){
             }
         } catch(_) {}
         window.currentDetailFull = full;
-        setStage(2,'Estruturando ficha','Organizando os campos no formato oficial...',48);
-        const payload = normalizeRecordPayload(full); payload.data_hora_atual = new Date().toISOString();
-        if(forceRefresh){payload.force_refresh=true; if(sub)sub.textContent='Atualizando a ficha com os dados mais recentes do servidor...';}
+        const payload = normalizeRecordPayload(full);
+        payload.data_hora_atual = new Date().toISOString();
+        payload.force_refresh = Boolean(forceRefresh);
+        const hasExistingFicha = !forceRefresh && Boolean(payload.ficha_esisla && String(payload.ficha_esisla).trim().length > 40);
+        if(forceRefresh){
+            if(sub)sub.textContent='Refazendo a ficha com os dados mais recentes do servidor...';
+            setStage(2,'Recriando ficha','Reprocessando os campos no formato oficial...',48);
+        } else if (hasExistingFicha) {
+            setStage(2,'Carregando ficha salva','Reutilizando ficha já criada neste atendimento...',65);
+        } else {
+            setStage(2,'Estruturando ficha','Organizando os campos no formato oficial...',48);
+        }
         await new Promise(requestAnimationFrame);
         const response = await AmbientalAuth.authFetch('/api/ai/esisla',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify(payload),cache:'no-store'});
         setStage(3,'Revisando resultado','Conferindo a resposta antes de exibir...',82);
@@ -6229,13 +6240,20 @@ async function generateEsisla(enc, forceRefresh = false){
         target.value = data.ficha_esisla;
         renderEsislaBlocos(data.ficha_esisla);
         setEsislaViewMode('blocos');
-        sub.textContent = 'Atendimento ' + id + ' · ' + (data?.meta?.cached ? 'resultado em cache' : 'gerado agora');
+        const wasReused = Boolean(data?.reused_from_atendimento || data?.meta?.reused);
+        sub.textContent = 'Atendimento ' + id + ' · ' + (wasReused ? '✓ Ficha salva reutilizada (sem recriação)' : (forceRefresh ? '↻ Ficha refeita agora' : (data?.meta?.cached ? 'resultado em cache' : 'gerado agora')));
         updateEsislaStats(data.ficha_esisla);
         if (window.currentDetailFull) {
             window.currentDetailFull.ficha_esisla = data.ficha_esisla;
+            if (window.currentDetailFull.aux) window.currentDetailFull.aux.fichaEsisla = data.ficha_esisla;
+        }
+        if (r) {
+            r.ficha_esisla = data.ficha_esisla;
+            if (r.aux) r.aux.fichaEsisla = data.ficha_esisla;
+            if (r.payload) r.payload.ficha_esisla = data.ficha_esisla;
         }
         setStage(4,'Ficha pronta','Resultado carregado. Revise antes de transferir para o e-Sisla.',100);
-        await new Promise(r=>setTimeout(r,220));
+        await new Promise(r=>setTimeout(r, wasReused ? 80 : 220));
         if(overlay){overlay.classList.remove('show');overlay.setAttribute('aria-busy','false');}
         setModal('esislaModal',true);
     }catch(e){if(overlay){overlay.classList.remove('show');overlay.setAttribute('aria-busy','false');}alert(e.message||'Falha ao gerar a ficha eSisla.');}
@@ -6381,6 +6399,10 @@ function cleanQueixaDuracao(text) {
         return `${serv} de ${anos}, relatou não ser readaptad${suff}`;
     });
 
+    // 2b. Concordância de gênero de readaptação com Servidor/Servidora
+    t = t.replace(/(\bServidor\b[^\.\n\r]*?\brelatou\s+(?:não\s+)?ser\s+)readaptada\b/gi, "$1readaptado");
+    t = t.replace(/(\bServidora\b[^\.\n\r]*?\brelatou\s+(?:não\s+)?ser\s+)readaptado\b/gi, "$1readaptada");
+
     // 3. Normaliza cargo e tempo: "relatou não ser readaptado(a), é [cargo] há [tempo]"
     t = t.replace(/(\b(?:Servidor|Servidora)\s+de\s+\d+\s+anos,\s*relatou\s+não\s+ser\s+readaptad[oa]),?\s*(?:,\s*)?([A-ZÁ-Úa-zà-ú\s\d/]+?\s+há\s+\d+\s+(?:anos|meses|dias))/gi, function(m, servBlock, cargoTempo) {
         let ct = String(cargoTempo || '').trim();
@@ -6434,6 +6456,10 @@ function cleanQueixaDuracao(text) {
     if (/\bServidora\b/i.test(t)) {
         t = t.replace(/\bé\s+(?:PEB|Peb)\s+([IVXLCDM]+)\b/gi, "é Professora de Educação Básica $1");
         t = t.replace(/\bé\s+(?:PEB|Peb)\b/gi, "é Professora de Educação Básica");
+        t = t.replace(/\bé\s+Supervisor\s+Educacional\b/gi, "é Supervisora Educacional");
+        t = t.replace(/\bé\s+Supervisor\b/gi, "é Supervisora");
+        t = t.replace(/\bé\s+Coordenador\s+Pedag[óo]gico\b/gi, "é Coordenadora Pedagógica");
+        t = t.replace(/\bé\s+Orientador\s+Educacional\b/gi, "é Orientadora Educacional");
         t = t.replace(/\bé\s+T[ée]cnico\s+(?:de|em)\s+Enfermagem\b/gi, "é Técnica de Enfermagem");
         t = t.replace(/\bé\s+T[ée]cnico\s+em\s+Administra[çc][ãa]o\b/gi, "é Técnica em Administração");
         t = t.replace(/\bé\s+T[ée]cnico\s+de\b/gi, "é Técnica de");
@@ -6616,6 +6642,12 @@ function cleanQueixaDuracao(text) {
     t = t.replace(/\bamoxacilina\b/gi, "Amoxicilina");
     t = t.replace(/\bbevacizumab[e]?\b/gi, "bevacizumabe");
     t = t.replace(/\bpembrolizumab[e]?\b|\bpembrulizumab[e]?\b/gi, "pembrolizumabe");
+    t = t.replace(/\btrastuzumab[e]?\b/gi, "trastuzumabe");
+    t = t.replace(/\bConforme\s+prescri[çc][ãa]o\s+m[ée]dica\s+Mensal\b/gi, "conforme prescrição médica mensal");
+
+    // Deduplicação de terapia antineoplásica ou indicação repetida com prescrição mensal
+    t = t.replace(/(\bEm\s+uso\s+de\s+[A-Za-zÀ-ÿ]+)\s+conforme\s+prescri[çc][ãa]o\s+m[ée]dica\s+mensal,\s*para\s+terapia\s+antineopl[áa]sica,?\s*e\s+([A-Za-zÀ-ÿ]+)\s+conforme\s+prescri[çc][ãa]o\s+m[ée]dica\s+mensal,\s*para\s+terapia\s+antineopl[áa]sica\b/gi, "$1 e $2 conforme prescrição médica mensal, para terapia antineoplásica");
+    t = t.replace(/(\bpara\s+terapia\s+antineopl[áa]sica)\s+e\s+([^,.]+?)\s+para\s+terapia\s+antineopl[áa]sica\b/gi, "e $2 $1");
 
     // Deduplicação de indicação medicamentosa repetida (ex: "A para tratamento psiquiátrico e B para tratamento psiquiátrico" -> "A e B para tratamento psiquiátrico")
     t = t.replace(/(\bpara\s+tratamento\s+([a-zà-ú]+))\s+e\s+([^,.]+?)\s+para\s+tratamento\s+\2\b/gi, "e $3 $1");
@@ -10237,11 +10269,12 @@ async function refinarFichaEsislaIA() {
     window._esislaTextoOriginalAntesIA = texto;
 
     let atdId = null;
+    let rObj = null;
     if (window.currentEsislaEnc) {
       try {
         const dec = decodeURIComponent(window.currentEsislaEnc);
-        const r = typeof find === 'function' ? find(dec) : null;
-        if (r) atdId = r.atendimento || r.id;
+        rObj = typeof find === 'function' ? find(dec) : null;
+        atdId = (rObj && (rObj.atendimento || rObj.id)) || dec;
       } catch(_) {}
     }
 
@@ -10249,7 +10282,8 @@ async function refinarFichaEsislaIA() {
       ficha_esisla: texto,
       texto_ficha: texto,
       texto: texto,
-      atendimento_id: atdId
+      atendimento_id: atdId,
+      atendimento: atdId
     };
 
     let resData;
@@ -10277,6 +10311,15 @@ async function refinarFichaEsislaIA() {
     el.value = textoOtimizado;
     updateEsislaStats(textoOtimizado);
     renderEsislaBlocos(textoOtimizado);
+    if (window.currentDetailFull) {
+      window.currentDetailFull.ficha_esisla = textoOtimizado;
+      if (window.currentDetailFull.aux) window.currentDetailFull.aux.fichaEsisla = textoOtimizado;
+    }
+    if (rObj) {
+      rObj.ficha_esisla = textoOtimizado;
+      if (rObj.aux) rObj.aux.fichaEsisla = textoOtimizado;
+      if (rObj.payload) rObj.payload.ficha_esisla = textoOtimizado;
+    }
 
     if (btnDesfazer) btnDesfazer.style.display = 'inline-flex';
 

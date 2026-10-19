@@ -71,3 +71,45 @@ def test_frontend_novos_campos_obrigatorios_inicio_freq_sintomas():
     assert 'setVal("sintomasLimitacao", sintomasParaPreencher);' in ATTENDANCE_HTML
     assert 'setVal("agilSintomasLimitacao", sintomasParaPreencher);' in ATTENDANCE_HTML
 
+
+def test_data_expedicao_field_and_raw_text_parsing():
+    from app import parse_esisla_text
+    raw_sample = (
+        "Consulta Perícia Licença\n"
+        "Protocolo: #2591502 Data Expedição: 19/10/2026\n"
+        "Nome: JOAO DA SILVA Data de Nascimento: 10/05/1980 CPF: 123.456.789-00\n"
+        "Cargo: PROFESSOR EDUCACAO BASICA II Ingresso: 15/03/2014\n"
+        "Data do Atestado: 10/10/2026 Dias: 15 CID: f332\n"
+    )
+    parsed = parse_esisla_text(raw_sample)
+    assert parsed["data_expedicao"] == "19/10/2026"
+    assert parsed["data_expedicao_iso"] == "2026-10-19"
+    assert parsed["cid"] == "F33.2"
+    assert parsed["retroacao_dias"] == 9
+    assert parsed["retroacao_invalida"] is True
+    assert parsed["tempo_cargo"] in ("11", "12")
+    assert parsed["tempo_unidade"] == "Anos"
+    assert 'id="dataExpedicao"' in ATTENDANCE_HTML
+    assert 'id="agilDataExpedicao"' in ATTENDANCE_HTML
+
+
+def test_shared_ficha_esisla_persistence_and_reuse():
+    from app import _get_stored_ficha_esisla
+    stored = _get_stored_ficha_esisla(
+        "",
+        {"ficha_esisla": "Registro da perícia Médica para Licença\n\n(*) Queixa e Duração:\nServidora de 45 anos..."}
+    )
+    assert "Registro da perícia Médica para Licença" in stored
+    assert "def _save_ficha_esisla_to_atendimento(" in APP_PY
+    assert '"reused_from_atendimento": True' in APP_PY
+
+
+def test_gestao_medicos_and_adm_shared_esisla_ui():
+    gestao_medicos_html = (ROOT / "gestao_medicos.html").read_text(encoding="utf-8")
+    gestao_adm_html = (ROOT / "gestao_atendimentos.html").read_text(encoding="utf-8")
+    assert 'id="esislaDoctorModal"' in gestao_medicos_html
+    assert 'window.openDoctorEsisla = async function(id, forceRefresh = false)' in gestao_medicos_html
+    assert 'data-esisla="${id}"' in gestao_medicos_html
+    assert 'id="btnDoctorRegenerateEsisla"' in gestao_medicos_html
+    assert 'payload.force_refresh = Boolean(forceRefresh);' in gestao_adm_html
+

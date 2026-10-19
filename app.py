@@ -1108,6 +1108,7 @@ class PreenchimentoCompletoResult(BaseModel):
     crm_cro: str
     nome_medico_assistente: str
     data_documento: str
+    data_expedicao: str = ""
     dias_solicitados: str
     obs_documentos: str
 
@@ -1116,6 +1117,7 @@ class PreenchimentoCompletoResult(BaseModel):
     outros_resultado: str
     exame_mental_resultado: str
     exame_fisico_descricao: str
+    alteracoes_clinicas_exames: str = ""
     pressao_sistolica: str
     pressao_diastolica: str
     pulso: str
@@ -1639,7 +1641,7 @@ DIRETRIZES DE EXTRAÇÃO E REDAÇÃO:
 - idade: Apenas o número de anos (ex.: "42"). Se não explícito mas houver data de nascimento, calcule em relação ao ano corrente 2026.
 - sexo: "Feminino" ou "Masculino".
 - cargo: Nome oficial do cargo público em caixa normal sem CAPSLOCK excessivo (ex.: "Professor de Educação Básica II", "Investigador de Polícia", "PEB I").
-- tempo_cargo: Apenas o número (ex.: "20").
+- tempo_cargo: Apenas o número (ex.: "20"). Se não vier explícito mas constar "Ingresso: DD/MM/AAAA", calcule o número de anos até 2026.
 - tempo_unidade: "Anos", "Meses" ou "Dias" (padrão: "Anos").
 - readaptado: "Sim" ou "Não" (se o texto indicar "Readaptado Não" ou omitir, registre "Não").
 - atividades_readaptado: Preencha somente se for readaptado.
@@ -1672,21 +1674,23 @@ DIRETRIZES DE EXTRAÇÃO E REDAÇÃO:
 - conditions: Lista de comorbidades prévias estruturadas com tratamento.
 - historico_pregresso: Histórico patológico pregresso formalmente redigido em linguagem médica culta, sem copiar anotações telegráficas brutas, sem erros de concordância e NUNCA mencionando dias de atestado concedidos (ex.: "Refere histórico de pós-operatório de blefaroplastia, apresentando edema e hematomas palpebrais, tendo recebido prescrição de Amoxicilina, Alivium e Diprospan. Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias.").
 
-3. ATESTADO DO MÉDICO ASSISTENTE E CID:
-- cid: Código CID-10 oficial pontuado (ex.: "Z98.8", "F32.1", "M54.5"). Se vier sem ponto (ex.: "Z988"), formate com ponto ("Z98.8").
+3. ATESTADO DO MÉDICO ASSISTENTE, DATA DE EXPEDIÇÃO DA GUIA E CID:
+- cid: Código CID-10 oficial pontuado (ex.: "Z98.8", "F32.1", "M54.5"). Se vier sem ponto (ex.: "Z988"), formate com ponto ("Z98.8"). Em perícia de acompanhante (Artigo 199), o CID principal é "Z76.3".
 - cid_descricao: Descrição correspondente do CID-10 (ex.: "Outros estados pós-cirúrgicos especificados").
 - crm_cro: Dígitos numéricos do CRM do médico assistente (ex.: "224574").
 - nome_medico_assistente: Nome do médico assistente (ex.: "Bruna de Morais Torres").
-- data_documento: Data de emissão no formato ISO "YYYY-MM-DD" (ex.: "2026-09-29") ou DD/MM/AAAA.
+- data_documento: Data de emissão do atestado médico no formato ISO "YYYY-MM-DD" (ex.: "2026-09-29") ou DD/MM/AAAA.
+- data_expedicao: Data de Expedição da Guia Pericial (Local e Data da Expedição / Data da Expedição / Guia expedida em) no formato ISO "YYYY-MM-DD" (ex.: "15 de Outubro de 2026" -> "2026-10-15") ou DD/MM/AAAA. Diferencie sempre da data_documento (emissão do atestado).
 - dias_solicitados: Número de dias em dígitos (ex.: "15").
 - obs_documentos: Síntese formal do documento (ex.: "Atestado médico emitido em 29/09/2026 pela Dra. Bruna de Morais Torres (CRM 224574), indicando 15 dias de repouso por CID Z98.8.").
 
-4. EXAME FÍSICO / MENTAL E SINAIS VITAIS:
+4. EXAME FÍSICO / MENTAL, EXAMES COMPLEMENTARES E SINAIS VITAIS:
 - exame_fisico_tipo: Categoria correspondente ("Exame Mental" para patologias mentais/CID F; "Aparelho Osteomuscular e Tecido Conjutivo" para osteo/articular/CID M; "Outros" para procedimentos cirúrgicos, dermatologia, mamas, feridas, etc.).
 - outros_subtipo: Quando exame_fisico_tipo for "Outros", selecione o segmento correspondente dentre: "Exame Físico Geral", "Tecido celular subcutâneo", "Pele e Fâneros", "Aparelho Circulatório", "Aparelho Respiratório", "Aparelho Hemolinfopoético", "Aparelho Digestivo", "Aparelho Geniturinário", "Aparelho Endócrino", "Sistema Nervoso", "Órgãos dos Sentidos" ou "E outros". Para pós-operatório, mamas ou cirurgias gerais com ferida operatória, utilize "Exame Físico Geral". Se exame não for Outros, use "".
 - outros_resultado: Quando exame_fisico_tipo for "Outros", utilize "Alterado" se o parecer for FAVORÁVEL (com deiscência, dor, limitação funcional) ou "Normal" se parecer CONTRÁRIO (sem achados patológicos). Se exame não for Outros, use "".
 - exame_mental_resultado: Se exame mental, "Alterado" ou "Normal"; senão vazio.
 - exame_fisico_descricao: Redija uma propedêutica médica objetiva, técnica e plausível condizente com a queixa informada (ex.: para pós-operatório com deiscência: "Estado geral bom, consciente e orientada, acianótica, eupneica, afebril. Mamas simétricas, ferida operatória em cicatrização com edema moderado e deiscência de 3 pontos cirúrgicos sem secreção purulenta ativa. Dor à palpação local e limitação antálgica à abdução e elevação de membros superiores acima de 90 graus.").
+- alteracoes_clinicas_exames: Se o texto bruto mencionar exames complementares apresentados (ressonância, ultrassonografia, radiografia, tomografia, exames laboratoriais), redija o relato técnico dos achados; caso não tenham sido apresentados exames complementares, registre: "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial.".
 - pressao_sistolica: "120" (ou informada).
 - pressao_diastolica: "80" (ou informada).
 - pulso: "80" (ou informado).
@@ -1695,16 +1699,16 @@ DIRETRIZES DE EXTRAÇÃO E REDAÇÃO:
 5. LIMITAÇÕES, ROL E JUSTIFICATIVA DO PARECER:
 - limitacao_funcional: "Sim" se incapacidade temporária / parecer favorável; "Não" se parecer contrário.
 - limitacao_rol: "Sim" se favorável; "Não" se contrário.
-- desc_limitacao: Descreva as limitações funcionais objetivas para as atribuições do cargo público (ex.: "Apresenta limitações físicas temporárias decorrentes do pós-operatório recente de cirurgia mamária com deiscência de pontos cirúrgicos, inviabilizando esforços físicos com membros superiores, levantamento de peso e permanência prolongada em sala de aula.").
+- desc_limitacao: Descreva as limitações funcionais objetivas para as atribuições do cargo público (ex.: "Apresenta limitações físicas temporárias decorrentes do pós-operatório recente de cirurgia mamária com deiscência de pontos cirúrgicos, inviabilizando esforços físicos com membros superiores, levantamento de peso e permanência prolongada em sala de aula, atividades estas constantes no Rol de Atividades do cargo de [cargo].").
 - atividades_comprometidas: Atividades específicas do rol comprometidas (ex.: "Regência de classe, escrita em lousa, transporte de materiais pedagógicos e controle de sala de aula.").
 - capacidade: "Capacidade parcial e temporariamente prejudicada" (se favorável) ou "Capacidade laborativa preservada" (se contrário).
-- parecer: "FAVORÁVEL" ou "CONTRÁRIO" (se o texto do médico disser "favorável", use "FAVORÁVEL").
+- parecer: "FAVORÁVEL" ou "CONTRÁRIO" (se o texto do médico disser "favorável", use "FAVORÁVEL"). Se houver retroação > 3 dias entre data_expedicao e data_documento sem internação hospitalar, e o médico não afirmou parecer favorável, sugira "CONTRÁRIO".
 - quesitos:
   * Se Favorável:
     1: Sim (Há doença(s) ou sequela(s) de doença(s) prévia(s)?)
     2: Sim (A(s) doença(s) ou sequela(s) de doença(s) prévia(s) gera(m) limitação(ões) para periciando(a)?)
     3: Sim (A(s) limitação(ões) impede(m) o(a) periciando(a) de exercer alguma atividade do rol?)
-  * Se Contrário: 1: Sim, 2: Não, 3: Não.
+  * Se Contrário: 1: Sim, 2: Não (ou Sim se readaptado), 3: Não.
 - justificativa: Redija em 1ª pessoa no padrão DPME, sem expressões como "Concedo X dias":
   * Se Favorável: "Considero a capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol do cargo de [cargo], em razão de limitações físicas decorrentes de [doenca_motivo] (CID [cid]), referente ao período pleiteado."
   * Se Contrário: "Constato a capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações incapacitantes para as atribuições rotineiras do cargo atual de [cargo]."
@@ -2838,6 +2842,10 @@ def _clean_queixa_duracao_text(text: str) -> str:
         flags=re.IGNORECASE
     )
 
+    # 2b. Concordância de gênero de readaptação com Servidor/Servidora
+    t = re.sub(r"(\bServidor\b[^\.\n\r]*?\brelatou\s+(?:não\s+)?ser\s+)readaptada\b", r"\1readaptado", t, flags=re.IGNORECASE)
+    t = re.sub(r"(\bServidora\b[^\.\n\r]*?\brelatou\s+(?:não\s+)?ser\s+)readaptado\b", r"\1readaptada", t, flags=re.IGNORECASE)
+
     # 3. Normaliza cargo e tempo: "relatou não ser readaptado(a), é [cargo] há [tempo]"
     def _repl_cargo(m):
         serv_block = m.group(1)
@@ -2951,6 +2959,10 @@ def _clean_queixa_duracao_text(text: str) -> str:
     if re.search(r"\bServidora\b", t, re.IGNORECASE):
         t = re.sub(r"\bé\s+(?:PEB|Peb)\s+([IVXLCDM]+)\b", r"é Professora de Educação Básica \1", t, flags=re.IGNORECASE)
         t = re.sub(r"\bé\s+(?:PEB|Peb)\b", "é Professora de Educação Básica", t, flags=re.IGNORECASE)
+        t = re.sub(r"\bé\s+Supervisor\s+Educacional\b", "é Supervisora Educacional", t, flags=re.IGNORECASE)
+        t = re.sub(r"\bé\s+Supervisor\b", "é Supervisora", t, flags=re.IGNORECASE)
+        t = re.sub(r"\bé\s+Coordenador\s+Pedag[óo]gico\b", "é Coordenadora Pedagógica", t, flags=re.IGNORECASE)
+        t = re.sub(r"\bé\s+Orientador\s+Educacional\b", "é Orientadora Educacional", t, flags=re.IGNORECASE)
         t = re.sub(r"\bé\s+T[ée]cnico\s+(?:de|em)\s+Enfermagem\b", "é Técnica de Enfermagem", t, flags=re.IGNORECASE)
         t = re.sub(r"\bé\s+T[ée]cnico\s+em\s+Administra[çc][ãa]o\b", "é Técnica em Administração", t, flags=re.IGNORECASE)
         t = re.sub(r"\bé\s+T[ée]cnico\s+de\b", "é Técnica de", t, flags=re.IGNORECASE)
@@ -3178,6 +3190,22 @@ def _clean_queixa_duracao_text(text: str) -> str:
     t = re.sub(r"\bamoxacilina\b", "Amoxicilina", t, flags=re.IGNORECASE)
     t = re.sub(r"\bbevacizumab[e]?\b", "bevacizumabe", t, flags=re.IGNORECASE)
     t = re.sub(r"\bpembrolizumab[e]?\b|\bpembrulizumab[e]?\b", "pembrolizumabe", t, flags=re.IGNORECASE)
+    t = re.sub(r"\btrastuzumab[e]?\b", "trastuzumabe", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bConforme\s+prescri[çc][ãa]o\s+m[ée]dica\s+Mensal\b", "conforme prescrição médica mensal", t, flags=re.IGNORECASE)
+
+    # Deduplicação de terapia antineoplásica ou indicação repetida com prescrição mensal
+    t = re.sub(
+        r"(\bEm\s+uso\s+de\s+[A-Za-zÀ-ÿ]+)\s+conforme\s+prescri[çc][ãa]o\s+m[ée]dica\s+mensal,\s*para\s+terapia\s+antineopl[áa]sica,?\s*e\s+([A-Za-zÀ-ÿ]+)\s+conforme\s+prescri[çc][ãa]o\s+m[ée]dica\s+mensal,\s*para\s+terapia\s+antineopl[áa]sica\b",
+        r"\1 e \2 conforme prescrição médica mensal, para terapia antineoplásica",
+        t,
+        flags=re.IGNORECASE
+    )
+    t = re.sub(
+        r"(\bpara\s+terapia\s+antineopl[áa]sica)\s+e\s+([^,.]+?)\s+para\s+terapia\s+antineopl[áa]sica\b",
+        r"e \2 \1",
+        t,
+        flags=re.IGNORECASE
+    )
 
     # Deduplicação de indicação medicamentosa repetida (ex: "A para tratamento psiquiátrico e B para tratamento psiquiátrico" -> "A e B para tratamento psiquiátrico")
     t = re.sub(
@@ -3826,11 +3854,93 @@ def _clean_esisla_text(text: str) -> str:
                 flags=re.IGNORECASE
             )
             b_ef = re.sub(r",?\s*com\s+mobilidade\s+ativa\s+e\s+passiva\s+normais,?\s*", ". ", b_ef, flags=re.IGNORECASE)
+
+        # 4. Concordância de gênero de adjetivos clínicos no Exame Físico Geral
+        is_fem = bool(re.search(r"\b(?:Servidora|Hipertensa|Periciada|gestante|pu[ée]rpera)\b", text, re.IGNORECASE))
+        is_masc = bool(re.search(r"\b(?:Servidor\s+de\s+\d+\s+anos|O\s+periciado|O\s+servidor)\b", text, re.IGNORECASE)) or bool(re.search(r"\bServidor\b", b_ef, re.IGNORECASE) and not re.search(r"\bServidora\b", b_ef, re.IGNORECASE))
+
+        if is_fem and not bool(re.search(r"\bServidor\b", b_ef) and not re.search(r"\bServidora\b", b_ef)):
+            b_ef = re.sub(r"\beupneico\b", "eupneica", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\bcorado\b", "corada", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\borientado\b", "orientada", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\bl[úu]cido\b", "lúcida", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\bdescorado\b", "descorada", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\batento\b", "atenta", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\bcalmo\b", "calma", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\bansioso\b", "ansiosa", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\bacian[óo]tico\b", "acianótica", b_ef, flags=re.IGNORECASE)
+        elif is_masc and not is_fem:
+            b_ef = re.sub(r"\beupneica\b", "eupneico", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\bcorada\b", "corado", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\borientada\b", "orientado", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\bl[úu]cida\b", "lúcido", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\bdescorada\b", "descorado", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\batenta\b", "atento", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\bcalma\b", "calmo", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\bansiosa\b", "ansioso", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\bacian[óo]tica\b", "acianótico", b_ef, flags=re.IGNORECASE)
+
         b_ef = re.sub(r",\s*,+", ",", b_ef)
         b_ef = re.sub(r",\s*\.", ".", b_ef)
         b_ef = re.sub(r"\s{2,}", " ", b_ef)
         b_ef = re.sub(r"\.\s*\.", ".", b_ef)
         text = text[:m_ef.start()] + h1_ef + b_ef.strip() + "\n\n" + h2_ef + text[m_ef.end():]
+
+    # Validação cruzada clínica entre seções da Ficha e-SISLA:
+    # Se há relato afirmativo de cirurgias ou neoplasias fora das negações, remove a menção contraditória em Antecedentes Mórbidos
+    m_ant_cross = re.search(r"(\nAntecedentes Mórbidos:?\s*\n)(.*?)(\n\s*Atestado/Relat[óo]rio)", text, re.DOTALL | re.IGNORECASE)
+    if m_ant_cross:
+        h1_a, b_a, h2_a = m_ant_cross.groups()
+        outside_ant = text[:m_ant_cross.start()] + " " + text[m_ant_cross.end():]
+        ant_afirmativo = re.sub(r"\bNega\b.*", "", b_a, flags=re.IGNORECASE | re.DOTALL)
+        texto_clinico_relevante = outside_ant + " " + ant_afirmativo
+
+        has_surgical_context = bool(re.search(
+            r"\b(?:mastectomia|tenorrafia|artroscopia|herniorrafia|apendicectomia|colecistectomia|histerectomia|artroplastia|blefaroplastia|vasectomia|osteoss[íi]ntese|reparo\s+de\s+manguito|p[óo]s-operat[óo]ri[oa]|realizou\s+cirurgia|fez\s+cirurgia|submetid[oa]\s+a\s+cirurgia|cirurgia\s+recente|cirurgia\s+no\s+|cicatriz\s+cir[úu]rgica|cicatriz\s+de\s+mastectomia)\b",
+            texto_clinico_relevante,
+            re.IGNORECASE
+        ))
+        has_neoplasia_context = bool(re.search(
+            r"\b(?:c[âa]ncer|carcinoma|tumor\s+maligno|tumores\s+malignos|oncol[óo]gic[oa]|linfoma|leucemia|melanoma|met[áa]stase|met[áa]stases|metast[áa]tic[oa]|sarcoma|antineopl[áa]sic[oa]|neoplasia\s+maligna|trastuzumabe|pembrolizumabe)\b",
+            texto_clinico_relevante,
+            re.IGNORECASE
+        ))
+
+        if has_surgical_context and not has_neoplasia_context:
+            b_a = re.sub(r",\s*cirurgias\s+pr[ée]vias\s+e\s+neoplasias\.?", " e neoplasias.", b_a, flags=re.IGNORECASE)
+            b_a = re.sub(r",\s*neoplasias\s+e\s+cirurgias\s+pr[ée]vias\.?", " e neoplasias.", b_a, flags=re.IGNORECASE)
+            b_a = re.sub(r"\s+e\s+cirurgias\s+pr[ée]vias\.?", ".", b_a, flags=re.IGNORECASE)
+            b_a = re.sub(r",\s*cirurgias\s+pr[ée]vias\b", "", b_a, flags=re.IGNORECASE)
+            b_a = re.sub(r"\bNega\s+demais\s+antecedentes\s+m[óo]rbidos\s+relevantes\s+e\s+cirurgias\s+pr[ée]vias\.?", "Nega demais antecedentes mórbidos relevantes.", b_a, flags=re.IGNORECASE)
+            b_a = re.sub(r"\bNega\s+antecedentes\s+m[óo]rbidos\s+relevantes,\s*cirurgias\s+pr[ée]vias,?\s*", "Nega antecedentes mórbidos relevantes, ", b_a, flags=re.IGNORECASE)
+        elif has_neoplasia_context and not has_surgical_context:
+            b_a = re.sub(r",\s*neoplasias\s+e\s+cirurgias\s+pr[ée]vias\.?", " e cirurgias prévias.", b_a, flags=re.IGNORECASE)
+            b_a = re.sub(r",\s*cirurgias\s+pr[ée]vias\s+e\s+neoplasias\.?", " e cirurgias prévias.", b_a, flags=re.IGNORECASE)
+            b_a = re.sub(r"\s+e\s+neoplasias\.?", ".", b_a, flags=re.IGNORECASE)
+            b_a = re.sub(r",\s*neoplasias\b", "", b_a, flags=re.IGNORECASE)
+            b_a = re.sub(r"\bNega\s+demais\s+antecedentes\s+m[óo]rbidos\s+relevantes\s+e\s+neoplasias\.?", "Nega demais antecedentes mórbidos relevantes.", b_a, flags=re.IGNORECASE)
+            b_a = re.sub(r"\bNega\s+antecedentes\s+m[óo]rbidos\s+relevantes,\s*neoplasias,?\s*", "Nega antecedentes mórbidos relevantes, ", b_a, flags=re.IGNORECASE)
+        elif has_surgical_context and has_neoplasia_context:
+            b_a = re.sub(r",\s*cirurgias\s+pr[ée]vias\s+e\s+neoplasias\.?", ".", b_a, flags=re.IGNORECASE)
+            b_a = re.sub(r",\s*neoplasias\s+e\s+cirurgias\s+pr[ée]vias\.?", ".", b_a, flags=re.IGNORECASE)
+            b_a = re.sub(r"\s+e\s+cirurgias\s+pr[ée]vias\.?", ".", b_a, flags=re.IGNORECASE)
+            b_a = re.sub(r"\s+e\s+neoplasias\.?", ".", b_a, flags=re.IGNORECASE)
+            b_a = re.sub(r",\s*cirurgias\s+pr[ée]vias\b", "", b_a, flags=re.IGNORECASE)
+            b_a = re.sub(r",\s*neoplasias\b", "", b_a, flags=re.IGNORECASE)
+
+        b_a = re.sub(r",\s*,+", ",", b_a)
+        b_a = re.sub(r",\s*\.", ".", b_a)
+        b_a = re.sub(r"\s{2,}", " ", b_a)
+        text = text[:m_ant_cross.start()] + h1_a + b_a.strip() + "\n\n" + h2_a + text[m_ant_cross.end():]
+
+    # Flexão de gênero do cargo em Limitação e Justificativa para periciada mulher
+    if re.search(r"\bServidora\b", text, re.IGNORECASE):
+        text = re.sub(r"\bcargo\s+de\s+Supervisor\s+Educacional\b", "cargo de Supervisora Educacional", text, flags=re.IGNORECASE)
+        text = re.sub(r"\bcargo\s+de\s+Supervisor\b", "cargo de Supervisora", text, flags=re.IGNORECASE)
+        text = re.sub(r"\bcargo\s+de\s+T[ée]cnico\s+de\s+Enfermagem\b", "cargo de Técnica de Enfermagem", text, flags=re.IGNORECASE)
+        text = re.sub(r"\bcargo\s+de\s+Coordenador\s+Pedag[óo]gico\b", "cargo de Coordenadora Pedagógica", text, flags=re.IGNORECASE)
+        text = re.sub(r"\bcargo\s+de\s+Professor\b", "cargo de Professora", text, flags=re.IGNORECASE)
+        text = re.sub(r"\bcargo\s+de\s+Diretor\b", "cargo de Diretora", text, flags=re.IGNORECASE)
 
     # Limpeza da seção (*)Justificativa Parecer Médico na ficha e-SISLA
     m_just = re.search(
@@ -3843,6 +3953,26 @@ def _clean_esisla_text(text: str) -> str:
         b_clean = _clean_justificativa_text(b_just)
         text = text[:m_just.start()] + h1 + b_clean + "\n\n" + h2 + text[m_just.end():]
 
+    # Regras DPME obrigatórias para Parecer CONTRÁRIO (Dias = 0 e Justificativa de capacidade preservada)
+    if re.search(r"\bParecer:\s*CONTR[ÁA]RIO\b", text, re.IGNORECASE):
+        text = re.sub(r"^(N[ºo°\.]*[ \t]*Dias:[ \t]*)[^\r\n]*$", "Nº Dias: 0", text, flags=re.MULTILINE)
+        m_just_c = re.search(
+            r"(\(\*\)\s*Justificativa Parecer M[ée]dico:?\s*\n)(.*?)(\n\s*\(\*\)\s*Parecer Final)",
+            text,
+            re.DOTALL | re.IGNORECASE
+        )
+        if m_just_c:
+            h1_jc, b_jc, h2_jc = m_just_c.groups()
+            if "prejudicada" in b_jc.lower():
+                is_acomp = bool(re.search(r"\b(?:Z76|acompanha|Artigo 199)\b", text, re.IGNORECASE))
+                if is_acomp:
+                    nova_just = "Capacidade laborativa própria preservada, não restando preenchidos os requisitos médico-periciais para concessão de licença nos termos do Artigo 199 da Lei Estadual nº 10.261/1968, referente ao período pleiteado."
+                else:
+                    m_cargo = re.search(r"cargo\s+de\s+([A-Za-zÀ-ÿ\s\d/]+?)(?:,|\.|\n)", text, re.IGNORECASE)
+                    cg = m_cargo.group(1).strip() if m_cargo else "servidor"
+                    nova_just = f"Capacidade laborativa própria preservada, não restando comprovada incapacidade laborativa temporária para as atribuições do cargo de {cg}, referente ao período pleiteado."
+                text = text[:m_just_c.start()] + h1_jc + nova_just + "\n\n" + h2_jc + text[m_just_c.end():]
+
     text = re.sub(r"\n{3,}", "\n\n", text)
     text = _sanitizar_texto_portugues_esisla(text)
     text = _desduplicar_e_limpar_queixa_esisla(text)
@@ -3852,15 +3982,95 @@ def _clean_esisla_text(text: str) -> str:
 
 
 
+def _get_stored_ficha_esisla(atendimento_id: str, payload: dict[str, Any] | None = None) -> str:
+    atd_key = str(atendimento_id or "").strip()
+    ficha = ""
+    if atd_key:
+        try:
+            db = get_db()
+            cur = db.cursor()
+            cur.execute("SELECT payload_json FROM atendimentos WHERE id=%s OR numero=%s LIMIT 1", (atd_key, atd_key))
+            row = cur.fetchone()
+            cur.close()
+            if row and row.get("payload_json"):
+                stored = row["payload_json"] if isinstance(row["payload_json"], dict) else json.loads(row["payload_json"])
+                if isinstance(stored, dict):
+                    aux = stored.get("aux") if isinstance(stored.get("aux"), dict) else {}
+                    ficha = str(stored.get("ficha_esisla") or aux.get("fichaEsisla") or aux.get("ficha_esisla") or "").strip()
+        except Exception as exc:
+            app.logger.warning("Falha ao consultar ficha_esisla salva (%s): %s", atd_key, exc)
+
+    if not ficha and isinstance(payload, dict):
+        p_aux = payload.get("aux") if isinstance(payload.get("aux"), dict) else {}
+        ficha = str(payload.get("ficha_esisla") or p_aux.get("fichaEsisla") or p_aux.get("ficha_esisla") or "").strip()
+
+    if len(ficha) < 40 or "Queixa e Duração" not in ficha:
+        return ""
+    if isinstance(payload, dict):
+        req_par = str(payload.get("parecer") or "").strip().upper()
+        if req_par and ("CONTR" in req_par) and ("Parecer: FAVORÁVEL" in ficha or "Parecer: FAVORAVEL" in ficha):
+            return ""
+        if req_par and ("FAVOR" in req_par) and ("Parecer: CONTRÁRIO" in ficha or "Parecer: CONTRARIO" in ficha):
+            return ""
+    return ficha
+
+
+def _save_ficha_esisla_to_atendimento(atendimento_id: str, ficha_text: str) -> bool:
+    atd_key = str(atendimento_id or "").strip()
+    ficha_clean = str(ficha_text or "").strip()
+    if not atd_key or len(ficha_clean) < 80:
+        return False
+    try:
+        db = get_db()
+        cur = db.cursor()
+        cur.execute("SELECT id, payload_json FROM atendimentos WHERE id=%s OR numero=%s LIMIT 1", (atd_key, atd_key))
+        row = cur.fetchone()
+        if not row:
+            cur.close()
+            return False
+        stored = row["payload_json"] if isinstance(row["payload_json"], dict) else json.loads(row["payload_json"] or "{}")
+        if not isinstance(stored, dict):
+            stored = {}
+        now_iso = _utc_now()
+        stored["ficha_esisla"] = ficha_clean
+        stored["ficha_esisla_gerada_em"] = now_iso
+        if not isinstance(stored.get("aux"), dict):
+            stored["aux"] = {}
+        stored["aux"]["fichaEsisla"] = ficha_clean
+        stored["aux"]["ficha_esisla"] = ficha_clean
+        stored["aux"]["fichaEsislaGeradaEm"] = now_iso
+        cur.execute(
+            "UPDATE atendimentos SET payload_json=%s WHERE id=%s",
+            (json.dumps(stored, ensure_ascii=False), row["id"])
+        )
+        db.commit()
+        cur.close()
+        return True
+    except Exception as exc:
+        app.logger.warning("Falha ao persistir ficha_esisla no atendimento (%s): %s", atd_key, exc)
+        return False
+
+
 @app.post("/api/ai/esisla")
 def api_ai_esisla():
     try:
         raw = _json_body()
         force = bool(raw.pop("force_refresh", False))
+        atd_id_raw = str(raw.get("atendimento") or "").strip()
         raw = _load_authoritative_ai_payload(raw)
         payload = _minimal_ai_context(raw)
+        atd_id = str(payload.get("atendimento") or atd_id_raw or "").strip()
         cadastro_id = _get_cadastro_id(payload)
         with _cadastro_ai_lock(cadastro_id, "/api/ai/esisla"):
+            if not force and atd_id:
+                existing_ficha = _get_stored_ficha_esisla(atd_id, payload)
+                if existing_ficha:
+                    cleaned_existing = _remover_capslock_excessivo_esisla(_clean_esisla_text(existing_ficha))
+                    return jsonify({
+                        "ficha_esisla": cleaned_existing,
+                        "meta": {"cached": True, "reused_from_atendimento": True, "endpoint": "esisla"}
+                    }), 200
+
             instruction = _task_instruction("esisla", payload)
             result, cached, _ = _generate_cached("esisla", payload, instruction, EsislaResult, force_refresh=force)
             ficha_text = _clean_esisla_text(result.ficha_esisla)
@@ -3960,6 +4170,8 @@ def api_ai_esisla():
                     ficha_text = re.sub(r"(\(\*\)\s*Parecer Médico:?\s*\n)", r"\1Parecer: " + par_val + "\n", ficha_text, count=1)
 
             dias_val = str(payload.get("dias_solicitados") or "").strip()
+            if is_contra:
+                dias_val = "0"
             if dias_val:
                 ficha_text = re.sub(r"^(N[ºo°\.]*[ \t]*Dias:[ \t]*)[^\r\n]*$", f"Nº Dias: {dias_val}", ficha_text, flags=re.MULTILINE)
 
@@ -3968,7 +4180,9 @@ def api_ai_esisla():
                 data_ini_br = _format_date_br(data_ini)
                 ficha_text = re.sub(r"^(Data[ \t]*In[íi]cio:[ \t]*)[^\r\n]*$", f"Data Início: {data_ini_br}", ficha_text, flags=re.MULTILINE)
 
-            cid_val = str(payload.get("cid") or "").strip()
+            cid_val = str(payload.get("cid") or "").strip().upper()
+            if len(cid_val) == 4 and re.match(r"^[A-Z]\d{3}$", cid_val):
+                cid_val = f"{cid_val[:3]}.{cid_val[3:]}"
             if cid_val:
                 ficha_text = re.sub(r"^(CID[ \t]*(?:10)?:[ \t]*)[^\r\n]*$", f"CID 10: {cid_val}", ficha_text, flags=re.MULTILINE)
             desc_val = str(payload.get("doenca_motivo") or "").strip()
@@ -4013,6 +4227,12 @@ def api_ai_esisla():
 
             med_val = str(payload.get("medico") or "").strip()
             if med_val:
+                if "@" in med_val:
+                    user_part = med_val.split("@")[0]
+                    names = [p.capitalize() for p in re.split(r"[._-]", user_part) if p]
+                    med_val = "Dr. " + " ".join(names)
+                elif not med_val.lower().startswith(("dr.", "dra.")):
+                    med_val = f"Dr. {med_val}"
                 ficha_text = re.sub(r"^(M[ée]dico[ \t]*Perito:[ \t]*)[^\r\n]*$", f"Médico Perito: {med_val}", ficha_text, flags=re.MULTILINE)
             crm_val = str(payload.get("crm_responsavel") or "").strip()
             if crm_val:
@@ -4032,15 +4252,20 @@ def api_ai_esisla():
             just_val = str(payload.get("justificativa") or payload.get("agilJustificativa") or "").strip()
             m_just = re.search(r"(\(\*\)\s*Justificativa Parecer M[ée]dico:?\s*\n\s*)(.*?)(\n\s*\(\*\)\s*Parecer Final)", ficha_text, re.DOTALL | re.IGNORECASE)
             if m_just:
-                if just_val:
+                cargo_nome = payload.get("cargo") or "servidor"
+                if is_contra:
+                    if not just_val or "prejudicada" in just_val.lower():
+                        if "z76" in cid_val.lower() or "acompanha" in desc_val.lower():
+                            just_val = "Capacidade laborativa própria preservada, não restando preenchidos os requisitos médico-periciais para concessão de licença nos termos do Artigo 199 da Lei Estadual nº 10.261/1968, referente ao período pleiteado."
+                        else:
+                            just_val = f"Capacidade laborativa própria preservada, não restando comprovada incapacidade laborativa temporária para as atribuições do cargo de {cargo_nome}, referente ao período pleiteado."
                     ficha_text = ficha_text[:m_just.start(2)] + just_val + ficha_text[m_just.end(2):]
-                elif not m_just.group(2).strip():
-                    cargo_nome = payload.get("cargo") or "servidor"
-                    if par_val.startswith("FAV"):
+                else:
+                    if just_val:
+                        ficha_text = ficha_text[:m_just.start(2)] + just_val + ficha_text[m_just.end(2):]
+                    elif not m_just.group(2).strip():
                         just_val = f"Capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol do cargo de {cargo_nome}, em razão dos sintomas e limitações registradas no ato pericial."
-                    else:
-                        just_val = f"Capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações incapacitantes para as atribuições rotineiras do cargo atual de {cargo_nome}."
-                    ficha_text = ficha_text[:m_just.start(2)] + just_val + ficha_text[m_just.end(2):]
+                        ficha_text = ficha_text[:m_just.start(2)] + just_val + ficha_text[m_just.end(2):]
 
             # Exame Físico Geral: priorizar estritamente os achados registrados no atendimento pelo médico perito
             ef_achados = str(payload.get("exame_fisico_descricao") or "").strip()
@@ -4183,11 +4408,20 @@ def api_ai_esisla():
                     clean_b_ant = frase_nega_completa
                 ficha_text = ficha_text[:m_ant_final.start()] + h1_ant + clean_b_ant + "\n\n" + h2_ant + ficha_text[m_ant_final.end():]
 
+            if is_contra:
+                m_pf = re.search(r"(\(\*\)\s*Parecer Final:?\s*\n)(.*)", ficha_text, re.DOTALL | re.IGNORECASE)
+                if m_pf:
+                    pf_body = m_pf.group(2)
+                    pf_body = re.sub(r"^(N[ºo°\.]*[ \t]*Dias:[ \t]*)[^\r\n]*$", "Nº Dias: 0", pf_body, flags=re.MULTILINE)
+                    ficha_text = ficha_text[:m_pf.start(2)] + pf_body
+            ficha_text = _clean_esisla_text(ficha_text)
             ficha_text = _remover_capslock_excessivo_esisla(ficha_text)
             result = EsislaResult(ficha_esisla=ficha_text)
+            if atd_id:
+                _save_ficha_esisla_to_atendimento(atd_id, result.ficha_esisla)
             return jsonify({
                 "ficha_esisla": result.ficha_esisla,
-                "meta": {"cached": bool(cached), "endpoint": "esisla"}
+                "meta": {"cached": bool(cached), "reused_from_atendimento": False, "endpoint": "esisla"}
             }), 200
     except Exception as exc:
         if isinstance(exc, ValueError):
@@ -4371,6 +4605,10 @@ def api_ai_refinar_ficha_esisla():
             ficha_otimizada = _refinar_ficha_esisla_deterministica(ficha_otimizada)
         else:
             ficha_otimizada = _refinar_ficha_esisla_deterministica(ficha_original)
+
+        atd_id_ref = str(body.get("atendimento") or body.get("id") or "").strip()
+        if atd_id_ref and ficha_otimizada:
+            _save_ficha_esisla_to_atendimento(atd_id_ref, ficha_otimizada)
 
         return _ok({
             "ficha_esisla_otimizada": ficha_otimizada,
@@ -4679,6 +4917,9 @@ def api_ai_preencher_ficha():
 
         atendimento_id = _get_cadastro_id(raw)
         with _cadastro_ai_lock(atendimento_id, "/api/ai/preencher-ficha"):
+            esisla_pre = parse_esisla_text(texto_bruto)
+            ctx_atual = raw.get("contexto_atual") if isinstance(raw.get("contexto_atual"), dict) else {}
+
             instruction = (
                 TASK_PROMPTS["preencher_ficha"]
                 + "\n\nTEXTO BRUTO FORNECIDO PELO USUÁRIO (ANOTAÇÕES DO MÉDICO E/OU DADOS DO SISTEMA):\n"
@@ -4686,10 +4927,55 @@ def api_ai_preencher_ficha():
             )
             result = _generate_structured(instruction, PreenchimentoCompletoResult)
 
-            # Normalização de CID (ex.: Z988 -> Z98.8)
+            # Mesclagem determinística de dados cadastrais e de guia extraídos do texto bruto / contexto atual
+            if not (result.nome_paciente or "").strip():
+                result.nome_paciente = str(esisla_pre.get("nome_paciente") or ctx_atual.get("nomePaciente") or "").strip()
+            if not (result.cpf_paciente or "").strip():
+                result.cpf_paciente = str(esisla_pre.get("cpf_paciente") or ctx_atual.get("cpfPaciente") or "").strip()
+            if not (result.rg_paciente or "").strip():
+                result.rg_paciente = str(esisla_pre.get("rg_paciente") or ctx_atual.get("rg") or "").strip()
+            if not (result.data_nascimento or "").strip():
+                result.data_nascimento = str(esisla_pre.get("data_nascimento") or ctx_atual.get("dataNascimento") or "").strip()
+            if not (result.idade or "").strip():
+                result.idade = str(esisla_pre.get("idade") or ctx_atual.get("idade") or "").strip()
+            if not (result.sexo or "").strip():
+                result.sexo = str(esisla_pre.get("sexo") or ctx_atual.get("sexo") or "").strip()
+            if not (result.cargo or "").strip():
+                result.cargo = str(esisla_pre.get("cargo") or ctx_atual.get("cargo") or "").strip()
+            if not (result.tempo_cargo or "").strip():
+                result.tempo_cargo = str(esisla_pre.get("tempo_cargo") or ctx_atual.get("tempoCargo") or "").strip()
+            if not (result.tempo_unidade or "").strip():
+                result.tempo_unidade = str(esisla_pre.get("tempo_unidade") or ctx_atual.get("tempoUnidade") or "Anos").strip()
+            if not (result.readaptado or "").strip():
+                result.readaptado = str(esisla_pre.get("readaptado") or ctx_atual.get("readaptado") or "Não").strip()
+
+            if not (result.crm_cro or "").strip():
+                result.crm_cro = str(esisla_pre.get("crm_cro") or ctx_atual.get("crmCro") or "").strip()
+            else:
+                result.crm_cro = re.sub(r"^(?:CRM|CRO)[:\s\-]*", "", result.crm_cro.strip(), flags=re.I).strip()
+
+            if not (result.nome_medico_assistente or "").strip():
+                result.nome_medico_assistente = str(esisla_pre.get("nome_medico_assistente") or ctx_atual.get("medicoAssistenteNome") or "").strip()
+
+            if not (result.dias_solicitados or "").strip():
+                result.dias_solicitados = str(esisla_pre.get("dias_solicitados") or ctx_atual.get("diasSolicitados") or "").strip()
+            else:
+                m_ds = re.search(r"\d+", str(result.dias_solicitados))
+                if m_ds:
+                    result.dias_solicitados = m_ds.group(0)
+
+            if not (result.data_documento or "").strip():
+                result.data_documento = str(esisla_pre.get("data_documento") or esisla_pre.get("data_documento_br") or ctx_atual.get("dataDocumento") or "").strip()
+
+            if not (result.cid or "").strip():
+                result.cid = str(esisla_pre.get("cid") or ctx_atual.get("cid") or "").strip()
+
+            # Normalização de CID (ex.: Z988 -> Z98.8, f332 -> F33.2)
             cid_str = (result.cid or "").strip().upper()
             if cid_str and len(cid_str) == 4 and "." not in cid_str:
                 cid_str = f"{cid_str[:3]}.{cid_str[3:]}"
+                result.cid = cid_str
+            else:
                 result.cid = cid_str
             if cid_str and not result.cid_descricao:
                 cid_info = get_cid_info(cid_str)
@@ -4699,7 +4985,9 @@ def api_ai_preencher_ficha():
             # Normalização e garantia de preenchimento de doenca_motivo ("Qual a doença está tratando que motivou o afastamento?")
             d_motivo = (result.doenca_motivo or "").strip()
             if not d_motivo:
-                if result.cid_descricao and result.cid:
+                if esisla_pre.get("is_acompanhante") and esisla_pre.get("doenca_motivo"):
+                    d_motivo = str(esisla_pre["doenca_motivo"]).strip()
+                elif result.cid_descricao and result.cid:
                     d_motivo = f"{result.cid_descricao.strip()} (CID {result.cid.strip()})"
                 elif result.cid_descricao:
                     d_motivo = result.cid_descricao.strip()
@@ -4734,9 +5022,11 @@ def api_ai_preencher_ficha():
 
             if result.historico_pregresso:
                 result.historico_pregresso = _clean_antecedentes_morbidos_text(result.historico_pregresso)
+            if not (result.historico_pregresso or "").strip() or result.historico_pregresso.strip().lower() in ("nega", "nega.", "não refere", "nao refere", "-"):
+                result.historico_pregresso = "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas."
 
             if result.cargo and result.cargo.isupper() and len(result.cargo) > 4:
-                result.cargo = result.cargo.title()
+                result.cargo = _remover_capslock_excessivo_esisla(result.cargo)
 
             # Normalização e garantia de preenchimento de inicio_tratamento ("Quando começou o tratamento?")
             ini_trat = (result.inicio_tratamento or "").strip()
@@ -4783,10 +5073,54 @@ def api_ai_preencher_ficha():
 
             # Normalização de Data do Atestado (para ISO YYYY-MM-DD aceito pelo input date)
             doc_date = (result.data_documento or "").strip()
+            doc_date_br = ""
             if doc_date:
                 m_date = re.match(r"^(\d{1,2})[/\-\.](\d{1,2})[/\-\.](\d{4})$", doc_date)
                 if m_date:
                     result.data_documento = f"{m_date.group(3)}-{m_date.group(2).zfill(2)}-{m_date.group(1).zfill(2)}"
+                    doc_date_br = f"{m_date.group(1).zfill(2)}/{m_date.group(2).zfill(2)}/{m_date.group(3)}"
+                elif re.match(r"^(\d{4})-(\d{2})-(\d{2})$", doc_date):
+                    doc_date_br = _format_date_br(doc_date)
+
+            # Normalização de Data da Expedição da Guia (para ISO YYYY-MM-DD e DD/MM/YYYY)
+            raw_exp = (
+                esisla_pre.get("data_expedicao_iso")
+                or result.data_expedicao
+                or esisla_pre.get("data_expedicao")
+                or ctx_atual.get("dataExpedicaoIso")
+                or ctx_atual.get("dataExpedicao")
+                or ""
+            ).strip()
+            exp_date_iso = ""
+            exp_date_br = ""
+            if raw_exp:
+                m_exp_br = re.match(r"^(\d{1,2})[/\-\.](\d{1,2})[/\-\.](\d{4})$", raw_exp)
+                m_exp_iso = re.match(r"^(\d{4})-(\d{2})-(\d{2})$", raw_exp)
+                if m_exp_br:
+                    exp_date_iso = f"{m_exp_br.group(3)}-{m_exp_br.group(2).zfill(2)}-{m_exp_br.group(1).zfill(2)}"
+                    exp_date_br = f"{m_exp_br.group(1).zfill(2)}/{m_exp_br.group(2).zfill(2)}/{m_exp_br.group(3)}"
+                elif m_exp_iso:
+                    exp_date_iso = raw_exp
+                    exp_date_br = f"{m_exp_iso.group(3)}/{m_exp_iso.group(2)}/{m_exp_iso.group(1)}"
+            result.data_expedicao = exp_date_iso or exp_date_br
+
+            # Cálculo determinístico de Retroação da Guia (Expedição vs Emissão do Atestado)
+            retro_dias = None
+            retro_invalida = False
+            retro_motivo = ""
+            if exp_date_iso and result.data_documento and re.match(r"^\d{4}-\d{2}-\d{2}$", result.data_documento):
+                try:
+                    dt_exp_obj = datetime.strptime(exp_date_iso, "%Y-%m-%d").date()
+                    dt_doc_obj = datetime.strptime(result.data_documento, "%Y-%m-%d").date()
+                    retro_dias = (dt_exp_obj - dt_doc_obj).days
+                    if retro_dias > 3:
+                        retro_invalida = True
+                        retro_motivo = (
+                            f"Guia expedida em {exp_date_br} e atestado emitido em {doc_date_br or _format_date_br(result.data_documento)} "
+                            f"({retro_dias} dias de retroação > limite regulamentar de 3 dias)."
+                        )
+                except Exception:
+                    pass
 
             # Normalização de Unidade de Tempo
             t_unid = (result.tempo_unidade or "").strip().lower()
@@ -4811,6 +5145,24 @@ def api_ai_preencher_ficha():
                     fav = "favor" in (result.parecer or "").lower()
                     result.outros_resultado = "Alterado" if fav else "Normal"
 
+            if not (result.alteracoes_clinicas_exames or "").strip():
+                result.alteracoes_clinicas_exames = "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial."
+
+            if not (result.obs_documentos or "").strip() and (result.data_documento or result.crm_cro or result.dias_solicitados):
+                partes_doc = []
+                if doc_date_br or result.data_documento:
+                    partes_doc.append(f"emitido em {doc_date_br or _format_date_br(result.data_documento)}")
+                if result.nome_medico_assistente:
+                    partes_doc.append(f"por Dr(a). {result.nome_medico_assistente}")
+                if result.crm_cro:
+                    partes_doc.append(f"(CRM {result.crm_cro})")
+                if result.dias_solicitados:
+                    partes_doc.append(f"indicando {result.dias_solicitados} dias de afastamento")
+                if result.cid:
+                    partes_doc.append(f"sob CID {result.cid}")
+                if partes_doc:
+                    result.obs_documentos = "Atestado médico " + " ".join(partes_doc) + "."
+
             # Normalização de Sinais Vitais Padrão
             if not result.pressao_sistolica or result.pressao_sistolica in ("Aferida", "0", "None"):
                 result.pressao_sistolica = "120"
@@ -4818,6 +5170,46 @@ def api_ai_preencher_ficha():
                 result.pressao_diastolica = "80"
             if not result.pulso or result.pulso in ("Aferido", "0", "None", "76"):
                 result.pulso = "80"
+
+            # Garantir robustez de desc_limitacao e justificativa conforme parecer
+            par_upper = (result.parecer or "").strip().upper()
+            is_fav = "FAV" in par_upper or par_upper == "FAVORÁVEL"
+            cargo_label = (result.cargo or "servidor").strip()
+            if is_fav:
+                result.parecer = "FAVORÁVEL"
+                if not (result.limitacao_funcional or "").strip():
+                    result.limitacao_funcional = "Sim"
+                if not (result.limitacao_rol or "").strip():
+                    result.limitacao_rol = "Sim"
+                if not (result.capacidade or "").strip():
+                    result.capacidade = "Capacidade parcial e temporariamente prejudicada"
+                if not (result.desc_limitacao or "").strip():
+                    result.desc_limitacao = _resolve_favorable_limitation(
+                        {"cid": result.cid, "exame_fisico_tipo": result.exame_fisico_tipo, "desc_limitacao": result.sintomas_limitacao},
+                        cargo_label
+                    )
+                elif "rol de atividades" not in result.desc_limitacao.lower():
+                    result.desc_limitacao = f"{result.desc_limitacao.rstrip('.,; ')}, atividades estas constantes no Rol de Atividades do cargo de {cargo_label}."
+            elif "CONTR" in par_upper:
+                result.parecer = "CONTRÁRIO"
+                result.limitacao_funcional = "Não"
+                result.limitacao_rol = "Não"
+                result.capacidade = "Capacidade laborativa preservada"
+                if not (result.desc_limitacao or "").strip() or not _is_contrary_limitation_text(result.desc_limitacao):
+                    result.desc_limitacao = f"Do ponto de vista médico não se observa limitações físicas ou mentais funcionais incapacitantes para as atribuições do cargo de {cargo_label}, constantes no rol de atividades."
+
+            if result.justificativa:
+                result.justificativa = _clean_justificativa_text(result.justificativa)
+            if not (result.justificativa or "").strip():
+                if result.parecer == "CONTRÁRIO":
+                    if retro_invalida:
+                        result.justificativa = "Guia com mais de 3 dias de retroação, não havendo comprovação de internamento hospitalar ou impedimento absoluto do servidor para emissão da guia."
+                    else:
+                        result.justificativa = f"Constato a capacidade laborativa preservada, considerando que neste ato pericial não se observam alterações ou limitações incapacitantes para as atribuições rotineiras do cargo atual de {cargo_label}."
+                else:
+                    cid_clause = f" (CID {result.cid})" if result.cid else ""
+                    mot_clause = result.doenca_motivo or "patologia clínica avaliada"
+                    result.justificativa = f"Considero a capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol do cargo de {cargo_label}, em razão de limitações funcionais decorrentes de {mot_clause}{cid_clause}, referente ao período pleiteado."
 
             # Garantir conformidade de quesitos oficiais
             if not result.quesitos:
@@ -4840,6 +5232,18 @@ def api_ai_preencher_ficha():
             body["inicioTratamento"] = result.inicio_tratamento
             body["freqConsultas"] = result.freq_consultas
             body["sintomasLimitacao"] = result.sintomas_limitacao
+            body["data_expedicao"] = exp_date_iso or exp_date_br
+            body["data_expedicao_iso"] = exp_date_iso
+            body["data_expedicao_br"] = exp_date_br
+            body["dataExpedicao"] = exp_date_br or exp_date_iso
+            body["dataExpedicaoIso"] = exp_date_iso
+            body["data_documento_br"] = doc_date_br
+            body["retroacao_dias"] = retro_dias
+            body["retroacao_invalida"] = retro_invalida
+            body["retroacao_motivo"] = retro_motivo
+            for k_extra in ("protocolo", "ni", "orgao", "unidade", "municipio", "regime_juridico", "situacao", "motivo_pericia", "tipo_pericia", "finalidade", "pessoa", "is_acompanhante", "nome_dependente", "ultima_licenca_dias", "ultima_licenca_inicio", "ultima_licenca_fim"):
+                if esisla_pre.get(k_extra) not in (None, "") and not body.get(k_extra):
+                    body[k_extra] = esisla_pre[k_extra]
             body["workflowStatus"] = "RASCUNHO"
             body["finalizado"] = False
             return jsonify({"dados": body, "meta": {"endpoint": "preencher-ficha"}}), 200
@@ -4859,7 +5263,7 @@ def parse_esisla_text(text: str) -> dict:
 
     # 2. CPF, RG e Nome Completo
     # Formato padrão e-SISLA
-    m = re.search(r'CPF:\s*([0-9\s\-]+?)(?:RG:|Nome Completo|Nasc|Data|$)', text, re.I)
+    m = re.search(r'CPF:\s*([0-9\.\s\-]+?)(?:RG:|Nome Completo|Nasc|Data|\n|$)', text, re.I)
     if m:
         raw_cpf = re.sub(r'\D', '', m.group(1))
         if len(raw_cpf) == 11:
@@ -4867,7 +5271,7 @@ def parse_esisla_text(text: str) -> dict:
         elif raw_cpf:
             data['cpf_paciente'] = m.group(1).strip()
 
-    m = re.search(r'RG:\s*([0-9\.\-\s]+?)(?:Nome Completo|Data|NI|Nasc|Sexo|$)', text, re.I)
+    m = re.search(r'RG:\s*([0-9\.\-\sA-Za-z]+?)(?:Nome Completo|Data|NI|Nasc|Sexo|\n|$)', text, re.I)
     if m:
         clean_rg = re.sub(r'[^0-9A-Za-z]', '', m.group(1))
         if clean_rg:
@@ -4908,6 +5312,10 @@ def parse_esisla_text(text: str) -> dict:
                 data['idade'] = str(age)
         except Exception:
             pass
+    if not data.get('idade'):
+        m_id = re.search(r'\b(\d{2})\s*anos\b', text, re.I)
+        if m_id and 18 <= int(m_id.group(1)) <= 90:
+            data['idade'] = m_id.group(1)
 
     # 4. NI
     m = re.search(r'NI:\s*([0-9]+)', text, re.I)
@@ -4926,12 +5334,12 @@ def parse_esisla_text(text: str) -> dict:
                 data['sexo'] = 'Feminino'
             else:
                 data['sexo'] = 'Masculino'
-        elif re.search(r'Sexo:\s*Feminino\b', text, re.I):
+        elif re.search(r'Sexo:\s*Feminino\b|\bServidora\b|\bPericiada\b', text, re.I):
             data['sexo'] = 'Feminino'
         else:
             data['sexo'] = 'Masculino'
 
-    # 6. Órgão, UA, Município, Regime Jurídico, Cargo
+    # 6. Órgão, UA, Município, Regime Jurídico, Cargo, Ingresso / Tempo de Cargo
     m = re.search(r'[ÓO\ufffd]rg[ãa\ufffd]?o:\s*([^\n\r]+)', text, re.I)
     if m and m.group(1).strip() and not m.group(1).strip().startswith(('UA:', 'Endere')):
         data['orgao'] = re.sub(r'\s+', ' ', m.group(1)).strip()
@@ -4955,8 +5363,8 @@ def parse_esisla_text(text: str) -> dict:
     m = re.search(r'Cargo(?:\/Fun[çc\ufffd]?[ãa\ufffd]?o)?:\s*([^\n\r]+)', text, re.I)
     if m and m.group(1).strip() and not m.group(1).strip().startswith(('Ingresso', 'Situa')):
         raw_cargo = re.sub(r'\s+', ' ', m.group(1).strip())
-        raw_cargo = re.split(r'\s+Situa', raw_cargo, flags=re.I)[0].strip()
-        cargo_clean = re.sub(r'^\d+\s+', '', raw_cargo)
+        raw_cargo = re.split(r'\s+(?:Situa|Ingresso)', raw_cargo, flags=re.I)[0].strip()
+        cargo_clean = re.sub(r'^\d+\s*[-–]?\s*', '', raw_cargo)
         data['cargo'] = cargo_clean or raw_cargo
         data['cargo_codigo'] = raw_cargo
 
@@ -4975,10 +5383,29 @@ def parse_esisla_text(text: str) -> dict:
                 data['regime_juridico'] = m_cr.group(1).strip()
                 c_nom = vl[:m_cr.start()].strip()
                 if c_nom:
-                    data['cargo'] = c_nom
+                    c_clean = re.sub(r'^\d+\s*[-–]?\s*', '', c_nom).strip()
+                    data['cargo'] = c_clean or c_nom
                     data['cargo_codigo'] = c_nom
             elif not data.get('municipio') and vl.isalpha() and vl.isupper():
                 data['municipio'] = vl
+
+    # Ingresso e cálculo de tempo no cargo
+    m_ing = re.search(r'Ingresso:\s*(?:\n\s*)?(\d{2}/\d{2}/\d{4})', text, re.I)
+    if m_ing:
+        data['data_ingresso'] = m_ing.group(1).strip()
+        try:
+            dt_ing = datetime.strptime(data['data_ingresso'], "%d/%m/%Y")
+            today = datetime.now()
+            years_cargo = today.year - dt_ing.year - ((today.month, today.day) < (dt_ing.month, dt_ing.day))
+            if years_cargo >= 1:
+                data['tempo_cargo'] = str(years_cargo)
+                data['tempo_unidade'] = 'Anos'
+            else:
+                months_cargo = max(1, (today.year - dt_ing.year) * 12 + (today.month - dt_ing.month))
+                data['tempo_cargo'] = str(months_cargo)
+                data['tempo_unidade'] = 'Meses'
+        except Exception:
+            pass
 
     # 7. Situação
     m = re.search(r'Situa[çc\ufffd]?[ãa\ufffd]?o:\s*([^\n\r]+)', text, re.I)
@@ -4988,7 +5415,7 @@ def parse_esisla_text(text: str) -> dict:
         data['situacao'] = raw_sit
 
     # 8. Readaptação
-    m_readap_sim_nao = re.search(r'Readaptad[oa]:\s*([A-Za-z]+)', text, re.I)
+    m_readap_sim_nao = re.search(r'Readaptad[oa]:\s*([A-Za-zÀ-ú]+)', text, re.I)
     m_cid_readap = re.search(r'Readapta[çc\ufffd]?[ãa\ufffd]?o CID1:\s*([A-Za-z]\d{2,3}(?:\.\d+)?)', text, re.I)
     if m_cid_readap and m_cid_readap.group(1):
         data['readaptado'] = 'Sim'
@@ -5000,7 +5427,7 @@ def parse_esisla_text(text: str) -> dict:
         data['readaptado'] = 'Não'
 
     # 9. CRM Médico Assistente
-    m = re.search(r'CRM\s*(?:M[ée\ufffd]?dico)?:\s*([0-9a-zA-Z\/\-]+)', text, re.I)
+    m = re.search(r'CRM\s*(?:M[ée\ufffd]?dico)?[:\s\-]+([0-9]{3,10}(?:\/[A-Za-z]{2})?)', text, re.I)
     if m: data['crm_cro'] = m.group(1).strip()
 
     # 10. Nome Médico Assistente
@@ -5013,7 +5440,7 @@ def parse_esisla_text(text: str) -> dict:
         data['nome_medico_assistente'] = raw_nm
 
     # 11. CID 10
-    m = re.search(r'CID(?: 10)?:\s*([A-Za-z][0-9]{2,3}(?:\.[0-9]+)?)', text, re.I)
+    m = re.search(r'CID(?:[\s\-]*10)?[:\s]+([A-Za-z][0-9]{2,3}(?:\.[0-9]+)?)', text, re.I)
     if m:
         cid_code = m.group(1).strip().upper()
         if len(cid_code) == 4 and '.' not in cid_code:
@@ -5030,12 +5457,16 @@ def parse_esisla_text(text: str) -> dict:
     m = re.search(r'(?:N[ºo°\ufffd]?\s*)?Dias:\s*(\d+)', text, re.I)
     if not m:
         m = re.search(r'(\d+)\s*Dias:', text, re.I)
+    if not m:
+        m = re.search(r'\b(?:atestado\s+(?:m[ée]dico\s+)?de|afastamento\s+de|solicita(?:ndo)?)\s+(\d{1,3})\s*dias\b', text, re.I)
     if m:
         data['dias_solicitados'] = m.group(1).strip()
         data['dias_concedidos'] = m.group(1).strip()
 
     # 13. Data de emissão do atestado
     m = re.search(r'Data\s+(?:de\s+)?emiss[ãa\ufffd]?o\s+(?:do\s+)?atestado:\s*(\d{2}/\d{2}/\d{4})', text, re.I)
+    if not m:
+        m = re.search(r'(?:Data\s+(?:do\s+)?(?:atestado|documento)|Atestado\s+emitido\s+em):\s*(\d{2}/\d{2}/\d{4})', text, re.I)
     if m:
         data['data_documento_br'] = m.group(1).strip()
         try:
@@ -5065,20 +5496,7 @@ def parse_esisla_text(text: str) -> dict:
     m = re.search(r'Finalidade:\s*([^\n\r]+)', text, re.I)
     if m: data['finalidade'] = re.sub(r'\s+', ' ', m.group(1)).strip()
 
-    # 17. Data Expedição & Local da Expedição (e-SISLA)
-    exp_snippet = ""
-    m_exp_sec = re.search(r'Local\s+e\s+Data\s+(?:da\s+)?Expedi[çc\ufffd]?[ãa\ufffd]?o', text, re.I)
-    if m_exp_sec:
-        start_pos = max(0, m_exp_sec.start() - 150)
-        end_pos = min(len(text), m_exp_sec.end() + 250)
-        exp_snippet = text[start_pos:end_pos]
-    else:
-        m_exp_direct = re.search(r'Data\s+Expedi[çc\ufffd]?[ãa\ufffd]?o', text, re.I)
-        if m_exp_direct:
-            start_pos = max(0, m_exp_direct.start() - 50)
-            end_pos = min(len(text), m_exp_direct.end() + 150)
-            exp_snippet = text[start_pos:end_pos]
-
+    # 17. Data Expedição & Local da Expedição (e-SISLA e Texto Bruto)
     meses_pt = {
         'janeiro': 1, 'fevereiro': 2, 'marco': 3, 'março': 3,
         'abril': 4, 'maio': 5, 'junho': 6, 'julho': 7,
@@ -5089,27 +5507,79 @@ def parse_esisla_text(text: str) -> dict:
 
     found_exp_br = None
     found_exp_iso = None
-    targets = [exp_snippet] if exp_snippet else [text]
 
-    for target in targets:
-        m_txt = re.search(r'(?:[A-Za-zÀ-ÖØ-öø-ÿ\s]{2,40},\s*)?(\d{1,2})\s+(?:de\s+)?([A-Za-zçÇ]+)\s+(?:de\s+)?(\d{4})', target, re.I)
-        if m_txt and m_txt.group(2).lower() in meses_pt:
-            d = int(m_txt.group(1))
-            mo = meses_pt[m_txt.group(2).lower()]
-            y = int(m_txt.group(3))
+    # 17a. Rótulo explícito de Data de Expedição (DD/MM/AAAA ou YYYY-MM-DD)
+    m_exp_lbl = re.search(
+        r'(?:Data\s+(?:da\s+|de\s+)?Expedi[çc\ufffd]?[ãa\ufffd]?o(?:\s+da\s+Guia)?|Expedi[çc\ufffd]?[ãa\ufffd]?o(?:\s+da\s+Guia)?|Guia\s+expedida\s+em)\s*[:\-]?\s*(\d{1,2})[/\-\.](\d{1,2})[/\-\.](\d{4})',
+        text,
+        re.I
+    )
+    if m_exp_lbl:
+        d, mo, y = int(m_exp_lbl.group(1)), int(m_exp_lbl.group(2)), int(m_exp_lbl.group(3))
+        if 1 <= d <= 31 and 1 <= mo <= 12 and 1990 <= y <= 2100:
             found_exp_br = f"{d:02d}/{mo:02d}/{y}"
             found_exp_iso = f"{y}-{mo:02d}-{d:02d}"
-            break
-
-        m_num = re.search(r'(?:Data\s+Expedi[çc\ufffd]?[ãa\ufffd]?o:?\s*|[A-Za-zÀ-ÖØ-öø-ÿ\s]{2,40},\s*)?(\d{1,2})[/\-\.](\d{1,2})[/\-\.](\d{4})', target, re.I)
-        if m_num:
-            d = int(m_num.group(1))
-            mo = int(m_num.group(2))
-            y = int(m_num.group(3))
+    else:
+        m_exp_iso_lbl = re.search(
+            r'(?:Data\s+(?:da\s+|de\s+)?Expedi[çc\ufffd]?[ãa\ufffd]?o(?:\s+da\s+Guia)?|Expedi[çc\ufffd]?[ãa\ufffd]?o(?:\s+da\s+Guia)?|Guia\s+expedida\s+em)\s*[:\-]?\s*(\d{4})-(\d{2})-(\d{2})',
+            text,
+            re.I
+        )
+        if m_exp_iso_lbl:
+            y, mo, d = int(m_exp_iso_lbl.group(1)), int(m_exp_iso_lbl.group(2)), int(m_exp_iso_lbl.group(3))
             if 1 <= d <= 31 and 1 <= mo <= 12 and 1990 <= y <= 2100:
                 found_exp_br = f"{d:02d}/{mo:02d}/{y}"
                 found_exp_iso = f"{y}-{mo:02d}-{d:02d}"
+
+    # 17b. Seção "Local e Data da Expedição" ou "Data Expedição" do e-SISLA
+    if not found_exp_br:
+        snippets = []
+        m_exp_sec = re.search(r'Local\s+e\s+Data\s+(?:da\s+)?Expedi[çc\ufffd]?[ãa\ufffd]?o', text, re.I)
+        if m_exp_sec:
+            after_s = text[m_exp_sec.end():min(len(text), m_exp_sec.end() + 260)]
+            before_raw = text[max(0, m_exp_sec.start() - 150):m_exp_sec.start()]
+            # Remove linhas de atestado/nascimento/licença do trecho anterior para não confundir com expedição
+            before_lines = [
+                ln for ln in before_raw.splitlines()
+                if not re.search(r'atestado|nascimento|ingresso|[úu]ltima\s+licen|in[íi]cio:|fim:', ln, re.I)
+            ]
+            snippets.append(after_s)
+            if before_lines:
+                snippets.append("\n".join(before_lines))
+        else:
+            m_exp_direct = re.search(r'Data\s+(?:da\s+)?Expedi[çc\ufffd]?[ãa\ufffd]?o', text, re.I)
+            if m_exp_direct:
+                snippets.append(text[m_exp_direct.end():min(len(text), m_exp_direct.end() + 160)])
+
+        for target in snippets:
+            m_txt = re.search(r'(?:[A-Za-zÀ-ÖØ-öø-ÿ\s]{2,40},\s*)?(\d{1,2})\s+(?:de\s+)?([A-Za-zçÇ]+)\s+(?:de\s+)?(\d{4})', target, re.I)
+            if m_txt and m_txt.group(2).lower() in meses_pt:
+                d = int(m_txt.group(1))
+                mo = meses_pt[m_txt.group(2).lower()]
+                y = int(m_txt.group(3))
+                found_exp_br = f"{d:02d}/{mo:02d}/{y}"
+                found_exp_iso = f"{y}-{mo:02d}-{d:02d}"
                 break
+
+            m_num = re.search(r'(?:Data\s+(?:da\s+)?Expedi[çc\ufffd]?[ãa\ufffd]?o:?\s*|[A-Za-zÀ-ÖØ-öø-ÿ\s]{2,40},\s*)?(\d{1,2})[/\-\.](\d{1,2})[/\-\.](\d{4})', target, re.I)
+            if m_num:
+                d = int(m_num.group(1))
+                mo = int(m_num.group(2))
+                y = int(m_num.group(3))
+                if 1 <= d <= 31 and 1 <= mo <= 12 and 1990 <= y <= 2100:
+                    found_exp_br = f"{d:02d}/{mo:02d}/{y}"
+                    found_exp_iso = f"{y}-{mo:02d}-{d:02d}"
+                    break
+
+    # 17c. Fallback: Data por extenso no padrão "CIDADE, DD de Mês de AAAA" no corpo do texto
+    if not found_exp_br:
+        m_txt_global = re.search(r'(?:[A-Za-zÀ-ÖØ-öø-ÿ\s]{2,40},\s*)?(\d{1,2})\s+de\s+([A-Za-zçÇ]+)\s+de\s+(\d{4})', text, re.I)
+        if m_txt_global and m_txt_global.group(2).lower() in meses_pt:
+            d = int(m_txt_global.group(1))
+            mo = meses_pt[m_txt_global.group(2).lower()]
+            y = int(m_txt_global.group(3))
+            found_exp_br = f"{d:02d}/{mo:02d}/{y}"
+            found_exp_iso = f"{y}-{mo:02d}-{d:02d}"
 
     if found_exp_br:
         data['data_expedicao'] = found_exp_br
@@ -6793,6 +7263,8 @@ def api_list_atendimentos():
             "versao": int(r["versao"] or 1),
             "nomePaciente": r.get("paciente_nome") or aux.get("nomePaciente"),
             "cpfPaciente": r.get("paciente_cpf") or aux.get("cpfPaciente"),
+            "ficha_esisla": payload.get("ficha_esisla") or aux.get("fichaEsisla") or aux.get("ficha_esisla") or "",
+            "ficha_esisla_gerada_em": payload.get("ficha_esisla_gerada_em") or aux.get("fichaEsislaGeradaEm") or "",
             # Metadados de leitura rápida para a Gestão; o prontuário completo continua no endpoint detalhado.
             "aux": {
                 "dataAtd": aux.get("dataAtd"),
@@ -6802,6 +7274,9 @@ def api_list_atendimentos():
                 "cargo": aux.get("cargo"),
                 "idade": aux.get("idade"),
                 "diasSolicitados": aux.get("diasSolicitados"),
+                "dataDocumento": payload.get("dataDocumento") or aux.get("dataDocumento") or "",
+                "dataExpedicao": payload.get("dataExpedicao") or aux.get("dataExpedicao") or "",
+                "dataExpedicaoIso": payload.get("dataExpedicaoIso") or aux.get("dataExpedicaoIso") or "",
                 "nomePaciente": aux.get("nomePaciente"),
                 "cpfPaciente": aux.get("cpfPaciente"),
                 "cid": aux.get("cid"),
@@ -6823,6 +7298,8 @@ def api_list_atendimentos():
                 "descLimitacao": payload.get("descLimitacao") or aux.get("descLimitacao") or "",
                 "justificativa": payload.get("justificativa") or aux.get("justificativa") or payload.get("agilJustificativa") or aux.get("agilJustificativa") or "",
                 "parecer": payload.get("parecer") or aux.get("parecer") or "",
+                "fichaEsisla": payload.get("ficha_esisla") or aux.get("fichaEsisla") or aux.get("ficha_esisla") or "",
+                "fichaEsislaGeradaEm": payload.get("ficha_esisla_gerada_em") or aux.get("fichaEsislaGeradaEm") or "",
             },
         })
 
@@ -7079,6 +7556,17 @@ def api_save_atendimento(rid=None):
             payload["aux"]["crmResponsavel"] = med_crm
 
         a = payload["aux"]
+        if isinstance(old, dict):
+            old_aux_d = old.get("aux") if isinstance(old.get("aux"), dict) else {}
+            saved_ficha = str(old.get("ficha_esisla") or old_aux_d.get("fichaEsisla") or old_aux_d.get("ficha_esisla") or "").strip()
+            saved_ficha_ts = str(old.get("ficha_esisla_gerada_em") or old_aux_d.get("fichaEsislaGeradaEm") or "").strip()
+            if saved_ficha and not payload.get("ficha_esisla") and not a.get("fichaEsisla"):
+                payload["ficha_esisla"] = saved_ficha
+                a["fichaEsisla"] = saved_ficha
+                a["ficha_esisla"] = saved_ficha
+                if saved_ficha_ts:
+                    payload["ficha_esisla_gerada_em"] = saved_ficha_ts
+                    a["fichaEsislaGeradaEm"] = saved_ficha_ts
 
         incoming = _normalize_workflow_state(payload.get("workflowStatus"), "RASCUNHO")
         

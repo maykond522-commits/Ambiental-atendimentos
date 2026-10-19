@@ -3073,8 +3073,9 @@ body:not(.mode-agil-active) #containerModoAgil {
     </button>
   </div>
 </div>
-          <div class="field col-6"><label>Data do atestado ou relatório médico</label><input class="input" type="date" id="dataDocumento"></div>
-          <div class="field col-6"><label>Dias solicitados pelo médico assistente</label><input class="input" type="number" min="0" id="diasSolicitados"></div>
+          <div class="field col-4"><label>Data da Expedição da Guia (e-SISLA)</label><input class="input" type="date" id="dataExpedicao" onchange="if(typeof calcularDatasAtestado==='function')calcularDatasAtestado()"></div>
+          <div class="field col-4"><label>Data do atestado ou relatório médico</label><input class="input" type="date" id="dataDocumento" onchange="if(typeof calcularDatasAtestado==='function')calcularDatasAtestado()"></div>
+          <div class="field col-4"><label>Dias solicitados pelo médico assistente</label><input class="input" type="number" min="0" id="diasSolicitados" oninput="if(typeof calcularDatasAtestado==='function')calcularDatasAtestado()"></div>
           <div class="field col-12">
             <label>Atestado / Relatório / Exames Complementares (Tipo - Data - Resultado)</label>
             <div id="documentRows"></div>
@@ -4983,7 +4984,7 @@ function isAdmInDoctorLogin() {
     new URLSearchParams(window.location.search).get('medico_id')
   );
   const isAdm = (currentProfile?.perfilOriginal === 'Administrador') || (currentProfile?.perfil === 'Administrador');
-  return isAdm;
+  return isAdm || isImp;
 }
 
 function abrirModalPreenchimentoIA() {
@@ -5088,7 +5089,26 @@ async function executarPreenchimentoIA() {
     const reqBody = {
       texto_bruto: txt,
       atendimento: state.atendimento || $("atd")?.value || "",
-      impersonate_medico_id: (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('ambiental.impersonate_medico_id') : null)
+      impersonate_medico_id: (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('ambiental.impersonate_medico_id') : null),
+      contexto_atual: {
+        nomePaciente: state.nomePaciente || state.aux?.nomePaciente || "",
+        cpfPaciente: state.cpfPaciente || state.aux?.cpfPaciente || "",
+        rg: state.aux?.rgPaciente || state.aux?.rg || "",
+        dataNascimento: state.aux?.dataNascimento || "",
+        idade: state.idade || state.aux?.idade || "",
+        sexo: state.sexo || state.aux?.sexo || "",
+        cargo: state.cargo || state.aux?.cargo || "",
+        tempoCargo: state.tempoCargo || state.aux?.tempoCargo || "",
+        tempoUnidade: state.tempoUnidade || state.aux?.tempoUnidade || "Anos",
+        readaptado: state.readaptado || state.aux?.readaptado || "Não",
+        cid: state.cid || state.aux?.cid || "",
+        crmCro: state.crmCro || state.aux?.crmCro || "",
+        medicoAssistenteNome: state.aux?.nomeMedicoAssistente || state.aux?.medicoAssistenteNome || "",
+        dataDocumento: state.dataDocumento || state.aux?.dataDocumento || "",
+        dataExpedicao: state.aux?.dataExpedicao || state.dataExpedicao || "",
+        dataExpedicaoIso: state.aux?.dataExpedicaoIso || state.dataExpedicao || "",
+        diasSolicitados: state.diasSolicitados || state.aux?.diasSolicitados || ""
+      }
     };
     if (window.AmbientalAPI?.ai?.preencherFicha) {
       res = await AmbientalAPI.ai.preencherFicha(reqBody);
@@ -6150,9 +6170,24 @@ function aplicarPreenchimentoIAResultado(dados) {
       }));
     }
 
-    const isoDoc = toIsoDate(dados.data_documento) || state.aux?.dataDocumento || "";
+    const isoDoc = toIsoDate(dados.data_documento || state.dataDocumento || state.aux?.dataDocumento || $("dataDocumento")?.value || $("agilDataDocumento")?.value || "");
+    const rawExpVal = dados.data_expedicao_iso || dados.data_expedicao || dados.dataExpedicaoIso || dados.dataExpedicao || state.dataExpedicao || state.aux?.dataExpedicaoIso || state.aux?.dataExpedicao || $("dataExpedicao")?.value || $("agilDataExpedicao")?.value || "";
+    const isoExp = toIsoDate(rawExpVal);
+    const brExp = dados.data_expedicao_br || (isoExp && /^\d{4}-\d{2}-\d{2}$/.test(isoExp) ? isoExp.split("-").reverse().join("/") : rawExpVal);
     const isoNasc = toIsoDate(dados.data_nascimento) || state.aux?.dataNascimento || "";
     const isoAltMed = toIsoDate(dados.data_alteracao_med) || state.aux?.dataAlteracaoMed || "";
+
+    const crmCroVal = (dados.crm_cro || state.crmCro || state.aux?.crmCro || $("crmCro")?.value || $("agilCrmCro")?.value || "").trim();
+    const nomeMedAssistVal = (dados.nome_medico_assistente || state.aux?.nomeMedicoAssistente || state.aux?.medicoAssistenteNome || "").trim();
+    const diasSolVal = String(dados.dias_solicitados || state.diasSolicitados || state.aux?.diasSolicitados || $("diasSolicitados")?.value || $("agilDiasSolicitados")?.value || "").trim();
+    const obsDocsVal = (dados.obs_documentos || state.aux?.obsDocumentos || $("obsDocumentos")?.value || "").trim();
+    const altClinExamesVal = (dados.alteracoes_clinicas_exames || state.alteracoesClinicasExames || state.aux?.alteracoesClinicasExames || "").trim();
+
+    state.crmCro = crmCroVal;
+    state.dataDocumento = isoDoc;
+    state.dataExpedicao = isoExp;
+    state.diasSolicitados = diasSolVal;
+    state.alteracoesClinicasExames = altClinExamesVal;
 
     // 3. Atualizar state.aux completo
     Object.assign(state.aux, {
@@ -6166,25 +6201,29 @@ function aplicarPreenchimentoIAResultado(dados) {
       idade: state.idade,
       sexo: state.sexo,
       readaptado: state.readaptado,
-      atividadesReadaptado: dados.atividades_readaptado || "",
+      atividadesReadaptado: dados.atividades_readaptado || state.aux?.atividadesReadaptado || "",
       doencaMotivo: doencaParaPreencher || dados.doenca_motivo || "",
       inicioTratamento: state.inicioTratamento,
       freqConsultas: state.freqConsultas,
       sintomasLimitacao: state.sintomasLimitacao,
       alteracaoMed: state.alteracaoMed,
       dataAlteracaoMed: isoAltMed,
-      obsAlteracaoMed: dados.obs_alteracao_med || "",
+      obsAlteracaoMed: dados.obs_alteracao_med || state.aux?.obsAlteracaoMed || "",
       psicoterapia: state.psicoterapia,
       fisioterapia: state.fisioterapia,
-      obsTerapias: dados.obs_terapias || "",
+      obsTerapias: dados.obs_terapias || state.aux?.obsTerapias || "",
       outrasDoencas: state.outrasDoencas,
       historicoPregresso: state.historicoPregresso,
       cid: state.cid,
-      crmCro: dados.crm_cro || "",
-      nomeMedicoAssistente: dados.nome_medico_assistente || "",
+      crmCro: crmCroVal,
+      nomeMedicoAssistente: nomeMedAssistVal,
+      medicoAssistenteNome: nomeMedAssistVal,
       dataDocumento: isoDoc,
-      diasSolicitados: dados.dias_solicitados || "",
-      obsDocumentos: dados.obs_documentos || "",
+      dataExpedicao: brExp || isoExp,
+      dataExpedicaoIso: isoExp,
+      diasSolicitados: diasSolVal,
+      obsDocumentos: obsDocsVal,
+      alteracoesClinicasExames: altClinExamesVal,
       exameFisicoTipo: state.exameFisicoTipo,
       exameMentalResultado: state.exameMentalResultado,
       exameFisicoDescricao: state.exameFisicoDescricao,
@@ -6199,12 +6238,17 @@ function aplicarPreenchimentoIAResultado(dados) {
       peso: state.peso || "",
       limitacaoFuncional: state.limitacaoFuncional,
       limitacaoRol: state.limitacaoRol,
-      descLimitacao: dados.desc_limitacao || "",
-      atividadesComprometidas: dados.atividades_comprometidas || "",
+      descLimitacao: dados.desc_limitacao || state.descLimitacao || "",
+      atividadesComprometidas: dados.atividades_comprometidas || state.atividadesComprometidas || "",
       capacidade: state.capacidade,
       parecer: state.parecer,
       justificativa: state.justificativa
     });
+    if (dados.retroacao_dias !== undefined && dados.retroacao_dias !== null) {
+      state.aux.retroacaoDias = dados.retroacao_dias;
+      state.aux.retroacaoInvalida = !!dados.retroacao_invalida;
+      if (dados.retroacao_motivo) state.aux.retroacaoMotivo = dados.retroacao_motivo;
+    }
 
     // 4. Atualizar Quesitos
     if (typeof QuesitoService !== "undefined" && Array.isArray(dados.quesitos)) {
@@ -6290,7 +6334,7 @@ function aplicarPreenchimentoIAResultado(dados) {
     setVal("historicoPregresso", state.historicoPregresso);
     setVal("agilHistoricoPregresso", state.historicoPregresso);
 
-    // Bloco 3 - Atestado e Exame
+    // Bloco 3 - Atestado, Data de Expedição e Exame
     setVal("cid", state.cid);
     setVal("agilCid", state.cid);
     if (state.cid) {
@@ -6301,13 +6345,18 @@ function aplicarPreenchimentoIAResultado(dados) {
         badge.innerHTML = `<strong>${esc(f.c)}</strong> — ${esc(f.n)}`;
       }
     }
-    setVal("crmCro", dados.crm_cro);
-    setVal("agilCrmCro", dados.crm_cro);
+    setVal("crmCro", crmCroVal);
+    setVal("agilCrmCro", crmCroVal);
+    setVal("dataExpedicao", isoExp);
+    setVal("agilDataExpedicao", isoExp);
     setVal("dataDocumento", isoDoc);
     setVal("agilDataDocumento", isoDoc);
-    setVal("diasSolicitados", dados.dias_solicitados);
-    setVal("agilDiasSolicitados", dados.dias_solicitados);
-    setVal("obsDocumentos", dados.obs_documentos);
+    setVal("diasSolicitados", diasSolVal);
+    setVal("agilDiasSolicitados", diasSolVal);
+    setVal("obsDocumentos", obsDocsVal);
+    if (altClinExamesVal) {
+      setVal("alteracoesClinicasExames", altClinExamesVal);
+    }
 
     // Abrir painel do atestado se houver dados
     if (typeof toggleAtestadoAssistente === "function") {
@@ -8593,12 +8642,13 @@ function syncExtendedToAgil() {
   }
 
   setVal("agilCrmCro", state.aux.crmCro || state.crmCro || $("crmCro")?.value || "");
-  const isoExp = toIsoDate(state.aux.dataExpedicao || state.aux.dataExpedicaoIso || state.dataExpedicao || "");
+  const isoExp = toIsoDate(state.aux.dataExpedicaoIso || state.aux.dataExpedicao || state.dataExpedicao || $("dataExpedicao")?.value || $("agilDataExpedicao")?.value || "");
+  setVal("dataExpedicao", isoExp);
   setVal("agilDataExpedicao", isoExp);
   setVal("agilDataDocumento", state.aux.dataDocumento || state.dataDocumento || $("dataDocumento")?.value || "");
   setVal("agilDiasSolicitados", state.aux.diasSolicitados || state.diasSolicitados || $("diasSolicitados")?.value || "");
   
-  const temDadosAtestado = !!(state.aux?.crmCro || state.crmCro || $("crmCro")?.value || state.aux?.dataDocumento || state.dataDocumento || $("dataDocumento")?.value || state.aux?.diasSolicitados || state.diasSolicitados || $("diasSolicitados")?.value || state.aux?.dataExpedicao || state.dataExpedicao);
+  const temDadosAtestado = !!(state.aux?.crmCro || state.crmCro || $("crmCro")?.value || state.aux?.dataDocumento || state.dataDocumento || $("dataDocumento")?.value || state.aux?.diasSolicitados || state.diasSolicitados || $("diasSolicitados")?.value || state.aux?.dataExpedicao || state.dataExpedicao || isoExp);
   if (typeof toggleAtestadoAssistente === "function") {
     toggleAtestadoAssistente(temDadosAtestado);
   }
@@ -8785,6 +8835,17 @@ function syncAgilToExtended() {
   if (crmCro) {
     state.aux.crmCro = crmCro; state.crmCro = crmCro;
     if ($("crmCro")) $("crmCro").value = crmCro;
+  }
+
+  const dtExp = getV("agilDataExpedicao") || getV("dataExpedicao");
+  if (dtExp) {
+    const isoExpSync = toIsoDate(dtExp);
+    const brExpSync = /^\d{4}-\d{2}-\d{2}$/.test(isoExpSync) ? isoExpSync.split("-").reverse().join("/") : dtExp;
+    state.dataExpedicao = isoExpSync;
+    state.aux.dataExpedicaoIso = isoExpSync;
+    state.aux.dataExpedicao = brExpSync;
+    if ($("dataExpedicao")) $("dataExpedicao").value = isoExpSync;
+    if ($("agilDataExpedicao")) $("agilDataExpedicao").value = isoExpSync;
   }
 
   const dtDoc = getV("agilDataDocumento");
@@ -9605,6 +9666,10 @@ function gerarNarrativaQueixaMelhoriaContinua(st, v) {
       return cargoStr
         .replace(/\b(?:PEB|Peb)\s+([IVXLCDM]+)\b/gi, "Professora de Educação Básica $1")
         .replace(/\b(?:PEB|Peb)\b/gi, "Professora de Educação Básica")
+        .replace(/\bSupervisor\s+Educacional\b/gi, "Supervisora Educacional")
+        .replace(/\bSupervisor\b/gi, "Supervisora")
+        .replace(/\bCoordenador\s+Pedagógico\b/gi, "Coordenadora Pedagógica")
+        .replace(/\bOrientador\s+Educacional\b/gi, "Orientadora Educacional")
         .replace(/\bTécnico\s+de\s+Enfermagem\b/gi, "Técnica de Enfermagem")
         .replace(/\bTécnico\s+em\b/gi, "Técnica em")
         .replace(/\bTécnico\s+de\b/gi, "Técnica de")
@@ -12526,6 +12591,10 @@ function cleanQueixaDuracao(text, atdDate) {
     return `${serv} de ${anos}, relatou não ser readaptad${suff}`;
   });
 
+  // 2b. Concordância de gênero de readaptação com Servidor/Servidora
+  t = t.replace(/(\bServidor\b[^\.\n\r]*?\brelatou\s+(?:não\s+)?ser\s+)readaptada\b/gi, "$1readaptado");
+  t = t.replace(/(\bServidora\b[^\.\n\r]*?\brelatou\s+(?:não\s+)?ser\s+)readaptado\b/gi, "$1readaptada");
+
   // 3. Normaliza cargo e tempo: "relatou não ser readaptado(a), é [cargo] há [tempo]"
   t = t.replace(/(\b(?:Servidor|Servidora)\s+de\s+\d+\s+anos,\s*relatou\s+não\s+ser\s+readaptad[oa]),?\s*(?:,\s*)?([A-ZÁ-Úa-zà-ú\s\d/]+?\s+há\s+\d+\s+(?:anos|meses|dias))/gi, function(m, servBlock, cargoTempo) {
     let ct = String(cargoTempo || '').trim();
@@ -12579,6 +12648,10 @@ function cleanQueixaDuracao(text, atdDate) {
   if (/\bServidora\b/i.test(t)) {
     t = t.replace(/\bé\s+(?:PEB|Peb)\s+([IVXLCDM]+)\b/gi, "é Professora de Educação Básica $1");
     t = t.replace(/\bé\s+(?:PEB|Peb)\b/gi, "é Professora de Educação Básica");
+    t = t.replace(/\bé\s+Supervisor\s+Educacional\b/gi, "é Supervisora Educacional");
+    t = t.replace(/\bé\s+Supervisor\b/gi, "é Supervisora");
+    t = t.replace(/\bé\s+Coordenador\s+Pedag[óo]gico\b/gi, "é Coordenadora Pedagógica");
+    t = t.replace(/\bé\s+Orientador\s+Educacional\b/gi, "é Orientadora Educacional");
     t = t.replace(/\bé\s+T[ée]cnico\s+(?:de|em)\s+Enfermagem\b/gi, "é Técnica de Enfermagem");
     t = t.replace(/\bé\s+T[ée]cnico\s+em\s+Administra[çc][ãa]o\b/gi, "é Técnica em Administração");
     t = t.replace(/\bé\s+T[ée]cnico\s+de\b/gi, "é Técnica de");
@@ -12761,6 +12834,12 @@ function cleanQueixaDuracao(text, atdDate) {
   t = t.replace(/\bamoxacilina\b/gi, "Amoxicilina");
   t = t.replace(/\bbevacizumab[e]?\b/gi, "bevacizumabe");
   t = t.replace(/\bpembrolizumab[e]?\b|\bpembrulizumab[e]?\b/gi, "pembrolizumabe");
+  t = t.replace(/\btrastuzumab[e]?\b/gi, "trastuzumabe");
+  t = t.replace(/\bConforme\s+prescri[çc][ãa]o\s+m[ée]dica\s+Mensal\b/gi, "conforme prescrição médica mensal");
+
+  // Deduplicação de terapia antineoplásica ou indicação repetida com prescrição mensal
+  t = t.replace(/(\bEm\s+uso\s+de\s+[A-Za-zÀ-ÿ]+)\s+conforme\s+prescri[çc][ãa]o\s+m[ée]dica\s+mensal,\s*para\s+terapia\s+antineopl[áa]sica,?\s*e\s+([A-Za-zÀ-ÿ]+)\s+conforme\s+prescri[çc][ãa]o\s+m[ée]dica\s+mensal,\s*para\s+terapia\s+antineopl[áa]sica\b/gi, "$1 e $2 conforme prescrição médica mensal, para terapia antineoplásica");
+  t = t.replace(/(\bpara\s+terapia\s+antineopl[áa]sica)\s+e\s+([^,.]+?)\s+para\s+terapia\s+antineopl[áa]sica\b/gi, "e $2 $1");
 
   // Deduplicação de indicação medicamentosa repetida (ex: "A para tratamento psiquiátrico e B para tratamento psiquiátrico" -> "A e B para tratamento psiquiátrico")
   t = t.replace(/(\bpara\s+tratamento\s+([a-zà-ú]+))\s+e\s+([^,.]+?)\s+para\s+tratamento\s+\2\b/gi, "e $3 $1");

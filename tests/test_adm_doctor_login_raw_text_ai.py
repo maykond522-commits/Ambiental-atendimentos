@@ -108,6 +108,9 @@ def test_gestao_medicos_and_adm_shared_esisla_ui():
     gestao_medicos_html = (ROOT / "gestao_medicos.html").read_text(encoding="utf-8")
     gestao_adm_html = (ROOT / "gestao_atendimentos.html").read_text(encoding="utf-8")
     assert 'id="esislaDoctorModal"' in gestao_medicos_html
+    assert 'id="doctorEsislaGenerating"' in gestao_medicos_html
+    assert 'class="doctor-esisla-core-symbol"' in gestao_medicos_html
+    assert 'function setDoctorEsislaStage(' in gestao_medicos_html
     assert 'window.openDoctorEsisla = async function(id, forceRefresh = false)' in gestao_medicos_html
     assert 'data-esisla="${id}"' in gestao_medicos_html
     assert 'id="btnDoctorRegenerateEsisla"' in gestao_medicos_html

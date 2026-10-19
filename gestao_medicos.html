@@ -2146,12 +2146,15 @@ main { min-width: 0; }
   display: none;
   align-items: center;
   justify-content: center;
-  background: rgba(248, 250, 252, 0.94);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  z-index: 60;
-  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 100;
+  border-radius: inherit;
   animation: docFadeIn .22s ease both;
+  touch-action: none;
+  overscroll-behavior: contain;
+  user-select: none;
 }
 .doctor-esisla-generating.show {
   display: flex;
@@ -2774,7 +2777,29 @@ main { min-width: 0; }
 
 <!-- Modal de Ficha e-Sisla Oficial no Portal Médico (Compartilhada com Gestão Adm) -->
 <div id="esislaDoctorModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="doctorEsislaTitle">
-  <div class="modal-box" style="width:min(980px, 96vw);max-height:92vh;display:flex;flex-direction:column">
+  <div class="modal-box" style="position:relative;width:min(980px, 96vw);max-height:92vh;display:flex;flex-direction:column;overflow:hidden">
+    <!-- Overlay de Animação Clínica Personalizada (Portal Médico - Cobre 100% do Modal) -->
+    <div id="doctorEsislaGenerating" class="doctor-esisla-generating" aria-live="polite" aria-busy="false">
+      <div class="doctor-esisla-generating-card">
+        <div class="doctor-esisla-spinner-box">
+          <div class="doctor-esisla-pulse-ring"></div>
+          <div class="doctor-esisla-spinner"></div>
+          <div class="doctor-esisla-spinner-core">
+            <span class="doctor-esisla-core-symbol">🩺</span>
+          </div>
+        </div>
+        <strong id="doctorEsislaGeneratingTitle">Gerando Ficha e-Sisla</strong>
+        <span id="doctorEsislaGeneratingText">Lendo os dados clínicos e ocupacionais do atendimento...</span>
+        <div class="doctor-esisla-progress"><span id="doctorEsislaProgressBar"></span></div>
+        <div class="doctor-esisla-stages">
+          <b class="active" id="docStage1">1. 📋 Prontuário</b>
+          <b id="docStage2">2. 🛡️ Rol DPME</b>
+          <b id="docStage3">3. 🩺 Síntese IA</b>
+          <b id="docStage4">4. ✨ Ficha Pronta</b>
+        </div>
+      </div>
+    </div>
+
     <div class="modal-head" style="background:linear-gradient(135deg, #f8fafc 0%, #f0f9ff 100%);border-bottom:1.5px solid #dbeafe">
       <div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -2786,29 +2811,7 @@ main { min-width: 0; }
       <button type="button" class="modal-close-btn" onclick="closeDoctorEsislaModal()" aria-label="Fechar modal">✕</button>
     </div>
 
-    <div class="modal-body" style="position:relative;padding:18px 22px;overflow-y:auto;flex:1;background:#f8fafc;display:flex;flex-direction:column;gap:14px">
-      <!-- Overlay de Animação Clínica Personalizada (Portal Médico) -->
-      <div id="doctorEsislaGenerating" class="doctor-esisla-generating" aria-live="polite" aria-busy="false">
-        <div class="doctor-esisla-generating-card">
-          <div class="doctor-esisla-spinner-box">
-            <div class="doctor-esisla-pulse-ring"></div>
-            <div class="doctor-esisla-spinner"></div>
-            <div class="doctor-esisla-spinner-core">
-              <span class="doctor-esisla-core-symbol">🩺</span>
-            </div>
-          </div>
-          <strong id="doctorEsislaGeneratingTitle">Gerando Ficha e-Sisla</strong>
-          <span id="doctorEsislaGeneratingText">Lendo os dados clínicos e ocupacionais do atendimento...</span>
-          <div class="doctor-esisla-progress"><span id="doctorEsislaProgressBar"></span></div>
-          <div class="doctor-esisla-stages">
-            <b class="active" id="docStage1">1. 📋 Prontuário</b>
-            <b id="docStage2">2. 🛡️ Rol DPME</b>
-            <b id="docStage3">3. 🩺 Síntese IA</b>
-            <b id="docStage4">4. ✨ Ficha Pronta</b>
-          </div>
-        </div>
-      </div>
-
+    <div class="modal-body" style="padding:18px 22px;overflow-y:auto;flex:1;background:#f8fafc;display:flex;flex-direction:column;gap:14px">
       <!-- Banner Anti-Glosa e Conformidade DPME -->
       <div id="doctorEsislaComplianceBanner" style="padding:10px 14px;border-radius:10px;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:11.5px;display:flex;align-items:center;justify-content:space-between;flex-wrap:gap:8px">
         <div>
@@ -3384,6 +3387,12 @@ main { min-width: 0; }
     if (barEl) barEl.style.width = (percent || 15) + '%';
   }
 
+  const docGenOverlay = $('doctorEsislaGenerating');
+  if (docGenOverlay) {
+    docGenOverlay.addEventListener('wheel', e => { e.preventDefault(); e.stopPropagation(); }, { passive: false });
+    docGenOverlay.addEventListener('touchmove', e => { e.preventDefault(); e.stopPropagation(); }, { passive: false });
+  }
+
   window.openDoctorEsisla = async function(id, forceRefresh = false) {
     if (!id) {
       showToast('Atendimento não identificado.');
@@ -3399,6 +3408,15 @@ main { min-width: 0; }
     const blocosEl = $('doctorEsislaBlocosContainer');
     const regenBtn = $('btnDoctorRegenerateEsisla');
     const overlay = $('doctorEsislaGenerating');
+    const modalBody = modal?.querySelector('.modal-body');
+
+    // Trava a rolagem e limpa visualizações residuais durante a geração para manter a tela limpa e fixa
+    if (modalBody) {
+      modalBody.scrollTop = 0;
+      modalBody.style.overflowY = 'hidden';
+    }
+    if (txtEl) txtEl.value = '';
+    if (blocosEl) blocosEl.innerHTML = '';
 
     if (regenBtn) regenBtn.disabled = true;
     if (overlay) {
@@ -3411,7 +3429,7 @@ main { min-width: 0; }
       1,
       forceRefresh ? 'Refazendo Ficha e-Sisla' : 'Iniciando Ficha e-Sisla',
       forceRefresh ? 'Recriando a ficha técnica com os dados mais recentes...' : 'Consultando dados do prontuário e histórico salvo...',
-      18
+      20
     );
 
     let r = records.find(x => String(x.atendimento || x.id) === String(id)) || { atendimento: id, id };
@@ -3438,7 +3456,7 @@ main { min-width: 0; }
     } else {
       setDoctorEsislaStage(2, 'Estruturação Oficial', 'Adequando queixa, antecedentes e rol ao padrão DPME...', 52);
     }
-    await new Promise(requestAnimationFrame);
+    await new Promise(r => setTimeout(r, 180));
 
     try {
       const response = await AmbientalAuth.authFetch('/api/ai/esisla', {
@@ -3492,6 +3510,9 @@ main { min-width: 0; }
         overlay.classList.remove('show');
         overlay.setAttribute('aria-busy', 'false');
       }
+      if (modalBody) {
+        modalBody.style.overflowY = 'auto';
+      }
       if (regenBtn) regenBtn.disabled = false;
     }
   };
@@ -3534,6 +3555,13 @@ main { min-width: 0; }
     const btn = $('btnDoctorRefinarEsislaIA');
     const oldHtml = btn?.innerHTML;
     const overlay = $('doctorEsislaGenerating');
+    const modal = $('esislaDoctorModal');
+    const modalBody = modal?.querySelector('.modal-body');
+
+    if (modalBody) {
+      modalBody.scrollTop = 0;
+      modalBody.style.overflowY = 'hidden';
+    }
 
     if (btn) { btn.disabled = true; btn.innerHTML = '✨ Otimizando...'; }
     if (overlay) {
@@ -3580,6 +3608,9 @@ main { min-width: 0; }
       if (overlay) {
         overlay.classList.remove('show');
         overlay.setAttribute('aria-busy', 'false');
+      }
+      if (modalBody) {
+        modalBody.style.overflowY = 'auto';
       }
       if (btn) { btn.disabled = false; btn.innerHTML = oldHtml || '✨ Otimizar com IA'; }
     }

@@ -19,7 +19,7 @@ class RefinarFichaEsislaResult(BaseModel):
     model_config = ConfigDict(extra="ignore")
     ficha_otimizada: str = Field(
         ...,
-        description="Texto completo da ficha pericial e-SISLA técnica, formal, revisada gramaticalmente e sem CAPSLOCK."
+        description="Texto completo da ficha pericial e-SISLA técnica, formal, estruturada com quebras de linha duplas entre cada seção oficial, sem CAPSLOCK e sem agrupar em parágrafo único contínuo."
     )
 
 

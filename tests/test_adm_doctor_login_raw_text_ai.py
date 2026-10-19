@@ -133,3 +133,34 @@ def test_gemini_response_schemas_have_no_default_values():
         keys_with_default = [k for k, v in s.get("properties", {}).items() if "default" in v]
         assert not keys_with_default, f"Model {m.__name__} has fields with default values: {keys_with_default}, which breaks Gemini API response_schema!"
 
+
+def test_estruturar_secoes_oficiais_esisla():
+    import app
+    raw_continuous = (
+        "Registro da perícia médica para licença. "
+        "Identificação do Servidor e Vínculo: Servidora com 38 anos de idade, exercendo o cargo de Enfermeira há 4 anos. "
+        "(*) Queixa e Duração: Refere quadro de paralisia facial. "
+        "Antecedentes Mórbidos: Nega comorbidades. "
+        "Atestado/Relatório e Exames Complementares: Em anexo. "
+        "(*) Exame Físico Geral: Servidora em bom estado geral. "
+        "Descrição das Alterações Clínicas e Exames Complementares: Não foram apresentados exames. "
+        "(*) Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s): Limitações temporárias. "
+        "(*) Parecer Médico: FAVORÁVEL. Dias concedidos: 1. Data de início: 01/10/2026. CID 10: G51.0. "
+        "Médico Perito: Dr. Teste. CRM: 12345. Dt/Hr Perícia: 06/10/2026 08:20. "
+        "(*) Resposta aos quesitos: 1) Há doença(s) ou sequela(s) de doença(s) prévia(s)? SIM. "
+        "(*) Justificativa Parecer Médico: Capacidade parcial e temporariamente prejudicada."
+    )
+    structured = app._estruturar_secoes_oficiais_esisla(raw_continuous)
+    lines = structured.splitlines()
+    assert len(lines) >= 10, f"Expected structured lines >= 10, got {len(lines)}"
+    assert "\n\n(*) Queixa e Duração:" in structured
+    assert "\n\nAntecedentes Mórbidos:" in structured
+    assert "\n\n(*) Exame Físico Geral:" in structured
+    assert "\n\n(*) Parecer Médico:" in structured
+    assert "\n\n(*) Resposta aos quesitos:" in structured
+
+    # Verifica também a presença de normalizarTextoFichaEsisla no gestao_medicos.html
+    gestao_medicos_html = (ROOT / "gestao_medicos.html").read_text(encoding="utf-8")
+    assert "function normalizarTextoFichaEsisla(" in gestao_medicos_html
+
+

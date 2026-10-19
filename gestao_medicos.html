@@ -2146,10 +2146,10 @@ main { min-width: 0; }
   display: none;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  z-index: 100;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.98) 0%, rgba(241, 245, 249, 0.98) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 50;
   border-radius: inherit;
   animation: docFadeIn .22s ease both;
   touch-action: none;
@@ -2778,28 +2778,6 @@ main { min-width: 0; }
 <!-- Modal de Ficha e-Sisla Oficial no Portal Médico (Compartilhada com Gestão Adm) -->
 <div id="esislaDoctorModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="doctorEsislaTitle">
   <div class="modal-box" style="position:relative;width:min(980px, 96vw);max-height:92vh;display:flex;flex-direction:column;overflow:hidden">
-    <!-- Overlay de Animação Clínica Personalizada (Portal Médico - Cobre 100% do Modal) -->
-    <div id="doctorEsislaGenerating" class="doctor-esisla-generating" aria-live="polite" aria-busy="false">
-      <div class="doctor-esisla-generating-card">
-        <div class="doctor-esisla-spinner-box">
-          <div class="doctor-esisla-pulse-ring"></div>
-          <div class="doctor-esisla-spinner"></div>
-          <div class="doctor-esisla-spinner-core">
-            <span class="doctor-esisla-core-symbol">🩺</span>
-          </div>
-        </div>
-        <strong id="doctorEsislaGeneratingTitle">Gerando Ficha e-Sisla</strong>
-        <span id="doctorEsislaGeneratingText">Lendo os dados clínicos e ocupacionais do atendimento...</span>
-        <div class="doctor-esisla-progress"><span id="doctorEsislaProgressBar"></span></div>
-        <div class="doctor-esisla-stages">
-          <b class="active" id="docStage1">1. 📋 Prontuário</b>
-          <b id="docStage2">2. 🛡️ Rol DPME</b>
-          <b id="docStage3">3. 🩺 Síntese IA</b>
-          <b id="docStage4">4. ✨ Ficha Pronta</b>
-        </div>
-      </div>
-    </div>
-
     <div class="modal-head" style="background:linear-gradient(135deg, #f8fafc 0%, #f0f9ff 100%);border-bottom:1.5px solid #dbeafe">
       <div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -2811,7 +2789,29 @@ main { min-width: 0; }
       <button type="button" class="modal-close-btn" onclick="closeDoctorEsislaModal()" aria-label="Fechar modal">✕</button>
     </div>
 
-    <div class="modal-body" style="padding:18px 22px;overflow-y:auto;flex:1;background:#f8fafc;display:flex;flex-direction:column;gap:14px">
+    <div class="modal-body" style="position:relative;padding:18px 22px;overflow-y:auto;flex:1;min-height:480px;background:#f8fafc;display:flex;flex-direction:column;gap:14px">
+      <!-- Overlay de Animação Clínica Personalizada (Portal Médico) -->
+      <div id="doctorEsislaGenerating" class="doctor-esisla-generating" aria-live="polite" aria-busy="false">
+        <div class="doctor-esisla-generating-card">
+          <div class="doctor-esisla-spinner-box">
+            <div class="doctor-esisla-pulse-ring"></div>
+            <div class="doctor-esisla-spinner"></div>
+            <div class="doctor-esisla-spinner-core">
+              <span class="doctor-esisla-core-symbol">🩺</span>
+            </div>
+          </div>
+          <strong id="doctorEsislaGeneratingTitle">Gerando Ficha e-Sisla</strong>
+          <span id="doctorEsislaGeneratingText">Lendo os dados clínicos e ocupacionais do atendimento...</span>
+          <div class="doctor-esisla-progress"><span id="doctorEsislaProgressBar"></span></div>
+          <div class="doctor-esisla-stages">
+            <b class="active" id="docStage1">1. 📋 Prontuário</b>
+            <b id="docStage2">2. 🛡️ Rol DPME</b>
+            <b id="docStage3">3. 🩺 Síntese IA</b>
+            <b id="docStage4">4. ✨ Ficha Pronta</b>
+          </div>
+        </div>
+      </div>
+
       <!-- Banner Anti-Glosa e Conformidade DPME -->
       <div id="doctorEsislaComplianceBanner" style="padding:10px 14px;border-radius:10px;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:11.5px;display:flex;align-items:center;justify-content:space-between;flex-wrap:gap:8px">
         <div>
@@ -2822,7 +2822,7 @@ main { min-width: 0; }
       </div>
 
       <!-- Barra de Ferramentas e Alternância de Modo -->
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;background:#fff;padding:8px 12px;border-radius:10px;border:1px solid #e2e8f0">
+      <div id="doctorEsislaToolsBar" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;background:#fff;padding:8px 12px;border-radius:10px;border:1px solid #e2e8f0">
         <div style="display:flex;gap:6px;background:#f1f5f9;padding:3px;border-radius:8px">
           <button type="button" class="btn-sm" id="btnDocEsislaBlocos" onclick="setDoctorEsislaMode('blocos')" style="border:0;background:#fff;color:var(--brand-blue);font-weight:800;box-shadow:0 1px 2px rgba(0,0,0,0.06)">🗂️ Versão em Blocos (Copiar por Campo)</button>
           <button type="button" class="btn-sm" id="btnDocEsislaTxt" onclick="setDoctorEsislaMode('txt')" style="border:0;background:transparent;color:var(--text-muted)">📄 Texto Completo (.TXT)</button>
@@ -3236,14 +3236,66 @@ main { min-width: 0; }
     };
   }
 
+  function normalizarTextoFichaEsisla(text) {
+    if (!text) return '';
+    let str = String(text);
+    if (str.includes('\\n') && !str.includes('\n')) {
+      str = str.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n');
+    }
+    const secoes = [
+      'Identificação do Servidor e Vínculo:?',
+      '\\(\\*\\)\\s*Queixa e Duração:?',
+      'Antecedentes Mórbidos:?',
+      'Atestado/Relatório e Exames Complementares:?',
+      'Atestado/Relatório:?',
+      'Pressão Arterial',
+      'Sistólica\\s*\\(mmHg\\):?',
+      'Diastólica\\s*\\(mmHg\\):?',
+      'Pulso\\s*\\(bpm\\):?',
+      'Altura:',
+      'Peso:',
+      '\\(\\*\\)\\s*Exame Físico Geral:?',
+      'Descrição das Alterações Clínicas e Exames Complementares:?',
+      'Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:?',
+      'Descrição das Alterações Clínicas:?',
+      'Descrição das Alterações Médicas:?',
+      '\\(\\*\\)\\s*Descrição da\\(s\\)\\s*Limitação\\(ções\\)\\s*Física\\(s\\)\\s*e/ou\\s*Mental\\(is\\)\\s*encontrada\\(s\\):?',
+      '\\(\\*\\)\\s*Descrição da\\(s\\)\\s*Limitação:?',
+      '\\(\\*\\)\\s*Parecer Médico:?',
+      'Parecer:',
+      'Dias concedidos:',
+      'Nº Dias:',
+      'Data Início:',
+      'Data de início:',
+      'CID-?10 principal:',
+      'CID\\s*10:',
+      'Descrição:',
+      'CID-?10 secundário:',
+      'Descrição Secundária:',
+      'Médico Perito:',
+      'CRM:',
+      'Dt/Hr Perícia:',
+      'Data e hora da perícia:',
+      '\\(\\*\\)\\s*Resposta aos quesitos:?',
+      '\\(\\*\\)\\s*Justificativa Parecer Médico:?',
+      '\\(\\*\\)\\s*Parecer Final:?'
+    ];
+    for (const h of secoes) {
+      const rx = new RegExp('([^\n\r])(?:[\\.\\;\\,\\s]+)?(' + h + ')', 'gi');
+      str = str.replace(rx, '$1\n\n$2');
+    }
+    return str.replace(/\n{3,}/g, '\n\n').trim();
+  }
+
   function extractSectionDoctorEsisla(text, startHeaders, endHeaders) {
-    const str = String(text || '');
-    if (!str) return '';
+    const raw = String(text || '');
+    if (!raw) return '';
+    const str = normalizarTextoFichaEsisla(raw);
     const starts = Array.isArray(startHeaders) ? startHeaders : [startHeaders];
     const ends = Array.isArray(endHeaders) ? endHeaders : (endHeaders ? [endHeaders] : []);
     const escRx = s => String(s).replace(/:+$/, '').trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&').replace(/\\\(\\\*\\\)\s*/g, '\\(\\s*\\*\\s*\\)\\s*');
-    const startPat = '(?:(?:\\r?\\n|^)\\s*)?(?:' + starts.map(escRx).join('|') + ')[^\\r\\n:]*:?';
-    const endPat = ends.length ? '(?=(?:\\r?\\n|^)\\s*(?:' + ends.map(escRx).join('|') + ')[^\\r\\n:]*:?)' : '(?=$)';
+    const startPat = '(?:(?:[\\r\\n]|^|[.;]\\s*)\\s*)?(?:' + starts.map(escRx).join('|') + ')[^\\r\\n:]*:?';
+    const endPat = ends.length ? '(?=(?:[\\r\\n]|^|[.;]\\s+)\\s*(?:' + ends.map(escRx).join('|') + ')[^\\r\\n:]*:?)' : '(?=$)';
     const rx = new RegExp(startPat + '\\s*([\\s\\S]*?)\\s*' + endPat, 'i');
     const m = str.match(rx);
     return m ? m[1].trim() : '';
@@ -3290,7 +3342,8 @@ main { min-width: 0; }
     const str = String(text || '');
     const chip = $('doctorEsislaStatsChip');
     if (chip) {
-      const lines = str ? str.split('\n').length : 0;
+      const norm = normalizarTextoFichaEsisla(str);
+      const lines = norm ? norm.split('\n').filter(l => l.trim().length > 0).length : 0;
       chip.textContent = `${str.length.toLocaleString('pt-BR')} caracteres · ${lines} linhas`;
     }
   };
@@ -3298,41 +3351,65 @@ main { min-width: 0; }
   window.renderDoctorEsislaBlocos = function(textoFicha) {
     const container = $('doctorEsislaBlocosContainer');
     if (!container) return;
-    const str = String(textoFicha || '').trim();
-    if (!str) {
+    const raw = String(textoFicha || '').trim();
+    if (!raw) {
       container.innerHTML = '<div class="empty">Nenhum conteúdo disponível para exibir em blocos.</div>';
       return;
     }
+    const str = normalizarTextoFichaEsisla(raw);
 
+    const ident = extractSectionDoctorEsisla(str, ['Identificação do Servidor e Vínculo', 'Identificação do Servidor'], ['(*) Queixa e Duração', 'Queixa e Duração']);
     const queixa = extractSectionDoctorEsisla(str, ['(*) Queixa e Duração', 'Queixa e Duração'], ['Antecedentes Mórbidos']);
-    const antecedentes = extractSectionDoctorEsisla(str, ['Antecedentes Mórbidos'], ['Atestado/Relatório/Exames Complementares', 'Atestado/Relatório', 'Pressão Arterial']);
-    const atestado = extractSectionDoctorEsisla(str, ['Atestado/Relatório/Exames Complementares', 'Atestado/Relatório'], ['Pressão Arterial', 'Sistólica', '(*)Exame Físico Geral']) || 'Em anexo.';
-    const exameFisico = extractSectionDoctorEsisla(str, ['(*)Exame Físico Geral', 'Exame Físico Geral'], [
+    const antecedentes = extractSectionDoctorEsisla(str, ['Antecedentes Mórbidos'], ['Atestado/Relatório e Exames Complementares', 'Atestado/Relatório/Exames Complementares', 'Atestado/Relatório', 'Pressão Arterial']);
+    const atestado = extractSectionDoctorEsisla(str, ['Atestado/Relatório e Exames Complementares', 'Atestado/Relatório/Exames Complementares', 'Atestado/Relatório'], ['Pressão Arterial', 'Sistólica', 'Altura', '(*) Exame Físico Geral', '(*)Exame Físico Geral']) || 'Em anexo.';
+    const exameFisico = extractSectionDoctorEsisla(str, ['(*) Exame Físico Geral', '(*)Exame Físico Geral', 'Exame Físico Geral'], [
+      'Descrição das Alterações Clínicas e Exames Complementares',
       'Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares',
       'Descrição das Alterações Clínicas',
-      '(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)',
+      'Descrição das Alterações Médicas',
+      '(*) Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)',
+      '(*) Descrição da(s) Limitação',
       '(*)Descrição da(s) Limitação',
-      '(*)Parecer Médico'
+      '(*) Parecer Médico'
+    ]);
+    const altClinicas = extractSectionDoctorEsisla(str, [
+      'Descrição das Alterações Clínicas e Exames Complementares',
+      'Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares',
+      'Descrição das Alterações Clínicas',
+      'Descrição das Alterações Médicas'
+    ], [
+      '(*) Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)',
+      '(*) Descrição da(s) Limitação',
+      '(*)Descrição da(s) Limitação',
+      '(*) Parecer Médico'
     ]);
     const limitacoes = extractSectionDoctorEsisla(str, [
+      '(*) Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)',
       '(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)',
+      '(*) Descrição da(s) Limitação',
       '(*)Descrição da(s) Limitação',
       'Descrição da(s) Limitação'
-    ], ['(*)Parecer Médico', 'Parecer Médico']);
-    const parecerBloco = extractSectionDoctorEsisla(str, ['(*)Parecer Médico', 'Parecer Médico'], ['(*)Resposta aos quesitos', 'Resposta aos quesitos']);
-    const quesitosBloco = extractSectionDoctorEsisla(str, ['(*)Resposta aos quesitos', 'Resposta aos quesitos'], ['(*)Justificativa Parecer Médico', 'Justificativa Parecer Médico']);
-    const justificativa = extractSectionDoctorEsisla(str, ['(*)Justificativa Parecer Médico', 'Justificativa Parecer Médico'], ['(*) Parecer Final', '(*)Parecer Final']);
+    ], ['(*) Parecer Médico', '(*)Parecer Médico', 'Parecer Médico']);
+    const parecerBloco = extractSectionDoctorEsisla(str, ['(*) Parecer Médico', '(*)Parecer Médico', 'Parecer Médico'], ['(*) Resposta aos quesitos', '(*)Resposta aos quesitos', 'Resposta aos quesitos']);
+    const quesitosBloco = extractSectionDoctorEsisla(str, ['(*) Resposta aos quesitos', '(*)Resposta aos quesitos', 'Resposta aos quesitos'], ['(*) Justificativa Parecer Médico', '(*)Justificativa Parecer Médico', 'Justificativa Parecer Médico']);
+    const justificativa = extractSectionDoctorEsisla(str, ['(*) Justificativa Parecer Médico', '(*)Justificativa Parecer Médico', 'Justificativa Parecer Médico'], ['(*) Parecer Final', '(*)Parecer Final', 'Parecer Final']);
 
-    const blocks = [
+    let blocks = [
+      { icon: '👤', title: 'Identificação do Servidor e Vínculo', content: ident },
       { icon: '🗣️', title: '(*) Queixa e Duração', content: queixa },
       { icon: '📜', title: 'Antecedentes Mórbidos', content: antecedentes },
       { icon: '📑', title: 'Atestado / Relatório / Exames Complementares', content: atestado },
       { icon: '🩺', title: '(*) Exame Físico Geral', content: exameFisico },
+      { icon: '🔬', title: 'Descrição das Alterações Clínicas e Exames Complementares', content: altClinicas },
       { icon: '⚠️', title: '(*) Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is)', content: limitacoes },
       { icon: '⚖️', title: '(*) Parecer Médico', content: parecerBloco },
       { icon: '❓', title: '(*) Resposta aos Quesitos', content: quesitosBloco },
       { icon: '📝', title: '(*) Justificativa Parecer Médico', content: justificativa }
-    ].filter(b => b.content);
+    ].filter(b => b.content && b.content.trim().length > 0);
+
+    if (blocks.length === 0) {
+      blocks = [{ icon: '📄', title: 'Ficha e-Sisla Oficial', content: str }];
+    }
 
     container.innerHTML = blocks.map(b => `
       <div class="doc-esisla-card">
@@ -3340,7 +3417,7 @@ main { min-width: 0; }
           <div class="doc-esisla-card-title"><span>${b.icon}</span><span>${esc(b.title)}</span></div>
           <button type="button" class="btn-sm" onclick="copyDoctorEsislaBlock(this)">📋 Copiar Bloco</button>
         </div>
-        <div class="doc-esisla-card-body">${esc(b.content)}</div>
+        <div class="doc-esisla-card-body" style="white-space:pre-wrap;line-height:1.6">${esc(b.content)}</div>
       </div>
     `).join('');
   };
@@ -3415,8 +3492,12 @@ main { min-width: 0; }
       modalBody.scrollTop = 0;
       modalBody.style.overflowY = 'hidden';
     }
-    if (txtEl) txtEl.value = '';
-    if (blocosEl) blocosEl.innerHTML = '';
+    const banner = $('doctorEsislaComplianceBanner');
+    const tools = $('doctorEsislaToolsBar');
+    if (banner) banner.style.display = 'none';
+    if (tools) tools.style.display = 'none';
+    if (blocosEl) { blocosEl.style.display = 'none'; blocosEl.innerHTML = ''; }
+    if (txtEl) { txtEl.style.display = 'none'; txtEl.value = ''; }
 
     if (regenBtn) regenBtn.disabled = true;
     if (overlay) {
@@ -3503,7 +3584,10 @@ main { min-width: 0; }
       }
       renderLists();
     } catch (err) {
-      if (blocosEl) blocosEl.innerHTML = `<div style="text-align:center;padding:28px;color:var(--accent-red)">Erro ao gerar Ficha e-Sisla: ${esc(err.message || err)}</div>`;
+      if (blocosEl) {
+        blocosEl.style.display = 'grid';
+        blocosEl.innerHTML = `<div style="text-align:center;padding:28px;color:var(--accent-red)">Erro ao gerar Ficha e-Sisla: ${esc(err.message || err)}</div>`;
+      }
       showToast(err.message || 'Erro ao gerar Ficha e-Sisla.');
     } finally {
       if (overlay) {
@@ -3513,6 +3597,9 @@ main { min-width: 0; }
       if (modalBody) {
         modalBody.style.overflowY = 'auto';
       }
+      if (banner) banner.style.display = 'flex';
+      if (tools) tools.style.display = 'flex';
+      setDoctorEsislaMode(window.currentDoctorEsislaMode || 'blocos');
       if (regenBtn) regenBtn.disabled = false;
     }
   };
@@ -3557,11 +3644,18 @@ main { min-width: 0; }
     const overlay = $('doctorEsislaGenerating');
     const modal = $('esislaDoctorModal');
     const modalBody = modal?.querySelector('.modal-body');
+    const banner = $('doctorEsislaComplianceBanner');
+    const tools = $('doctorEsislaToolsBar');
+    const blocosEl = $('doctorEsislaBlocosContainer');
 
     if (modalBody) {
       modalBody.scrollTop = 0;
       modalBody.style.overflowY = 'hidden';
     }
+    if (banner) banner.style.display = 'none';
+    if (tools) tools.style.display = 'none';
+    if (blocosEl) blocosEl.style.display = 'none';
+    if (el) el.style.display = 'none';
 
     if (btn) { btn.disabled = true; btn.innerHTML = '✨ Otimizando...'; }
     if (overlay) {
@@ -3581,7 +3675,8 @@ main { min-width: 0; }
           texto_ficha: texto,
           texto: texto,
           atendimento_id: atdId,
-          atendimento: atdId
+          atendimento: atdId,
+          id: atdId
         })
       });
       setDoctorEsislaStage(3, 'Polimento e Validação', 'Finalizando aplicação de melhorias estruturais na ficha...', 88);
@@ -3600,8 +3695,12 @@ main { min-width: 0; }
         window.currentDoctorEsislaRecord.ficha_esisla = otimizado;
       }
       const idx = records.findIndex(x => String(x.atendimento || x.id) === String(atdId));
-      if (idx >= 0) records[idx].ficha_esisla = otimizado;
-      showToast('✨ Ficha e-Sisla otimizada e salva com sucesso!');
+      if (idx >= 0) {
+        records[idx].ficha_esisla = otimizado;
+        if (records[idx].aux) records[idx].aux.fichaEsisla = otimizado;
+        if (records[idx].payload) records[idx].payload.ficha_esisla = otimizado;
+      }
+      showToast('✨ Ficha e-Sisla otimizada e reestruturada com sucesso!');
     } catch (err) {
       showToast(err.message || 'Erro ao otimizar ficha com IA.');
     } finally {
@@ -3612,6 +3711,9 @@ main { min-width: 0; }
       if (modalBody) {
         modalBody.style.overflowY = 'auto';
       }
+      if (banner) banner.style.display = 'flex';
+      if (tools) tools.style.display = 'flex';
+      setDoctorEsislaMode(window.currentDoctorEsislaMode || 'blocos');
       if (btn) { btn.disabled = false; btn.innerHTML = oldHtml || '✨ Otimizar com IA'; }
     }
   };

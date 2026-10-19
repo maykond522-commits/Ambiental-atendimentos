@@ -4501,9 +4501,71 @@ def _remover_capslock_excessivo_esisla(texto: str) -> str:
 
     return "\n".join(linhas_novas)
 
+def _estruturar_secoes_oficiais_esisla(texto: str) -> str:
+    """Garante rigorosamente que cada seção e campo oficial do e-SISLA inicie em nova linha com espaçamento padrão."""
+    if not texto:
+        return ""
+    t = str(texto).strip()
+    if "\\n" in t and "\n" not in t:
+        t = t.replace("\\r\\n", "\n").replace("\\n", "\n")
+
+    secoes_principais = [
+        r'Identificação do Servidor e Vínculo:?',
+        r'\(\*\)\s*Queixa e Duração:?',
+        r'Antecedentes Mórbidos:?',
+        r'Atestado/Relatório e Exames Complementares:?',
+        r'Atestado/Relatório:?',
+        r'Pressão Arterial',
+        r'Altura:',
+        r'Peso:',
+        r'\(\*\)\s*Exame Físico Geral:?',
+        r'Descrição das Alterações Clínicas e Exames Complementares:?',
+        r'Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:?',
+        r'Descrição das Alterações Clínicas:?',
+        r'Descrição das Alterações Médicas:?',
+        r'\(\*\)\s*Descrição da\(s\)\s*Limitação\(ções\)\s*Física\(s\)\s*e/ou\s*Mental\(is\)\s*encontrada\(s\):?',
+        r'\(\*\)\s*Descrição da\(s\)\s*Limitação:?',
+        r'\(\*\)\s*Parecer Médico:?',
+        r'\(\*\)\s*Resposta aos quesitos:?',
+        r'\(\*\)\s*Justificativa Parecer Médico:?',
+        r'\(\*\)\s*Parecer Final:?'
+    ]
+    for pat in secoes_principais:
+        t = re.sub(rf'(?<!\n)(?:[\.\;\,\s]+)?({pat})', r'\n\n\1', t, flags=re.IGNORECASE)
+
+    campos_secundarios = [
+        r'Sistólica\s*\(mmHg\):?',
+        r'Diastólica\s*\(mmHg\):?',
+        r'Pulso\s*\(bpm\):?',
+        r'Parecer:?\s*(?:FAVORÁVEL|CONTRÁRIO|FAVORAVEL|CONTRARIO)',
+        r'Dias concedidos:?',
+        r'Nº Dias:?',
+        r'Data Início:?',
+        r'Data de início:?',
+        r'CID-?10\s*principal:?',
+        r'CID\s*10:?',
+        r'Descrição:?',
+        r'CID-?10\s*secundário:?',
+        r'Descrição Secundária:?',
+        r'Médico Perito:?',
+        r'CRM:?',
+        r'Dt/Hr Perícia:?',
+        r'Data e hora da perícia:?',
+        r'1\)\s*Há doença\(s\)',
+        r'2\)\s*A\(s\) doença\(s\)',
+        r'3\)\s*A\(s\) limitação\(ções\)'
+    ]
+    for pat in campos_secundarios:
+        t = re.sub(rf'(?<!\n)(?:[\.\;\,\s]+)?({pat})', r'\n\1', t, flags=re.IGNORECASE)
+
+    t = re.sub(r'[ \t]+', ' ', t)
+    t = re.sub(r'\n{3,}', '\n\n', t).strip()
+    return t
+
 def _refinar_ficha_esisla_deterministica(texto: str) -> str:
     if not texto:
         return ""
+    texto = _estruturar_secoes_oficiais_esisla(texto)
     lines = texto.splitlines()
     cleaned = []
     prev_line = None
@@ -4517,9 +4579,11 @@ def _refinar_ficha_esisla_deterministica(texto: str) -> str:
         cleaned.append(clean_text)
         prev_line = stripped
     res = "\n".join(cleaned).strip()
+    res = _estruturar_secoes_oficiais_esisla(res)
     res = _sanitizar_texto_portugues_esisla(res)
     res = _desduplicar_e_limpar_queixa_esisla(res)
     res = _remover_capslock_excessivo_esisla(res)
+    res = _estruturar_secoes_oficiais_esisla(res)
     return res
 
 @app.post("/api/ai/refinar-ficha-esisla")
@@ -4551,7 +4615,8 @@ def api_ai_refinar_ficha_esisla():
             "   - (*) Justificativa Parecer Médico\n"
             "   - Biometria e Sinais Vitais (Sistólica, Diastólica, Pulso, Altura, Peso)\n"
             "   - CRM Médico Assistente, Nome, Data da Perícia, CIDs e Dias Concedidos\n"
-            "6. Retorne APENAS o texto completo da ficha e-SISLA aprimorada e robusta, sem introduções e sem cercas markdown."
+            "6. ESTRUTURAÇÃO OBRIGATÓRIA EM LINHAS: Cada seção oficial do e-SISLA DEVE iniciar em uma linha separada, com quebra de linha dupla antes do cabeçalho. NUNCA junte seções em parágrafo contínuo único.\n"
+            "7. Retorne APENAS o texto completo da ficha e-SISLA aprimorada e robusta, sem introduções e sem cercas markdown."
         )
 
         prompt = (

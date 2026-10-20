@@ -205,18 +205,177 @@
     }
   });
 
-  // 2. Monitora mudanças no localStorage (contingência quando gerada)
+  // Extrai payload a partir do texto ou da tela médica caso o localStorage ainda não tenha sincronizado
+  function extrairPayloadDeTextoEsisla(rawText) {
+    if (!rawText || typeof rawText !== 'string') return null;
+    const str = rawText.replace(/\r/g, '');
+    if (str.length < 30) return null;
+
+    function extrair(texto, inis, fims) {
+      const arrIni = Array.isArray(inis) ? inis : [inis];
+      let posIni = -1;
+      let matchedIni = '';
+      for (const i of arrIni) {
+        const idx = texto.indexOf(i);
+        if (idx !== -1 && (posIni === -1 || idx < posIni)) {
+          posIni = idx;
+          matchedIni = i;
+        }
+      }
+      if (posIni === -1) return '';
+      const start = posIni + matchedIni.length;
+      if (!fims) return texto.slice(start).trim();
+      const arrFim = Array.isArray(fims) ? fims : [fims];
+      let posFim = -1;
+      for (const f of arrFim) {
+        const idx = texto.indexOf(f, start);
+        if (idx !== -1 && (posFim === -1 || idx < posFim)) {
+          posFim = idx;
+        }
+      }
+      if (posFim === -1) return texto.slice(start).trim();
+      return texto.slice(start, posFim).trim();
+    }
+
+    const protoMatch = str.match(/(?:Atendimento|Protocolo)[:\s#]*([A-Za-z0-9_\-\.]+)/i);
+    const subMatch = (document.getElementById('doctorEsislaSub')?.textContent || '').match(/Atendimento\s+([^·\s]+)/i);
+    const protocolo = protoMatch ? protoMatch[1].trim() : (subMatch ? subMatch[1].trim() : 'ATD_' + Date.now());
+
+    const pacMatch = str.match(/(?:Servidor(?:\(a\))?|Paciente|Nome)[:\s]*([^\n\r]+)/i);
+    const subPacMatch = (document.getElementById('doctorEsislaSub')?.textContent || '').match(/·\s*([^·]+)\s*·/i);
+    const servidor = pacMatch ? pacMatch[1].trim() : (subPacMatch ? subPacMatch[1].trim() : 'Servidor');
+
+    const queixa = extrair(str, ['(*) Queixa e Duração:', '(*) Queixa e Duração', 'Queixa e Duração:'], ['Antecedentes Mórbidos', '(*) Antecedentes']);
+    const antecedentes = extrair(str, ['Antecedentes Mórbidos:', 'Antecedentes Mórbidos', '(*) Antecedentes'], ['Atestado / Relatório', 'Atestado', '(*) Exame Físico']);
+    const atestado = extrair(str, ['Atestado / Relatório / Exames Complementares:', 'Atestado / Relatório', 'Atestados:'], ['(*) Exame Físico Geral', 'Exame Físico Geral', '(*) Exame Físico']) || 'Em anexo.';
+    const exameFisico = extrair(str, ['(*) Exame Físico Geral:', '(*) Exame Físico Geral', 'Exame Físico Geral:'], ['Descrição das Alterações Clínicas', 'Descrição das Alterações', '(*) Descrição da(s) Limitação']);
+    const limitacoes = extrair(str, ['(*) Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is):', '(*) Descrição da(s) Limitação', 'Descrição da(s) Limitação:'], ['(*) Parecer Médico:', '(*) Parecer Médico', 'Parecer Médico:']);
+
+    const parecerStr = extrair(str, ['(*) Parecer Médico:', 'Parecer Médico:'], ['Nº Dias:', 'Nº Dias', 'Dias:', 'Data Início:']);
+    const isContrario = /CONTR[ÁA]RIO/i.test(parecerStr) || /PARECER:\s*CONTR[ÁA]RIO/i.test(str);
+    const flPfinal = isContrario ? 'C' : 'F';
+
+    let dias = extrair(str, ['Nº Dias:', 'Nº Dias', 'Dias Concedidos:', 'Dias:'], ['Data Início:', 'Data Início', 'CID 10:']);
+    dias = dias.replace(/\D/g, '');
+    if (flPfinal === 'C') dias = '0';
+    else if (!dias || dias === '0') dias = '1';
+
+    let dtIni = extrair(str, ['Data Início:', 'Data Início'], ['CID 10:', 'CID 10', 'CID:', 'Descrição:']);
+    dtIni = dtIni.split('\n')[0].trim();
+
+    let cid1 = extrair(str, ['CID 10 Principal:', 'CID 10:', 'CID 10', 'CID:'], ['Descrição:', 'Descrição', 'CID 10 Secundário:']);
+    const mCid1 = cid1.match(/[A-Za-z]\d{2}(?:\.\d{1,2})?/);
+    cid1 = mCid1 ? mCid1[0].toUpperCase() : '';
+
+    let descrCid1 = extrair(str, ['Descrição:', 'Descrição'], ['CID 10 Secundário:', 'CID 10 Secundário', '(*) Resposta aos Quesitos', '(*) Justificativa']);
+    descrCid1 = descrCid1.split('\n')[0].trim();
+
+    let cid2 = extrair(str, ['CID 10 Secundário:', 'CID Secundário:'], ['Descrição Secundária:', '(*) Resposta aos Quesitos', '(*) Justificativa']);
+    const mCid2 = cid2.match(/[A-Za-z]\d{2}(?:\.\d{1,2})?/);
+    cid2 = mCid2 ? mCid2[0].toUpperCase() : '';
+
+    let descrCid2 = extrair(str, ['Descrição Secundária:'], ['(*) Resposta aos Quesitos', '(*) Justificativa']);
+    descrCid2 = descrCid2.split('\n')[0].trim();
+
+    const q1Sim = /1\)\s*H[áa]\s*doen[çc]a[^\n]*\bSIM\b/i.test(str);
+    const q2Sim = /2\)\s*A\(s\)\s*doen[çc]a[^\n]*\bSIM\b/i.test(str);
+    const q3Sim = /3\)\s*A\(s\)\s*limita[çc][^\n]*\bSIM\b/i.test(str);
+
+    const fl_d_prev = q1Sim ? 'S' : (flPfinal === 'C' ? 'S' : 'S');
+    const fl_limit = q2Sim ? 'S' : (flPfinal === 'C' ? 'N' : 'S');
+    const fl_imped = q3Sim ? 'S' : (flPfinal === 'C' ? 'N' : 'S');
+
+    const justif = extrair(str, ['(*) Justificativa Parecer Médico:', '(*) Justificativa Parecer Final:', 'Justificativa:']);
+
+    const paSis = (str.match(/Sist[óo]lica(?:\s*\(mmHg\))?[:\s]*(\d+)/i) || [])[1] || '';
+    const paDia = (str.match(/Diast[óo]lica(?:\s*\(mmHg\))?[:\s]*(\d+)/i) || [])[1] || '';
+    const pulso = (str.match(/Pulso(?:\s*\(bpm\))?[:\s]*(\d+)/i) || [])[1] || '';
+    const altRaw = (str.match(/Altura[:\s]*([\d,\.]+)/i) || [])[1] || '';
+    const pesoRaw = (str.match(/Peso[:\s]*(\d+)/i) || [])[1] || '';
+
+    const cb = {
+      'voMedico.parEdtcspf': /TCSPF|Tecido Celular Subcutâneo/i.test(str),
+      'voMedico.parEdAc': /Aparelho Circulatório/i.test(str),
+      'voMedico.parEdAr': /Aparelho Respiratório/i.test(str),
+      'voMedico.parEdAHp': /Aparelho Hemolinfopoético/i.test(str),
+      'voMedico.parEdAd': /Aparelho Digestivo/i.test(str),
+      'voMedico.parEdAgu': /Aparelho Geniturinário/i.test(str),
+      'voMedico.parEdAoal': /Órgãos dos Sentidos/i.test(str),
+      'voMedico.parEdAe': /Aparelho Endócrino/i.test(str),
+      'voMedico.parEdSn': /Sistema Nervoso/i.test(str),
+      'voMedico.parEdOs': /Osteoarticular/i.test(str),
+      'voMedico.parEdEm': /Estado Mental/i.test(str),
+      'voMedico.parEdOutro': /Outros/i.test(str)
+    };
+    if (!Object.values(cb).some(Boolean) && exameFisico) {
+      cb['voMedico.parEdOutro'] = true;
+    }
+
+    const camposEsisla = {
+      'voMedico.parRlCat': queixa,
+      'voMedico.parRlAp': antecedentes || 'Nega',
+      'voMedico.parRlHda': atestado || 'Em anexo.',
+      'voMedico.parRlExApres': exameFisico,
+      'voMedico.parRlReqExComp': limitacoes,
+      'fl_d_prev': fl_d_prev,
+      'fl_limit': fl_limit,
+      'fl_imped': fl_imped,
+      'voResult.voParecerFinal.flPfinal': flPfinal,
+      'voResult.voParecerFinal.qtDiasPm': dias,
+      'voResult.voParecerFinal.dtIniPm': dtIni,
+      'cdCidPm': cid1,
+      'nmCidPm': descrCid1,
+      'cdCid2Pm': cid2,
+      'voResult.voParecerFinal.nmCidPm2': descrCid2,
+      'voResult.voParecerFinal.cdCidPm': cid1,
+      'voResult.voParecerFinal.nmCidPm': descrCid1,
+      'voResult.voParecerFinal.cdCid2Pm': cid2,
+      'voResult.voParecerFinal.nmCid2Pm': descrCid2,
+      'voMedico.parRlComp': justif,
+      'voMedico.lgPressArterialMax': paSis,
+      'voMedico.lgPressArterialMin': paDia,
+      'voMedico.lgPulsacao': pulso,
+      'voMedico.lgAltura': altRaw,
+      'voMedico.lgPeso': pesoRaw,
+      ...cb
+    };
+
+    return {
+      protocolo,
+      servidor,
+      paciente: servidor,
+      ...camposEsisla,
+      campos_esisla: camposEsisla,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  function extrairPayloadDoDOM() {
+    const docEl = document.getElementById('doctorEsislaText');
+    const admEl = document.getElementById('esislaText');
+    const txt = (docEl && docEl.value) ? docEl.value : (admEl && admEl.value ? admEl.value : '');
+    if (txt && txt.trim().length > 30) {
+      return extrairPayloadDeTextoEsisla(txt);
+    }
+    return null;
+  }
+
+  // 2. Monitora mudanças no localStorage ou no DOM da página (contingência quando gerada)
   function checkLocalStorage() {
     try {
+      let parsed = null;
       const raw = localStorage.getItem('ambiental_esisla_current_payload');
       if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && (parsed.timestamp || parsed.protocolo)) {
-          const syncKey = String(parsed.timestamp || parsed.protocolo);
-          if (!window._lastSyncTime || window._lastSyncTime !== syncKey) {
-            window._lastSyncTime = syncKey;
-            exibirOpcaoCopiarParaFila(parsed);
-          }
+        try { parsed = JSON.parse(raw); } catch(_) {}
+      }
+      if (!parsed || !parsed.protocolo || !parsed.campos_esisla) {
+        parsed = extrairPayloadDoDOM();
+      }
+      if (parsed && (parsed.timestamp || parsed.protocolo)) {
+        const syncKey = String(parsed.timestamp || parsed.protocolo);
+        if (!window._lastSyncTime || window._lastSyncTime !== syncKey) {
+          window._lastSyncTime = syncKey;
+          exibirOpcaoCopiarParaFila(parsed);
         }
       }
     } catch(_) {}
@@ -224,38 +383,48 @@
 
   setInterval(checkLocalStorage, 1500);
 
-  // 3. Clique em botões de copiar explícito no sistema Ambiental: adiciona diretamente à fila
+  // 3. Clique em botões de copiar explícito no sistema Ambiental (Médicos e Adm): adiciona diretamente à fila
   document.addEventListener('click', (e) => {
     const btn = e.target.closest(
       '#copyEsislaBtn, #btnCopyEsislaJson, #btnCopiarLaudoEsisla, #esislaCopyHeaderBtn, ' +
+      '#btnDoctorCopyEsislaFull, #btnDoctorSendToExtension, .btn-doctor-esisla-copy, ' +
       '.btn-copy-card-block, .btn-copy-mini, .top-btn-esisla, ' +
-      '[onclick*="copiarLaudoEsisla"], [onclick*="copyEsisla"], [onclick*="copyEsislaJson"]'
+      '[onclick*="copiarLaudoEsisla"], [onclick*="copyEsisla"], [onclick*="copyEsislaJson"], ' +
+      '[onclick*="copyDoctorEsisla"], [onclick*="enviarDoctorEsisla"]'
     );
     if (btn) {
       setTimeout(() => {
         try {
+          let parsed = null;
           const raw = localStorage.getItem('ambiental_esisla_current_payload');
           if (raw) {
-            const parsed = JSON.parse(raw);
-            if (parsed && (parsed.campos_esisla || parsed.protocolo)) {
-              salvarNaFila(parsed);
-            }
+            try { parsed = JSON.parse(raw); } catch(_) {}
+          }
+          if (!parsed || !parsed.campos_esisla || !parsed.protocolo) {
+            parsed = extrairPayloadDoDOM();
+          }
+          if (parsed && (parsed.campos_esisla || parsed.protocolo)) {
+            salvarNaFila(parsed);
           }
         } catch(_) {}
       }, 150);
     }
   }, true);
 
-  // 4. Se o usuário copiar JSON do e-SISLA para a área de transferência
+  // 4. Se o usuário copiar JSON ou texto da ficha e-SISLA para a área de transferência
   window.addEventListener('copy', () => {
     setTimeout(() => {
       try {
+        let parsed = null;
         const raw = localStorage.getItem('ambiental_esisla_current_payload');
         if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed && (parsed.campos_esisla || parsed.protocolo)) {
-            salvarNaFila(parsed);
-          }
+          try { parsed = JSON.parse(raw); } catch(_) {}
+        }
+        if (!parsed || !parsed.campos_esisla || !parsed.protocolo) {
+          parsed = extrairPayloadDoDOM();
+        }
+        if (parsed && (parsed.campos_esisla || parsed.protocolo)) {
+          salvarNaFila(parsed);
         }
       } catch(_) {}
     }, 200);

@@ -39,9 +39,28 @@
     existing.forEach(el => el.remove());
   }
 
+  function sanitizarNomeServidor(rawName) {
+    const s = String(rawName || '').trim();
+    if (!s || s.length > 90) return '';
+    if (/^(?:de\s+\d+\s+anos|relatou\b|n[ãa]o\s+readaptad|com\s+queixa\b|servidor(?:\(a\))?\s+de\s+\d+)/i.test(s)) return '';
+    if (/\b(?:relatou\s+n[ãa]o\s+ser\s+readaptad|com\s+queixa\s+de|em\s+acompanhamento)\b/i.test(s)) return '';
+    return s;
+  }
+
+  function obterNomeServidorSeguro(payload) {
+    const subTxt = (document.getElementById('doctorEsislaSub')?.textContent || document.getElementById('esislaSub')?.textContent || '');
+    const subPacMatch = subTxt.match(/·\s*([^·]+)\s*·/);
+    const domNome = sanitizarNomeServidor(subPacMatch ? subPacMatch[1].trim() : '');
+    const payloadNome = sanitizarNomeServidor(payload?.servidor || payload?.paciente || '');
+    return payloadNome || (domNome && domNome !== 'Servidor(a)' ? domNome : '') || domNome || 'Servidor';
+  }
+
   // Exibe o card interativo dando ao médico a ESCOLHA de adicionar ou não aquela ficha à fila
   function exibirOpcaoCopiarParaFila(payload) {
     if (!payload) return;
+    const pac = obterNomeServidorSeguro(payload);
+    payload.servidor = pac;
+    payload.paciente = pac;
     pendingPayload = payload;
 
     const proto = String(payload.protocolo || 'Sem Protocolo');
@@ -57,7 +76,6 @@
     lastPromptedTime = now;
     removerPrompt();
 
-    const pac = payload.servidor || payload.paciente || 'Servidor';
     const cid = payload.cdCidPm || payload['voResult.voParecerFinal.cdCidPm'] || '';
     const dias = payload['voResult.voParecerFinal.qtDiasPm'] || payload.dias || '';
 
@@ -65,31 +83,31 @@
     prompt.id = 'ambientalExtensionQueuePrompt';
     prompt.className = 'ambiental-ext-queue-prompt';
     prompt.innerHTML = `
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:22px;line-height:1">⚡</span>
-          <div>
-            <strong style="font-size:13.5px;color:#0F172A;display:block;font-weight:800">Ficha e-SISLA Pronta</strong>
-            <span style="font-size:11.5px;color:#334155;font-weight:600;display:block">${pac}</span>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
+          <span style="font-size:18px;line-height:1;flex-shrink:0">⚡</span>
+          <div style="min-width:0;flex:1">
+            <strong style="font-size:12.5px;color:#0F172A;display:block;font-weight:800;line-height:1.2">Ficha e-SISLA Pronta</strong>
+            <span style="font-size:11.5px;color:#0369A1;font-weight:700;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px" title="${pac.replace(/"/g, '&quot;')}">${pac}</span>
           </div>
         </div>
-        <button type="button" class="btn-ext-prompt-close" style="background:transparent;border:none;color:#94A3B8;cursor:pointer;font-size:16px;padding:2px 6px;border-radius:4px" title="Fechar sem adicionar">✕</button>
+        <button type="button" class="btn-ext-prompt-close" style="background:transparent;border:none;color:#94A3B8;cursor:pointer;font-size:15px;padding:0 4px;border-radius:4px;flex-shrink:0" title="Fechar sem adicionar">✕</button>
       </div>
 
-      <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:8px 10px;margin-bottom:12px;font-size:11.5px;color:#475569">
+      <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:7px;padding:6px 10px;margin-bottom:8px;font-size:11px;color:#475569;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
         <div><strong>Protocolo:</strong> <code style="font-family:monospace;font-weight:700;color:#0369A1">${proto}</code></div>
-        ${cid ? `<div style="margin-top:2px"><strong>CID:</strong> ${cid} ${dias ? `· <strong>${dias} dias</strong>` : ''}</div>` : ''}
+        ${cid ? `<div><strong>CID:</strong> ${cid} ${dias ? `· <strong>${dias}d</strong>` : ''}</div>` : ''}
       </div>
 
-      <div style="font-size:11.5px;color:#475569;margin-bottom:12px;line-height:1.35">
-        Deseja copiar e adicionar esta ficha à <strong>Fila da Extensão</strong> para preencher automaticamente no e-SISLA?
+      <div style="font-size:11px;color:#475569;margin-bottom:10px;line-height:1.3">
+        Adicionar esta ficha à <strong>Fila da Extensão</strong> para autopreencher no e-SISLA?
       </div>
 
-      <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px">
-        <button type="button" class="btn-ext-prompt-ignore" style="background:#FFFFFF;border:1px solid #CBD5E1;color:#64748B;font-size:11.5px;font-weight:700;padding:6px 12px;border-radius:7px;cursor:pointer">
+      <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px">
+        <button type="button" class="btn-ext-prompt-ignore" style="background:#FFFFFF;border:1px solid #CBD5E1;color:#64748B;font-size:11px;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer">
           Não Adicionar
         </button>
-        <button type="button" class="btn-ext-prompt-add" style="background:linear-gradient(135deg, #0284C7 0%, #0369A1 100%);color:#FFFFFF;border:none;font-size:11.5px;font-weight:800;padding:6.5px 14px;border-radius:7px;cursor:pointer;box-shadow:0 2px 6px rgba(2,132,199,0.3)">
+        <button type="button" class="btn-ext-prompt-add" style="background:linear-gradient(135deg, #0284C7 0%, #0369A1 100%);color:#FFFFFF;border:none;font-size:11px;font-weight:800;padding:5.5px 12px;border-radius:6px;cursor:pointer;box-shadow:0 2px 6px rgba(2,132,199,0.28)">
           ⚡ Adicionar à Fila e-SISLA
         </button>
       </div>
@@ -97,15 +115,15 @@
 
     prompt.style.cssText = `
       position: fixed;
-      bottom: 24px;
-      right: 24px;
-      width: min(380px, 92vw);
+      bottom: 20px;
+      right: 20px;
+      width: min(335px, 90vw);
       background: #FFFFFF;
       border: 1.5px solid #0284C7;
       border-left: 5px solid #0284C7;
-      border-radius: 14px;
-      padding: 14px 16px;
-      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.16);
+      border-radius: 12px;
+      padding: 11px 13px;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
       z-index: 2147483647;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       animation: ambientalPromptSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -153,15 +171,15 @@
 
   function mostrarFeedbackAdicionado(payload, totalFila) {
     const toast = document.createElement('div');
-    const pac = payload.servidor || payload.paciente || 'Servidor';
+    const pac = obterNomeServidorSeguro(payload);
     const proto = payload.protocolo || '';
 
     toast.innerHTML = `
       <div style="display:flex;align-items:center;gap:10px;">
         <span style="font-size:20px;line-height:1">✅</span>
-        <div>
+        <div style="min-width:0;flex:1">
           <strong style="display:block;font-size:12.5px;color:#0F172A">Adicionado à Fila e-SISLA!</strong>
-          <span style="display:block;font-size:11px;color:#475569">${pac} ${proto ? `(Prot. ${proto})` : ''}</span>
+          <span style="display:block;font-size:11px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${pac} ${proto ? `(Prot. ${proto})` : ''}</span>
         </div>
       </div>
       <div style="font-size:10.5px;color:#047857;font-weight:700;margin-top:6px">
@@ -197,6 +215,11 @@
   window.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'AMBIENTAL_ESISLA_PAYLOAD') {
       const p = event.data.payload;
+      if (p) {
+        const pac = obterNomeServidorSeguro(p);
+        p.servidor = pac;
+        p.paciente = pac;
+      }
       if (event.data.forceQueue || event.data.autoAdd) {
         salvarNaFila(p);
       } else {
@@ -237,21 +260,24 @@
       return texto.slice(start, posFim).trim();
     }
 
-    const protoMatch = str.match(/(?:Atendimento|Protocolo)[:\s#]*([A-Za-z0-9_\-\.]+)/i);
-    const subMatch = (document.getElementById('doctorEsislaSub')?.textContent || '').match(/Atendimento\s+([^·\s]+)/i);
+    const subTxt = (document.getElementById('doctorEsislaSub')?.textContent || document.getElementById('esislaSub')?.textContent || '');
+    const protoMatch = str.match(/^(?:Atendimento|Protocolo)\s*[:#]\s*([A-Za-z0-9_\-\.]+)/im);
+    const subMatch = subTxt.match(/Atendimento\s+([^·\s]+)/i);
     const protocolo = protoMatch ? protoMatch[1].trim() : (subMatch ? subMatch[1].trim() : 'ATD_' + Date.now());
 
-    const pacMatch = str.match(/(?:Servidor(?:\(a\))?|Paciente|Nome)[:\s]*([^\n\r]+)/i);
-    const subPacMatch = (document.getElementById('doctorEsislaSub')?.textContent || '').match(/·\s*([^·]+)\s*·/i);
-    const servidor = pacMatch ? pacMatch[1].trim() : (subPacMatch ? subPacMatch[1].trim() : 'Servidor');
+    const subPacMatch = subTxt.match(/·\s*([^·]+)\s*·/i);
+    const domNome = sanitizarNomeServidor(subPacMatch ? subPacMatch[1].trim() : '');
+    const pacMatch = str.match(/^(?:Nome(?:\s+do\s+(?:Servidor|Periciado))?|Periciado|Paciente)\s*:\s*([^\n\r]+)/im);
+    const textNome = sanitizarNomeServidor(pacMatch ? pacMatch[1].trim() : '');
+    const servidor = (domNome && domNome !== 'Servidor(a)' ? domNome : '') || textNome || domNome || 'Servidor';
 
-    const queixa = extrair(str, ['(*) Queixa e Duração:', '(*) Queixa e Duração', 'Queixa e Duração:'], ['Antecedentes Mórbidos', '(*) Antecedentes']);
-    const antecedentes = extrair(str, ['Antecedentes Mórbidos:', 'Antecedentes Mórbidos', '(*) Antecedentes'], ['Atestado / Relatório', 'Atestado', '(*) Exame Físico']);
-    const atestado = extrair(str, ['Atestado / Relatório / Exames Complementares:', 'Atestado / Relatório', 'Atestados:'], ['(*) Exame Físico Geral', 'Exame Físico Geral', '(*) Exame Físico']) || 'Em anexo.';
-    const exameFisico = extrair(str, ['(*) Exame Físico Geral:', '(*) Exame Físico Geral', 'Exame Físico Geral:'], ['Descrição das Alterações Clínicas', 'Descrição das Alterações', '(*) Descrição da(s) Limitação']);
-    const limitacoes = extrair(str, ['(*) Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is):', '(*) Descrição da(s) Limitação', 'Descrição da(s) Limitação:'], ['(*) Parecer Médico:', '(*) Parecer Médico', 'Parecer Médico:']);
+    const queixa = extrair(str, ['(*) Queixa e Duração:', '(*)Queixa e Duração:', '(*) Queixa e Duração', 'Queixa e Duração:'], ['Antecedentes Mórbidos:', 'Antecedentes Mórbidos', '(*) Antecedentes']);
+    const antecedentes = extrair(str, ['Antecedentes Mórbidos:', 'Antecedentes Mórbidos', '(*) Antecedentes'], ['Atestado/Relatório/Exames Complementares:', 'Atestado/Relatório:', 'Atestado / Relatório', 'Atestado', '(*) Exame Físico', '(*)Exame Físico']);
+    const atestado = extrair(str, ['Atestado/Relatório/Exames Complementares:', 'Atestado/Relatório:', 'Atestado / Relatório / Exames Complementares:', 'Atestado / Relatório', 'Atestados:'], ['Pressão Arterial', 'Sistólica', 'Altura:', '(*) Exame Físico Geral', '(*)Exame Físico Geral', 'Exame Físico Geral', '(*) Exame Físico']) || 'Em anexo.';
+    const exameFisico = extrair(str, ['(*) Exame Físico Geral:', '(*)Exame Físico Geral:', '(*) Exame Físico Geral', 'Exame Físico Geral:'], ['Descrição das Alterações Clínicas', 'Descrição das Alterações', '(*) Descrição da(s) Limitação', '(*)Descrição da(s) Limitação']);
+    const limitacoes = extrair(str, ['(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):', '(*) Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):', '(*) Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is):', '(*)Descrição da(s) Limitação', '(*) Descrição da(s) Limitação', 'Descrição da(s) Limitação:'], ['(*) Parecer Médico:', '(*)Parecer Médico:', '(*) Parecer Médico', 'Parecer Médico:']);
 
-    const parecerStr = extrair(str, ['(*) Parecer Médico:', 'Parecer Médico:'], ['Nº Dias:', 'Nº Dias', 'Dias:', 'Data Início:']);
+    const parecerStr = extrair(str, ['(*) Parecer Médico:', '(*)Parecer Médico:', 'Parecer Médico:'], ['Nº Dias:', 'Nº Dias', 'Dias:', 'Data Início:']);
     const isContrario = /CONTR[ÁA]RIO/i.test(parecerStr) || /PARECER:\s*CONTR[ÁA]RIO/i.test(str);
     const flPfinal = isContrario ? 'C' : 'F';
 

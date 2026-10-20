@@ -3246,6 +3246,10 @@ def _clean_antecedentes_morbidos_text(text: str) -> str:
     t = re.sub(r"(?:^|\r?\n)\s*Atestados?[^\n\r]*[\s\S]*$", "", t, flags=re.IGNORECASE)
     t = re.sub(r"\bEm anexo\.?\b", "", t, flags=re.IGNORECASE)
 
+    # 1b. Colapsa quebras de linha internas acidentais (ex.: "Nega demais\n\nantecedentes mórbidos") em espaço simples
+    t = re.sub(r"[\r\n]+", " ", t)
+    t = re.sub(r"\b([Cc])irosse\b", lambda m: "Cirrose" if m.group(1).isupper() else "cirrose", t)
+
     # 2. Remove menções a dias de atestado (numéricos ou por extenso) e espaços antes de pontuação
     t = re.sub(
         r"[\s\.\,]*\b(?:recebendo|recebeu|tendo\s+recebido|sendo\s+concedido|[Vv]em\s+com|com)?\s*(?:um\s+|novo\s+)?atestado(?:\s+m[ée]dico)?\s+de\s+(?:mais\s+)?(?:\d+|um|uma|dois|duas|tr[êe]s|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|quatorze|catorze|quinze|vinte|trinta|quarenta|cinquenta|sessenta|noventa)\s+dias?\b[^\.\n\r]*[\.\,]?",
@@ -3652,6 +3656,7 @@ def _sanitizar_texto_portugues_esisla(texto: str) -> str:
         ("apresentacoes", "apresentações"),
         ("ausencia", "ausência"),
         ("ausencias", "ausências"),
+        ("cirosse", "cirrose"),
     ]
     for padrao, forma in palavras_a_corrigir:
         t = _corrigir_palavra(t, padrao, forma)
@@ -3662,6 +3667,13 @@ def _sanitizar_texto_portugues_esisla(texto: str) -> str:
     t = re.sub(r"\bpembrulizumab([e]?)\b", r"pembrolizumab\1", t, flags=re.IGNORECASE)
     t = re.sub(r"\bmal\s+estar\b", "mal-estar", t, flags=re.IGNORECASE)
     t = re.sub(r"\bbem\s+estar\b", "bem-estar", t, flags=re.IGNORECASE)
+    # Recompõe frase caso tenha sofrido quebra acidental antes de "antecedentes mórbidos" no meio do parágrafo
+    t = re.sub(
+        r"\b(Nega(?:\s+demais|\s+outros)?|Sem)\s*[\r\n]+\s*(antecedentes\s+m[óo]rbidos)\b",
+        r"\1 \2",
+        t,
+        flags=re.IGNORECASE,
+    )
 
     return t
 
@@ -3717,9 +3729,17 @@ def _clean_esisla_text(text: str) -> str:
     text = re.sub(r"\bPacientes\b", "Servidores", text)
     text = re.sub(r"\bpacientes\b", "servidores", text)
     text = re.sub(r"\bApresentas-e\b", "Apresenta-se", text)
+    text = re.sub(
+        r"\b(Nega(?:\s+demais|\s+outros)?|Sem)\s*[\r\n]+\s*(antecedentes\s+m[óo]rbidos)\b",
+        r"\1 \2",
+        text,
+        flags=re.IGNORECASE,
+    )
 
     # Limpeza e remoção obrigatória de menções a início de tratamento por data na Queixa e Duração
-    m_queixa = re.search(r"(\(\*\)\s*Queixa e Duração:?\s*\n)(.*?)(\n\s*Antecedentes Mórbidos)", text, re.DOTALL | re.IGNORECASE)
+    m_queixa = re.search(r"(\(\*\)\s*Queixa e Duração:?\s*\n)(.*?)(\n\s*Antecedentes Mórbidos:)", text, re.DOTALL | re.IGNORECASE)
+    if not m_queixa:
+        m_queixa = re.search(r"(\(\*\)\s*Queixa e Duração:?\s*\n)(.*?)(\n\s*Antecedentes Mórbidos)", text, re.DOTALL | re.IGNORECASE)
     if m_queixa:
         h1, b_queixa, h2 = m_queixa.groups()
         b_clean = _clean_queixa_duracao_text(b_queixa)
@@ -4514,20 +4534,29 @@ def _estruturar_secoes_oficiais_esisla(texto: str) -> str:
     if "\\n" in t and "\n" not in t:
         t = t.replace("\\r\\n", "\n").replace("\\n", "\n")
 
+    # Recompõe frase caso tenha sofrido quebra acidental antes de "antecedentes mórbidos" no meio do parágrafo
+    t = re.sub(
+        r"\b(Nega(?:\s+demais|\s+outros)?|Sem)\s*[\r\n]+\s*(antecedentes\s+m[óo]rbidos)\b",
+        r"\1 \2",
+        t,
+        flags=re.IGNORECASE,
+    )
+
     secoes_principais = [
-        r'Identificação do Servidor e Vínculo:?',
+        r'Identificação do Servidor e Vínculo:',
         r'\(\*\)\s*Queixa e Duração:?',
-        r'Antecedentes Mórbidos:?',
+        r'(?<!\bdemais )(?<!\boutros )(?<!\bnega )(?<!\bsem )Antecedentes Mórbidos:',
+        r'Atestado/Relatório/Exames Complementares:?',
         r'Atestado/Relatório e Exames Complementares:?',
-        r'Atestado/Relatório:?',
-        r'Pressão Arterial',
+        r'Atestado/Relatório:',
+        r'Pressão Arterial(?=\s*(?:\r?\n|\s)*Sist[óo]lica)',
         r'Altura:',
         r'Peso:',
         r'\(\*\)\s*Exame Físico Geral:?',
-        r'Descrição das Alterações Clínicas e Exames Complementares:?',
-        r'Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:?',
-        r'Descrição das Alterações Clínicas:?',
-        r'Descrição das Alterações Médicas:?',
+        r'Descrição das Alterações Clínicas e Exames Complementares:',
+        r'Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:',
+        r'Descrição das Alterações Clínicas:',
+        r'Descrição das Alterações Médicas:',
         r'\(\*\)\s*Descrição da\(s\)\s*Limitação\(ções\)\s*Física\(s\)\s*e/ou\s*Mental\(is\)\s*encontrada\(s\):?',
         r'\(\*\)\s*Descrição da\(s\)\s*Limitação:?',
         r'\(\*\)\s*Parecer Médico:?',
@@ -4536,32 +4565,39 @@ def _estruturar_secoes_oficiais_esisla(texto: str) -> str:
         r'\(\*\)\s*Parecer Final:?'
     ]
     for pat in secoes_principais:
-        t = re.sub(rf'(?<!\n)(?:[\.\;\,\s]+)?({pat})', r'\n\n\1', t, flags=re.IGNORECASE)
+        t = re.sub(rf'([^\n\r])[ \t]+({pat})', r'\1\n\n\2', t, flags=re.IGNORECASE)
 
     campos_secundarios = [
-        r'Sistólica\s*\(mmHg\):?',
-        r'Diastólica\s*\(mmHg\):?',
-        r'Pulso\s*\(bpm\):?',
-        r'Parecer:?\s*(?:FAVORÁVEL|CONTRÁRIO|FAVORAVEL|CONTRARIO)',
-        r'Dias concedidos:?',
-        r'Nº Dias:?',
-        r'Data Início:?',
-        r'Data de início:?',
-        r'CID-?10\s*principal:?',
-        r'CID\s*10:?',
-        r'Descrição:?',
-        r'CID-?10\s*secundário:?',
-        r'Descrição Secundária:?',
-        r'Médico Perito:?',
-        r'CRM:?',
-        r'Dt/Hr Perícia:?',
-        r'Data e hora da perícia:?',
+        r'Sistólica\s*\(mmHg\):',
+        r'Diastólica\s*\(mmHg\):',
+        r'Pulso\s*\(bpm\):',
+        r'Parecer:\s*(?:FAVORÁVEL|CONTRÁRIO|FAVORAVEL|CONTRARIO)',
+        r'Dias concedidos:',
+        r'Nº Dias:',
+        r'Data Início:',
+        r'Data de início:',
+        r'CID-?10\s*principal:',
+        r'CID\s*10:',
+        r'Descrição:',
+        r'CID-?10\s*secundário:',
+        r'Descrição Secundária:',
+        r'Médico Perito:',
+        r'CRM:',
+        r'Dt/Hr Perícia:',
+        r'Data e hora da perícia:',
         r'1\)\s*Há doença\(s\)',
         r'2\)\s*A\(s\) doença\(s\)',
         r'3\)\s*A\(s\) limitação\(ções\)'
     ]
     for pat in campos_secundarios:
-        t = re.sub(rf'(?<!\n)(?:[\.\;\,\s]+)?({pat})', r'\n\1', t, flags=re.IGNORECASE)
+        t = re.sub(rf'([^\n\r])[ \t]+({pat})', r'\1\n\2', t, flags=re.IGNORECASE)
+
+    # Garante ponto final no encerramento de Antecedentes Mórbidos caso tenha sido removido antes de Atestado/Relatório
+    m_ant = re.search(r"(\nAntecedentes Mórbidos:?\s*\n)(.*?)(\n\s*Atestado/Relat[óo]rio)", t, re.DOTALL | re.IGNORECASE)
+    if m_ant:
+        h1, b_ant, h2 = m_ant.groups()
+        b_clean = _clean_antecedentes_morbidos_text(b_ant)
+        t = t[:m_ant.start()] + h1 + b_clean + "\n\n" + h2.lstrip("\n") + t[m_ant.end():]
 
     t = re.sub(r'[ \t]+', ' ', t)
     t = re.sub(r'\n{3,}', '\n\n', t).strip()
@@ -7331,8 +7367,9 @@ def api_list_atendimentos():
             "atualizado_em": str(r["atualizado_em"]) if r["atualizado_em"] else None,
             "finalizado_em": str(r["finalizado_em"]) if r["finalizado_em"] else None,
             "versao": int(r["versao"] or 1),
-            "nomePaciente": r.get("paciente_nome") or aux.get("nomePaciente"),
-            "cpfPaciente": r.get("paciente_cpf") or aux.get("cpfPaciente"),
+            "nomePaciente": r.get("paciente_nome") or payload.get("nomePaciente") or aux.get("nomePaciente") or payload.get("paciente") or aux.get("paciente") or "",
+            "cpfPaciente": r.get("paciente_cpf") or payload.get("cpfPaciente") or aux.get("cpfPaciente") or "",
+            "protocolo": payload.get("protocolo") or aux.get("protocolo") or aux.get("agenda_protocolo") or "",
             "ficha_esisla": payload.get("ficha_esisla") or aux.get("fichaEsisla") or aux.get("ficha_esisla") or "",
             "ficha_esisla_gerada_em": payload.get("ficha_esisla_gerada_em") or aux.get("fichaEsislaGeradaEm") or "",
             # Metadados de leitura rápida para a Gestão; o prontuário completo continua no endpoint detalhado.
@@ -7347,8 +7384,11 @@ def api_list_atendimentos():
                 "dataDocumento": payload.get("dataDocumento") or aux.get("dataDocumento") or "",
                 "dataExpedicao": payload.get("dataExpedicao") or aux.get("dataExpedicao") or "",
                 "dataExpedicaoIso": payload.get("dataExpedicaoIso") or aux.get("dataExpedicaoIso") or "",
-                "nomePaciente": aux.get("nomePaciente"),
-                "cpfPaciente": aux.get("cpfPaciente"),
+                "nomePaciente": r.get("paciente_nome") or payload.get("nomePaciente") or aux.get("nomePaciente") or payload.get("paciente") or aux.get("paciente") or "",
+                "cpfPaciente": r.get("paciente_cpf") or payload.get("cpfPaciente") or aux.get("cpfPaciente") or "",
+                "protocolo": payload.get("protocolo") or aux.get("protocolo") or aux.get("agenda_protocolo") or "",
+                "agenda_protocolo": aux.get("agenda_protocolo") or aux.get("protocolo") or payload.get("protocolo") or "",
+                "ni": payload.get("ni") or aux.get("ni") or "",
                 "cid": aux.get("cid"),
                 "unidade": aux.get("unidade"),
                 "doencaMotivo": aux.get("doencaMotivo"),
@@ -7523,7 +7563,11 @@ def api_get_atendimento(rid):
         if not payload.get("aux") or not isinstance(payload.get("aux"), dict):
             payload["aux"] = {}
         paciente_nome_row = str(r.get("paciente_nome") or "").strip()
+        if not paciente_nome_row:
+            paciente_nome_row = str(payload.get("nomePaciente") or payload["aux"].get("nomePaciente") or payload.get("paciente") or payload["aux"].get("paciente") or "").strip()
         paciente_cpf_row = str(r.get("paciente_cpf") or "").strip()
+        if not paciente_cpf_row:
+            paciente_cpf_row = str(payload.get("cpfPaciente") or payload["aux"].get("cpfPaciente") or "").strip()
         medico_row = str(r.get("medico") or "").strip()
         unidade_row = str(r.get("unidade") or "").strip()
         if paciente_nome_row:

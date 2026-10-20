@@ -20,6 +20,14 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentPayload = null;
   let currentQueue = [];
 
+  function sanitizarNomeServidor(rawName) {
+    const s = String(rawName || '').trim();
+    if (!s || s.length > 90) return '';
+    if (/^(?:de\s+\d+\s+anos|relatou\b|n[ãa]o\s+readaptad|com\s+queixa\b|servidor(?:\(a\))?\s+de\s+\d+)/i.test(s)) return '';
+    if (/\b(?:relatou\s+n[ãa]o\s+ser\s+readaptad|com\s+queixa\s+de|em\s+acompanhamento)\b/i.test(s)) return '';
+    return s;
+  }
+
   function renderCard(payload) {
     currentPayload = payload;
     if (payload && payload.protocolo) {
@@ -32,7 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
       badgeParecer.textContent = isFav ? 'Favorável' : 'Contrário';
       badgeParecer.className = 'badge-parecer ' + (isFav ? 'favoravel' : 'contrario');
 
-      cardPatient.textContent = payload.servidor || payload.paciente || 'Servidor';
+      const pac = sanitizarNomeServidor(payload.servidor || payload.paciente) || 'Servidor';
+      cardPatient.textContent = pac;
+      cardPatient.title = pac;
       
       const c1 = payload.cdCidPm || payload['voResult.voParecerFinal.cdCidPm'] || '—';
       const c2 = payload.cdCid2Pm || payload['voResult.voParecerFinal.cdCid2Pm'] || 'Não informado';
@@ -59,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
       queueList.innerHTML = currentQueue.map((it, idx) => {
         const isSelected = currentPayload && String(currentPayload.protocolo || '') === String(it.protocolo || '');
         const isDone = it.status === 'preenchido';
-        const pac = it.servidor || it.paciente || 'Servidor';
+        const pac = sanitizarNomeServidor(it.servidor || it.paciente) || 'Servidor';
         return `
           <div class="popup-queue-item ${isSelected ? 'selected' : ''}" data-idx="${idx}" title="Clique para ver os detalhes e selecionar">
             <div class="popup-queue-info">
@@ -195,18 +205,18 @@ document.addEventListener('DOMContentLoaded', () => {
       return texto.slice(start, posFim).trim();
     }
 
-    const protoMatch = str.match(/(?:Atendimento|Protocolo)[:\s#]*([A-Za-z0-9_\-\.]+)/i);
+    const protoMatch = str.match(/^(?:Atendimento|Protocolo)\s*[:#]\s*([A-Za-z0-9_\-\.]+)/im);
     const protocolo = protoMatch ? protoMatch[1].trim() : 'ATD_' + Date.now();
-    const pacMatch = str.match(/(?:Servidor(?:\(a\))?|Paciente|Nome)[:\s]*([^\n\r]+)/i);
-    const servidor = pacMatch ? pacMatch[1].trim() : 'Servidor';
+    const pacMatch = str.match(/^(?:Nome(?:\s+do\s+(?:Servidor|Periciado))?|Periciado|Paciente)\s*:\s*([^\n\r]+)/im);
+    const servidor = sanitizarNomeServidor(pacMatch ? pacMatch[1].trim() : '') || 'Servidor';
 
-    const queixa = extrair(str, ['(*) Queixa e Duração:', '(*) Queixa e Duração', 'Queixa e Duração:'], ['Antecedentes Mórbidos', '(*) Antecedentes']);
-    const antecedentes = extrair(str, ['Antecedentes Mórbidos:', 'Antecedentes Mórbidos', '(*) Antecedentes'], ['Atestado / Relatório', 'Atestado', '(*) Exame Físico']);
-    const atestado = extrair(str, ['Atestado / Relatório / Exames Complementares:', 'Atestado / Relatório', 'Atestados:'], ['(*) Exame Físico Geral', 'Exame Físico Geral', '(*) Exame Físico']) || 'Em anexo.';
-    const exameFisico = extrair(str, ['(*) Exame Físico Geral:', '(*) Exame Físico Geral', 'Exame Físico Geral:'], ['Descrição das Alterações Clínicas', 'Descrição das Alterações', '(*) Descrição da(s) Limitação']);
-    const limitacoes = extrair(str, ['(*) Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is):', '(*) Descrição da(s) Limitação', 'Descrição da(s) Limitação:'], ['(*) Parecer Médico:', '(*) Parecer Médico', 'Parecer Médico:']);
+    const queixa = extrair(str, ['(*) Queixa e Duração:', '(*)Queixa e Duração:', '(*) Queixa e Duração', 'Queixa e Duração:'], ['Antecedentes Mórbidos:', 'Antecedentes Mórbidos', '(*) Antecedentes']);
+    const antecedentes = extrair(str, ['Antecedentes Mórbidos:', 'Antecedentes Mórbidos', '(*) Antecedentes'], ['Atestado/Relatório/Exames Complementares:', 'Atestado/Relatório:', 'Atestado / Relatório', 'Atestado', '(*) Exame Físico', '(*)Exame Físico']);
+    const atestado = extrair(str, ['Atestado/Relatório/Exames Complementares:', 'Atestado/Relatório:', 'Atestado / Relatório / Exames Complementares:', 'Atestado / Relatório', 'Atestados:'], ['Pressão Arterial', 'Sistólica', 'Altura:', '(*) Exame Físico Geral', '(*)Exame Físico Geral', 'Exame Físico Geral', '(*) Exame Físico']) || 'Em anexo.';
+    const exameFisico = extrair(str, ['(*) Exame Físico Geral:', '(*)Exame Físico Geral:', '(*) Exame Físico Geral', 'Exame Físico Geral:'], ['Descrição das Alterações Clínicas', 'Descrição das Alterações', '(*) Descrição da(s) Limitação', '(*)Descrição da(s) Limitação']);
+    const limitacoes = extrair(str, ['(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):', '(*) Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):', '(*) Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is):', '(*)Descrição da(s) Limitação', '(*) Descrição da(s) Limitação', 'Descrição da(s) Limitação:'], ['(*) Parecer Médico:', '(*)Parecer Médico:', '(*) Parecer Médico', 'Parecer Médico:']);
 
-    const parecerStr = extrair(str, ['(*) Parecer Médico:', 'Parecer Médico:'], ['Nº Dias:', 'Nº Dias', 'Dias:', 'Data Início:']);
+    const parecerStr = extrair(str, ['(*) Parecer Médico:', '(*)Parecer Médico:', 'Parecer Médico:'], ['Nº Dias:', 'Nº Dias', 'Dias:', 'Data Início:']);
     const isContrario = /CONTR[ÁA]RIO/i.test(parecerStr) || /PARECER:\s*CONTR[ÁA]RIO/i.test(str);
     const flPfinal = isContrario ? 'C' : 'F';
 

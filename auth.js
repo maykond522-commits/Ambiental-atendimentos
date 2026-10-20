@@ -20,16 +20,32 @@
   const text = (v) => String(v ?? "").trim();
 
   async function loadConfig() {
+    if (STATE.config) return STATE.config;
+    try {
+      const stored = sessionStorage.getItem("ambiental.auth.config") || localStorage.getItem("ambiental.auth.config");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.supabase_url && parsed?.supabase_publishable_key) {
+          STATE.config = parsed;
+          return STATE.config;
+        }
+      }
+    } catch (_) {}
+
     const res = await fetch("/api/auth/config", {
       method: "GET",
       headers: { "Accept": "application/json" },
-      cache: "no-store",
+      cache: "default",
     });
     const data = await res.json().catch(() => null);
     if (!res.ok || !data?.success) {
       throw new Error("Não foi possível carregar a configuração de acesso.");
     }
     STATE.config = data.data;
+    try {
+      sessionStorage.setItem("ambiental.auth.config", JSON.stringify(data.data));
+      localStorage.setItem("ambiental.auth.config", JSON.stringify(data.data));
+    } catch (_) {}
     return STATE.config;
   }
 
@@ -103,6 +119,13 @@
   }
 
   async function getAccessToken() {
+    try {
+      const raw = storage.getItem("ambiental.auth.session");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.access_token) return parsed.access_token;
+      }
+    } catch (_) {}
     const client = await getClient();
     // getSession é usado apenas para obter o access token mantido pelo SDK oficial.
     const { data } = await client.auth.getSession();

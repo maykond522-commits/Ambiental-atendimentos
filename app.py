@@ -187,9 +187,14 @@ def _invalidate_medicos_cache():
 _STATS_CACHE: dict[str, dict[str, Any]] = {}
 _STATS_CACHE_LOCK = threading.Lock()
 
+_DASHBOARD_CACHE: dict[str, dict[str, Any]] = {}
+_DASHBOARD_CACHE_LOCK = threading.Lock()
+
 def _invalidate_stats_cache():
     with _STATS_CACHE_LOCK:
         _STATS_CACHE.clear()
+    with _DASHBOARD_CACHE_LOCK:
+        _DASHBOARD_CACHE.clear()
 
 def _decode_jwt_payload_unverified(token: str) -> dict[str, Any] | None:
     try:
@@ -2620,8 +2625,8 @@ def home():
 @app.get("/gestao")
 def gestao_html():
     response = send_from_directory(BASE_DIR, "gestao_atendimentos.html")
-    response.headers["Cache-Control"] = "no-store, max-age=0"
-    response.headers["Pragma"] = "no-cache"
+    response.headers["Cache-Control"] = "no-cache, must-revalidate"
+    response.add_etag()
     return response
 
 @app.get("/gestao-medicos")
@@ -2629,8 +2634,8 @@ def gestao_html():
 @app.get("/gestao_medicos.html")
 def gestao_medicos_html():
     response = send_from_directory(BASE_DIR, "gestao_medicos.html")
-    response.headers["Cache-Control"] = "no-store, max-age=0"
-    response.headers["Pragma"] = "no-cache"
+    response.headers["Cache-Control"] = "no-cache, must-revalidate"
+    response.add_etag()
     return response
 
 @app.get("/gestao-medicos-admin.html")
@@ -2642,8 +2647,8 @@ def gestao_medicos_admin_html():
         if profile.get("perfil") != "Administrador":
             return redirect("/acesso-negado.html?area=gestao-medicos-admin")
     response = send_from_directory(BASE_DIR, "gestao-medicos-admin.html")
-    response.headers["Cache-Control"] = "no-store, max-age=0"
-    response.headers["Pragma"] = "no-cache"
+    response.headers["Cache-Control"] = "no-cache, must-revalidate"
+    response.add_etag()
     return response
 
 @app.get("/status-ia")
@@ -4037,7 +4042,6 @@ def _save_ficha_esisla_to_atendimento(atendimento_id: str, ficha_text: str) -> b
         if not isinstance(stored.get("aux"), dict):
             stored["aux"] = {}
         stored["aux"]["fichaEsisla"] = ficha_clean
-        stored["aux"]["ficha_esisla"] = ficha_clean
         stored["aux"]["fichaEsislaGeradaEm"] = now_iso
         cur.execute(
             "UPDATE atendimentos SET payload_json=%s WHERE id=%s",
@@ -4045,6 +4049,7 @@ def _save_ficha_esisla_to_atendimento(atendimento_id: str, ficha_text: str) -> b
         )
         db.commit()
         cur.close()
+        _invalidate_stats_cache()
         return True
     except Exception as exc:
         app.logger.warning("Falha ao persistir ficha_esisla no atendimento (%s): %s", atd_key, exc)
@@ -7488,7 +7493,7 @@ def api_list_atendimentos():
             "por_medico": por_medico,
         }
         with _STATS_CACHE_LOCK:
-            _STATS_CACHE[stat_key] = {"stats": stats, "expires": now_ts + 20.0}
+            _STATS_CACHE[stat_key] = {"stats": stats, "expires": now_ts + 300.0}
     pages = (total + page_size - 1) // page_size if total else 0
     resp_obj, resp_code = _ok({
         "items": items,
@@ -7950,10 +7955,17 @@ def api_dashboard():
         return denied
 
     eff = _get_effective_user()
+    scoped = eff["role"] == "Médico"
+    dash_key = f"{eff['role']}:{eff['id'] if scoped else 'all'}"
+    now_ts = time.time()
+    with _DASHBOARD_CACHE_LOCK:
+        d_entry = _DASHBOARD_CACHE.get(dash_key)
+        if d_entry and d_entry.get("expires", 0) > now_ts:
+            return _ok(d_entry["data"])
+
     db = get_db()
     today = datetime.now().strftime("%Y-%m-%d")
     cur = db.cursor()
-    scoped = eff["role"] == "Médico"
     owner_clause = " WHERE usuario_id=%s" if scoped else ""
     owner_args = (eff["id"],) if scoped else ()
 
@@ -8057,13 +8069,16 @@ def api_dashboard():
     pending = [dict(x) for x in cur.fetchall()]
 
     cur.close()
-    return _ok({
+    result_data = {
         "stats": stats,
         "por_status": status,
         "ultimos_7_dias": last7_rows,
         "proximos": upcoming,
         "pendencias": pending,
-    })
+    }
+    with _DASHBOARD_CACHE_LOCK:
+        _DASHBOARD_CACHE[dash_key] = {"data": result_data, "expires": now_ts + 300.0}
+    return _ok(result_data)
 
 @app.post("/api/relatorios/pdf")
 def api_report_pdf():

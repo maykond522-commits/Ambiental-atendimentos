@@ -4939,8 +4939,46 @@ main { min-width: 0; }
   };
 
   async function start() {
+    // 🚀 Hidratação instantânea via cache local (0ms - exibe a tela imediatamente antes de qualquer chamada de rede)
+    let hadLocalCache = false;
     try {
-      updateSyncLoader('Validando Sessão Médica', 'Confirmando autenticação pericial segura…', 'Conectando ao serviço de autenticação...', 25);
+      const impId = sessionStorage.getItem('ambiental.impersonate_medico_id');
+      let currentDocId = impId || '';
+      if (!currentDocId) {
+        const pRaw = sessionStorage.getItem('ambiental.auth.profile') || localStorage.getItem('ambiental.auth.profile');
+        if (pRaw) {
+          const pObj = JSON.parse(pRaw);
+          currentDocId = pObj?.profile?.id || pObj?.id || '';
+        }
+      }
+      const cacheKey = 'ambiental.medico.dashboard_cache_' + currentDocId;
+      const cachedRaw = localStorage.getItem(cacheKey);
+      if (cachedRaw) {
+        const cached = JSON.parse(cachedRaw);
+        if (cached && cached.dash && Array.isArray(cached.list) && cached.list.length > 0) {
+          dashboard = cached.dash;
+          records = cached.list;
+          totalItems = Number(cached.total || records.length);
+          totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+          renderKpis();
+          renderBars();
+          renderDonut();
+          renderUpcoming();
+          renderAlerts();
+          renderLists();
+          renderCalendar();
+          updateDoctorPaginationUI();
+          $('appShell').hidden = false;
+          $('authLoading')?.remove();
+          hadLocalCache = true;
+        }
+      }
+    } catch (_) {}
+
+    try {
+      if (!hadLocalCache) {
+        updateSyncLoader('Validando Sessão Médica', 'Confirmando autenticação pericial segura…', 'Conectando ao serviço de autenticação...', 25);
+      }
       profile = await AmbientalAuth.requireAuth({ area: 'portal-medico' });
       if (profile?.perfil !== 'Médico' && !['Administrador', 'Gestor', 'Coordenador'].includes(profile?.perfil)) {
         location.replace('/acesso-negado.html?area=portal-medico');
@@ -5005,33 +5043,6 @@ main { min-width: 0; }
       }
 
       setIdentity();
-      
-      // Hidratação instantânea via cache local
-      const cacheKey = 'ambiental.medico.dashboard_cache_' + (sessionStorage.getItem('ambiental.impersonate_medico_id') || profile?.id || '');
-      let hadLocalCache = false;
-      try {
-        const cachedRaw = localStorage.getItem(cacheKey);
-        if (cachedRaw) {
-          const cached = JSON.parse(cachedRaw);
-          if (cached && cached.dash && Array.isArray(cached.list)) {
-            dashboard = cached.dash;
-            records = cached.list;
-            totalItems = Number(cached.total || records.length);
-            totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-            renderKpis();
-            renderBars();
-            renderDonut();
-            renderUpcoming();
-            renderAlerts();
-            renderLists();
-            renderCalendar();
-            updateDoctorPaginationUI();
-            $('appShell').hidden = false;
-            $('authLoading')?.remove();
-            hadLocalCache = true;
-          }
-        }
-      } catch (_) {}
 
       if (!hadLocalCache) {
         updateSyncLoader('Sincronizando Atendimentos', 'Carregando agenda, laudos e indicadores periciais…', 'Buscando registros autorizados no prontuário...', 65);

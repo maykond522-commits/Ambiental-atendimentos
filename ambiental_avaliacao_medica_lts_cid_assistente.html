@@ -4837,9 +4837,17 @@ function syncState(){
     state.outrasDoencas=getRadio("outrasDoencas")||getRadio("agilOutrasDoencas")||state.outrasDoencas||"Sim";
     state.alteracaoMed=getRadio("alteracaoMed")||state.alteracaoMed||"Não";
     state.limitacaoFuncional=getRadio("limitacaoFuncional")||state.limitacaoFuncional||"Não";
-    state.limitacaoRol=getRadio("limitacaoRol")||state.limitacaoRol||"Não";
-    state.psicoterapia=$("psicoterapia")?$("psicoterapia").checked:!!state.psicoterapia;
-    state.fisioterapia=$("fisioterapia")?$("fisioterapia").checked:!!state.fisioterapia;
+    const isAgilSync = (typeof currentAttendanceMode !== "undefined" && currentAttendanceMode === "agil") || (typeof document !== "undefined" && document.body && document.body.classList.contains("mode-agil-active"));
+    if (isAgilSync) {
+      state.psicoterapia = $("agilPsicoterapia") ? $("agilPsicoterapia").checked : ($("psicoterapia") ? $("psicoterapia").checked : !!state.psicoterapia);
+      state.fisioterapia = $("agilFisioterapia") ? $("agilFisioterapia").checked : ($("fisioterapia") ? $("fisioterapia").checked : !!state.fisioterapia);
+    } else {
+      state.psicoterapia = $("psicoterapia") ? $("psicoterapia").checked : ($("agilPsicoterapia") ? $("agilPsicoterapia").checked : !!state.psicoterapia);
+      state.fisioterapia = $("fisioterapia") ? $("fisioterapia").checked : ($("agilFisioterapia") ? $("agilFisioterapia").checked : !!state.fisioterapia);
+    }
+    if (!state.aux) state.aux = {};
+    state.aux.psicoterapia = state.psicoterapia;
+    state.aux.fisioterapia = state.fisioterapia;
     state.capacidade=getRadio("capacidade")||state.capacidade||"";
     state.parecer=getRadio("parecer")||state.parecer||"";
     state.exameFisicoTipo=$("agilExameFisicoTipo")?.value||$("exameFisicoTipo")?.value||state.exameFisicoTipo||prevAux.exameFisicoTipo||"";
@@ -6153,32 +6161,46 @@ function aplicarPreenchimentoIAResultado(dados) {
 
     state.alteracaoMed = dados.alteracao_med || state.alteracaoMed || "Não";
     state.outrasDoencas = dados.outras_doencas || state.outrasDoencas || "Não";
-    const obsTerStr = String(dados.obs_terapias || "").toLowerCase();
-    const rawTxtStr = String($("txtPreenchimentoIABruto")?.value || "").toLowerCase();
-
-    let fisio = !!dados.fisioterapia;
-    let psico = !!dados.psicoterapia;
-
-    if (!fisio) {
-      const mentionsFisio = /\b(?:iniciou|iniciando|realiza|faz|fazendo|em)\s+fisioterapia\b|\bfisioterapia\s+(?:motora|respirat[óo]ria|analg[ée]sica|[0-9]x|duas|tr[êe]s|semanal)\b/i.test(rawTxtStr);
-      const obsHasFisio = obsTerStr.includes("fisioterapia") && !obsTerStr.includes("nega realização de fisioterapia") && !obsTerStr.includes("não realiza fisioterapia") && !obsTerStr.includes("não alegou fazer fisioterapia");
-      if (mentionsFisio || obsHasFisio) {
-        fisio = true;
+    const parseBool = (v) => {
+      if (typeof v === "boolean") return v;
+      if (typeof v === "string") {
+        const s = v.trim().toLowerCase();
+        if (s === "true" || s === "sim" || s === "1") return true;
+        if (s === "false" || s === "não" || s === "nao" || s === "0") return false;
       }
-    }
-    if (!psico) {
-      const mentionsPsico = /\b(?:iniciou|iniciando|realiza|faz|fazendo|em)\s+psicoterapia\b|\bpsicoterapia\s+(?:semanal|quinzenal|mensal|[0-9]x)\b/i.test(rawTxtStr);
-      const obsHasPsico = obsTerStr.includes("psicoterapia") && !obsTerStr.includes("nega realização de psicoterapia") && !obsTerStr.includes("não realiza psicoterapia") && !obsTerStr.includes("não alegou fazer psicoterapia");
-      if (mentionsPsico || obsHasPsico) {
-        psico = true;
-      }
+      return !!v;
+    };
+
+    const obsTerStr = String(dados.obs_terapias || dados.obsTerapias || "").toLowerCase();
+    const rawTxtStr = String(dados.texto_bruto || dados.texto || $("txtPreenchimentoIABruto")?.value || "").toLowerCase();
+    const allContextText = `${rawTxtStr} ${obsTerStr} ${String(dados.doenca_motivo || "")} ${String(dados.sintomas_limitacao || "")}`.toLowerCase();
+
+    let fisio = parseBool(dados.fisioterapia);
+    let psico = parseBool(dados.psicoterapia);
+
+    const temFisioAfirm = /\b(?:iniciou|iniciando|realiza|realizando|faz|fazendo|em)\s+fisioterapia\b|\bfisioterapia\s+(?:motora|respirat[óo]ria|analg[ée]sica|[0-9]x|duas|tr[êe]s|semanal|ambulatorial)\b|\bfisioterapia\b/i.test(allContextText);
+    const temFisioNeg = /\b(?:nega|n[ãa]o\s+faz|n[ãa]o\s+alegou|sem)\s+(?:fazer\s+|realizar\s+)?fisioterapia\b/i.test(allContextText);
+
+    if (temFisioAfirm && !temFisioNeg) {
+      fisio = true;
+    } else if (temFisioNeg) {
+      fisio = false;
     }
 
-    state.psicoterapia = psico;
-    state.fisioterapia = fisio;
+    const temPsicoAfirm = /\b(?:iniciou|iniciando|realiza|realizando|faz|fazendo|em)\s+psicoterapia\b|\bpsicoterapia\s+(?:semanal|quinzenal|mensal|[0-9]x)\b|\bpsicoterapia\b/i.test(allContextText);
+    const temPsicoNeg = /\b(?:nega|n[ãa]o\s+faz|n[ãa]o\s+alegou|sem)\s+(?:fazer\s+|realizar\s+)?psicoterapia\b/i.test(allContextText);
+
+    if (temPsicoAfirm && !temPsicoNeg) {
+      psico = true;
+    } else if (temPsicoNeg) {
+      psico = false;
+    }
+
+    state.psicoterapia = !!psico;
+    state.fisioterapia = !!fisio;
     if (!state.aux) state.aux = {};
-    state.aux.psicoterapia = psico;
-    state.aux.fisioterapia = fisio;
+    state.aux.psicoterapia = !!psico;
+    state.aux.fisioterapia = !!fisio;
 
     const doencaParaPreencher = (dados.doenca_motivo || dados.doencaMotivo || state.doencaMotivo || state.aux?.doencaMotivo || "").trim();
     if (doencaParaPreencher) {
@@ -6437,10 +6459,10 @@ function aplicarPreenchimentoIAResultado(dados) {
     setCheck("agilPsicoterapia", state.psicoterapia);
     setCheck("fisioterapia", state.fisioterapia);
     setCheck("agilFisioterapia", state.fisioterapia);
-    $("psicoterapia")?.dispatchEvent(new Event("change", { bubbles: true }));
-    $("fisioterapia")?.dispatchEvent(new Event("change", { bubbles: true }));
-    $("agilPsicoterapia")?.dispatchEvent(new Event("change", { bubbles: true }));
-    $("agilFisioterapia")?.dispatchEvent(new Event("change", { bubbles: true }));
+    if ($("psicoterapia")) $("psicoterapia").checked = !!state.psicoterapia;
+    if ($("agilPsicoterapia")) $("agilPsicoterapia").checked = !!state.psicoterapia;
+    if ($("fisioterapia")) $("fisioterapia").checked = !!state.fisioterapia;
+    if ($("agilFisioterapia")) $("agilFisioterapia").checked = !!state.fisioterapia;
     setVal("obsTerapias", dados.obs_terapias);
     setVal("agilObsTerapias", dados.obs_terapias);
     setRadioDirect("outrasDoencas", state.outrasDoencas);
@@ -6625,7 +6647,15 @@ function aplicarPreenchimentoIAResultado(dados) {
     window.__isBulkApplyingIA = false;
   }
 
+  if ($("fisioterapia")) $("fisioterapia").checked = !!state.fisioterapia;
+  if ($("agilFisioterapia")) $("agilFisioterapia").checked = !!state.fisioterapia;
+  if ($("psicoterapia")) $("psicoterapia").checked = !!state.psicoterapia;
+  if ($("agilPsicoterapia")) $("agilPsicoterapia").checked = !!state.psicoterapia;
   if (typeof autoSave === "function") autoSave();
+  if ($("fisioterapia")) $("fisioterapia").checked = !!state.fisioterapia;
+  if ($("agilFisioterapia")) $("agilFisioterapia").checked = !!state.fisioterapia;
+  if ($("psicoterapia")) $("psicoterapia").checked = !!state.psicoterapia;
+  if ($("agilPsicoterapia")) $("agilPsicoterapia").checked = !!state.psicoterapia;
   toast("✨ Ficha preenchida com sucesso pela IA no Modo Rascunho!");
 }
 window.executarPreenchimentoIA = executarPreenchimentoIA;
@@ -9109,8 +9139,12 @@ function syncAgilRadio(field, value) {
 
 function syncAgilCheckbox(field, checked) {
   state[field] = !!checked;
+  if (!state.aux) state.aux = {};
+  state.aux[field] = !!checked;
   const el = $(field);
   if (el) el.checked = !!checked;
+  const agilEl = $("agil" + field.charAt(0).toUpperCase() + field.slice(1));
+  if (agilEl) agilEl.checked = !!checked;
   if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
   autoSave();
 }

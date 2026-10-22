@@ -6143,21 +6143,25 @@ def api_ai_preencher_ficha():
 
             result.historico_pregresso = ant_val.strip()
 
-            # Detecção determinística de Fisioterapia e Psicoterapia a partir do texto bruto e obs_terapias
+            # Detecção determinística de Fisioterapia e Psicoterapia a partir do texto bruto, esisla e obs_terapias
             txt_lower = f"{texto_bruto} {result.obs_terapias or ''}".lower()
-            tem_fisio_afirm = bool(re.search(r'\b(?:iniciou|iniciando|realiza|faz|fazendo|em)\s+fisioterapia\b|\bfisioterapia\s+(?:motora|respirat[óo]ria|analg[ée]sica|[0-9]x|duas|tr[êe]s|semanal)\b', txt_lower))
-            tem_fisio_neg = bool(re.search(r'\b(?:nega|n[ãa]o\s+faz|n[ãa]o\s+alegou|sem)\s+(?:fazer\s+)?fisioterapia\b', txt_lower))
+            tem_fisio_afirm = bool(re.search(r'\b(?:iniciou|iniciando|realiza|realizando|faz|fazendo|em)\s+fisioterapia\b|\bfisioterapia\s+(?:motora|respirat[óo]ria|analg[ée]sica|[0-9]x|duas|tr[êe]s|semanal|ambulatorial)\b|\bfisioterapia\b', txt_lower))
+            tem_fisio_neg = bool(re.search(r'\b(?:nega|n[ãa]o\s+faz|n[ãa]o\s+alegou|sem)\s+(?:fazer\s+|realizar\s+)?fisioterapia\b', txt_lower))
             if tem_fisio_afirm and not tem_fisio_neg:
                 result.fisioterapia = True
             elif tem_fisio_neg:
                 result.fisioterapia = False
+            elif esisla_pre.get('fisioterapia') is not None:
+                result.fisioterapia = bool(esisla_pre['fisioterapia'])
 
-            tem_psico_afirm = bool(re.search(r'\b(?:iniciou|iniciando|realiza|faz|fazendo|em)\s+psicoterapia\b|\bpsicoterapia\s+(?:semanal|quinzenal|mensal|[0-9]x)\b', txt_lower))
-            tem_psico_neg = bool(re.search(r'\b(?:nega|n[ãa]o\s+faz|n[ãa]o\s+alegou|sem)\s+(?:fazer\s+)?psicoterapia\b', txt_lower))
+            tem_psico_afirm = bool(re.search(r'\b(?:iniciou|iniciando|realiza|realizando|faz|fazendo|em)\s+psicoterapia\b|\bpsicoterapia\s+(?:semanal|quinzenal|mensal|[0-9]x)\b|\bpsicoterapia\b', txt_lower))
+            tem_psico_neg = bool(re.search(r'\b(?:nega|n[ãa]o\s+faz|n[ãa]o\s+alegou|sem)\s+(?:fazer\s+|realizar\s+)?psicoterapia\b', txt_lower))
             if tem_psico_afirm and not tem_psico_neg:
                 result.psicoterapia = True
             elif tem_psico_neg:
                 result.psicoterapia = False
+            elif esisla_pre.get('psicoterapia') is not None:
+                result.psicoterapia = bool(esisla_pre['psicoterapia'])
 
             if result.cargo and result.cargo.isupper() and len(result.cargo) > 4:
                 result.cargo = _remover_capslock_excessivo_esisla(result.cargo)
@@ -6844,6 +6848,22 @@ def parse_esisla_text(text: str) -> dict:
             if raw_ant:
                 data['historico_pregresso'] = raw_ant
                 data['historicoPregresso'] = raw_ant
+
+    # 22. Fisioterapia e Psicoterapia (extração determinística)
+    t_low = text.lower()
+    tem_fisio_afirm = bool(re.search(r'\b(?:iniciou|iniciando|realiza|realizando|faz|fazendo|em)\s+fisioterapia\b|\bfisioterapia\s+(?:motora|respirat[óo]ria|analg[ée]sica|[0-9]x|duas|tr[êe]s|semanal|ambulatorial)\b|\bfisioterapia\b', t_low))
+    tem_fisio_neg = bool(re.search(r'\b(?:nega|n[ãa]o\s+faz|n[ãa]o\s+alegou|sem)\s+(?:fazer\s+|realizar\s+)?fisioterapia\b', t_low))
+    if tem_fisio_afirm and not tem_fisio_neg:
+        data['fisioterapia'] = True
+    elif tem_fisio_neg:
+        data['fisioterapia'] = False
+
+    tem_psico_afirm = bool(re.search(r'\b(?:iniciou|iniciando|realiza|realizando|faz|fazendo|em)\s+psicoterapia\b|\bpsicoterapia\s+(?:semanal|quinzenal|mensal|[0-9]x)\b', t_low))
+    tem_psico_neg = bool(re.search(r'\b(?:nega|n[ãa]o\s+faz|n[ãa]o\s+alegou|sem)\s+(?:fazer\s+|realizar\s+)?psicoterapia\b', t_low))
+    if tem_psico_afirm and not tem_psico_neg:
+        data['psicoterapia'] = True
+    elif tem_psico_neg:
+        data['psicoterapia'] = False
 
     return data
 

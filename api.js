@@ -19,7 +19,7 @@
 
   async function request(path, options = {}) {
     if (!window.AmbientalAuth?.authFetch) throw new Error('Camada de autenticação indisponível.');
-    const timeoutMs = Number(options.timeoutMs || 20000);
+    const timeoutMs = Number(options.timeoutMs || 60000);
     const { timeoutMs: _ignored, ...requestOptions } = options;
     const method = String(requestOptions.method || 'GET').toUpperCase();
     const canRetry = method === 'GET' && requestOptions.retry !== false;

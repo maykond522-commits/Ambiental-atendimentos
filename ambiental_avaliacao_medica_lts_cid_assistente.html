@@ -6047,62 +6047,122 @@ window.processarArquivoEsislaNaTela = async function(file) {
   }
 })();
 
-function detectarRegiaoOsteomuscular(cid, textoBruto, doencaMotivo, exameDesc) {
-  const combined = `${cid || ""} ${textoBruto || ""} ${doencaMotivo || ""} ${exameDesc || ""}`.toLowerCase();
-  const cidCode = (cid || "").toUpperCase();
+function detectarTodasRegioesOsteomusculares(cid, textoBruto, doencaMotivo, exameDesc, cidsSecundarios) {
+  const secStr = Array.isArray(cidsSecundarios)
+    ? cidsSecundarios.map(x => typeof x === "object" ? (x.cid || x.codigo || "") : String(x || "")).join(" ")
+    : "";
+  const combined = `${cid || ""} ${secStr} ${textoBruto || ""} ${doencaMotivo || ""} ${exameDesc || ""}`.toLowerCase();
+  const cidsAll = [String(cid || "").toUpperCase().trim()]
+    .concat(Array.isArray(cidsSecundarios) ? cidsSecundarios.map(x => (typeof x === "object" ? (x.cid || x.codigo || "") : String(x || "")).toUpperCase().trim()) : []);
 
-  const isEsquerdo = /\b(?:esquerdo|esquerda|esq|membro\s+inferior\s+esquerdo|membro\s+superior\s+esquerdo|mie|mse)\b/i.test(combined);
-  const isDireito = /\b(?:direito|direita|dir|membro\s+inferior\s+direito|membro\s+superior\s+direito|mid|msd)\b/i.test(combined);
-  const side = isEsquerdo && !isDireito ? "esquerdo" : "direito";
+  const isEsqGlobal = /\b(?:esquerdo|esquerda|esq|membro\s+inferior\s+esquerdo|membro\s+superior\s+esquerdo|mie|mse)\b/i.test(combined);
+  const isDirGlobal = /\b(?:direito|direita|dir|membro\s+inferior\s+direito|membro\s+superior\s+direito|mid|msd)\b/i.test(combined);
 
-  // 1. Lombar / Lombociatalgia / Hérnia discal lombar
-  if (cidCode.startsWith("M54.4") || cidCode.startsWith("M54.5") || cidCode.startsWith("M51") || cidCode.startsWith("M48") || cidCode.startsWith("M43") || cidCode.startsWith("M47") ||
-      /\b(?:lombar|lombociatalgia|lumbago|ci[áa]tico|ci[áa]tica|l4|l5|s1|paravertebral\s+lombar|las[èe]gue)\b/i.test(combined)) {
-    return "lombar";
+  function checkSides(patternStr) {
+    const rx = new RegExp(`(?:${patternStr})[^\\.\\n\\r]{0,60}\\b(esquerd[oa]|esq|mse|mie|direit[oa]|dir|msd|mid|bilateral)\\b|\\b(esquerd[oa]|esq|mse|mie|direit[oa]|dir|msd|mid|bilateral)\\b[^\\.\\n\\r]{0,60}(?:${patternStr})`, "i");
+    const m = combined.match(rx);
+    if (m) {
+      const s = (m[1] || m[2] || "").toLowerCase();
+      if (s.includes("bilateral") || (s.includes("esq") && s.includes("dir"))) return ["esquerdo", "direito"];
+      if (s.includes("esq") || s.includes("mse") || s.includes("mie")) return ["esquerdo"];
+      if (s.includes("dir") || s.includes("msd") || s.includes("mid")) return ["direito"];
+    }
+    if (isEsqGlobal && !isDirGlobal) return ["esquerdo"];
+    if (isDirGlobal && !isEsqGlobal) return ["direito"];
+    if (isEsqGlobal && isDirGlobal) return ["esquerdo", "direito"];
+    return ["direito"];
   }
 
-  // 2. Cervical / Cervicobraquialgia
-  if (cidCode.startsWith("M54.2") || cidCode.startsWith("M50") || cidCode.startsWith("M53.0") || cidCode.startsWith("M53.1") ||
-      /\b(?:cervical|cervicobraquialgia|pesco[çc]o|trap[ée]zio|c5|c6|c7)\b/i.test(combined)) {
-    return "cervical";
+  const regioes = [];
+
+  // 1. Mão / Dedos / Síndrome do Túnel do Carpo / Quirodáctilos
+  const hasMaoCid = cidsAll.some(c => c.startsWith("G56.0") || c.startsWith("M65.3") || c.startsWith("M18"));
+  const hasMaoTxt = /\b(?:m[ãa]o|m[ãa]os|dedo|dedos|quirod[áa]ctilo|quirod[áa]ctilos|palmar|polegar|t[úu]nel\s+do\s+carpo|canal\s+c[áa]rpico|carpo|tinel|phalen|digita[çc][ãa]o|digitar|teclado|preens[ãa]o|gatilho)\b/i.test(combined);
+  if (hasMaoCid || hasMaoTxt) {
+    checkSides('m[ãa]o|m[ãa]os|dedo|dedos|punho|punhos|carpo|tinel|phalen|quirod[áa]ctilo|digita[çc][ãa]o|digitar').forEach(s => {
+      const rName = s === "esquerdo" ? "mao_esquerda" : "mao_direita";
+      if (!regioes.includes(rName)) regioes.push(rName);
+    });
+  }
+
+  // 2. Cotovelo / Epicondilite
+  const hasCotCid = cidsAll.some(c => c.startsWith("M77.0") || c.startsWith("M77.1") || c.startsWith("M77.2"));
+  const hasCotTxt = /\b(?:cotovelo|epicondilite|epic[ôo]ndilo|cozen|mill)\b/i.test(combined);
+  if (hasCotCid || hasCotTxt) {
+    checkSides('cotovelo|epicondilite|epic[ôo]ndilo|cozen').forEach(s => {
+      const rName = s === "esquerdo" ? "cotovelo_esquerdo" : "cotovelo_direito";
+      if (!regioes.includes(rName)) regioes.push(rName);
+    });
   }
 
   // 3. Ombro / Manguito rotador
-  if (cidCode.startsWith("M75") || /\b(?:ombro|manguito|supraespinhal|supraespinhoso|bicipital|escapul[ao]r)\b/i.test(combined)) {
-    return side === "esquerdo" ? "ombro_esquerdo" : "ombro_direito";
+  const hasOmbCid = cidsAll.some(c => c.startsWith("M75"));
+  const hasOmbTxt = /\b(?:ombro|ombros|manguito|supraespinhal|supraespinhoso|bicipital|escapul[ao]r|neer|jobe|hawkins)\b/i.test(combined);
+  if (hasOmbCid || hasOmbTxt) {
+    checkSides('ombro|ombros|manguito|supraespinhal|supraespinhoso|bicipital|escapul[ao]r').forEach(s => {
+      const rName = s === "esquerdo" ? "ombro_esquerdo" : "ombro_direito";
+      if (!regioes.includes(rName)) regioes.push(rName);
+    });
   }
 
-  // 4. Cotovelo / Epicondilite
-  if (cidCode.startsWith("M77.0") || cidCode.startsWith("M77.1") || /\b(?:cotovelo|epicondilite|epic[ôo]ndilo)\b/i.test(combined)) {
-    return side === "esquerdo" ? "cotovelo_esquerdo" : "cotovelo_direito";
+  // 4. Antebraço / Punho (não-carpo / De Quervain)
+  const hasAntCid = cidsAll.some(c => c.startsWith("M65.4"));
+  const hasAntTxt = /\b(?:antebraco|antebra[çc]o|de\s+quervain|estil[oó]ide|estiloide)\b/i.test(combined);
+  if (hasAntCid || hasAntTxt) {
+    checkSides('antebraco|antebra[çc]o|de\s+quervain').forEach(s => {
+      const rName = s === "esquerdo" ? "antebraco_esquerdo" : "antebraco_direito";
+      if (!regioes.includes(rName)) regioes.push(rName);
+    });
   }
 
-  // 5. Punho / Antebraço / Túnel do carpo
-  if (cidCode.startsWith("G56.0") || cidCode.startsWith("M65.4") || /\b(?:punho|t[úu]nel\s+do\s+carpo|carpo|antebraco|antebra[çc]o|de\s+quervain)\b/i.test(combined)) {
-    return side === "esquerdo" ? "antebraco_esquerdo" : "antebraco_direito";
+  // 5. Coluna Lombar / Lombociatalgia
+  const hasLomCid = cidsAll.some(c => c.startsWith("M54.4") || c.startsWith("M54.5") || c.startsWith("M51") || c.startsWith("M48") || c.startsWith("M43") || c.startsWith("M47"));
+  const hasLomTxt = /\b(?:lombar|lombociatalgia|lumbago|dorsolombalgia|ci[áa]tico|ci[áa]tica|l4|l5|s1|paravertebral\s+lombar|las[èe]gue)\b/i.test(combined);
+  if (hasLomCid || hasLomTxt) {
+    if (!regioes.includes("lombar")) regioes.push("lombar");
   }
 
-  // 6. Mão / Dedos
-  if (cidCode.startsWith("M65.3") || /\b(?:m[ãa]o|dedo|quirod[áa]ctilo|gatilho)\b/i.test(combined)) {
-    return side === "esquerdo" ? "mao_esquerda" : "mao_direita";
+  // 6. Cervical
+  const hasCerCid = cidsAll.some(c => c.startsWith("M54.2") || c.startsWith("M50") || c.startsWith("M53.0") || c.startsWith("M53.1"));
+  const hasCerTxt = /\b(?:cervical|cervicobraquialgia|pesco[çc]o|trap[ée]zio|c5|c6|c7)\b/i.test(combined);
+  if (hasCerCid || hasCerTxt) {
+    if (!regioes.includes("cervical")) regioes.push("cervical");
   }
 
-  // 7. Quadril / Região glútea
-  if (cidCode.startsWith("M16") || cidCode.startsWith("M70.6") || cidCode.startsWith("M76.0") || /\b(?:quadril|coxartrose|coxofemoral|troc[âa]nter|bursite\s+trocant[ée]rica)\b/i.test(combined)) {
-    return "quadril";
+  // 7. Quadril
+  const hasQuaCid = cidsAll.some(c => c.startsWith("M16") || c.startsWith("M70.6") || c.startsWith("M76.0"));
+  const hasQuaTxt = /\b(?:quadril|coxartrose|coxofemoral|troc[âa]nter|bursite\s+trocant[ée]rica)\b/i.test(combined);
+  if (hasQuaCid || hasQuaTxt) {
+    if (!regioes.includes("quadril")) regioes.push("quadril");
   }
 
-  // 8. Joelho / Menisco
-  if (cidCode.startsWith("M17") || cidCode.startsWith("M22") || cidCode.startsWith("M23") || /\b(?:joelho|gonartrose|menisco|patelar|ligamento\s+cruzado|lca)\b/i.test(combined)) {
-    return side === "esquerdo" ? "joelho_esquerdo" : "joelho_direito";
+  // 8. Joelho
+  const hasJoeCid = cidsAll.some(c => c.startsWith("M17") || c.startsWith("M22") || c.startsWith("M23"));
+  const hasJoeTxt = /\b(?:joelho|gonartrose|menisco|patelar|ligamento\s+cruzado|lca)\b/i.test(combined);
+  if (hasJoeCid || hasJoeTxt) {
+    checkSides('joelho|menisco|patelar|gonartrose').forEach(s => {
+      const rName = s === "esquerdo" ? "joelho_esquerdo" : "joelho_direito";
+      if (!regioes.includes(rName)) regioes.push(rName);
+    });
   }
 
   // 9. Tornozelo / Pé
-  if (cidCode.startsWith("M72.2") || cidCode.startsWith("M76.6") || cidCode.startsWith("M77.3") || /\b(?:tornozelo|p[ée]|fascite\s+plantar|calc[âa]neo|aquileu)\b/i.test(combined)) {
-    return side === "esquerdo" ? "tornozelo_esquerdo" : "tornozelo_direito";
+  const hasTorCid = cidsAll.some(c => c.startsWith("M72.2") || c.startsWith("M76.6") || c.startsWith("M77.3"));
+  const hasTorTxt = /\b(?:tornozelo|p[ée]|fascite\s+plantar|calc[âa]neo|aquileu)\b/i.test(combined);
+  if (hasTorCid || hasTorTxt) {
+    checkSides('tornozelo|p[ée]|fascite|calc[âa]neo').forEach(s => {
+      const rName = s === "esquerdo" ? "tornozelo_esquerdo" : "tornozelo_direito";
+      if (!regioes.includes(rName)) regioes.push(rName);
+    });
   }
 
-  return "lombar";
+  if (regioes.length === 0) regioes.push("lombar");
+  return regioes;
+}
+
+function detectarRegiaoOsteomuscular(cid, textoBruto, doencaMotivo, exameDesc, cidsSecundarios) {
+  const all = detectarTodasRegioesOsteomusculares(cid, textoBruto, doencaMotivo, exameDesc, cidsSecundarios);
+  return all[0] || "lombar";
 }
 
 function aplicarPreenchimentoIAResultado(dados) {
@@ -6289,18 +6349,98 @@ function aplicarPreenchimentoIAResultado(dados) {
     state.atividadesComprometidas = dados.atividades_comprometidas || state.atividadesComprometidas || "";
 
     state.cid = dados.cid || state.cid || "";
+
+    // CIDs secundários estruturados e integrados
+    let rawSecList = [];
+    if (Array.isArray(dados.cidsSecundarios) && dados.cidsSecundarios.length > 0) {
+      rawSecList = dados.cidsSecundarios.map(item => ({
+        cid: typeof item === "object" ? (item.cid || item.codigo || "") : String(item || ""),
+        descricao: typeof item === "object" ? (item.descricao || item.nome || "") : ""
+      }));
+    } else if (Array.isArray(dados.cids_secundarios) && dados.cids_secundarios.length > 0) {
+      rawSecList = dados.cids_secundarios.map(code => {
+        const c = String(code || "").trim().toUpperCase();
+        const f = typeof findCID === "function" ? findCID(c) : null;
+        return { cid: c, descricao: f ? f.n : "" };
+      });
+    }
+
+    // Fallback por regex no texto bruto para garantir que NENHUM CID informado fique de fora
+    const rawTxtInput = $("txtPreenchimentoIABruto")?.value || "";
+    if (rawTxtInput) {
+      const allFoundCids = rawTxtInput.match(/\b([A-Z]\d{2}(?:\.\d{1,2})?)\b/gi) || [];
+      const primaryCidNorm = (state.cid || "").toUpperCase().replace(".", "");
+      allFoundCids.forEach(found => {
+        let fCode = found.toUpperCase();
+        if (fCode.length === 4 && !fCode.includes(".")) {
+          fCode = `${fCode.slice(0, 3)}.${fCode.slice(3)}`;
+        }
+        const fNorm = fCode.replace(".", "");
+        if (fNorm !== primaryCidNorm && !rawSecList.some(item => (item.cid || "").toUpperCase().replace(".", "") === fNorm)) {
+          const fInfo = typeof findCID === "function" ? findCID(fCode) : null;
+          rawSecList.push({ cid: fCode, descricao: fInfo ? fInfo.n : "" });
+        }
+      });
+    }
+
+    state.cidsSecundarios = rawSecList;
+    if (!state.aux) state.aux = {};
+    state.aux.cidsSecundarios = rawSecList;
+
     state.exameFisicoTipo = dados.exame_fisico_tipo || state.exameFisicoTipo || "Outros";
     state.exameMentalResultado = dados.exame_mental_resultado || state.exameMentalResultado || "";
     state.exameFisicoDescricao = dados.exame_fisico_descricao || state.exameFisicoDescricao || "";
 
-    const sistolica = dados.pressao_sistolica && dados.pressao_sistolica !== "Aferida" ? String(dados.pressao_sistolica) : (state.pressaoSistolica || "120");
-    const diastolica = dados.pressao_diastolica && dados.pressao_diastolica !== "Aferida" ? String(dados.pressao_diastolica) : (state.pressaoDiastolica || "80");
-    const pulso = dados.pulso && dados.pulso !== "Aferido" ? String(dados.pulso) : (state.pulso || "80");
-    state.pressaoSistolica = sistolica;
-    state.pressaoDiastolica = diastolica;
-    state.pulso = pulso;
-    if (dados.altura) state.altura = dados.altura;
-    if (dados.peso) state.peso = dados.peso;
+    // Higienização e sanitização dos Sinais Vitais (evitar que inputs type="number" rejeitem strings com unidades ou texto)
+    let sist = "";
+    let diast = "";
+    let pulsoVal = "";
+    let altVal = "";
+    let pesoVal = "";
+
+    const rawSistStr = String(dados.pressao_sistolica || "").trim();
+    const rawDiastStr = String(dados.pressao_diastolica || "").trim();
+    const mPABoth = (rawSistStr + " " + rawDiastStr).match(/(\d{2,3})\s*[/xX\*\-por\s]+\s*(\d{2,3})/i)
+      || rawTxtInput.match(/\b(?:PA|P\.A\.|Press[ãa]o\s+Arterial)?[:\s]*(\d{2,3})\s*[/xX\*\-por]+\s*(\d{2,3})/i);
+    if (mPABoth) {
+      sist = mPABoth[1];
+      diast = mPABoth[2];
+    } else {
+      const mS = rawSistStr.match(/\d{2,3}/) || rawTxtInput.match(/\b(?:sist[óo]lica|PA)[:\s]*(\d{2,3})\b/i);
+      const mD = rawDiastStr.match(/\d{2,3}/) || rawTxtInput.match(/\b(?:diast[óo]lica)[:\s]*(\d{2,3})\b/i);
+      sist = mS ? mS[0] : (state.pressaoSistolica || "120");
+      diast = mD ? mD[0] : (state.pressaoDiastolica || "80");
+    }
+
+    const rawPulsoStr = String(dados.pulso || "").trim();
+    const mPulso = rawPulsoStr.match(/\d{2,3}/)
+      || rawTxtInput.match(/\b(?:pulso|fc|bpm)?[:\s]*(\d{2,3})\s*bpm\b/i)
+      || rawTxtInput.match(/\b(?:pulso|fc)[:\s]*(\d{2,3})\b/i);
+    pulsoVal = mPulso ? mPulso[0] : (state.pulso || "80");
+
+    const rawAltStr = String(dados.altura || "").trim();
+    const mAlt = rawAltStr.match(/\d[,\.]\d{1,2}/)
+      || rawTxtInput.match(/\b(?:altura|alt)[:\s]*(\d[,\.]\d{1,2})\s*m?\b/i)
+      || rawTxtInput.match(/\b(\d[,\.]\d{2})\s*m\b/i);
+    if (mAlt) altVal = mAlt[0].replace(",", ".");
+
+    const rawPesoStr = String(dados.peso || "").trim();
+    const mPeso = rawPesoStr.match(/\d{2,3}(?:[,\.]\d{1,2})?/)
+      || rawTxtInput.match(/\b(?:peso)[:\s]*(\d{2,3}(?:[,\.]\d{1,2})?)\s*(?:kg)?\b/i)
+      || rawTxtInput.match(/\b(\d{2,3}(?:[,\.]\d{1,2})?)\s*kg\b/i);
+    if (mPeso) pesoVal = mPeso[0].replace(",", ".");
+
+    state.pressaoSistolica = sist || "120";
+    state.pressaoDiastolica = diast || "80";
+    state.pulso = pulsoVal || "80";
+    if (altVal) state.altura = altVal;
+    if (pesoVal) state.peso = pesoVal;
+
+    state.aux.pressaoSistolica = state.pressaoSistolica;
+    state.aux.pressaoDiastolica = state.pressaoDiastolica;
+    state.aux.pulso = state.pulso;
+    if (altVal) state.aux.altura = altVal;
+    if (pesoVal) state.aux.peso = pesoVal;
 
     state.limitacaoFuncional = dados.limitacao_funcional || state.limitacaoFuncional || "Sim";
     state.limitacaoRol = dados.limitacao_rol || state.limitacaoRol || "Sim";
@@ -6580,12 +6720,23 @@ function aplicarPreenchimentoIAResultado(dados) {
           aplicarOsteomuscularNormal();
         }
       } else {
-        // Se parecer FAVORÁVEL: Seleciona a parte do corpo condizente como ALTERADO (vermelho)
+        // Se parecer FAVORÁVEL: Seleciona todas as partes do corpo condizentes como ALTERADO (vermelho)
         const rawTxt = $("txtPreenchimentoIABruto")?.value || "";
-        const regiao = dados.regiao_osteomuscular || (typeof detectarRegiaoOsteomuscular === "function" ? detectarRegiaoOsteomuscular(state.cid, rawTxt, state.doencaMotivo, state.exameFisicoDescricao) : "lombar");
+        let regioesAfetadas = Array.isArray(dados.regioes_osteomusculares) && dados.regioes_osteomusculares.length > 0
+          ? dados.regioes_osteomusculares
+          : (typeof detectarTodasRegioesOsteomusculares === "function"
+              ? detectarTodasRegioesOsteomusculares(state.cid, rawTxt, state.doencaMotivo, state.exameFisicoDescricao, state.cidsSecundarios)
+              : [dados.regiao_osteomuscular || (typeof detectarRegiaoOsteomuscular === "function" ? detectarRegiaoOsteomuscular(state.cid, rawTxt, state.doencaMotivo, state.exameFisicoDescricao) : "lombar")]);
+
+        if (!Array.isArray(regioesAfetadas) || regioesAfetadas.length === 0) {
+          regioesAfetadas = ["lombar"];
+        }
+
         if (!state.osteomuscularRegioes) state.osteomuscularRegioes = {};
         state.osteomuscularRegioes = {};
-        state.osteomuscularRegioes[regiao] = "Alterado";
+        regioesAfetadas.forEach(r => {
+          if (r) state.osteomuscularRegioes[r] = "Alterado";
+        });
         state.osteomuscularResultado = "Alterado";
         if (typeof updateOsteoUI === "function") {
           updateOsteoUI();
@@ -9073,22 +9224,34 @@ function syncAgilToExtended() {
   }
   
   const pSist = getV("agilPressaoSistolica");
-  state.aux.pressaoSistolica = pSist; state.pressaoSistolica = pSist;
-  if ($("pressaoSistolica")) $("pressaoSistolica").value = pSist;
-  
+  if (pSist) {
+    state.aux.pressaoSistolica = pSist; state.pressaoSistolica = pSist;
+    if ($("pressaoSistolica")) $("pressaoSistolica").value = pSist;
+  }
+
   const pDiast = getV("agilPressaoDiastolica");
-  state.aux.pressaoDiastolica = pDiast; state.pressaoDiastolica = pDiast;
-  if ($("pressaoDiastolica")) $("pressaoDiastolica").value = pDiast;
-  
+  if (pDiast) {
+    state.aux.pressaoDiastolica = pDiast; state.pressaoDiastolica = pDiast;
+    if ($("pressaoDiastolica")) $("pressaoDiastolica").value = pDiast;
+  }
+
   const pulso = getV("agilPulso");
-  state.aux.pulso = pulso; state.pulso = pulso;
-  if ($("pulso")) $("pulso").value = pulso;
-  
+  if (pulso) {
+    state.aux.pulso = pulso; state.pulso = pulso;
+    if ($("pulso")) $("pulso").value = pulso;
+  }
+
   const altura = getV("agilAltura");
-  state.aux.altura = altura; state.altura = altura;
-  
+  if (altura) {
+    state.aux.altura = altura; state.altura = altura;
+    if ($("altura")) $("altura").value = altura;
+  }
+
   const peso = getV("agilPeso");
-  state.aux.peso = peso; state.peso = peso;
+  if (peso) {
+    state.aux.peso = peso; state.peso = peso;
+    if ($("peso")) $("peso").value = peso;
+  }
   
   const exDesc = getV("agilExameFisicoDescricao");
   if (exDesc) {

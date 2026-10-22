@@ -1748,8 +1748,9 @@ DIRETRIZES DE EXTRAÇÃO E REDAÇÃO:
   * NUNCA DEIXE historico_pregresso VAZIO.
 
 3. ATESTADO DO MÉDICO ASSISTENTE, DATA DE EXPEDIÇÃO DA GUIA E CID:
-- cid: Código CID-10 oficial pontuado (ex.: "Z98.8", "F32.1", "M54.5"). Se vier sem ponto (ex.: "Z988"), formate com ponto ("Z98.8"). Em perícia de acompanhante (Artigo 199), o CID principal é "Z76.3".
-- cid_descricao: Descrição correspondente do CID-10 (ex.: "Outros estados pós-cirúrgicos especificados").
+- cid: Código CID-10 oficial pontuado principal que motivou o atestado/afastamento (ex.: "M51.1", "Z98.8", "F32.1", "M54.5"). Se vier sem ponto (ex.: "Z988"), formate com ponto ("Z98.8"). Em perícia de acompanhante (Artigo 199), o CID principal é "Z76.3".
+- cid_descricao: Descrição correspondente do CID-10 principal (ex.: "Transtornos de discos lombares com radiculopatia", "Outros estados pós-cirúrgicos especificados").
+- cids_secundarios: Lista com os códigos CID-10 oficiais pontuados de TODOS os demais CIDs secundários, diagnósticos adicionais ou atestados associados informados no texto bruto (ex.: ["M54.4", "G56.0", "M77.1", "F41.2"]). Se houver múltiplos CIDs além do principal, inclua rigorosamente TODOS nesta lista.
 - crm_cro: Dígitos numéricos do CRM do médico assistente (ex.: "224574").
 - nome_medico_assistente: Nome do médico assistente (ex.: "Bruna de Morais Torres").
 - data_documento: Data de emissão do atestado médico no formato ISO "YYYY-MM-DD" (ex.: "2026-09-29") ou DD/MM/AAAA.
@@ -1764,10 +1765,11 @@ DIRETRIZES DE EXTRAÇÃO E REDAÇÃO:
 - exame_mental_resultado: Se exame mental, "Alterado" ou "Normal"; senão vazio.
 - exame_fisico_descricao: Redija uma propedêutica médica objetiva, técnica e plausível condizente com a queixa informada (ex.: para pós-operatório com deiscência: "Estado geral bom, consciente e orientada, acianótica, eupneica, afebril. Mamas simétricas, ferida operatória em cicatrização com edema moderado e deiscência de 3 pontos cirúrgicos sem secreção purulenta ativa. Dor à palpação local e limitação antálgica à abdução e elevação de membros superiores acima de 90 graus.").
 - alteracoes_clinicas_exames: Se o texto bruto mencionar exames complementares apresentados (ressonância, ultrassonografia, radiografia, tomografia, exames laboratoriais), redija o relato técnico dos achados; caso não tenham sido apresentados exames complementares, registre: "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial.".
-- pressao_sistolica: "120" (ou informada).
-- pressao_diastolica: "80" (ou informada).
-- pulso: "80" (ou informado).
-- altura e peso: se constar no texto, extraia; senão, deixe vazio.
+- pressao_sistolica: Apenas dígitos numéricos da pressão sistólica (ex.: "135" ou "120"). NUNCA inclua unidades, letras ou barra como "135/85" ou "135 mmHg".
+- pressao_diastolica: Apenas dígitos numéricos da pressão diastólica (ex.: "85" ou "80"). NUNCA inclua unidades, letras ou barra.
+- pulso: Apenas dígitos numéricos do pulso/frequência cardíaca (ex.: "78" ou "80"). NUNCA inclua "bpm".
+- altura: Apenas número em metros com ponto (ex.: "1.63"). Se não constar, deixe vazio.
+- peso: Apenas dígitos do peso em quilogramas (ex.: "74"). NUNCA inclua "kg". Se não constar, deixe vazio.
 
 5. LIMITAÇÕES, ROL E JUSTIFICATIVA DO PARECER:
 - limitacao_funcional: "Sim" se incapacidade temporária / parecer favorável; "Não" se parecer contrário.
@@ -5960,32 +5962,116 @@ def gerar_relatorio_final():
     except Exception as exc:
         if isinstance(exc, ValueError):
             return jsonify({"error": "invalid_request", "detail": str(exc)}), 400
-def _detectar_regiao_osteomuscular(cid: str, texto: str, doenca: str, exame: str) -> str:
-    combined = f"{cid or ''} {texto or ''} {doenca or ''} {exame or ''}".lower()
-    cid_upper = (cid or "").upper().strip()
-    is_esq = bool(re.search(r'\b(?:esquerdo|esquerda|esq|membro\s+inferior\s+esquerdo|membro\s+superior\s+esquerdo|mie|mse)\b', combined))
-    is_dir = bool(re.search(r'\b(?:direito|direita|dir|membro\s+inferior\s+direito|membro\s+superior\s+direito|mid|msd)\b', combined))
-    side = "esquerdo" if (is_esq and not is_dir) else "direito"
+def _detectar_todas_regioes_osteomusculares(cid: str, texto: str, doenca: str, exame: str, cids_secundarios: list[str] | None = None) -> list[str]:
+    combined = f"{cid or ''} {' '.join(cids_secundarios or [])} {texto or ''} {doenca or ''} {exame or ''}".lower()
+    cids_all = [(cid or "").upper().strip()] + [str(c or "").upper().strip() for c in (cids_secundarios or [])]
 
-    if cid_upper.startswith(("M54.4", "M54.5", "M51", "M48", "M43", "M47")) or re.search(r'\b(?:lombar|lombociatalgia|lumbago|ci[áa]tico|ci[áa]tica|l4|l5|s1|paravertebral\s+lombar|las[èe]gue)\b', combined):
-        return "lombar"
-    if cid_upper.startswith(("M54.2", "M50", "M53.0", "M53.1")) or re.search(r'\b(?:cervical|cervicobraquialgia|pesco[çc]o|trap[ée]zio|c5|c6|c7)\b', combined):
-        return "cervical"
-    if cid_upper.startswith("M75") or re.search(r'\b(?:ombro|manguito|supraespinhal|supraespinhoso|bicipital|escapul[ao]r)\b', combined):
-        return f"ombro_{side}"
-    if cid_upper.startswith(("M77.0", "M77.1")) or re.search(r'\b(?:cotovelo|epicondilite|epic[ôo]ndilo)\b', combined):
-        return f"cotovelo_{side}"
-    if cid_upper.startswith(("G56.0", "M65.4")) or re.search(r'\b(?:punho|t[úu]nel\s+do\s+carpo|carpo|antebraco|antebra[çc]o|de\s+quervain)\b', combined):
-        return f"antebraco_{side}"
-    if cid_upper.startswith("M65.3") or re.search(r'\b(?:m[ãa]o|dedo|quirod[áa]ctilo|gatilho)\b', combined):
-        return f"mao_{side}"
-    if cid_upper.startswith(("M16", "M70.6", "M76.0")) or re.search(r'\b(?:quadril|coxartrose|coxofemoral|troc[âa]nter|bursite\s+trocant[ée]rica)\b', combined):
-        return "quadril"
-    if cid_upper.startswith(("M17", "M22", "M23")) or re.search(r'\b(?:joelho|gonartrose|menisco|patelar|ligamento\s+cruzado|lca)\b', combined):
-        return f"joelho_{side}"
-    if cid_upper.startswith(("M72.2", "M76.6", "M77.3")) or re.search(r'\b(?:tornozelo|p[ée]|fascite\s+plantar|calc[âa]neo|aquileu)\b', combined):
-        return f"tornozelo_{side}"
-    return "lombar"
+    is_esq_global = bool(re.search(r'\b(?:esquerdo|esquerda|esq|membro\s+inferior\s+esquerdo|membro\s+superior\s+esquerdo|mie|mse)\b', combined))
+    is_dir_global = bool(re.search(r'\b(?:direito|direita|dir|membro\s+inferior\s+direito|membro\s+superior\s+direito|mid|msd)\b', combined))
+
+    def check_sides(kw_pattern: str) -> list[str]:
+        m = re.search(rf'(?:{kw_pattern})[^\.\n\r]{{0,60}}\b(esquerd[oa]|esq|mse|mie|direit[oa]|dir|msd|mid|bilateral)\b|\b(esquerd[oa]|esq|mse|mie|direit[oa]|dir|msd|mid|bilateral)\b[^\.\n\r]{{0,60}}(?:{kw_pattern})', combined)
+        if m:
+            s_str = (m.group(1) or m.group(2) or "").lower()
+            if "bilateral" in s_str or ("esq" in s_str and "dir" in s_str):
+                return ["esquerdo", "direito"]
+            if "esq" in s_str or "mse" in s_str or "mie" in s_str:
+                return ["esquerdo"]
+            if "dir" in s_str or "msd" in s_str or "mid" in s_str:
+                return ["direito"]
+        if is_esq_global and not is_dir_global:
+            return ["esquerdo"]
+        if is_dir_global and not is_esq_global:
+            return ["direito"]
+        if is_esq_global and is_dir_global:
+            return ["esquerdo", "direito"]
+        return ["direito"]
+
+    regioes = []
+
+    # 1. Mão / Dedos / Síndrome do Túnel do Carpo / Quirodáctilos
+    has_mao_cid = any(c.startswith(("G56.0", "M65.3", "M18")) for c in cids_all)
+    has_mao_txt = bool(re.search(r'\b(?:m[ãa]o|m[ãa]os|dedo|dedos|quirod[áa]ctilo|quirod[áa]ctilos|palmar|polegar|t[úu]nel\s+do\s+carpo|canal\s+c[áa]rpico|carpo|tinel|phalen|digita[çc][ãa]o|digitar|teclado|preens[ãa]o|gatilho)\b', combined))
+    if has_mao_cid or has_mao_txt:
+        for s in check_sides(r'm[ãa]o|m[ãa]os|dedo|dedos|punho|punhos|carpo|tinel|phalen|quirod[áa]ctilo|digita[çc][ãa]o|digitar'):
+            side_fem = "esquerda" if s == "esquerdo" else "direita"
+            r_name = f"mao_{side_fem}"
+            if r_name not in regioes:
+                regioes.append(r_name)
+
+    # 2. Cotovelo / Epicondilite
+    has_cot_cid = any(c.startswith(("M77.0", "M77.1", "M77.2")) for c in cids_all)
+    has_cot_txt = bool(re.search(r'\b(?:cotovelo|epicondilite|epic[ôo]ndilo|cozen|mill)\b', combined))
+    if has_cot_cid or has_cot_txt:
+        for s in check_sides(r'cotovelo|epicondilite|epic[ôo]ndilo|cozen'):
+            r_name = f"cotovelo_{s}"
+            if r_name not in regioes:
+                regioes.append(r_name)
+
+    # 3. Ombro / Manguito rotador
+    has_omb_cid = any(c.startswith("M75") for c in cids_all)
+    has_omb_txt = bool(re.search(r'\b(?:ombro|ombros|manguito|supraespinhal|supraespinhoso|bicipital|escapul[ao]r|neer|jobe|hawkins)\b', combined))
+    if has_omb_cid or has_omb_txt:
+        for s in check_sides(r'ombro|ombros|manguito|supraespinhal|supraespinhoso|bicipital|escapul[ao]r'):
+            r_name = f"ombro_{s}"
+            if r_name not in regioes:
+                regioes.append(r_name)
+
+    # 4. Antebraço / Punho (não-carpo / tenossinovite estilogênica / De Quervain)
+    has_ant_cid = any(c.startswith("M65.4") for c in cids_all)
+    has_ant_txt = bool(re.search(r'\b(?:antebraco|antebra[çc]o|de\s+quervain|estil[oó]ide|estiloide)\b', combined))
+    if has_ant_cid or has_ant_txt:
+        for s in check_sides(r'antebraco|antebra[çc]o|de\s+quervain'):
+            r_name = f"antebraco_{s}"
+            if r_name not in regioes:
+                regioes.append(r_name)
+
+    # 5. Coluna Lombar / Lombociatalgia
+    has_lom_cid = any(c.startswith(("M54.4", "M54.5", "M51", "M48", "M43", "M47")) for c in cids_all)
+    has_lom_txt = bool(re.search(r'\b(?:lombar|lombociatalgia|lumbago|dorsolombalgia|ci[áa]tico|ci[áa]tica|l4|l5|s1|paravertebral\s+lombar|las[èe]gue)\b', combined))
+    if has_lom_cid or has_lom_txt:
+        if "lombar" not in regioes:
+            regioes.append("lombar")
+
+    # 6. Cervical
+    has_cer_cid = any(c.startswith(("M54.2", "M50", "M53.0", "M53.1")) for c in cids_all)
+    has_cer_txt = bool(re.search(r'\b(?:cervical|cervicobraquialgia|pesco[çc]o|trap[ée]zio|c5|c6|c7)\b', combined))
+    if has_cer_cid or has_cer_txt:
+        if "cervical" not in regioes:
+            regioes.append("cervical")
+
+    # 7. Quadril
+    has_qua_cid = any(c.startswith(("M16", "M70.6", "M76.0")) for c in cids_all)
+    has_qua_txt = bool(re.search(r'\b(?:quadril|coxartrose|coxofemoral|troc[âa]nter|bursite\s+trocant[ée]rica)\b', combined))
+    if has_qua_cid or has_qua_txt:
+        if "quadril" not in regioes:
+            regioes.append("quadril")
+
+    # 8. Joelho
+    has_joe_cid = any(c.startswith(("M17", "M22", "M23")) for c in cids_all)
+    has_joe_txt = bool(re.search(r'\b(?:joelho|gonartrose|menisco|patelar|ligamento\s+cruzado|lca)\b', combined))
+    if has_joe_cid or has_joe_txt:
+        for s in check_sides(r'joelho|menisco|patelar|gonartrose'):
+            r_name = f"joelho_{s}"
+            if r_name not in regioes:
+                regioes.append(r_name)
+
+    # 9. Tornozelo / Pé
+    has_tor_cid = any(c.startswith(("M72.2", "M76.6", "M77.3")) for c in cids_all)
+    has_tor_txt = bool(re.search(r'\b(?:tornozelo|p[ée]|fascite\s+plantar|calc[âa]neo|aquileu)\b', combined))
+    if has_tor_cid or has_tor_txt:
+        for s in check_sides(r'tornozelo|p[ée]|fascite|calc[âa]neo'):
+            r_name = f"tornozelo_{s}"
+            if r_name not in regioes:
+                regioes.append(r_name)
+
+    if not regioes:
+        regioes.append("lombar")
+    return regioes
+
+def _detectar_regiao_osteomuscular(cid: str, texto: str, doenca: str, exame: str) -> str:
+    res = _detectar_todas_regioes_osteomusculares(cid, texto, doenca, exame)
+    return res[0] if res else "lombar"
 
 def _detectar_terapias_texto(text: str, current_obs: str = "") -> tuple[bool, bool]:
     combined = f"{text or ''} {current_obs or ''}".lower()
@@ -6341,13 +6427,82 @@ def api_ai_preencher_ficha():
                 if partes_doc:
                     result.obs_documentos = "Atestado médico " + " ".join(partes_doc) + "."
 
-            # Normalização de Sinais Vitais Padrão
+            # Higienização e extração determinística de sinais vitais (PA, Pulso, Altura, Peso)
+            # 1. Pressão Sistólica e Diastólica
+            m_pa = re.search(r'\b(?:PA|P\.A\.|Press[ãa]o\s+Arterial)?[:\s]*(\d{2,3})\s*(?:[/xX\*\-]|por)\s*(\d{2,3})', texto_bruto, re.IGNORECASE)
+            if m_pa:
+                result.pressao_sistolica = m_pa.group(1)
+                result.pressao_diastolica = m_pa.group(2)
+            else:
+                sist_raw = str(result.pressao_sistolica or "")
+                diast_raw = str(result.pressao_diastolica or "")
+                m_both = re.search(r'(\d{2,3})\s*[/xX\*\-por\s]+\s*(\d{2,3})', f"{sist_raw} {diast_raw}")
+                if m_both:
+                    result.pressao_sistolica = m_both.group(1)
+                    result.pressao_diastolica = m_both.group(2)
+                else:
+                    m_s = re.search(r'\d{2,3}', sist_raw)
+                    result.pressao_sistolica = m_s.group(0) if m_s else "120"
+                    m_d = re.search(r'\d{2,3}', diast_raw)
+                    result.pressao_diastolica = m_d.group(0) if m_d else "80"
+
             if not result.pressao_sistolica or result.pressao_sistolica in ("Aferida", "0", "None"):
                 result.pressao_sistolica = "120"
             if not result.pressao_diastolica or result.pressao_diastolica in ("Aferida", "0", "None"):
                 result.pressao_diastolica = "80"
-            if not result.pulso or result.pulso in ("Aferido", "0", "None", "76"):
-                result.pulso = "80"
+
+            # 2. Pulso
+            m_pulso = re.search(r'\b(?:Pulso|FC|Freq[uü][êe]ncia\s+Card[íi]aca)[:\s]*(\d{2,3})\s*(?:bpm)?\b', texto_bruto, re.IGNORECASE) or re.search(r'\b(\d{2,3})\s*bpm\b', texto_bruto, re.IGNORECASE)
+            if m_pulso:
+                result.pulso = m_pulso.group(1)
+            else:
+                m_p = re.search(r'\d{2,3}', str(result.pulso or ""))
+                result.pulso = m_p.group(0) if m_p else "80"
+
+            # 3. Altura
+            m_alt = re.search(r'\b(?:Altura|Alt)[:\s]*(\d[,\.]\d{1,2})\s*(?:m|metros)?\b', texto_bruto, re.IGNORECASE) or re.search(r'\b(\d[,\.]\d{2})\s*m\b', texto_bruto, re.IGNORECASE)
+            if m_alt:
+                result.altura = m_alt.group(1).replace(",", ".")
+            elif result.altura:
+                m_a = re.search(r'\d[,\.]\d{1,2}', str(result.altura))
+                result.altura = m_a.group(0).replace(",", ".") if m_a else ""
+
+            # 4. Peso
+            m_peso = re.search(r'\b(?:Peso)[:\s]*(\d{2,3}(?:[,\.]\d{1,2})?)\s*(?:kg|quilos)?\b', texto_bruto, re.IGNORECASE) or re.search(r'\b(\d{2,3}(?:[,\.]\d{1,2})?)\s*kg\b', texto_bruto, re.IGNORECASE)
+            if m_peso:
+                result.peso = m_peso.group(1).replace(",", ".")
+            elif result.peso:
+                m_w = re.search(r'\d{2,3}(?:[,\.]\d{1,2})?', str(result.peso))
+                result.peso = m_w.group(0).replace(",", ".") if m_w else ""
+
+            # Extração determinística e integrativa de CIDs Secundários
+            raw_cids_found = re.findall(r'\b([A-Z]\d{2}(?:\.\d{1,2})?)\b', texto_bruto, re.IGNORECASE)
+            norm_cids_found = []
+            for c in raw_cids_found:
+                c_up = c.upper()
+                if len(c_up) == 4 and "." not in c_up:
+                    c_up = f"{c_up[:3]}.{c_up[3:]}"
+                if c_up not in norm_cids_found:
+                    norm_cids_found.append(c_up)
+
+            all_secondary = []
+            seen_sec = set()
+            primary_clean = (result.cid or "").upper().strip()
+
+            for c in (result.cids_secundarios or []):
+                c_clean = str(c or "").upper().strip()
+                if len(c_clean) == 4 and "." not in c_clean:
+                    c_clean = f"{c_clean[:3]}.{c_clean[3:]}"
+                if c_clean and c_clean != primary_clean and c_clean not in seen_sec:
+                    seen_sec.add(c_clean)
+                    all_secondary.append(c_clean)
+
+            for c in norm_cids_found:
+                if c != primary_clean and c not in seen_sec:
+                    seen_sec.add(c)
+                    all_secondary.append(c)
+
+            result.cids_secundarios = all_secondary
 
             # Garantir robustez de desc_limitacao e justificativa conforme parecer
             par_upper = (result.parecer or "").strip().upper()
@@ -6406,6 +6561,15 @@ def api_ai_preencher_ficha():
                     ]
 
             body = result.model_dump()
+            body["cids_secundarios"] = all_secondary
+            body["cidsSecundarios"] = [
+                {
+                    "cid": c,
+                    "codigo": c,
+                    "descricao": (get_cid_info(c) or {}).get("nome", "")
+                }
+                for c in all_secondary
+            ]
             body["doencaMotivo"] = result.doenca_motivo
             body["inicioTratamento"] = result.inicio_tratamento
             body["freqConsultas"] = result.freq_consultas
@@ -6416,7 +6580,9 @@ def api_ai_preencher_ficha():
             body["antecedentes_morbidos"] = result.historico_pregresso
             body["fisioterapia"] = bool(result.fisioterapia)
             body["psicoterapia"] = bool(result.psicoterapia)
-            body["regiao_osteomuscular"] = _detectar_regiao_osteomuscular(result.cid, texto_bruto, result.doenca_motivo, result.exame_fisico_descricao)
+            todas_regioes = _detectar_todas_regioes_osteomusculares(result.cid, texto_bruto, result.doenca_motivo, result.exame_fisico_descricao, all_secondary)
+            body["regioes_osteomusculares"] = todas_regioes
+            body["regiao_osteomuscular"] = todas_regioes[0] if todas_regioes else "lombar"
             body["data_expedicao"] = exp_date_iso or exp_date_br
             body["data_expedicao_iso"] = exp_date_iso
             body["data_expedicao_br"] = exp_date_br

@@ -3283,10 +3283,14 @@ main { min-width: 0; }
   function normalizeDoctorRecordForEsisla(r) {
     const p = (r?.payload && typeof r.payload === 'object') ? r.payload : (r || {});
     const a = p?.aux || r?.aux || {};
-    const resolvedNome = p?.nomePaciente || a?.nomePaciente || r?.nomePaciente || r?.paciente_nome || p?.paciente || a?.paciente || r?.paciente || '';
+    const atdKey = String(r?.atendimento || r?.id || p?.atendimento || a?.atendimento || '');
+    const agendaItem = (typeof currentDoctorAgenda !== 'undefined' && Array.isArray(currentDoctorAgenda))
+      ? currentDoctorAgenda.find(x => String(x.atd_existente_numero || x.atd_existente_id || x.protocolo || '') === atdKey)
+      : null;
+    const resolvedNome = p?.nomePaciente || a?.nomePaciente || r?.nomePaciente || r?.paciente_nome || p?.paciente || a?.paciente || r?.paciente || agendaItem?.nome_periciado || '';
     const resolvedCpf = p?.cpfPaciente || a?.cpfPaciente || r?.cpfPaciente || r?.paciente_cpf || p?.cpf || a?.cpf || '';
-    const resolvedProto = a?.protocolo || p?.protocolo || r?.protocolo || a?.agenda_protocolo || '';
-    const resolvedNi = a?.ni || p?.ni || r?.ni || '';
+    const resolvedProto = a?.protocolo || p?.protocolo || r?.protocolo || a?.agenda_protocolo || agendaItem?.protocolo || '';
+    const resolvedNi = a?.ni || p?.ni || r?.ni || agendaItem?.ni || '';
     return {
       ...r,
       ...p,
@@ -3471,11 +3475,41 @@ main { min-width: 0; }
       return;
     }
     const str = normalizarTextoFichaEsisla(raw);
+    const r = window.currentDoctorEsislaRecord || {};
+    const p = payload(r);
+    const a = aux(r);
 
-    const ident = extractSectionDoctorEsisla(str, ['Identificação do Servidor e Vínculo', 'Identificação do Servidor'], ['(*) Queixa e Duração', 'Queixa e Duração']);
-    const queixa = extractSectionDoctorEsisla(str, ['(*) Queixa e Duração', 'Queixa e Duração'], ['Antecedentes Mórbidos']);
-    const antecedentes = extractSectionDoctorEsisla(str, ['Antecedentes Mórbidos'], ['Atestado/Relatório e Exames Complementares', 'Atestado/Relatório/Exames Complementares', 'Atestado/Relatório', 'Pressão Arterial']);
+    let ident = extractSectionDoctorEsisla(str, ['Identificação do Servidor e Vínculo', 'Identificação do Servidor'], ['(*) Queixa e Duração', 'Queixa e Duração']);
+    if (!ident) {
+      const nomeServ = p.nomePaciente || a.nomePaciente || r.nomePaciente || r.paciente_nome || '';
+      const cargoServ = p.cargo || a.cargo || r.cargo || '';
+      const idadeServ = p.idade || a.idade || r.idade || '';
+      const protoServ = a.protocolo || p.protocolo || r.protocolo || '';
+      if (nomeServ) {
+        ident = `Servidor(a): ${nomeServ}` + (cargoServ ? `\nCargo: ${cargoServ}` : '') + (idadeServ ? ` | Idade: ${idadeServ} anos` : '') + (protoServ ? `\nProtocolo: ${protoServ}` : '');
+      }
+    }
+
+    const queixa = extractSectionDoctorEsisla(str, ['(*) Queixa e Duração', 'Queixa e Duração'], ['Antecedentes Mórbidos']) || p.queixaDuracao || a.queixaDuracao || '';
+    const antecedentes = extractSectionDoctorEsisla(str, ['Antecedentes Mórbidos'], ['Atestado/Relatório e Exames Complementares', 'Atestado/Relatório/Exames Complementares', 'Atestado/Relatório', 'Pressão Arterial']) || p.historicoPregresso || a.historicoPregresso || 'Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas.';
     const atestado = extractSectionDoctorEsisla(str, ['Atestado/Relatório e Exames Complementares', 'Atestado/Relatório/Exames Complementares', 'Atestado/Relatório'], ['Pressão Arterial', 'Sistólica', 'Altura', '(*) Exame Físico Geral', '(*)Exame Físico Geral']) || 'Em anexo.';
+
+    // Sinais Vitais e Biometria
+    const paSis = (str.match(/Sist[óo]lica(?:\s*\(mmHg\))?[:\s]*(\d+)/i) || [])[1] || p.pressaoSistolica || a.pressaoSistolica || '';
+    const paDia = (str.match(/Diast[óo]lica(?:\s*\(mmHg\))?[:\s]*(\d+)/i) || [])[1] || p.pressaoDiastolica || a.pressaoDiastolica || '';
+    const pulso = (str.match(/Pulso(?:\s*\(bpm\))?[:\s]*(\d+)/i) || [])[1] || p.pulso || a.pulso || '';
+    const altRaw = (str.match(/Altura[:\s]*([\d,\.]+)/i) || [])[1] || p.altura || a.altura || '';
+    const pesoRaw = (str.match(/Peso[:\s]*(\d+)/i) || [])[1] || p.peso || a.peso || '';
+    let biometria = '';
+    if (paSis || paDia || pulso || altRaw || pesoRaw) {
+      const parts = [];
+      if (paSis || paDia) parts.push(`Pressão Arterial: ${paSis || '—'}/${paDia || '—'} mmHg`);
+      if (pulso) parts.push(`Pulso: ${pulso} bpm`);
+      if (altRaw) parts.push(`Altura: ${altRaw} m`);
+      if (pesoRaw) parts.push(`Peso: ${pesoRaw} kg`);
+      biometria = parts.join('  ·  ');
+    }
+
     const exameFisico = extractSectionDoctorEsisla(str, ['(*) Exame Físico Geral', '(*)Exame Físico Geral', 'Exame Físico Geral'], [
       'Descrição das Alterações Clínicas e Exames Complementares',
       'Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares',
@@ -3485,7 +3519,8 @@ main { min-width: 0; }
       '(*) Descrição da(s) Limitação',
       '(*)Descrição da(s) Limitação',
       '(*) Parecer Médico'
-    ]);
+    ]) || p.exameFisicoDescricao || a.exameFisicoDescricao || '';
+
     const altClinicas = extractSectionDoctorEsisla(str, [
       'Descrição das Alterações Clínicas e Exames Complementares',
       'Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares',
@@ -3496,23 +3531,28 @@ main { min-width: 0; }
       '(*) Descrição da(s) Limitação',
       '(*)Descrição da(s) Limitação',
       '(*) Parecer Médico'
-    ]);
+    ]) || p.alteracoesClinicasExames || a.alteracoesClinicasExames || 'Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial.';
+
     const limitacoes = extractSectionDoctorEsisla(str, [
       '(*) Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)',
       '(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s)',
       '(*) Descrição da(s) Limitação',
       '(*)Descrição da(s) Limitação',
       'Descrição da(s) Limitação'
-    ], ['(*) Parecer Médico', '(*)Parecer Médico', 'Parecer Médico']);
-    const parecerBloco = extractSectionDoctorEsisla(str, ['(*) Parecer Médico', '(*)Parecer Médico', 'Parecer Médico'], ['(*) Resposta aos quesitos', '(*)Resposta aos quesitos', 'Resposta aos quesitos']);
+    ], ['(*) Parecer Médico', '(*)Parecer Médico', 'Parecer Médico']) || p.descLimitacao || a.descLimitacao || '';
+
+    const parecerBloco = extractSectionDoctorEsisla(str, ['(*) Parecer Médico', '(*)Parecer Médico', 'Parecer Médico'], ['(*) Resposta aos quesitos', '(*)Resposta aos quesitos', 'Resposta aos quesitos']) || (p.parecer ? `Parecer: ${p.parecer}\nNº Dias: ${p.diasSolicitados || 0}\nCID 10: ${p.cid || ''}` : '');
+
     const quesitosBloco = extractSectionDoctorEsisla(str, ['(*) Resposta aos quesitos', '(*)Resposta aos quesitos', 'Resposta aos quesitos'], ['(*) Justificativa Parecer Médico', '(*)Justificativa Parecer Médico', 'Justificativa Parecer Médico']);
-    const justificativa = extractSectionDoctorEsisla(str, ['(*) Justificativa Parecer Médico', '(*)Justificativa Parecer Médico', 'Justificativa Parecer Médico'], ['(*) Parecer Final', '(*)Parecer Final', 'Parecer Final']);
+
+    const justificativa = extractSectionDoctorEsisla(str, ['(*) Justificativa Parecer Médico', '(*)Justificativa Parecer Médico', 'Justificativa Parecer Médico'], ['(*) Parecer Final', '(*)Parecer Final', 'Parecer Final']) || p.justificativa || a.justificativa || '';
 
     let blocks = [
       { icon: '👤', title: 'Identificação do Servidor e Vínculo', content: ident },
       { icon: '🗣️', title: '(*) Queixa e Duração', content: queixa },
       { icon: '📜', title: 'Antecedentes Mórbidos', content: antecedentes },
       { icon: '📑', title: 'Atestado / Relatório / Exames Complementares', content: atestado },
+      { icon: '💓', title: 'Sinais Vitais e Biometria', content: biometria },
       { icon: '🩺', title: '(*) Exame Físico Geral', content: exameFisico },
       { icon: '🔬', title: 'Descrição das Alterações Clínicas e Exames Complementares', content: altClinicas },
       { icon: '⚠️', title: '(*) Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is)', content: limitacoes },
@@ -3628,6 +3668,24 @@ main { min-width: 0; }
     );
 
     let r = records.find(x => String(x.atendimento || x.id) === String(id)) || { atendimento: id, id };
+    const agendaMatch = (typeof currentDoctorAgenda !== 'undefined' && Array.isArray(currentDoctorAgenda))
+      ? currentDoctorAgenda.find(x => String(x.atd_existente_numero || x.atd_existente_id || x.protocolo || '') === String(id))
+      : null;
+    if (agendaMatch) {
+      r = {
+        ...r,
+        nomePaciente: r.nomePaciente || agendaMatch.nome_periciado || '',
+        paciente_nome: r.paciente_nome || agendaMatch.nome_periciado || '',
+        protocolo: r.protocolo || agendaMatch.protocolo || '',
+        ni: r.ni || agendaMatch.ni || '',
+        aux: {
+          ...(r.aux || {}),
+          nomePaciente: r.aux?.nomePaciente || agendaMatch.nome_periciado || '',
+          protocolo: r.aux?.protocolo || agendaMatch.protocolo || '',
+          ni: r.aux?.ni || agendaMatch.ni || ''
+        }
+      };
+    }
     try {
       const detailRes = await AmbientalAuth.authFetch('/api/atendimentos/' + encodeURIComponent(id), { cache: 'no-store' });
       const detailBody = await detailRes.json().catch(() => null);
@@ -3725,11 +3783,32 @@ main { min-width: 0; }
       // Sincroniza imediatamente com a Extensão e-SISLA AutoFill (Buffer e Fila)
       sincronizarFichaComExtensaoDoctor(ficha, r, id, false);
     } catch (err) {
-      if (blocosEl) {
-        blocosEl.style.display = 'grid';
-        blocosEl.innerHTML = `<div style="text-align:center;padding:28px;color:var(--accent-red)">Erro ao gerar Ficha e-Sisla: ${esc(err.message || err)}</div>`;
+      console.error('[Doctor e-Sisla] Erro ao carregar/gerar:', err);
+      const fallbackFicha = r.ficha_esisla || r.aux?.fichaEsisla || r.aux?.ficha_esisla || r.payload?.ficha_esisla;
+      if (fallbackFicha && String(fallbackFicha).trim().length > 40) {
+        if (txtEl) txtEl.value = fallbackFicha;
+        updateDoctorEsislaStats(fallbackFicha);
+        renderDoctorEsislaBlocos(fallbackFicha);
+        setDoctorEsislaMode(window.currentDoctorEsislaMode || 'blocos');
+        showToast('Ficha salva recuperada do atendimento.');
+      } else {
+        if (blocosEl) {
+          blocosEl.style.display = 'grid';
+          blocosEl.innerHTML = `
+            <div style="background:#fff;border:1.5px solid #fecaca;border-radius:12px;padding:24px;text-align:center;margin:16px;">
+              <div style="font-size:32px;margin-bottom:8px">⚠️</div>
+              <h4 style="margin:0 0 8px 0;color:#991b1b;font-size:15px">Não foi possível gerar a Ficha e-Sisla</h4>
+              <p style="margin:0 0 16px 0;color:#7f1d1d;font-size:13px">${esc(err.message || err)}</p>
+              <div style="display:flex;gap:10px;justify-content:center">
+                <button type="button" class="btn primary" onclick="openDoctorEsisla('${esc(id)}', true)" style="padding:7px 16px;font-size:12px">
+                  🔄 Tentar Novamente
+                </button>
+                <button type="button" class="btn-sm" onclick="closeDoctorEsislaModal()">Fechar</button>
+              </div>
+            </div>`;
+        }
+        showToast(err.message || 'Erro ao gerar Ficha e-Sisla.');
       }
-      showToast(err.message || 'Erro ao gerar Ficha e-Sisla.');
     } finally {
       if (overlay) {
         overlay.classList.remove('show');
@@ -3740,7 +3819,9 @@ main { min-width: 0; }
       }
       if (banner) banner.style.display = 'flex';
       if (tools) tools.style.display = 'flex';
-      setDoctorEsislaMode(window.currentDoctorEsislaMode || 'blocos');
+      if (txtEl && txtEl.value && txtEl.value.trim().length > 0) {
+        setDoctorEsislaMode(window.currentDoctorEsislaMode || 'blocos');
+      }
       if (regenBtn) regenBtn.disabled = false;
     }
   };
@@ -3807,8 +3888,11 @@ main { min-width: 0; }
       ('ATD_' + Date.now())
     ).trim();
 
+    const agendaMatch = (typeof currentDoctorAgenda !== 'undefined' && Array.isArray(currentDoctorAgenda))
+      ? currentDoctorAgenda.find(x => String(x.atd_existente_numero || x.atd_existente_id || x.protocolo || '') === String(protocolo || fallbackId || r.atendimento || r.id || ''))
+      : null;
     const recordNome = sanitizarNomeServidorEsisla(
-      p.nomePaciente || a.nomePaciente || r.nomePaciente || r.paciente_nome || p.paciente || a.paciente || r.paciente || ''
+      p.nomePaciente || a.nomePaciente || r.nomePaciente || r.paciente_nome || p.paciente || a.paciente || r.paciente || agendaMatch?.nome_periciado || ''
     );
     const subPacMatch = (document.getElementById('doctorEsislaSub')?.textContent || '').match(/·\s*([^·]+)\s*·/i);
     const domNome = sanitizarNomeServidorEsisla(subPacMatch ? subPacMatch[1].trim() : '');
@@ -3818,6 +3902,7 @@ main { min-width: 0; }
       recordNome ||
       (domNome && domNome !== 'Servidor(a)' ? domNome : '') ||
       textNome ||
+      agendaMatch?.nome_periciado ||
       domNome ||
       'Servidor'
     ).trim();

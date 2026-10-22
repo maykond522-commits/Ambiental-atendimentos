@@ -51,7 +51,11 @@ def install(app: Any) -> None:
     def _obs_teardown(_exc: BaseException | None) -> None:
         token = getattr(g, "_ambiental_request_id_token", None)
         if token is not None:
-            _request_id.reset(token)
+            g._ambiental_request_id_token = None
+            try:
+                _request_id.reset(token)
+            except Exception:
+                pass
 
 
 def metrics_snapshot() -> dict[str, int]:

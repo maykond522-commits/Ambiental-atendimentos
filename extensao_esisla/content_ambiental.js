@@ -52,7 +52,24 @@
     const subPacMatch = subTxt.match(/·\s*([^·]+)\s*·/);
     const domNome = sanitizarNomeServidor(subPacMatch ? subPacMatch[1].trim() : '');
     const payloadNome = sanitizarNomeServidor(payload?.servidor || payload?.paciente || '');
-    return payloadNome || (domNome && domNome !== 'Servidor(a)' ? domNome : '') || domNome || 'Servidor';
+    if (payloadNome && payloadNome !== 'Servidor') return payloadNome;
+    if (domNome && domNome !== 'Servidor(a)' && domNome !== 'Servidor') return domNome;
+
+    // Tenta encontrar em cards da agenda ou cabeçalhos visíveis pelo protocolo
+    const proto = payload?.protocolo;
+    if (proto) {
+      const cards = Array.from(document.querySelectorAll('.agenda-item-card'));
+      for (const card of cards) {
+        if (card.textContent.includes(proto)) {
+          const nameEl = card.querySelector('.agenda-patient-name');
+          if (nameEl && nameEl.textContent.trim()) {
+            const clean = sanitizarNomeServidor(nameEl.textContent.trim());
+            if (clean) return clean;
+          }
+        }
+      }
+    }
+    return payloadNome || domNome || 'Servidor';
   }
 
   // Exibe o card interativo dando ao médico a ESCOLHA de adicionar ou não aquela ficha à fila
@@ -83,51 +100,44 @@
     prompt.id = 'ambientalExtensionQueuePrompt';
     prompt.className = 'ambiental-ext-queue-prompt';
     prompt.innerHTML = `
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px">
-        <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
-          <span style="font-size:18px;line-height:1;flex-shrink:0">⚡</span>
-          <div style="min-width:0;flex:1">
-            <strong style="font-size:12.5px;color:#0F172A;display:block;font-weight:800;line-height:1.2">Ficha e-SISLA Pronta</strong>
-            <span style="font-size:11.5px;color:#0369A1;font-weight:700;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px" title="${pac.replace(/"/g, '&quot;')}">${pac}</span>
-          </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1">
+          <span style="font-size:15px;line-height:1;flex-shrink:0">⚡</span>
+          <strong style="font-size:12px;color:#0F172A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${pac.replace(/"/g, '&quot;')}">${pac}</strong>
         </div>
-        <button type="button" class="btn-ext-prompt-close" style="background:transparent;border:none;color:#94A3B8;cursor:pointer;font-size:15px;padding:0 4px;border-radius:4px;flex-shrink:0" title="Fechar sem adicionar">✕</button>
+        <button type="button" class="btn-ext-prompt-close" style="background:transparent;border:none;color:#94A3B8;cursor:pointer;font-size:14px;padding:0 2px;line-height:1;flex-shrink:0" title="Fechar">✕</button>
       </div>
 
-      <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:7px;padding:6px 10px;margin-bottom:8px;font-size:11px;color:#475569;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
-        <div><strong>Protocolo:</strong> <code style="font-family:monospace;font-weight:700;color:#0369A1">${proto}</code></div>
-        ${cid ? `<div><strong>CID:</strong> ${cid} ${dias ? `· <strong>${dias}d</strong>` : ''}</div>` : ''}
-      </div>
-
-      <div style="font-size:11px;color:#475569;margin-bottom:10px;line-height:1.3">
-        Adicionar esta ficha à <strong>Fila da Extensão</strong> para autopreencher no e-SISLA?
+      <div style="font-size:11px;color:#475569;margin-bottom:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <span>Prot: <strong style="color:#0369A1">${proto}</strong></span>
+        ${cid ? `<span>· CID: <strong>${cid}</strong>${dias ? ` (${dias}d)` : ''}</span>` : ''}
       </div>
 
       <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px">
-        <button type="button" class="btn-ext-prompt-ignore" style="background:#FFFFFF;border:1px solid #CBD5E1;color:#64748B;font-size:11px;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer">
-          Não Adicionar
+        <button type="button" class="btn-ext-prompt-ignore" style="background:#FFFFFF;border:1px solid #CBD5E1;color:#64748B;font-size:10.5px;font-weight:700;padding:4px 8px;border-radius:5px;cursor:pointer">
+          Agora Não
         </button>
-        <button type="button" class="btn-ext-prompt-add" style="background:linear-gradient(135deg, #0284C7 0%, #0369A1 100%);color:#FFFFFF;border:none;font-size:11px;font-weight:800;padding:5.5px 12px;border-radius:6px;cursor:pointer;box-shadow:0 2px 6px rgba(2,132,199,0.28)">
-          ⚡ Adicionar à Fila e-SISLA
+        <button type="button" class="btn-ext-prompt-add" style="background:linear-gradient(135deg, #0284C7 0%, #0369A1 100%);color:#FFFFFF;border:none;font-size:10.5px;font-weight:800;padding:4.5px 10px;border-radius:5px;cursor:pointer;box-shadow:0 1px 4px rgba(2,132,199,0.25)">
+          ⚡ Adicionar à Fila
         </button>
       </div>
     `;
 
     prompt.style.cssText = `
       position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: min(335px, 90vw);
+      bottom: 16px;
+      right: 16px;
+      width: min(300px, 88vw);
       background: #FFFFFF;
       border: 1.5px solid #0284C7;
-      border-left: 5px solid #0284C7;
-      border-radius: 12px;
-      padding: 11px 13px;
-      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+      border-left: 4px solid #0284C7;
+      border-radius: 10px;
+      padding: 9px 12px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
       z-index: 2147483647;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      animation: ambientalPromptSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      transition: opacity 0.25s, transform 0.25s;
+      animation: ambientalPromptSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: opacity 0.2s, transform 0.2s;
     `;
 
     document.body.appendChild(prompt);

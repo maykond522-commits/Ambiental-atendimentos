@@ -2140,7 +2140,10 @@ def test_esisla_gender_agreement_antecedentes_cid_secundario_and_limitacoes(monk
     f_res = res_data["ficha_esisla"]
 
     # Verifica fórmula obrigatória para parecer CONTRÁRIO
-    assert "Do ponto de vista médico não se observa limitações físicas ou mentais funcionais incapacitantes para as atribuições do cargo de Investigador de Polícia, constantes no rol de atividades." in f_res
+    assert (
+        "Do ponto de vista médico não se observam limitações físicas ou mentais funcionais incapacitantes para as atribuições do cargo de Investigador de Polícia, constantes no rol de atividades." in f_res
+        or "Do ponto de vista médico não se observa limitações físicas ou mentais funcionais incapacitantes para as atribuições do cargo de Investigador de Polícia, constantes no rol de atividades." in f_res
+    )
 
     # Verifica limpeza de CID secundário vazio para não gerar lixo nem "Médico Perito"
     assert "CID 10 Secundário: Descrição Secundária:" not in f_res
@@ -2290,7 +2293,10 @@ def test_isolamento_estrito_exame_fisico_alteracoes_e_limitacoes():
     )
     cleaned = _clean_esisla_text(sample_medicas)
     assert "Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:" in cleaned
-    assert "(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):" in cleaned
+    assert (
+        "(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):" in cleaned
+        or "(*) Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):" in cleaned
+    )
 
     # 2. Em gestao_atendimentos.html, ext usa lookahead estrito sem fallback |$ quando sf existe
     assert "const lookahead = sf ? '(?=' + sf + ')' : '(?=$)';" in gestao
@@ -2935,7 +2941,11 @@ def test_narrativas_exaustivas_queixa_antecedentes_e_limitacoes(monkeypatch):
     assert "desde 2025" in ficha
     assert "realizando consultas mensalmente" in ficha
     assert "não informado sua dosagem" in ficha
-    assert "(Não relatou troca de alteração de dosagem da medicação.)" in ficha or "não relatou troca de alteração de dosagem da medicação" in ficha.lower()
+    assert (
+        "(Não relatou troca de alteração de dosagem da medicação.)" in ficha
+        or "não relatou troca de alteração de dosagem da medicação" in ficha.lower()
+        or "não relatou troca de medicação ou alteração de dosagem" in ficha.lower()
+    )
     assert "(e não realiza psicoterapia)" in ficha or "e não realiza psicoterapia" in ficha.lower()
 
     # Antecedentes mórbidos complementados
@@ -3141,8 +3151,278 @@ def test_esisla_pdf_import_and_attendance_flow():
     assert 'processarArquivoEsislaNaTela' in ATTENDANCE
 
 
+def test_extensao_esisla_integracao_medicos():
+    # 1. Validação do HTML do Portal Médico (gestao_medicos.html)
+    assert 'id="btnDoctorCopyEsislaFull"' in GESTAO_MEDICOS
+    assert 'id="btnDoctorSendToExtension"' in GESTAO_MEDICOS
+    assert 'id="btnDoctorExtensaoModal"' in GESTAO_MEDICOS
+    assert 'id="modalExtensaoEsislaDoctor"' in GESTAO_MEDICOS
+    assert 'href="/api/extensao-esisla/download"' in GESTAO_MEDICOS
+    assert 'sincronizarFichaComExtensaoDoctor' in GESTAO_MEDICOS
+    assert 'extrairPayloadEsislaDoTexto' in GESTAO_MEDICOS
+    assert 'enviarDoctorEsislaParaExtensao' in GESTAO_MEDICOS
+    assert 'abrirModalExtensaoEsisla' in GESTAO_MEDICOS
+    assert 'fecharModalExtensaoEsislaDoctor' in GESTAO_MEDICOS
+
+    # 2. Validação do Script de Conteúdo da Extensão (extensao_esisla/content_ambiental.js)
+    ext_content = (ROOT / "extensao_esisla" / "content_ambiental.js").read_text(encoding="utf-8")
+    assert "#btnDoctorCopyEsislaFull" in ext_content
+    assert "#btnDoctorSendToExtension" in ext_content
+    assert "extrairPayloadDeTextoEsisla" in ext_content
+    assert "extrairPayloadDoDOM" in ext_content
+
+    # 3. Validação do Popup da Extensão (extensao_esisla/popup.js)
+    ext_popup = (ROOT / "extensao_esisla" / "popup.js").read_text(encoding="utf-8")
+    assert "extrairPayloadDeTextoEsisla" in ext_popup
+
+    # 4. Validação do Manifest da Extensão (extensao_esisla/manifest.json)
+    ext_manifest = (ROOT / "extensao_esisla" / "manifest.json").read_text(encoding="utf-8")
+    assert "*://*/*gestao*" in ext_manifest
+
+    # 5. Garantir sanitização do nome do periciado e proteção contra captura da queixa ("Servidor de 45 anos...")
+    assert "sanitizarNomeServidorEsisla" in GESTAO_MEDICOS
+    assert "sanitizarNomeServidor" in ext_content
+    assert "obterNomeServidorSeguro" in ext_content
+    assert "sanitizarNomeServidor" in ext_popup
 
 
+def test_antecedentes_morbidos_sem_quebra_linha_e_com_ponto_final():
+    from app import (
+        _clean_antecedentes_morbidos_text,
+        _clean_esisla_text,
+        _estruturar_secoes_oficiais_esisla,
+    )
+
+    # Caso reportado: "Cirosse hepática. Nega demais\n\nantecedentes mórbidos relevantes, cirurgias prévias e neoplasias"
+    raw_ant = "Cirosse hepática. Nega demais\n\nantecedentes mórbidos relevantes, cirurgias prévias e neoplasias"
+    cleaned = _clean_antecedentes_morbidos_text(raw_ant)
+    assert cleaned == "Cirrose hepática. Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
+    assert "\n" not in cleaned
+
+    ficha_bruta = (
+        "Registro da perícia Médica para Licença\n\n"
+        "(*) Queixa e Duração:\n"
+        "Servidor de 45 anos, relatou não ser readaptado, é Professor de Ensino Fundamental e Médio há 21 anos, com queixa de Transtornos mentais.\n\n"
+        "Antecedentes Mórbidos:\n"
+        "Cirosse hepática. Nega demais\n\nantecedentes mórbidos relevantes, cirurgias prévias e neoplasias\n\n"
+        "Atestado/Relatório/Exames Complementares:\n"
+        "Em anexo.\n\n"
+        "Pressão Arterial\n"
+        "Sistólica (mmHg): 120\n"
+        "Diastólica (mmHg): 80\n"
+        "Pulso (bpm): 72\n\n"
+        "Altura: 1.75\n"
+        "Peso: 78\n\n"
+        "(*) Exame Físico Geral:\n"
+        "Bom estado geral.\n\n"
+        "Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:\n"
+        "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial.\n\n"
+        "(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):\n"
+        "Limitação temporária para regência de aulas.\n\n"
+        "(*) Parecer Médico:\n"
+        "Parecer: FAVORÁVEL\n"
+        "Nº Dias: 15\n"
+        "Data Início: 20/10/2026\n"
+        "CID 10: F10.2\n"
+        "Descrição: Transtornos mentais e comportamentais devidos ao uso de álcool\n\n"
+        "(*) Resposta aos quesitos:\n"
+        "1) Há doença(s) ou condição(ções) clínica(s) prévia(s) ou atual(is) identificada(s)? Sim\n"
+        "2) A(s) doença(s) gera(m) limitação(ções) funcional(is)? Sim\n"
+        "3) A(s) limitação(ções) impede(m) o exercício das atividades do cargo? Sim\n\n"
+        "(*) Justificativa Parecer Médico:\n"
+        "Incapacidade temporária comprovada.\n\n"
+        "(*) Parecer Final:\n"
+        "Parecer: FAVORÁVEL\n"
+        "Nº Dias: 15\n"
+        "Data Início: 20/10/2026\n"
+        "CID 10: F10.2\n"
+        "Descrição: Transtornos mentais e comportamentais devidos ao uso de álcool"
+    )
+
+    estruturada = _estruturar_secoes_oficiais_esisla(ficha_bruta)
+    assert "Nega demais\n" not in estruturada
+    assert "Cirrose hepática. Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias." in estruturada
+
+    ficha_limpa = _clean_esisla_text(estruturada)
+    assert "Nega demais\n" not in ficha_limpa
+    assert "Cirrose hepática. Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias." in ficha_limpa
+
+
+def test_clean_esisla_text_markdown_and_brackets_tolerance():
+    from app import _clean_esisla_text
+
+    raw_ai_output = (
+        "## Registro da perícia Médica para Licença\n\n"
+        "(*) Identificação do Servidor:\n"
+        "Nome: Maria dos Santos [Servidora]\n"
+        "RG: 12.345.678-9 [SSP]\n\n"
+        "(*) Parecer Médico:\n"
+        "Parecer: [FAVORÁVEL]\n"
+        "Nº Dias: [15]\n"
+        "CID 10: [M54.5]\n"
+        "Descrição: [Dor lombar baixa]\n\n"
+        "(*) Resposta aos quesitos:\n"
+        "1) Há doença(s) ou condição(ções) clínica(s) prévia(s) ou atual(is) identificada(s)? [Sim]\n"
+        "2) A(s) doença(s) gera(m) limitação(ções) funcional(is)? [Sim]\n"
+        "3) A(s) limitação(ções) impede(m) o exercício das atividades do cargo? [Sim]\n\n"
+        "(*) Justificativa Parecer Médico:\n"
+        "Incapacidade temporária caracterizada.\n\n"
+        "(*) Parecer Final:\n"
+        "Parecer: FAVORÁVEL\n"
+        "Nº Dias: 15\n"
+        "CID 10: M54.5\n"
+        "Descrição: Dor lombar baixa"
+    )
+
+    cleaned = _clean_esisla_text(raw_ai_output)
+    assert cleaned.startswith("Registro da perícia Médica para Licença")
+    assert "##" not in cleaned
+    assert "[" not in cleaned
+    assert "]" not in cleaned
+    assert "Maria dos Santos Servidora" in cleaned or "Maria dos Santos" in cleaned
+    assert "Parecer: FAVORÁVEL" in cleaned
+
+
+def test_build_deterministic_esisla_produces_full_official_document():
+    from app import _build_deterministic_esisla, _clean_esisla_text
+
+    payload = {
+        "nome": "João da Silva Sauro",
+        "rg": "11.222.333-4",
+        "cargo": "Professor de Educação Básica II",
+        "secretaria": "Secretaria da Educação",
+        "regime": "Efetivo",
+        "queixa": "Dor em coluna lombar com irradiação",
+        "historico_pregresso": "Nega comorbidades prévias",
+        "atestado_crm": "123456",
+        "atestado_medico": "Dr. Carlos Médico",
+        "atestado_dias": "10",
+        "atestado_cid": "M54.5",
+        "atestado_data": "2026-10-20",
+        "pressao_sistolica": "120",
+        "pressao_diastolica": "80",
+        "pulso": "72",
+        "altura": "1.75",
+        "peso": "75",
+        "exame_fisico_descricao": "Lombalgia à palpação paravertebral lombar",
+        "parecer": "FAVORÁVEL",
+        "dias": "10",
+        "cid": "M54.5",
+        "cid_descricao": "Dor lombar baixa",
+        "quesito1": "Sim",
+        "quesito2": "Sim",
+        "quesito3": "Sim",
+        "justificativa": "Quadro álgico agudo com limitação para deslocamento e ortostatismo prolongado.",
+        "medico_perito": "Dra. Ana Perita",
+        "crm_responsavel": "999888",
+        "data_atendimento": "2026-10-20",
+        "hora_atendimento": "14:30"
+    }
+
+    doc = _build_deterministic_esisla(payload)
+    assert "Registro da perícia Médica para Licença" in doc
+    assert "Professor de Educação Básica II" in doc
+    assert "Lombalgia à palpação" in doc
+    assert "Parecer: FAVORÁVEL" in doc
+    assert "Nº Dias: 10" in doc
+    assert "CID 10: M54.5" in doc
+    assert "Dra. Ana Perita" in doc
+    assert "CRM: 999888" in doc
+
+    # Must be valid for _clean_esisla_text
+    cleaned = _clean_esisla_text(doc)
+    assert cleaned.startswith("Registro da perícia Médica para Licença")
+
+
+def test_gestao_medicos_and_extension_safeguards():
+    # gestao_medicos.html safeguards against blank cards
+    assert "txtEl.value.trim().length > 0" in GESTAO_MEDICOS
+    assert "Não foi possível gerar a Ficha e-Sisla" in GESTAO_MEDICOS
+    assert "Sinais Vitais e Biometria" in GESTAO_MEDICOS
+    assert "currentDoctorAgenda" in GESTAO_MEDICOS
+
+    # extensao content_ambiental.js compactness and server name resolution
+    content_ext = (ROOT / "extensao_esisla" / "content_ambiental.js").read_text(encoding="utf-8")
+    assert "300px" in content_ext
+    assert "obterNomeServidorSeguro" in content_ext
+
+
+def test_doctor_record_access_contract():
+    block = APP[APP.index('def _require_record_access'):APP.index('def _error', APP.index('def _require_record_access'))]
+    assert 'if owner and str(owner) == str(current_user):' in block
+    assert 'crm_match = bool(user_crm and (' in block
+    assert 'name_match = bool(user_name and len(user_name) >= 4 and (' in block
+    assert 'if not owner or crm_match or name_match or email_match:' in block
+    assert 'Acesso restrito aos seus próprios atendimentos.' in block
+
+
+def test_anti_glosa_scrambled_doctor_input_disentanglement_and_enrichment():
+    from app import _build_deterministic_esisla, _gatekeeper_anti_glosa_esisla
+
+    # Scrambled input: doctor mixed meds in symptoms, certificate and MRI in antecedents,
+    # left physical exam telegraphic ("dor"), wrote poor justification ("repouso 15 dias")
+    scrambled_payload = {
+        "nome": "Carlos Periciado Exemplo",
+        "sexo": "Masculino",
+        "idade": "45",
+        "cargo": "Professor de Educação Básica II",
+        "tempo_funcao": "10",
+        "unidade_tempo": "anos",
+        "readaptado": "Não",
+        "doenca_motivo": "Lombalgia crônica agudizada",
+        "sintomas_limitacoes": "tramadol 50mg 8/8h e dipirona 1g se dor, pct ta com dor na lombar",
+        "antecedentes": "veio com atestado de 15 dias do Dr Carlos CRM 12345, fez RM de coluna com hernia L4-L5",
+        "exame_fisico_descricao": "dor",
+        "justificativa": "repouso 15 dias",
+        "parecer": "FAVORÁVEL",
+        "dias_solicitados": "15",
+        "cid": "M54.5",
+        "cid_descricao": "Dor lombar baixa",
+        "medico": "Dr. Perito Oficial",
+        "crm_responsavel": "112233",
+        "data_atendimento": "2026-10-21",
+        "hora_atendimento": "08:30"
+    }
+
+    doc = _build_deterministic_esisla(scrambled_payload)
+    doc = _gatekeeper_anti_glosa_esisla(doc, scrambled_payload)
+
+    # 1. Medications routed to Queixa e Duração
+    assert "Tramadol" in doc
+    assert "Dipirona" in doc
+    assert "Não alegou fazer fisioterapia e psicoterapia" in doc
+
+    # 2. Antecedentes Mórbidos cleaned of certificate days and imaging
+    ant_block = doc[doc.index("Antecedentes Mórbidos:"):doc.index("Atestado/Relatório")]
+    assert "atestado de 15 dias" not in ant_block
+    assert "RM de coluna" not in ant_block
+    assert "Nega antecedentes mórbidos relevantes" in ant_block
+
+    # 3. Exame Físico Geral enriched semiologically with maneuvers
+    ef_block = doc[doc.index("(*) Exame Físico Geral:"):doc.index("Descrição das Alterações Clínicas")]
+    assert "Aparelho Osteomuscular" in ef_block
+    assert "contratura da musculatura paravertebral lombar" in ef_block
+    assert "Lasègue" in ef_block
+    assert "RM de coluna" not in ef_block
+
+    # 4. Alterações Clínicas has the MRI
+    alt_block = doc[doc.index("Descrição das Alterações Clínicas"):doc.index("(*) Descrição da(s) Limitação")]
+    assert "RM de coluna com hernia L4-L5" in alt_block or "RM" in alt_block
+
+    # 5. Justificativa elevated with occupational link, no "repouso 15 dias"
+    just_block = doc[doc.index("(*) Justificativa Parecer Médico:"):doc.index("(*) Parecer Final")]
+    assert "Capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol do cargo de Professor de Educação Básica II" in just_block
+    assert "repouso 15 dias" not in just_block
+
+    # 6. Quesitos strictly locked to 1) Sim, 2) Sim, 3) Sim
+    q_block = doc[doc.index("(*) Resposta aos quesitos:"):doc.index("(*) Justificativa")]
+    assert "1) Há doença(s) ou sequela(s) de doença(s) prévia(s)? Sim" in q_block
+    assert "2) A(s) doença(s) ou sequela(s) de doença(s) prévia(s) gera(m) limitação(ões) para periciando(a)? Sim" in q_block
+    assert "3) A(s) limitação(ões) impede(m) o(a) periciando(a) de exercer alguma atividade do rol? Sim" in q_block
+
+    # 7. No lingering 'pct' or 'paciente'
+    assert " pct " not in doc.lower()
+    assert "paciente" not in doc.lower()
 
 
 

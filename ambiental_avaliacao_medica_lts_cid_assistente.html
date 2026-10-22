@@ -6025,6 +6025,64 @@ window.processarArquivoEsislaNaTela = async function(file) {
   }
 })();
 
+function detectarRegiaoOsteomuscular(cid, textoBruto, doencaMotivo, exameDesc) {
+  const combined = `${cid || ""} ${textoBruto || ""} ${doencaMotivo || ""} ${exameDesc || ""}`.toLowerCase();
+  const cidCode = (cid || "").toUpperCase();
+
+  const isEsquerdo = /\b(?:esquerdo|esquerda|esq|membro\s+inferior\s+esquerdo|membro\s+superior\s+esquerdo|mie|mse)\b/i.test(combined);
+  const isDireito = /\b(?:direito|direita|dir|membro\s+inferior\s+direito|membro\s+superior\s+direito|mid|msd)\b/i.test(combined);
+  const side = isEsquerdo && !isDireito ? "esquerdo" : "direito";
+
+  // 1. Lombar / Lombociatalgia / Hérnia discal lombar
+  if (cidCode.startsWith("M54.4") || cidCode.startsWith("M54.5") || cidCode.startsWith("M51") || cidCode.startsWith("M48") || cidCode.startsWith("M43") || cidCode.startsWith("M47") ||
+      /\b(?:lombar|lombociatalgia|lumbago|ci[áa]tico|ci[áa]tica|l4|l5|s1|paravertebral\s+lombar|las[èe]gue)\b/i.test(combined)) {
+    return "lombar";
+  }
+
+  // 2. Cervical / Cervicobraquialgia
+  if (cidCode.startsWith("M54.2") || cidCode.startsWith("M50") || cidCode.startsWith("M53.0") || cidCode.startsWith("M53.1") ||
+      /\b(?:cervical|cervicobraquialgia|pesco[çc]o|trap[ée]zio|c5|c6|c7)\b/i.test(combined)) {
+    return "cervical";
+  }
+
+  // 3. Ombro / Manguito rotador
+  if (cidCode.startsWith("M75") || /\b(?:ombro|manguito|supraespinhal|supraespinhoso|bicipital|escapul[ao]r)\b/i.test(combined)) {
+    return side === "esquerdo" ? "ombro_esquerdo" : "ombro_direito";
+  }
+
+  // 4. Cotovelo / Epicondilite
+  if (cidCode.startsWith("M77.0") || cidCode.startsWith("M77.1") || /\b(?:cotovelo|epicondilite|epic[ôo]ndilo)\b/i.test(combined)) {
+    return side === "esquerdo" ? "cotovelo_esquerdo" : "cotovelo_direito";
+  }
+
+  // 5. Punho / Antebraço / Túnel do carpo
+  if (cidCode.startsWith("G56.0") || cidCode.startsWith("M65.4") || /\b(?:punho|t[úu]nel\s+do\s+carpo|carpo|antebraco|antebra[çc]o|de\s+quervain)\b/i.test(combined)) {
+    return side === "esquerdo" ? "antebraco_esquerdo" : "antebraco_direito";
+  }
+
+  // 6. Mão / Dedos
+  if (cidCode.startsWith("M65.3") || /\b(?:m[ãa]o|dedo|quirod[áa]ctilo|gatilho)\b/i.test(combined)) {
+    return side === "esquerdo" ? "mao_esquerda" : "mao_direita";
+  }
+
+  // 7. Quadril / Região glútea
+  if (cidCode.startsWith("M16") || cidCode.startsWith("M70.6") || cidCode.startsWith("M76.0") || /\b(?:quadril|coxartrose|coxofemoral|troc[âa]nter|bursite\s+trocant[ée]rica)\b/i.test(combined)) {
+    return "quadril";
+  }
+
+  // 8. Joelho / Menisco
+  if (cidCode.startsWith("M17") || cidCode.startsWith("M22") || cidCode.startsWith("M23") || /\b(?:joelho|gonartrose|menisco|patelar|ligamento\s+cruzado|lca)\b/i.test(combined)) {
+    return side === "esquerdo" ? "joelho_esquerdo" : "joelho_direito";
+  }
+
+  // 9. Tornozelo / Pé
+  if (cidCode.startsWith("M72.2") || cidCode.startsWith("M76.6") || cidCode.startsWith("M77.3") || /\b(?:tornozelo|p[ée]|fascite\s+plantar|calc[âa]neo|aquileu)\b/i.test(combined)) {
+    return side === "esquerdo" ? "tornozelo_esquerdo" : "tornozelo_direito";
+  }
+
+  return "lombar";
+}
+
 function aplicarPreenchimentoIAResultado(dados) {
   if (!dados) return;
   if (!state.aux) state.aux = {};
@@ -6095,8 +6153,32 @@ function aplicarPreenchimentoIAResultado(dados) {
 
     state.alteracaoMed = dados.alteracao_med || state.alteracaoMed || "Não";
     state.outrasDoencas = dados.outras_doencas || state.outrasDoencas || "Não";
-    state.psicoterapia = !!dados.psicoterapia;
-    state.fisioterapia = !!dados.fisioterapia;
+    const obsTerStr = String(dados.obs_terapias || "").toLowerCase();
+    const rawTxtStr = String($("txtPreenchimentoIABruto")?.value || "").toLowerCase();
+
+    let fisio = !!dados.fisioterapia;
+    let psico = !!dados.psicoterapia;
+
+    if (!fisio) {
+      const mentionsFisio = /\b(?:iniciou|iniciando|realiza|faz|fazendo|em)\s+fisioterapia\b|\bfisioterapia\s+(?:motora|respirat[óo]ria|analg[ée]sica|[0-9]x|duas|tr[êe]s|semanal)\b/i.test(rawTxtStr);
+      const obsHasFisio = obsTerStr.includes("fisioterapia") && !obsTerStr.includes("nega realização de fisioterapia") && !obsTerStr.includes("não realiza fisioterapia") && !obsTerStr.includes("não alegou fazer fisioterapia");
+      if (mentionsFisio || obsHasFisio) {
+        fisio = true;
+      }
+    }
+    if (!psico) {
+      const mentionsPsico = /\b(?:iniciou|iniciando|realiza|faz|fazendo|em)\s+psicoterapia\b|\bpsicoterapia\s+(?:semanal|quinzenal|mensal|[0-9]x)\b/i.test(rawTxtStr);
+      const obsHasPsico = obsTerStr.includes("psicoterapia") && !obsTerStr.includes("nega realização de psicoterapia") && !obsTerStr.includes("não realiza psicoterapia") && !obsTerStr.includes("não alegou fazer psicoterapia");
+      if (mentionsPsico || obsHasPsico) {
+        psico = true;
+      }
+    }
+
+    state.psicoterapia = psico;
+    state.fisioterapia = fisio;
+    if (!state.aux) state.aux = {};
+    state.aux.psicoterapia = psico;
+    state.aux.fisioterapia = fisio;
 
     const doencaParaPreencher = (dados.doenca_motivo || dados.doencaMotivo || state.doencaMotivo || state.aux?.doencaMotivo || "").trim();
     if (doencaParaPreencher) {
@@ -6120,7 +6202,37 @@ function aplicarPreenchimentoIAResultado(dados) {
     if (!state.aux) state.aux = {};
     state.aux.sintomasLimitacao = sintomasParaPreencher;
 
-    state.historicoPregresso = dados.historico_pregresso || state.historicoPregresso || "";
+    const PADRAO_NEGA_ANTECEDENTES = "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas.";
+    let antParaPreencher = (
+      dados.historico_pregresso ||
+      dados.historicoPregresso ||
+      dados.antecedentes ||
+      dados.antecedentes_morbidos ||
+      state.historicoPregresso ||
+      state.aux?.historicoPregresso ||
+      ""
+    ).trim();
+
+    // Se houver condições/comorbidades em tratamento mas o antecedente veio vazio ou com a negativa genérica
+    const hasConds = Array.isArray(dados.conditions) && dados.conditions.length > 0;
+    if (hasConds && (!antParaPreencher || antParaPreencher === PADRAO_NEGA_ANTECEDENTES || antParaPreencher.startsWith("Nega antecedentes") || antParaPreencher.length < 25)) {
+      if (typeof gerarNarrativaAntecedentesMelhoriaContinua === "function") {
+        antParaPreencher = gerarNarrativaAntecedentesMelhoriaContinua(state, dados);
+      } else {
+        const condsStr = dados.conditions.map(c => `${c.nome || c.doenca}${c.tratamento ? ` em uso de ${c.tratamento}` : ""}`).join("; ");
+        antParaPreencher = `Refere histórico de comorbidades: ${condsStr}. Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias.`;
+      }
+    } else if (!antParaPreencher || /^(?:nega\.?|n[ãa]o\s+refere\.?|nada\s+consta\.?|sem\s+antecedentes.*|nenhum.*|-)$/i.test(antParaPreencher) || antParaPreencher.length < 10) {
+      if (dados.is_acompanhante || String(dados.cid || state.cid).toUpperCase().startsWith("Z76")) {
+        antParaPreencher = "Nega comorbidades próprias, cirurgias prévias e neoplasias.";
+      } else {
+        antParaPreencher = PADRAO_NEGA_ANTECEDENTES;
+      }
+    }
+
+    state.historicoPregresso = antParaPreencher;
+    if (!state.aux) state.aux = {};
+    state.aux.historicoPregresso = antParaPreencher;
     state.descLimitacao = dados.desc_limitacao || state.descLimitacao || "";
     state.atividadesComprometidas = dados.atividades_comprometidas || state.atividadesComprometidas || "";
 
@@ -6325,6 +6437,10 @@ function aplicarPreenchimentoIAResultado(dados) {
     setCheck("agilPsicoterapia", state.psicoterapia);
     setCheck("fisioterapia", state.fisioterapia);
     setCheck("agilFisioterapia", state.fisioterapia);
+    $("psicoterapia")?.dispatchEvent(new Event("change", { bubbles: true }));
+    $("fisioterapia")?.dispatchEvent(new Event("change", { bubbles: true }));
+    $("agilPsicoterapia")?.dispatchEvent(new Event("change", { bubbles: true }));
+    $("agilFisioterapia")?.dispatchEvent(new Event("change", { bubbles: true }));
     setVal("obsTerapias", dados.obs_terapias);
     setVal("agilObsTerapias", dados.obs_terapias);
     setRadioDirect("outrasDoencas", state.outrasDoencas);
@@ -6404,7 +6520,25 @@ function aplicarPreenchimentoIAResultado(dados) {
       const btnNormal = $("btnAgilMentalNormal");
       const btnAlterado = $("btnAgilMentalAlterado");
       if (btnNormal) btnNormal.classList.toggle("selected-normal", state.exameMentalResultado === "Normal");
-      if (btnAlterado) btnAlterado.classList.toggle("selected-alterado", state.exameMentalResultado === "Alterado");
+    } else if (state.exameFisicoTipo === "Aparelho Osteomuscular e Tecido Conjutivo") {
+      const parecerFav = String(state.parecer || dados.parecer || "").toUpperCase().includes("FAVOR");
+      if (!parecerFav) {
+        // Se parecer CONTRÁRIO: Marca como NORMAL (todas as regiões normais / verde)
+        if (typeof aplicarOsteomuscularNormal === "function") {
+          aplicarOsteomuscularNormal();
+        }
+      } else {
+        // Se parecer FAVORÁVEL: Seleciona a parte do corpo condizente como ALTERADO (vermelho)
+        const rawTxt = $("txtPreenchimentoIABruto")?.value || "";
+        const regiao = dados.regiao_osteomuscular || (typeof detectarRegiaoOsteomuscular === "function" ? detectarRegiaoOsteomuscular(state.cid, rawTxt, state.doencaMotivo, state.exameFisicoDescricao) : "lombar");
+        if (!state.osteomuscularRegioes) state.osteomuscularRegioes = {};
+        state.osteomuscularRegioes = {};
+        state.osteomuscularRegioes[regiao] = "Alterado";
+        state.osteomuscularResultado = "Alterado";
+        if (typeof updateOsteoUI === "function") {
+          updateOsteoUI();
+        }
+      }
     }
 
     // Bloco 4 - Conclusão e Parecer
@@ -6461,6 +6595,13 @@ function aplicarPreenchimentoIAResultado(dados) {
       if ($("exameFisicoDescricao")) $("exameFisicoDescricao").value = state.exameFisicoDescricao;
       if ($("agilExameFisicoDescricao")) $("agilExameFisicoDescricao").value = state.exameFisicoDescricao;
     }
+    if (antParaPreencher) {
+      state.historicoPregresso = antParaPreencher;
+      if (!state.aux) state.aux = {};
+      state.aux.historicoPregresso = antParaPreencher;
+      if ($("historicoPregresso")) $("historicoPregresso").value = antParaPreencher;
+      if ($("agilHistoricoPregresso")) $("agilHistoricoPregresso").value = antParaPreencher;
+    }
 
     // 8. Se for Outros, reforçar o destaque do chip e resultado selecionado
     if (state.exameFisicoTipo === "Outros" && typeof renderOutrosUI === "function") {
@@ -6470,12 +6611,12 @@ function aplicarPreenchimentoIAResultado(dados) {
     // 9. Atualizar contadores do e-SISLA e progresso ágil
     if (typeof atualizarProgressoAgil === "function") atualizarProgressoAgil();
     if (typeof atualizarContadorEsisla === "function") {
-      ["nomePaciente", "cpfPaciente", "cargo", "doencaMotivo", "inicioTratamento", "freqConsultas", "sintomasLimitacao", "crmCro", "diasSolicitados", "exameFisicoDescricao", "justificativa"].forEach(k => {
+      ["nomePaciente", "cpfPaciente", "cargo", "doencaMotivo", "inicioTratamento", "freqConsultas", "sintomasLimitacao", "historicoPregresso", "crmCro", "diasSolicitados", "exameFisicoDescricao", "justificativa"].forEach(k => {
         atualizarContadorEsisla(k);
         atualizarContadorEsisla("agil" + k.charAt(0).toUpperCase() + k.slice(1));
       });
     }
-    ["doencaMotivo", "agilDoencaMotivo", "inicioTratamento", "agilInicioTratamento", "freqConsultas", "agilFreqConsultas", "sintomasLimitacao", "agilSintomasLimitacao"].forEach(id => {
+    ["doencaMotivo", "agilDoencaMotivo", "inicioTratamento", "agilInicioTratamento", "freqConsultas", "agilFreqConsultas", "sintomasLimitacao", "agilSintomasLimitacao", "historicoPregresso", "agilHistoricoPregresso"].forEach(id => {
       $(id)?.dispatchEvent(new Event("input", { bubbles: true }));
     });
 

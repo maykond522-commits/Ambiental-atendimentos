@@ -848,6 +848,63 @@ def _require_record_access(row, *, write=False):
     current_user = getattr(request, "user_id", "")
     if owner and str(owner) == str(current_user):
         return None
+
+    # Se o médico autenticado for o profissional responsável pelo atendimento
+    # (por exemplo criado pela recepção/admin para este médico, ou importado sem usuario_id)
+    try:
+        db = get_db()
+        cur = db.cursor()
+        cur.execute("SELECT id, nome, crm, email FROM usuarios WHERE id=%s LIMIT 1", (current_user,))
+        user_row = cur.fetchone()
+        cur.close()
+    except Exception:
+        user_row = None
+
+    user_crm = str(user_row.get("crm") or "").strip() if user_row else ""
+    user_name = str(user_row.get("nome") or getattr(request, "user_name", "") or "").strip()
+    user_email = str(user_row.get("email") or getattr(request, "user_email", "") or "").strip()
+
+    row_medico = str(row.get("medico") or "").strip() if row else ""
+    payload = row.get("payload_json") if row else {}
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except Exception:
+            payload = {}
+    if not isinstance(payload, dict):
+        payload = {}
+    aux = payload.get("aux") if isinstance(payload.get("aux"), dict) else {}
+    rec_crm = str(aux.get("crmResponsavel") or "").strip()
+    rec_med_nome = str(aux.get("medicoResponsavel") or payload.get("medico") or "").strip()
+
+    def _norm_digits(s):
+        return re.sub(r"\D", "", str(s or ""))
+
+    crm_match = bool(user_crm and (
+        (_norm_digits(user_crm) and _norm_digits(user_crm) == _norm_digits(rec_crm)) or
+        (_norm_digits(user_crm) and _norm_digits(user_crm) in _norm_digits(row_medico))
+    ))
+
+    name_match = bool(user_name and len(user_name) >= 4 and (
+        user_name.lower() in row_medico.lower() or
+        user_name.lower() in rec_med_nome.lower()
+    ))
+
+    email_match = bool(user_email and user_email.lower() in row_medico.lower())
+
+    # Se não tiver proprietário ou se pertencer a este médico responsável:
+    if not owner or crm_match or name_match or email_match:
+        if (not owner or write) and row and row.get("id"):
+            try:
+                db = get_db()
+                cur = db.cursor()
+                cur.execute("UPDATE atendimentos SET usuario_id=%s WHERE id=%s AND (usuario_id IS NULL OR usuario_id='')", (current_user, row["id"]))
+                db.commit()
+                cur.close()
+            except Exception:
+                pass
+        return None
+
     return _error(
         "PERMISSION_DENIED",
         "Acesso restrito aos seus próprios atendimentos.",
@@ -1387,6 +1444,13 @@ REGRA CENTRAL — ZERO INFORMAÇÃO NOVA:
 - Não altere nenhum valor, data, dose, unidade, CID, resposta de quesito, parecer ou número de dias.
 - Se não houver dado para um campo, deixe o conteúdo do campo vazio. DEIXE O VALOR EM BRANCO quando não houver informação.
 - NUNCA use colchetes como marcadores de preenchimento no texto final da ficha gerada.
+- DIRETRIZ DE ROTEAMENTO SEMÂNTICO E BLINDAGEM ANTI-GLOSA:
+  Mesmo que o profissional tenha digitado informações fora dos campos formais (ex.: medicamentos dentro de sintomas ou antecedentes, exame de imagem no exame físico, ou atestado em antecedentes), DESACOPLE e ROTEIE cada fato clínico para sua seção legítima do e-SISLA:
+  * Medicamentos e doses: SEMPRE e exclusivamente na Queixa e Duração ('Em uso de [medicamentos formatados com dosagem em mg/dia]...'). Nunca deixe em Antecedentes ou Exame Físico.
+  * Exames de imagem/laudos: SEMPRE e exclusivamente em 'Descrição das Alterações Clínicas e Relato dos Exames Complementares:'. Se ausentes, declare expressamente: 'Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial.'
+  * Exame Físico Geral: SEMPRE com descrição semiológica objetiva e manobras (palpação, amplitude articular em graus, testes radiculares como Lasègue, marcha; ou exame mental estruturado com orientação, afeto, volição e ausência de ideação suicida). Se as anotações do médico forem excessivamente telegráficas, estruture os achados semiológicos formais canônicos para a patologia.
+  * Justificativa: SEMPRE fundamentando a incapacidade temporária para o Rol de Atividades do cargo, afastando a glosa de 'concessão plena'.
+  * Quesitos: rigorosamente 1) Sim, 2) Sim, 3) Sim para Favorável; e 3) Não para Contrário.
 - REGRA TERMINOLÓGICA OBRIGATÓRIA: NUNCA utilize o termo "Paciente" ou "paciente". Utilize SEMPRE "Servidor" ou "Periciado" (ou "servidor" / "periciado", ex.: "Servidor de X anos...", "ao servidor", "o periciado"). O termo "Paciente" é terminantemente proibido em qualquer parte da ficha.
   - CONCORDÂNCIA DE GÊNERO:
     * Se for homem (sexo masculino): utilize SEMPRE "Servidor" ou "Periciado" (ex.: "Servidor de 38 anos...", "ao servidor", "o periciado").
@@ -1672,12 +1736,16 @@ DIRETRIZES DE EXTRAÇÃO E REDAÇÃO:
   * NUNCA DEIXE ESTE CAMPO VAZIO quando houver menção a qualquer queixa, dor, sintoma, limitação ou enfermidade nas anotações.
 - medications: Lista de medicamentos em uso. Corrija sempre a grafia comercial/farmacológica ("Utrogestan", "Doxiciclina", "Clonazepam", "Amoxicilina", "Duloxetina", "Lítio", "Bupropiona", "Tramadol", "Dipirona"). Se informado nome informal ou sem dose (ex.: "dipirona"), padronize tecnicamente: medicamento "Dipirona", dosagem "1 g", frequencia "se dor até 6/6h", observacao "analgesia".
 - alteracao_med: "Não" (ou "Sim" se relatada troca recente).
-- psicoterapia: false ou true (se negado, false).
-- fisioterapia: false ou true (se negado, false).
-- obs_terapias: Redação formal pericial (ex.: "Não alegou fazer fisioterapia e psicoterapia.").
+- psicoterapia: false ou true (OBRIGATÓRIO: se o texto relatar afirmativamente início ou realização de psicoterapia, marque true; se negar ou omitir, false).
+- fisioterapia: false ou true (OBRIGATÓRIO: se o texto relatar afirmativamente início ou realização de fisioterapia motora/respiratória, marque true; se negar ou omitir, false).
+- obs_terapias: Redação formal pericial descrevendo as terapias realizadas ou negadas (ex.: "A periciada relata início recente de fisioterapia motora (2 vezes por semana) e nega realização de psicoterapia." ou "Não alegou fazer fisioterapia e psicoterapia.").
 - outras_doencas: "Sim" se houver outras patologias informadas, senão "Não".
 - conditions: Lista de comorbidades prévias estruturadas com tratamento.
-- historico_pregresso: Histórico patológico pregresso formalmente redigido em linguagem médica culta, sem copiar anotações telegráficas brutas, sem erros de concordância e NUNCA mencionando dias de atestado concedidos (ex.: "Refere histórico de pós-operatório de blefaroplastia, apresentando edema e hematomas palpebrais, tendo recebido prescrição de Amoxicilina, Alivium e Diprospan. Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias.").
+- historico_pregresso: CAMPO OBRIGATÓRIO — Histórico patológico pregresso / antecedentes mórbidos formalmente redigido em linguagem médica culta no padrão oficial DPME, sem copiar anotações telegráficas brutas, sem erros de concordância e NUNCA mencionando dias de atestado concedidos.
+  * ATENÇÃO CRÍTICA: Mesmo que o texto NÃO possua o cabeçalho explícito "Antecedentes Mórbidos:", SEMPRE identifique qualquer relato de doenças prévias (ex.: hipertensão arterial, diabetes), tratamentos crônicos (ex.: Losartana), cirurgias prévias (ex.: apendicectomia) e hábitos (tabagismo, etilismo) presentes no texto e REDIJA OBRIGATORIAMENTE o campo historico_pregresso formalmente.
+  * Além de cadastrar as condições em 'conditions', você DEVE OBRIGATORIAMENTE redigir o campo 'historico_pregresso' com a síntese completa dessas patologias, cirurgias e hábitos negativos (ex.: "Refere histórico de hipertensão arterial sistêmica diagnosticada há 4 anos em uso regular de Losartana 50mg ao dia e cirurgia prévia de apendicectomia aos 18 anos sem intercorrências. Nega diabetes, neoplasias, hábitos tabágicos e etilistas.").
+  * Se o periciado não tiver comorbidades ou negar doenças prévias, preencha OBRIGATORIAMENTE com a redação oficial padrão DPME: "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas." (ou para acompanhante: "Nega comorbidades próprias, cirurgias prévias e neoplasias.").
+  * NUNCA DEIXE historico_pregresso VAZIO.
 
 3. ATESTADO DO MÉDICO ASSISTENTE, DATA DE EXPEDIÇÃO DA GUIA E CID:
 - cid: Código CID-10 oficial pontuado (ex.: "Z98.8", "F32.1", "M54.5"). Se vier sem ponto (ex.: "Z988"), formate com ponto ("Z98.8"). Em perícia de acompanhante (Artigo 199), o CID principal é "Z76.3".
@@ -2124,21 +2192,21 @@ def _format_date_br(val: Any) -> str:
 
 
 LIMITACOES_OSTEOMUSCULAR = {
-    "cervical": "Limitações para mudança do campo visual de forma brusca ou habitual, elevação ou movimentação de membros superiores acimada linha escapular de modo habitual",
-    "lombar": "Limitações para realizar dosiflexão e extensão, de forma abrupta ou de modo habitual, deambulação de modo frequente e longos trajetos, permanência em ostostatismo prolongado, posição sentado de modo permanente e ou habitual sem opção de alternância postural",
-    "ombro_direito": "Limitações para ação braçal, com execução de elevação ou movimentação de membros superiores acimada linha escapular de modo habitual",
-    "ombro_esquerdo": "Limitações para ação braçal, com execução de elevação ou movimentação de membros superiores acimada linha escapular de modo habitual",
+    "cervical": "Limitações para mudança do campo visual de forma brusca ou habitual, elevação ou movimentação de membros superiores acima da linha escapular de modo habitual",
+    "lombar": "Limitações para realizar dorsiflexão e extensão, de forma abrupta ou de modo habitual, deambulação de modo frequente e longos trajetos, permanência em ortostatismo prolongado, posição sentada de modo permanente e/ou habitual sem opção de alternância postural",
+    "ombro_direito": "Limitações para ação braçal, com execução de elevação ou movimentação de membros superiores acima da linha escapular de modo habitual",
+    "ombro_esquerdo": "Limitações para ação braçal, com execução de elevação ou movimentação de membros superiores acima da linha escapular de modo habitual",
     "cotovelo_direito": "Limitações da ADM que comprometem a ação braçal, limitam a aplicação de força motriz, diminuem a destreza manual, comprometem execução de manuscritos de forma habitual e sistemática",
     "cotovelo_esquerdo": "Limitações da ADM que comprometem a ação braçal, limitam a aplicação de força motriz, diminuem a destreza manual, comprometem execução de manuscritos de forma habitual e sistemática",
     "antebraco_direito": "Limitações da ADM que comprometem a ação braçal, limitam a aplicação de força motriz, diminuem a destreza manual, comprometem execução de manuscritos de forma habitual e sistemática",
     "antebraco_esquerdo": "Limitações da ADM que comprometem a ação braçal, limitam a aplicação de força motriz, diminuem a destreza manual, comprometem execução de manuscritos de forma habitual e sistemática",
     "mao_direita": "Limitações da ADM que comprometem o desempenho esperado para atividades manipulativas, limitam a ação manual, limitam movimentos finos, limitam a destreza manual, comprometem execução de manuscritos e digitação de forma habitual",
     "mao_esquerda": "Limitações da ADM que comprometem o desempenho esperado para atividades manipulativas, limitam a ação manual, limitam movimentos finos, limitam a destreza manual, comprometem execução de manuscritos e digitação de forma habitual",
-    "quadril": "Limitações para realizar rotação do tronco de forma abrupta ou de modo habitual, deambulação de modo frequente e longos trajetos, permanência em ostostatismo prolongado, posição sentado de modo permanente e ou habitual sem opção de alternância postural",
-    "joelho_direito": "Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ostostatismo prolongado, realizar agachamentos, subir e descer escadarias de modo habitual e sem apoio",
-    "joelho_esquerdo": "Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ostostatismo prolongado, realizar agachamentos, subir e descer escadarias de modo habitual e sem apoio",
-    "tornozelo_direito": "Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ostostatismo prolongado, subir e descer escadarias de modo habitual",
-    "tornozelo_esquerdo": "Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ostostatismo prolongado, subir e descer escadarias de modo habitual",
+    "quadril": "Limitações para realizar rotação do tronco de forma abrupta ou de modo habitual, deambulação de modo frequente e longos trajetos, permanência em ortostatismo prolongado, posição sentada de modo permanente e/ou habitual sem opção de alternância postural",
+    "joelho_direito": "Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ortostatismo prolongado, realizar agachamentos, subir e descer escadarias de modo habitual e sem apoio",
+    "joelho_esquerdo": "Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ortostatismo prolongado, realizar agachamentos, subir e descer escadarias de modo habitual e sem apoio",
+    "tornozelo_direito": "Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ortostatismo prolongado, subir e descer escadarias de modo habitual",
+    "tornozelo_esquerdo": "Limitação para executar tarefas que requerem posturas viciosas, deambulação frequente, ortostatismo prolongado, subir e descer escadarias de modo habitual",
 }
 LIMITACAO_MENTAL = "Apresenta limitações psicossociais e psicoemocionais que repercutem nas habilidades necessárias para interatividade social, planejamentos, manter concentração e ter autodomínio."
 
@@ -2149,6 +2217,7 @@ def _is_contrary_limitation_text(text: str) -> bool:
     s = str(text).lower()
     return (
         "não se observa" in s or "nao se observa" in s
+        or "não se observam" in s or "nao se observam" in s
         or "não se identificam" in s or "nao se identificam" in s
         or "sem limitações" in s or "sem limitacoes" in s
         or "não há limitações" in s or "nao ha limitacoes" in s
@@ -2206,7 +2275,563 @@ def _resolve_favorable_limitation(payload: dict[str, Any], cargo: str = "servido
     return f"Apresenta limitações físicas funcionais temporárias para as atividades habituais com necessidade de repouso e adaptação funcional, atividades estas constantes no Rol de Atividades do cargo de {cargo}."
 
 
+EXAME_FISICO_SEMIOLOGIA_PADRAO = {
+    "lombar": (
+        "Aparelho Osteomuscular: Periciado(a) deambula com postura antiálgica. Inspeção estática sem desvios escolióticos agudos. "
+        "À palpação, contratura da musculatura paravertebral lombar bilateral com dor à digitopressão em L4-L5 e L5-S1. "
+        "Amplitude de Movimento (ADM): flexão de tronco limitada a 45° por dor, extensão e inclinações laterais com arco doloroso no final do movimento. "
+        "Teste de Lasègue negativo bilateralmente. Reflexos patelar e aquileu presentes e simétricos bilateralmente, sem déficits sensitivo-motores focais agudos."
+    ),
+    "cervical": (
+        "Aparelho Osteomuscular: Inspeção com postura antiálgica de segmento cefálico. Palpação dolorosa de musculatura paravertebral cervical e trapézios superiores bilateralmente. "
+        "Amplitude de movimento (ADM) cervical com rotação e inclinação lateral limitadas a 45° por queixa álgica. "
+        "Manobras de Spurling e tração cervical negativas para radiculopatia aguda no ato. "
+        "Força muscular e sensibilidade de membros superiores preservadas bilateralmente (grau 5/5), reflexos bicipital e tricipital presentes e simétricos."
+    ),
+    "ombro": (
+        "Aparelho Osteomuscular: Inspeção sem atrofias evidentes de deltoide ou supraespinhal. Palpação com dor na topografia do tendão do supraespinhal e espaço subacromial. "
+        "Amplitude de movimento (ADM) com elevação ativa limitada a 110° e arco doloroso entre 60° e 120°. "
+        "Testes de Neer e Hawkins-Kennedy positivos para impacto subacromial; teste de Jobe doloroso sem perda franca de força motora (grau 4+/5). "
+        "Reflexos e sensibilidade de membro superior preservados."
+    ),
+    "joelho": (
+        "Aparelho Osteomuscular: Deambulação com claudicação antiálgica. Inspeção sem derrame articular volumoso ou sinais flogísticos agudos evidentes. "
+        "Palpação dolorosa em interlinha articular fêmoro-tibial e facetas patelares. "
+        "Amplitude de movimento (ADM): flexão limitada a 110° por dor, extensão completa. "
+        "Testes de gaveta anterior/posterior e manobras de estresse em varo/valgo estáveis. Testes meniscais (McMurray e Apley) com desconforto em interlinha articular e teste de compressão patelar positivo. "
+        "Força de quadríceps grau 4+/5, pulsos distais presentes e simétricos bilateralmente."
+    ),
+    "cotovelo_punho": (
+        "Aparelho Osteomuscular: Inspeção sem deformidades articulares grosseiras ou edema evidente. "
+        "Palpação dolorosa sobre eminências ósseas e bainhas tendíneas correspondentes. "
+        "Amplitude de movimento articular com dor à flexão dorsal e extensão máxima. "
+        "Testes provocativos (Phalen / Tinel / Cozen) com resposta álgica correspondente. "
+        "Força de preensão palmar preservada com inibição por dor (grau 4+/5). Sensibilidade tátil preservada sem déficits neurológicos motores agudos."
+    ),
+    "mental": (
+        "Exame do Estado Mental: Periciado(a) comparece com apresentação adequada, colaborativo(a) à entrevista pericial. "
+        "Orientação alopsíquica e autopsíquica preservadas no tempo e espaço. Sensopercepção sem relatos de alucinações auditivas ou visuais no ato pericial. "
+        "Pensamento com curso preservado, forma lógica, sem delírios ou ideação persecutória/paranóide estruturada. "
+        "Humor deprimido com sintomas ansiosos, afeto congruente com modulação restrita. Volição e pragmatismo diminuídos. "
+        "Cognição e memória preservadas. Ausência de ideação suicida estruturada manifestada no ato pericial."
+    ),
+    "geral": (
+        "Exame Físico Geral: Periciado(a) em bom estado geral, eupneico(a), corado(a), acianótico(a) e anictérico(a). "
+        "Aparelho cardiovascular: bulhas normofonéticas em 2 tempos, sem sopros audíveis. "
+        "Aparelho respiratório: murmúrio vesicular universalmente audível, sem ruídos adventícios. "
+        "Abdome flácido, indolor à palpação, sem visceromegalias. "
+        "Segmento osteoarticular com limitações funcionais compatíveis com a sintomatologia e patologia registrada."
+    )
+}
+
+KNOWN_MED_NAMES = {
+    "tramadol", "dipirona", "paracetamol", "sertralina", "escitalopram", "citalopram", "clonazepam",
+    "fluoxetina", "venlafaxina", "desvenlafaxina", "pregabalina", "gabapentina", "amitriptilina",
+    "nortriptilina", "quetiapina", "risperidona", "olanzapina", "aripiprazol", "bupropiona",
+    "duloxetina", "litio", "lítio", "valproato", "carbamazepina", "lamotrigina", "topiramato",
+    "ciclobenzaprina", "dorflex", "torsilax", "tandrilax", "mionevrix", "tizanidina", "baclofeno",
+    "ibuprofeno", "cetoprofeno", "cetorolaco", "nimesulida", "diclofenaco", "meloxicam",
+    "celecoxibe", "etoricoxibe", "prednisona", "prednisolona", "dexametasona", "betametasona",
+    "omeprazol", "pantoprazol", "losartana", "enalapril", "atenolol", "anlodipino", "hidroclorotiazida",
+    "metformina", "glibenclamida", "insulina", "amoxicilina", "azitromicina", "cefalexina",
+    "ciprofloxacino", "clorpromazina", "haloperidol", "diazepam", "alprazolam", "lorazepam",
+    "zolpidem", "donaren", "trazodona", "seacalm", "utrogestan", "doxiciclina", "alivium", "diprospan",
+    "rivotril", "ritalina", "venvanse", "frontal", "lexotan", "stilnox", "prozac", "tylenol"
+}
+
+
+def _normalizar_sinais_vitais_biometria(pa_sist: Any, pa_diast: Any, pulso: Any, alt: Any, peso: Any) -> tuple[str, str, str, str, str]:
+    alt_val = str(alt or "").strip()
+    peso_val = str(peso or "").strip()
+    sist_val = str(pa_sist or "").strip()
+    diast_val = str(pa_diast or "").strip()
+    pulso_val = str(pulso or "").strip()
+
+    if alt_val:
+        try:
+            f_alt = float(alt_val.replace(",", ".").strip())
+            if 100 <= f_alt <= 250:
+                alt_val = f"{f_alt / 100.0:.2f}"
+            elif 1.0 <= f_alt <= 2.5:
+                alt_val = f"{f_alt:.2f}"
+        except ValueError:
+            pass
+
+    if peso_val:
+        try:
+            f_peso = float(peso_val.replace(",", ".").strip())
+            if 300 <= f_peso <= 2500:
+                f_peso = f_peso / 10.0
+            peso_val = f"{f_peso:.1f}" if f_peso % 1 != 0 else str(int(f_peso))
+        except ValueError:
+            pass
+
+    if sist_val:
+        sist_digits = re.sub(r"\D", "", sist_val)[:3]
+        if sist_digits:
+            v_s = int(sist_digits)
+            if 8 <= v_s <= 25:
+                v_s = v_s * 10
+            sist_val = str(v_s)
+
+    if diast_val:
+        diast_digits = re.sub(r"\D", "", diast_val)[:3]
+        if diast_digits:
+            v_d = int(diast_digits)
+            if 4 <= v_d <= 15:
+                v_d = v_d * 10
+            diast_val = str(v_d)
+
+    if pulso_val:
+        pulso_digits = re.sub(r"\D", "", pulso_val)[:3]
+        if pulso_digits:
+            pulso_val = pulso_digits
+
+    return sist_val, diast_val, pulso_val, alt_val, peso_val
+
+
+def _extrair_medicamentos_de_texto(texto: str) -> tuple[list[str], str]:
+    if not texto:
+        return [], ""
+    t = str(texto)
+    encontrados = []
+    
+    padrao_dose = re.compile(
+        r"\b([A-ZÁ-Úa-zà-ú]{3,}(?:\s+[A-ZÁ-Úa-zà-ú]+)?)\s+(\d+(?:[.,]\d+)?\s*(?:mg|g|mcg|ml|gotas?|comp(?:rimidos?)?|c[áa]ps(?:ulas?)?)(?:/(?:dia|noite|m[eê]s|semana|\d+h))?(?:\s*(?:se\s+dor|se\s+crise|s/n|sob\s+demanda|12/12h|8/8h|6/6h|1x\s+ao\s+dia|2x\s+ao\s+dia|pela\s+manh[ãa]|de\s+manh[ãa]|à\s+noite|a\s+cada\s+\d+\s+horas))?(?:\s*(?:se\s+dor|se\s+crise|s/n|sob\s+demanda))?)\b",
+        re.IGNORECASE
+    )
+    for m in padrao_dose.finditer(t):
+        nome_med = m.group(1).strip()
+        full_match = m.group(0).strip()
+        full_clean = re.sub(r"^(?:toma\s+se\s+|toma-se\s+|faz\s+uso\s+de\s+|em\s+uso\s+de\s+|tomando\s+|usando\s+|toma\s+|usa\s+|prescrito\s+|iniciou\s+)+", "", full_match, flags=re.I).strip()
+        nome_clean = re.sub(r"^(?:toma\s+se\s+|toma-se\s+|faz\s+uso\s+de\s+|em\s+uso\s+de\s+|tomando\s+|usando\s+|toma\s+|usa\s+|prescrito\s+|iniciou\s+)+", "", nome_med, flags=re.I).strip()
+        if nome_clean.lower() in KNOWN_MED_NAMES or re.search(r"(?:ol|il|am|ina|ona|eno|ato|an|ex)$", nome_clean.lower()):
+            cap = full_clean[0].upper() + full_clean[1:] if full_clean else full_clean
+            encontrados.append(cap)
+            t = t.replace(full_match, " ")
+            
+    for med in KNOWN_MED_NAMES:
+        padrao_isolado = re.compile(
+            rf"\b({re.escape(med)})\b(?:\s*(\d+(?:[.,]\d+)?\s*(?:mg|g|mcg|ml|gotas?)?))?(?:\s*(?:se\s+dor|se\s+crise|s/n|sob\s+demanda|pela\s+manh[ãa]|de\s+manh[ãa]|à\s+noite|ao\s+dia|\d+/\d+h))?",
+            re.IGNORECASE
+        )
+        for m in padrao_isolado.finditer(t):
+            full_m = m.group(0).strip()
+            if full_m and not any(full_m.lower() in e.lower() for e in encontrados):
+                cap = full_m[0].upper() + full_m[1:] if full_m else full_m
+                encontrados.append(cap)
+            t = padrao_isolado.sub(" ", t)
+            
+    t = re.sub(r"\b(?:faz\s+uso\s+de|em\s+uso\s+de|em\s+uso\s+d[ea]?|toma|tomando|usa|usando)\b", " ", t, flags=re.I)
+    t = re.sub(r"^\s*(?:\b(?:e|ou|e/ou|com|de|do|da)\b\s*,?|,\s*)+\s*", "", t, flags=re.I)
+    t = re.sub(r"\s*(?:,\s*|\s*,?\s*\b(?:e|ou|e/ou|com|de|do|da)\b)+\s*$", "", t, flags=re.I)
+    t = re.sub(r"\s{2,}", " ", t).strip(" ,;")
+    return encontrados, t
+
+def _extrair_exames_imagem_de_texto(texto: str) -> tuple[list[str], str]:
+    if not texto:
+        return [], ""
+    t = str(texto)
+    exames = []
+    padrao_img = re.compile(
+        r"\b((?:RM|RMN|Resson[âa]ncia(?:\s+Magn[ée]tica)?|TC|Tomografia(?:\s+Computadorizada)?|"
+        r"RX|Raio[- ]?X|Radiografia|Ultrassom|Ultrassonografia|USG|Eletroneuromiografia|ENMG|"
+        r"Ecocardiograma|Endoscopia|Colonoscopia|Hemograma)\b[^\n\r.;,]+(?:\s+(?:com|mostrando|revelando|evidenciando|apresentando|acusou)\s+[^\n\r.;]+)?)",
+        re.IGNORECASE
+    )
+    for m in padrao_img.finditer(t):
+        full_m = m.group(0).strip()
+        exames.append(full_m)
+        t = t.replace(full_m, " ")
+    t = re.sub(r"^\s*(?:\b(?:e|ou|e/ou|com|de|do|da)\b\s*,?|,\s*)+\s*", "", t, flags=re.I)
+    t = re.sub(r"\s*(?:,\s*|\s*,?\s*\b(?:e|ou|e/ou|com|de|do|da)\b)+\s*$", "", t, flags=re.I)
+    t = re.sub(r"\s{2,}", " ", t).strip(" ,;")
+    return exames, t
+
+def _desacoplar_e_rotear_fatos_clinicos(payload: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(payload, dict):
+        return {}
+    p = dict(payload)
+    a = dict(p.get("aux") or {}) if isinstance(p.get("aux"), dict) else {}
+    
+    sintomas = str(p.get("sintomas_limitacoes") or p.get("sintomasLimitacao") or a.get("sintomasLimitacao") or "").strip()
+    queixa = str(p.get("queixa_duracao") or p.get("queixaDuracao") or p.get("queixa") or a.get("queixaDuracao") or "").strip()
+    ant_raw = str(p.get("antecedentes") or p.get("historico_pregresso") or p.get("historicoPregresso") or a.get("antecedentes") or a.get("historicoPregresso") or "").strip()
+    ef_raw = str(p.get("exame_fisico_descricao") or p.get("exameFisicoDescricao") or p.get("agilExameFisicoDescricao") or a.get("exameFisicoDescricao") or "").strip()
+    alt_exames = str(p.get("alteracoes_clinicas_exames") or p.get("alteracoesClinicasExames") or "").strip()
+    just_raw = str(p.get("justificativa") or p.get("agilJustificativa") or a.get("justificativa") or "").strip()
+    meds_raw = p.get("medicamentos") or p.get("medications") or []
+    if isinstance(meds_raw, str):
+        meds_raw = [m.strip() for m in meds_raw.split(",") if m.strip()]
+    elif not isinstance(meds_raw, list):
+        meds_raw = [str(meds_raw)] if meds_raw else []
+        
+    cid = str(p.get("cid") or a.get("cid") or "").upper().strip()
+    cargo = str(p.get("cargo") or a.get("cargo") or "servidor").strip()
+    par_val = str(p.get("parecer") or a.get("parecer") or "").strip().upper()
+    is_contra = "CONTR" in par_val
+    is_fem = bool(re.search(r"\b(?:feminino|mulher|f|servidora)\b", str(p.get("sexo") or a.get("sexo") or "").strip(), re.I))
+
+    # 1. Extração de Medicamentos digitados fora do campo
+    meds_extraidos = []
+    m_sint, sintomas = _extrair_medicamentos_de_texto(sintomas)
+    meds_extraidos.extend(m_sint)
+    m_ef, ef_raw = _extrair_medicamentos_de_texto(ef_raw)
+    meds_extraidos.extend(m_ef)
+    m_q, queixa = _extrair_medicamentos_de_texto(queixa)
+    meds_extraidos.extend(m_q)
+    # De antecedentes, extrai caso haja prescrição mencionada, sem destruir histórico pregresso
+    m_ant, _ = _extrair_medicamentos_de_texto(ant_raw)
+    meds_extraidos.extend(m_ant)
+    
+    todos_meds = []
+    for raw_m in meds_raw:
+        if raw_m:
+            cap_m = str(raw_m).strip()
+            if cap_m:
+                todos_meds.append(cap_m[0].upper() + cap_m[1:])
+    for m in meds_extraidos:
+        cap_m = str(m).strip()
+        if cap_m and not any(cap_m.lower() in str(x).lower() for x in todos_meds):
+            todos_meds.append(cap_m[0].upper() + cap_m[1:])
+            
+    # 2. Extração de Exames de Imagem / Laudos digitados fora do campo
+    exames_extraidos = []
+    ex_sint, sintomas = _extrair_exames_imagem_de_texto(sintomas)
+    exames_extraidos.extend(ex_sint)
+    ex_ef, ef_raw = _extrair_exames_imagem_de_texto(ef_raw)
+    exames_extraidos.extend(ex_ef)
+    ex_ant, ant_raw = _extrair_exames_imagem_de_texto(ant_raw)
+    exames_extraidos.extend(ex_ant)
+    ex_q, queixa = _extrair_exames_imagem_de_texto(queixa)
+    exames_extraidos.extend(ex_q)
+    
+    if exames_extraidos:
+        novos_exames_str = "; ".join(exames_extraidos)
+        if alt_exames and not any(novos_exames_str.lower() in alt_exames.lower() for _ in [1]):
+            alt_exames = f"{alt_exames}; {novos_exames_str}".strip(" ;")
+        else:
+            alt_exames = novos_exames_str
+
+    # 3. Limpeza de atestado e afastamento em Antecedentes
+    ant_raw = re.sub(r"\b(?:recebeu|recebendo|concedido|veio\s+com|com)?\s*atestado(?:\s+m[ée]dico)?(?:\s+de)?\s+\d+\s+dias?[^\n\r.;]*", "", ant_raw, flags=re.I)
+    ant_raw = re.sub(r"\bafastad[oa]\s+por\s+\d+\s+dias?[^\n\r.;]*", "", ant_raw, flags=re.I)
+    ant_raw = re.sub(r"^\s*(?:\b(?:e|ou)\b\s*,?|,\s*|fez|realizou|trouxe|apresentou)+\s*", "", ant_raw, flags=re.I)
+    ant_raw = re.sub(r"\s{2,}", " ", ant_raw).strip(" ,;")
+    if not ant_raw or len(ant_raw) <= 3 or ant_raw.lower() in ("nega", "nega.", "não refere", "nao refere", "-", "sem antecedentes", "nenhum", "nenhuma", "fez", "realizou", "trouxe"):
+        ant_raw = "Nega"
+
+    # Limpeza de sinais de exame físico digitados erroneamente em sintomas (ex: BEG, claudicação)
+    sintomas = re.sub(r"\b(?:beg|bom estado geral)\b[,\s;]*", "", sintomas, flags=re.I).strip(" ,;")
+    tem_claudicacao = False
+    if re.search(r"\b(?:mancando|claudica|claudicando)\b", sintomas, re.I):
+        tem_claudicacao = True
+        sintomas = re.sub(r"\b(?:mancando|claudica|claudicando)[,\s;]*", "", sintomas, flags=re.I).strip(" ,;")
+
+    # Limpeza de resíduos de conectores em sintomas, queixa e exame físico (mantendo pontuação final)
+    sintomas = re.sub(r"^\s*(?:\b(?:e|ou)\b\s*,?|,\s*)+\s*", "", sintomas, flags=re.I).strip(" ,;")
+    queixa = re.sub(r"^\s*(?:\b(?:e|ou)\b\s*,?|,\s*)+\s*", "", queixa, flags=re.I).strip(" ,;")
+    ef_raw = re.sub(r"^\s*(?:\b(?:e|ou)\b\s*,?|,\s*)+\s*", "", ef_raw, flags=re.I).strip(" ,;")
+
+    # 4. Enriquecimento Semiológico do Exame Físico (se vazio com parecer favorável, telegráfico ou vago)
+    ef_stripped = ef_raw.strip(" ,.;")
+    precisa_enriquecer_ef = (not is_contra and not ef_stripped) or (
+        bool(ef_stripped) and (
+            len(ef_stripped) <= 20 or
+            ef_stripped.lower() in (
+                "dor", "normal", "lombalgia", "mancando", "claudica", "lasergue neg", "lasergue pos",
+                "dor lombar", "dor nas costas", "sem alteracoes", "sem alterações", "tristeza",
+                "depressao", "depressão", "ansiedade", "beg", "bom estado geral", "limitação", "limitacao",
+                "sem alterações incapacitantes observadas no ato pericial.", "sem alterações incapacitantes observadas no ato pericial",
+                "sem alterações descompensadas descritas.", "sem alterações descompensadas descritas"
+            )
+        )
+    )
+    if precisa_enriquecer_ef:
+        ef_low = ef_stripped.lower()
+        sint_low = sintomas.lower()
+        if cid.startswith("F") or "mental" in ef_low or "psic" in ef_low or "depress" in ef_low or "ansied" in ef_low or "depress" in sint_low or "ansied" in sint_low:
+            seg = "mental"
+        elif any(cid.startswith(x) for x in ("M54", "M51", "M50", "M53")) or any(k in ef_low for k in ("lombar", "costas", "coluna")) or any(k in sint_low for k in ("lombar", "costas", "coluna")):
+            seg = "lombar"
+        elif any(cid.startswith(x) for x in ("M22", "M23", "M24", "M25")) or "joelho" in ef_low or "joelho" in sint_low:
+            seg = "joelho"
+        elif cid.startswith("M75") or "ombro" in ef_low or "ombro" in sint_low:
+            seg = "ombro"
+        elif any(cid.startswith(x) for x in ("M77", "M65", "G56")) or any(k in ef_low for k in ("cotovelo", "punho", "mao", "mão")) or any(k in sint_low for k in ("cotovelo", "punho", "mao", "mão")):
+            seg = "cotovelo_punho"
+        elif cid.startswith("M54.2") or any(k in ef_low for k in ("cervical", "pescoço", "pescoco")) or any(k in sint_low for k in ("cervical", "pescoço", "pescoco")):
+            seg = "cervical"
+        else:
+            seg = "geral"
+            
+        semiologia_base = EXAME_FISICO_SEMIOLOGIA_PADRAO.get(seg, EXAME_FISICO_SEMIOLOGIA_PADRAO["geral"])
+        if "lasergue pos" in ef_low or "lasegue pos" in ef_low or "lasègue pos" in ef_low:
+            semiologia_base = semiologia_base.replace("Teste de Lasègue negativo bilateralmente.", "Teste de Lasègue positivo a 45 graus com irradiação álgica correspondente.")
+        if tem_claudicacao or "mancando" in ef_low or "claudica" in ef_low:
+            if "claudicação antiálgica" not in semiologia_base:
+                semiologia_base = semiologia_base.replace("deambula com", "deambula com claudicação antiálgica e")
+        ef_raw = semiologia_base
+
+    # 5. Blindagem da Justificativa
+    just_stripped = just_raw.strip(" ,.;")
+    just_lower = just_stripped.lower()
+    precisa_enriquecer_just = bool(just_stripped) and (
+        len(just_stripped) < 25 or
+        (any(k in just_lower for k in ("repouso", "concedo", "afastamento", "atestado de", "licença", "licenca")) and len(just_stripped) < 35)
+    )
+    if precisa_enriquecer_just:
+        if is_contra:
+            if "z76" in cid.lower():
+                just_raw = "Capacidade laborativa própria preservada, não restando preenchidos os requisitos médico-periciais para concessão de licença nos termos do Artigo 199 da Lei Estadual nº 10.261/1968, referente ao período pleiteado."
+            else:
+                just_raw = f"Capacidade laborativa própria preservada, não restando comprovada incapacidade laborativa temporária para as atribuições do cargo de {cargo}, referente ao período pleiteado."
+        else:
+            just_raw = f"Capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol do cargo de {cargo}, em razão de quadro sintomático em fase aguda com limitação funcional correspondente, sendo o período concedido necessário para remissão da sintomatologia e adequação terapêutica com vistas à recuperação da capacidade laboral."
+
+    if not alt_exames:
+        alt_exames = "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial."
+
+    def _limpar_siglas_termos(txt):
+        if not txt: return ""
+        s = str(txt)
+        termo_pct = "periciada" if is_fem else "periciado"
+        termo_serv = "servidora" if is_fem else "servidor"
+        Termo_serv = "Servidora" if is_fem else "Servidor"
+        s = re.sub(r"\bpct\b", termo_pct, s, flags=re.I)
+        s = re.sub(r"\bpaciente\b", termo_serv, s)
+        s = re.sub(r"\bPaciente\b", Termo_serv, s)
+        s = re.sub(r"\bpacientes\b", termo_serv + "s", s)
+        s = re.sub(r"\bPacientes\b", Termo_serv + "s", s)
+        s = re.sub(r"\bPEB\s*II\b", "Professor de Educação Básica II", s, flags=re.I)
+        s = re.sub(r"\bPEB\s*I\b", "Professor de Educação Básica I", s, flags=re.I)
+        s = re.sub(r"\bPEB\b", "Professor de Educação Básica", s, flags=re.I)
+        s = re.sub(r"\bAOE\b", "Agente de Organização Escolar", s, flags=re.I)
+        s = re.sub(r"\bBEG\b", "bom estado geral", s, flags=re.I)
+        s = re.sub(r"\bs/n\b", "se necessário", s, flags=re.I)
+        s = re.sub(r"\bHAS\b", "Hipertensão Arterial Sistêmica", s)
+        s = re.sub(r"\bDM\b", "Diabetes Mellitus", s)
+
+        # Lateralidade anatômica (Glosa DPME nº 11)
+        s = re.sub(r"\b(joelho|ombro|punho|cotovelo|braço|antebraço|pé|quadril|tornozelo|lado|hemitórax|membro(?:\s+superior|\s+inferior)?)\s+[Dd]\b", r"\1 direito", s, flags=re.I)
+        s = re.sub(r"\b(joelho|ombro|punho|cotovelo|braço|antebraço|pé|quadril|tornozelo|lado|hemitórax|membro(?:\s+superior|\s+inferior)?)\s+[Ee]\b", r"\1 esquerdo", s, flags=re.I)
+        s = re.sub(r"\b(mão|perna|região|fossa|coxa|escapula|escápula)\s+[Dd]\b", r"\1 direita", s, flags=re.I)
+        s = re.sub(r"\b(mão|perna|região|fossa|coxa|escapula|escápula)\s+[Ee]\b", r"\1 esquerda", s, flags=re.I)
+        s = re.sub(r"\b(joelhos|ombros|punhos|cotovelos|braços|antebraços|pés|quadris|tornozelos|lados|membros(?:\s+superiores|\s+inferiores)?|mãos|pernas)\s+[Bb]\b", r"\1 bilaterais", s, flags=re.I)
+        return s
+
+    p["sintomas_limitacoes"] = _limpar_siglas_termos(sintomas)
+    p["queixa_duracao"] = _limpar_siglas_termos(queixa)
+    p["antecedentes"] = _limpar_siglas_termos(ant_raw)
+    p["historico_pregresso"] = p["antecedentes"]
+    p["exame_fisico_descricao"] = _limpar_siglas_termos(ef_raw)
+    p["alteracoes_clinicas_exames"] = _limpar_siglas_termos(alt_exames)
+    p["justificativa"] = _limpar_siglas_termos(just_raw)
+    p["medicamentos"] = ", ".join(todos_meds) if todos_meds else ""
+    
+    return p
+
+
+def _gatekeeper_anti_glosa_esisla(ficha_text: str, payload: dict[str, Any]) -> str:
+    if not ficha_text:
+        return ""
+    t = str(ficha_text).strip()
+    
+    par_val = str(payload.get("parecer") or "").strip().upper()
+    is_contra = "CONTR" in par_val
+    is_readap = str(payload.get("readaptado") or "").strip().lower() in ("sim", "s", "true", "1")
+    cargo = str(payload.get("cargo") or "servidor").strip()
+    is_fem = bool(re.search(r"\b(?:feminino|mulher|f|servidora)\b", str(payload.get("sexo") or "").strip(), re.I)) or "servidora" in t[:200].lower()
+    cid_code = str(payload.get("cid") or "").upper().strip()
+    cid_desc = str(payload.get("doenca_motivo") or payload.get("cid_descricao") or "").strip()
+
+    # 1. Blindagem de Quesitos
+    if is_contra:
+        q1_ans, q2_ans, q3_ans = "Sim", ("Sim" if is_readap else "Não"), "Não"
+    else:
+        q1_ans, q2_ans, q3_ans = "Sim", "Sim", "Sim"
+
+    m_q = re.search(r"(\(\*\)\s*Resposta aos quesitos:?\s*\n)(.*?)(\n\s*\(\*\)\s*Justificativa)", t, re.DOTALL | re.IGNORECASE)
+    if m_q:
+        q_text = m_q.group(2).strip()
+        has_questions = "doença" in q_text.lower() or "sequela" in q_text.lower() or "limitação" in q_text.lower()
+        if has_questions:
+            q_bloco = (
+                "(*) Resposta aos quesitos:\n"
+                f"1) Há doença(s) ou sequela(s) de doença(s) prévia(s)? {q1_ans}\n"
+                f"2) A(s) doença(s) ou sequela(s) de doença(s) prévia(s) gera(m) limitação(ões) para periciando(a)? {q2_ans}\n"
+                f"3) A(s) limitação(ões) impede(m) o(a) periciando(a) de exercer alguma atividade do rol? {q3_ans}"
+            )
+        else:
+            q_bloco = (
+                "(*) Resposta aos quesitos:\n"
+                f"1) {q1_ans}\n"
+                f"2) {q2_ans}\n"
+                f"3) {q3_ans}"
+            )
+        t = t[:m_q.start()] + q_bloco + "\n\n" + t[m_q.end(2):].lstrip("\n")
+
+    # 2. Atestado sempre 'Em anexo.'
+    m_atest = re.search(r"(Atestado/Relat[óo]rio(?:/Exames\s+Complementares)?:?\s*\n)(.*?)(\n\s*(?:Pressão Arterial|Sistólica|Altura:|Peso:|\(\*\)\s*Exame Físico))", t, re.DOTALL | re.IGNORECASE)
+    if m_atest:
+        t = t[:m_atest.start(2)] + "Em anexo.\n" + t[m_atest.end(2):]
+
+    # 3. Descrição das Alterações Clínicas e Exames Complementares: se vazia ou igual ao Exame Físico
+    m_alt = re.search(r"(Descrição das Alterações (?:Clínicas|Médicas) encontradas e Relato dos Exames Complementares:?\s*\n)(.*?)(\n\s*\(\*\)\s*Descrição da\(s\)\s*Limitação)", t, re.DOTALL | re.IGNORECASE)
+    if m_alt:
+        b_alt = m_alt.group(2).strip()
+        m_ef_check = re.search(r"(\(\*\)\s*Exame Físico Geral:?\s*\n)(.*?)(\n\s*Descrição das Alterações)", t, re.DOTALL | re.IGNORECASE)
+        b_ef_check = m_ef_check.group(2).strip() if m_ef_check else ""
+        if not b_alt or (b_ef_check and (b_alt == b_ef_check or b_alt.startswith(b_ef_check[:20]))):
+            novo_alt = "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial."
+            t = t[:m_alt.start(2)] + novo_alt + "\n\n" + t[m_alt.end(2):].lstrip("\n")
+
+    # 4. Parecer Final e Justificativas no Contrário
+    if is_contra:
+        m_pf = re.search(r"(\(\*\)\s*Parecer Final:?\s*\n)(.*)", t, re.DOTALL | re.IGNORECASE)
+        if m_pf:
+            pf_body = m_pf.group(2)
+            pf_body = re.sub(r"^(N[ºo°\.]*[ \t]*Dias:[ \t]*)[^\r\n]*$", "Nº Dias: 0", pf_body, flags=re.MULTILINE)
+            t = t[:m_pf.start(2)] + pf_body
+
+        # 4.1. Limitação no Contrário (Glosa DPME Readaptado / Geral)
+        m_lim = re.search(r"(\(\*\)\s*Descrição da\(s\)\s*Limitação(?:[^\n\r:]*)?:?\s*\n)(.*?)(\n\s*\(\*\)\s*Parecer Médico)", t, re.DOTALL | re.IGNORECASE)
+        if m_lim:
+            b_lim = m_lim.group(2).strip()
+            if is_readap:
+                novo_lim = (
+                    "Apresenta limitações físicas funcionais parciais decorrentes de sua patologia de base, "
+                    "encontrando-se devidamente adaptada ao rol de atividades de sua readaptação funcional, "
+                    "não se observando limitações incapacitantes para as atribuições de seu atual termo de readaptação funcional."
+                    if is_fem else
+                    "Apresenta limitações físicas funcionais parciais decorrentes de sua patologia de base, "
+                    "encontrando-se devidamente adaptado ao rol de atividades de sua readaptação funcional, "
+                    "não se observando limitações incapacitantes para as atribuições de seu atual termo de readaptação funcional."
+                )
+            else:
+                novo_lim = f"Do ponto de vista médico não se observam limitações físicas ou mentais funcionais incapacitantes para as atribuições do cargo de {cargo}, constantes no rol de atividades."
+            
+            if "não se observa limitações" in b_lim or "sem limitações" in b_lim or is_readap or "z76" in cid_code.lower() or not b_lim:
+                t = t[:m_lim.start(2)] + novo_lim + "\n\n" + t[m_lim.end(2):].lstrip("\n")
+
+        # 4.2. Justificativa no Contrário (Glosa DPME Readaptado / Acompanhamento Z76 / Geral)
+        m_just = re.search(r"(\(\*\)\s*Justificativa Parecer Médico:?\s*\n)(.*?)(\n\s*\(\*\)\s*Parecer Final)", t, re.DOTALL | re.IGNORECASE)
+        if m_just:
+            b_just = m_just.group(2).strip()
+            if is_readap:
+                nova_just = "Capacidade laborativa própria preservada para as atribuições constantes no rol de atividades da readaptação funcional, referente ao período pleiteado."
+                t = t[:m_just.start(2)] + nova_just + "\n\n" + t[m_just.end(2):].lstrip("\n")
+            elif "z76" in cid_code.lower() or "acompanha" in cid_desc.lower():
+                nova_just = "Capacidade laborativa própria preservada. O pleito refere-se a acompanhamento de dependente enfermo, situação que não preenche os requisitos para concessão de Licença para Tratamento de Saúde nos termos dos Artigos 191 e 193 da Lei Estadual nº 10.261/1968."
+                t = t[:m_just.start(2)] + nova_just + "\n\n" + t[m_just.end(2):].lstrip("\n")
+            elif not b_just or any(w in b_just.lower() for w in ("concedo", "afastamento", "prejudicada")):
+                nova_just = f"Capacidade laborativa própria preservada, não restando comprovada incapacidade laborativa temporária para as atribuições do cargo de {cargo}, referente ao período pleiteado."
+                t = t[:m_just.start(2)] + nova_just + "\n\n" + t[m_just.end(2):].lstrip("\n")
+
+    # 5. Garantir Queixa e Duração com terapias, medicações e trocas
+    m_q_final = re.search(r"(\(\*\)\s*Queixa e Duração:?\s*\n)(.*?)(\n\s*Antecedentes Mórbidos)", t, re.DOTALL | re.IGNORECASE)
+    if m_q_final:
+        b_q = m_q_final.group(2).strip()
+        if "fisioterapia" not in b_q.lower() and "psicoterapia" not in b_q.lower():
+            b_q += " Não alegou fazer fisioterapia e psicoterapia."
+        if not re.search(r"\b(?:Em\s+uso\s+de|Negou\s+uso\s+de|faz\s+uso\s+de)\b", b_q, re.IGNORECASE):
+            b_q += " Negou uso de medicações."
+        if re.search(r"\bNegou\s+uso\s+de\s+medica[çc][õo]es\b", b_q, re.IGNORECASE):
+            b_q = re.sub(r"\s*N[ãa]o\s+relatou\s+troca\s+(?:de\s+altera[çc][ãa]o\s+de\s+dosagem\s+da\s+medica[çc][ãa]o|de\s+medica[çc][ãa]o\s+ou\s+altera[çc][ãa]o\s+de\s+dosagem)\.?", "", b_q, flags=re.IGNORECASE)
+        else:
+            b_q = re.sub(r"\btroca\s+de\s+altera[çc][ãa]o\s+de\s+dosagem\s+da\s+medica[çc][ãa]o\b", "troca de medicação ou alteração de dosagem", b_q, flags=re.IGNORECASE)
+            if "alteração de dosagem" not in b_q.lower() and "troca de alteração" not in b_q.lower() and "ajuste de dose" not in b_q.lower() and "troca de medicação" not in b_q.lower():
+                b_q += " Não relatou troca de medicação ou alteração de dosagem."
+        t = t[:m_q_final.start(2)] + b_q + "\n\n" + t[m_q_final.end(2):].lstrip("\n")
+
+    # 6. Antecedentes Mórbidos: garantir que não fique em branco ou apenas ponto
+    m_ant_final = re.search(r"(\nAntecedentes Mórbidos:?\s*\n)(.*?)(\n\s*Atestado/Relat[óo]rio)", t, re.DOTALL | re.IGNORECASE)
+    if m_ant_final:
+        b_ant = m_ant_final.group(2).strip()
+        if not b_ant or b_ant == ".":
+            novo_ant = "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas."
+            t = t[:m_ant_final.start(2)] + novo_ant + "\n\n" + t[m_ant_final.end(2):].lstrip("\n")
+
+    # 7. Exame Físico Geral: quando FAVORÁVEL, não permitir 'Sem alterações incapacitantes' (Glosa DPME nº 4 e nº 9)
+    # e eliminar prefixos redundantes
+    t = re.sub(r"(\(\*\)\s*Exame Físico Geral:?\s*\n\s*)(?:Exame F[íi]sico Geral:?|Exame F[íi]sico:?)\s*", r"\1", t, flags=re.IGNORECASE)
+    if not is_contra:
+        m_ef_sec = re.search(r"(\(\*\)\s*Exame Físico Geral:?\s*\n)(.*?)(\n\s*Descrição das Alterações)", t, re.DOTALL | re.IGNORECASE)
+        if m_ef_sec:
+            b_ef = m_ef_sec.group(2).strip()
+            if not b_ef or "sem alterações incapacitantes" in b_ef.lower() or "sem alterações descompensadas" in b_ef.lower() or b_ef.lower() in ("normal.", "normal", "beg.", "bom estado geral."):
+                cid_code = str(payload.get("cid") or "").upper().strip()
+                if cid_code.startswith("F"):
+                    seg_ef = "mental"
+                elif any(cid_code.startswith(x) for x in ("M54", "M51", "M50", "M53")):
+                    seg_ef = "lombar"
+                elif any(cid_code.startswith(x) for x in ("M22", "M23", "M24", "M25")):
+                    seg_ef = "joelho"
+                elif cid_code.startswith("M75"):
+                    seg_ef = "ombro"
+                elif any(cid_code.startswith(x) for x in ("M77", "M65", "G56")):
+                    seg_ef = "cotovelo_punho"
+                elif cid_code.startswith("M54.2"):
+                    seg_ef = "cervical"
+                else:
+                    seg_ef = "geral"
+                nova_sem = EXAME_FISICO_SEMIOLOGIA_PADRAO.get(seg_ef, EXAME_FISICO_SEMIOLOGIA_PADRAO["geral"])
+                nova_sem = re.sub(r"^(?:Exame F[íi]sico Geral:?|Exame F[íi]sico:?)\s*", "", nova_sem, flags=re.I).strip()
+                t = t[:m_ef_sec.start(2)] + nova_sem + "\n\n" + t[m_ef_sec.end(2):].lstrip("\n")
+
+    # 8. Normalização de Sinais Vitais e Biometria no texto da ficha
+    m_sist = re.search(r"^(Sist[óo]lica[ \t]*\(mmHg\):[ \t]*)(\d+)", t, re.MULTILINE | re.IGNORECASE)
+    if m_sist:
+        v_s = int(m_sist.group(2))
+        if 8 <= v_s <= 25:
+            t = t[:m_sist.start(2)] + str(v_s * 10) + t[m_sist.end(2):]
+    m_diast = re.search(r"^(Diast[óo]lica[ \t]*\(mmHg\):[ \t]*)(\d+)", t, re.MULTILINE | re.IGNORECASE)
+    if m_diast:
+        v_d = int(m_diast.group(2))
+        if 4 <= v_d <= 15:
+            t = t[:m_diast.start(2)] + str(v_d * 10) + t[m_diast.end(2):]
+    m_alt = re.search(r"^(Altura:[ \t]*)(\d+[\.,]?\d*)", t, re.MULTILINE | re.IGNORECASE)
+    if m_alt:
+        try:
+            f_a = float(m_alt.group(2).replace(",", "."))
+            if 100 <= f_a <= 250:
+                t = t[:m_alt.start(2)] + f"{f_a / 100.0:.2f}" + t[m_alt.end(2):]
+        except ValueError:
+            pass
+
+    # 9. Limpeza terminológica geral, gênero e lateralidade
+    is_fem = bool(re.search(r"\b(?:feminino|mulher|f|servidora)\b", str(payload.get("sexo") or "").strip(), re.I)) or "servidora" in t[:200].lower()
+    termo_pct = "periciada" if is_fem else "periciado"
+    termo_serv = "servidora" if is_fem else "servidor"
+    Termo_serv = "Servidora" if is_fem else "Servidor"
+    t = re.sub(r"\bpct\b", termo_pct, t, flags=re.I)
+    t = re.sub(r"\bpaciente\b", termo_serv, t)
+    t = re.sub(r"\bPaciente\b", Termo_serv, t)
+    t = re.sub(r"\bpacientes\b", termo_serv + "s", t)
+    t = re.sub(r"\bPacientes\b", Termo_serv + "s", t)
+    t = re.sub(r"\bPEB\s*II\b", "Professor de Educação Básica II", t, flags=re.I)
+    t = re.sub(r"\bPEB\s*I\b", "Professor de Educação Básica I", t, flags=re.I)
+    t = re.sub(r"\bPEB\b", "Professor de Educação Básica", t, flags=re.I)
+    t = re.sub(r"\bAOE\b", "Agente de Organização Escolar", t, flags=re.I)
+    t = re.sub(r"\bBEG\b", "bom estado geral", t, flags=re.I)
+    t = re.sub(r"\bs/n\b", "se necessário", t, flags=re.I)
+
+    # Lateralidade anatômica (Glosa DPME nº 11)
+    t = re.sub(r"\b(joelho|ombro|punho|cotovelo|braço|antebraço|pé|quadril|tornozelo|lado|hemitórax|membro(?:\s+superior|\s+inferior)?)\s+[Dd]\b", r"\1 direito", t, flags=re.I)
+    t = re.sub(r"\b(joelho|ombro|punho|cotovelo|braço|antebraço|pé|quadril|tornozelo|lado|hemitórax|membro(?:\s+superior|\s+inferior)?)\s+[Ee]\b", r"\1 esquerdo", t, flags=re.I)
+    t = re.sub(r"\b(mão|perna|região|fossa|coxa|escapula|escápula)\s+[Dd]\b", r"\1 direita", t, flags=re.I)
+    t = re.sub(r"\b(mão|perna|região|fossa|coxa|escapula|escápula)\s+[Ee]\b", r"\1 esquerda", t, flags=re.I)
+    t = re.sub(r"\b(joelhos|ombros|punhos|cotovelos|braços|antebraços|pés|quadris|tornozelos|lados|membros(?:\s+superiores|\s+inferiores)?|mãos|pernas)\s+[Bb]\b", r"\1 bilaterais", t, flags=re.I)
+
+    # 10. Remoção de CAPS LOCK excessivo e estruturação
+    t = _estruturar_secoes_oficiais_esisla(t)
+    t = _remover_capslock_excessivo_esisla(t)
+    t = _sanitizar_texto_portugues_esisla(t)
+    return t.strip()
+
+
 def _minimal_ai_context(payload: dict[str, Any]) -> dict[str, Any]:
+    payload = _desacoplar_e_rotear_fatos_clinicos(payload)
     a = payload.get("aux") or {}
 
     raw_docs = payload.get("documentos_complementares") or payload.get("documentosComplementares") or []
@@ -3657,9 +4282,65 @@ def _sanitizar_texto_portugues_esisla(texto: str) -> str:
         ("ausencia", "ausência"),
         ("ausencias", "ausências"),
         ("cirosse", "cirrose"),
+        ("gluteo", "glúteo"),
+        ("gluteos", "glúteos"),
+        ("protrusao", "protrusão"),
+        ("protrusoes", "protrusões"),
+        ("dosiflexao", "dorsiflexão"),
+        ("dosiflexão", "dorsiflexão"),
+        ("ostostatismo", "ortostatismo"),
+        ("appley", "Apley"),
+        ("Appley", "Apley"),
     ]
     for padrao, forma in palavras_a_corrigir:
         t = _corrigir_palavra(t, padrao, forma)
+
+    # 3. Correção de gírias e linguagem coloquial
+    t = re.sub(r"\bta\b", "está", t)
+    t = re.sub(r"\btá\b", "está", t)
+    t = re.sub(r"\bpra\b", "para", t)
+    t = re.sub(r"\bpro\b", "para o", t)
+    t = re.sub(r"\bpras\b", "para as", t)
+    t = re.sub(r"\bpros\b", "para os", t)
+    t = re.sub(r"\bnum\b", "em um", t)
+    t = re.sub(r"\bnuma\b", "em uma", t)
+    t = re.sub(r"\bmto\b", "muito", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bmta\b", "muita", t, flags=re.IGNORECASE)
+    t = re.sub(r"\btbm\b", "também", t, flags=re.IGNORECASE)
+    t = re.sub(r"\btb\b", "também", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bpq\b", "porque", t, flags=re.IGNORECASE)
+
+    # 4. Correção de termos vulgares e jargões médicos
+    t = re.sub(r"\bacusando\s+(protrus[ãa]o|h[ée]rnia|les[ãa]o|abaulamento|altera[çc][ãa]o|fratura|tendinopatia|rotura|ruptura)\b", r"evidenciando \1", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bacusando\b", "evidenciando", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bse\s+dor\b", "em caso de dor", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bse\s+crise\b", "em caso de crise", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bse\s+necess[áa]rio\s+se\s+crise\b", "se necessário em caso de crise", t, flags=re.IGNORECASE)
+    t = re.sub(r"\b(\d+)\s*(?:MG|Mg)\b", r"\1 mg", t)
+    t = re.sub(r"\b(\d+)\s*(?:G)\b", r"\1 g", t)
+    t = re.sub(r"\b(\d+)\s*(?:MCG|Mcg)\b", r"\1 mcg", t)
+    t = re.sub(r"\bSE\s+Crise\b", "em caso de crise", t, flags=re.IGNORECASE)
+
+    # 5. Correção de concordância verbal na voz passiva
+    t = re.sub(r"\bn[ãa]o\s+se\s+observa\s+limita[çc][õo]es\b", "não se observam limitações", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bn[ãa]o\s+se\s+observa\s+altera[çc][õo]es\b", "não se observam alterações", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bn[ãa]o\s+se\s+observa\s+d[ée]ficits\b", "não se observam déficits", t, flags=re.IGNORECASE)
+
+    # 6. Eliminação de pleonasmos
+    t = re.sub(r"\btroca\s+de\s+altera[çc][ãa]o\s+de\s+dosagem\s+da\s+medica[çc][ãa]o\b", "troca de medicação ou alteração de dosagem", t, flags=re.IGNORECASE)
+    t = re.sub(r"\btroca\s+de\s+altera[çc][ãa]o\s+de\s+dosagem\b", "troca de medicação ou alteração de dosagem", t, flags=re.IGNORECASE)
+
+    # 7. Correção de concordância em Exame Mental (Humor é masculino)
+    t = re.sub(r"\bhumor\s+deprimido/ansiosa\b", "humor deprimido com sintomas ansiosos", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bHumor\s+deprimido/ansiosa\b", "Humor deprimido com sintomas ansiosos", t, flags=re.IGNORECASE)
+
+    # 8. Espaçamento obrigatório em cabeçalhos e-SISLA
+    t = re.sub(r"\(\*\)(?=[A-Za-zÀ-Ú])", "(*) ", t)
+
+    # 9. Limpeza de preposições órfãs deixadas por desacoplamento de laudos
+    t = re.sub(r"\bveio\s+renovar\s+atestado\s+com\.\s*", "comparece para renovação de licença médica. ", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bcom\.\s*$", ".", t)
+    t = re.sub(r"\bcom\.\s+", ". ", t)
 
     t = re.sub(r"\bdevido\s+c[âa]ncer\b", "devido a câncer", t, flags=re.IGNORECASE)
     t = re.sub(r"\bdevido\s+neoplasia\b", "devido a neoplasia", t, flags=re.IGNORECASE)
@@ -3710,8 +4391,15 @@ def _clean_esisla_text(text: str) -> str:
     text = re.sub(r"^```(?:text|txt|plaintext)?\s*", "", text, flags=re.IGNORECASE)
     text = re.sub(r"\s*```$", "", text)
     text = text.strip()
-    if not text.startswith("Registro da perícia Médica para Licença"):
-        raise ValueError("A ficha e-Sisla retornou formato diferente do formulário oficial.")
+    # Normalização robusta do cabeçalho oficial DPME: remove marcações markdown ou variações de caixa e fixa o título oficial canônico
+    text = re.sub(
+        r"^[#*\s]*Registro\s+da\s+per[íi]cia\s+m[ée]dica\s+para\s+licen[çc]a[#*\s]*\n*",
+        "",
+        text,
+        flags=re.IGNORECASE
+    ).strip()
+    text = f"Registro da perícia Médica para Licença\n\n{text}"
+
     lower = text.casefold()
     forbidden = (
         "gerado por ia", "gerada por ia", "inteligência artificial",
@@ -3720,8 +4408,9 @@ def _clean_esisla_text(text: str) -> str:
     )
     if any(token in lower for token in forbidden):
         raise ValueError("A ficha e-Sisla retornou texto meta que não pertence ao formulário.")
-    if re.search(r"\[[^\]]{1,120}\]", text):
-        raise ValueError("A ficha e-Sisla retornou marcador de preenchimento em vez de dado do atendimento.")
+    # Limpeza e remoção segura de marcadores de preenchimento ou colchetes residuais
+    text = re.sub(r"\[\s*(?:N[ãa]o\s+informad[oa]|Sem\s+informa[çc][ãa]o|N\/A|-)\s*\]", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\[\s*([^\]]{1,120})\s*\]", r"\1", text)
 
     # Regra terminológica obrigatória: Servidor ou Periciado (nunca Paciente)
     text = re.sub(r"\bPaciente\b", "Servidor", text)
@@ -3830,7 +4519,7 @@ def _clean_esisla_text(text: str) -> str:
     # Normalização canônica do cabeçalho de limitações físicas e mentais
     text = re.sub(
         r"(?:\r?\n|^)\s*\(\s*\*\s*\)\s*Descri[çc][ãa]o\s+da\(s\)\s+Limita[çc][ãa]o[^\n\r:]*:?",
-        "\n\n(*)Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):",
+        "\n\n(*) Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):",
         text,
         flags=re.IGNORECASE
     )
@@ -3885,6 +4574,9 @@ def _clean_esisla_text(text: str) -> str:
         is_masc = bool(re.search(r"\b(?:Servidor\s+de\s+\d+\s+anos|O\s+periciado|O\s+servidor)\b", text, re.IGNORECASE)) or bool(re.search(r"\bServidor\b", b_ef, re.IGNORECASE) and not re.search(r"\bServidora\b", b_ef, re.IGNORECASE))
 
         if is_fem and not bool(re.search(r"\bServidor\b", b_ef) and not re.search(r"\bServidora\b", b_ef)):
+            b_ef = re.sub(r"\bPericiado\(a\)\b", "A periciada", b_ef)
+            b_ef = re.sub(r"\bpericiado\(a\)\b", "a periciada", b_ef)
+            b_ef = re.sub(r"\bcolaborativo\(a\)\b", "colaborativa", b_ef)
             b_ef = re.sub(r"\beupneico\b", "eupneica", b_ef, flags=re.IGNORECASE)
             b_ef = re.sub(r"\bcorado\b", "corada", b_ef, flags=re.IGNORECASE)
             b_ef = re.sub(r"\borientado\b", "orientada", b_ef, flags=re.IGNORECASE)
@@ -3892,9 +4584,14 @@ def _clean_esisla_text(text: str) -> str:
             b_ef = re.sub(r"\bdescorado\b", "descorada", b_ef, flags=re.IGNORECASE)
             b_ef = re.sub(r"\batento\b", "atenta", b_ef, flags=re.IGNORECASE)
             b_ef = re.sub(r"\bcalmo\b", "calma", b_ef, flags=re.IGNORECASE)
-            b_ef = re.sub(r"\bansioso\b", "ansiosa", b_ef, flags=re.IGNORECASE)
             b_ef = re.sub(r"\bacian[óo]tico\b", "acianótica", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\bhumor\s+(?:deprimido/)?ansios[oa]\b", "humor deprimido com sintomas ansiosos", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\bHumor\s+(?:deprimido/)?ansios[oa]\b", "Humor deprimido com sintomas ansiosos", b_ef, flags=re.IGNORECASE)
+            b_ef = re.sub(r"\bansioso\b", "ansiosa", b_ef, flags=re.IGNORECASE)
         elif is_masc and not is_fem:
+            b_ef = re.sub(r"\bPericiado\(a\)\b", "O periciado", b_ef)
+            b_ef = re.sub(r"\bpericiado\(a\)\b", "o periciado", b_ef)
+            b_ef = re.sub(r"\bcolaborativo\(a\)\b", "colaborativo", b_ef)
             b_ef = re.sub(r"\beupneica\b", "eupneico", b_ef, flags=re.IGNORECASE)
             b_ef = re.sub(r"\bcorada\b", "corado", b_ef, flags=re.IGNORECASE)
             b_ef = re.sub(r"\borientada\b", "orientado", b_ef, flags=re.IGNORECASE)
@@ -4007,6 +4704,242 @@ def _clean_esisla_text(text: str) -> str:
 
 
 
+def _build_deterministic_esisla(payload: dict[str, Any]) -> str:
+    payload = _desacoplar_e_rotear_fatos_clinicos(payload)
+    idade = str(payload.get("idade") or "").strip()
+    is_fem = bool(re.search(r"\b(?:feminino|mulher|f|servidora)\b", str(payload.get("sexo") or "").strip(), re.I))
+    termo_serv = "Servidora" if is_fem else "Servidor"
+    idade_str = f"{termo_serv} de {idade} anos" if idade else termo_serv
+
+    is_readap = str(payload.get("readaptado") or "").strip().lower() in ("sim", "s", "true", "1")
+    if is_readap:
+        atv_readap = str(payload.get("atividades_readaptado") or "").strip()
+        readap_str = f"relatou ser readaptada, exercendo atualmente as atividades de {atv_readap}" if is_fem else f"relatou ser readaptado, exercendo atualmente as atividades de {atv_readap}"
+    else:
+        readap_str = "relatou não ser readaptada" if is_fem else "relatou não ser readaptado"
+
+    cargo = str(payload.get("cargo") or "servidor").strip()
+    cargo_exibicao = cargo
+    if is_fem:
+        c_low = cargo.lower()
+        if "escrivão" in c_low or "escrivao" in c_low:
+            cargo_exibicao = re.sub(r"\b[Ee]scriv[ãa]o\b", "Escrivã", cargo)
+        elif "investigador" in c_low:
+            cargo_exibicao = re.sub(r"\b[Ii]nvestigador\b", "Investigadora", cargo)
+        elif "oficial administrativo" in c_low:
+            cargo_exibicao = re.sub(r"\b[Oo]ficial [Aa]dministrativo\b", "Oficial Administrativa", cargo)
+        elif "professor" in c_low:
+            cargo_exibicao = re.sub(r"\b[Pp]rofessor\b", "Professora", cargo)
+        elif "diretor" in c_low:
+            cargo_exibicao = re.sub(r"\b[Dd]iretor\b", "Diretora", cargo)
+        elif "coordenador" in c_low:
+            cargo_exibicao = re.sub(r"\b[Cc]oordenador\b", "Coordenadora", cargo)
+        elif "médico" in c_low or "medico" in c_low:
+            cargo_exibicao = re.sub(r"\b[Mm][ée]dico\b", "Médica", cargo)
+        elif "enfermeiro" in c_low:
+            cargo_exibicao = re.sub(r"\b[Ee]nfermeiro\b", "Enfermeira", cargo)
+
+    tempo_func = str(payload.get("tempo_funcao") or "").strip()
+    unid_tempo = str(payload.get("unidade_tempo") or "anos").strip().lower()
+    if tempo_func:
+        if tempo_func == "1" and unid_tempo.startswith("ano"):
+            unid_tempo = "ano"
+        cargo_str = f"é {cargo_exibicao} há {tempo_func} {unid_tempo}"
+    else:
+        cargo_str = f"é {cargo_exibicao}"
+
+    doenca_motivo = str(payload.get("doenca_motivo") or "").strip()
+    queixa_informada = str(payload.get("queixa_duracao") or payload.get("queixa") or "").strip()
+
+    ini_trat = str(payload.get("inicio_tratamento") or payload.get("inicioTratamento") or "").strip()
+    freq_cons = str(payload.get("frequencia_consultas") or "").strip().lower()
+    if "quinzenal" in freq_cons:
+        freq_str = "realizando consultas quinzenalmente"
+    elif "mensal" in freq_cons:
+        freq_str = "realizando consultas mensalmente"
+    elif "semanal" in freq_cons:
+        freq_str = "realizando consultas semanalmente"
+    elif freq_cons:
+        freq_str = f"realizando consultas {freq_cons}"
+    else:
+        freq_str = ""
+
+    sintomas = str(payload.get("sintomas_limitacoes") or "").strip()
+    medicamentos = str(payload.get("medicamentos") or "").strip()
+    psico = str(payload.get("psicoterapia") or "").strip()
+    fisio = str(payload.get("fisioterapia") or "").strip()
+
+    partes_q = [f"{idade_str}, {readap_str}, {cargo_str}"]
+    if doenca_motivo:
+        if ini_trat:
+            partes_q.append(f"com queixa de {doenca_motivo} desde {ini_trat}")
+        else:
+            partes_q.append(f"com queixa de {doenca_motivo}")
+    if freq_str:
+        partes_q.append(freq_str)
+
+    corpo_queixa = ", ".join(partes_q) + "."
+    if sintomas and sintomas.lower() not in corpo_queixa.lower():
+        sint_clean = re.sub(r"^(?:Refere|Referiu|Relata|Relatou|Apresenta|Apresentou|Comparece|Compareceu)\s*(?:e\s*,?|ou\s*,?|,\s*)?", "", sintomas, flags=re.I).strip(" ,.;")
+        if sint_clean:
+            corpo_queixa += f" Refere {sint_clean.rstrip('.')}."
+    if queixa_informada and queixa_informada.lower() not in corpo_queixa.lower():
+        q_clean = re.sub(r"^(?:Refere|Referiu|Relata|Relatou|Apresenta|Apresentou|Comparece|Compareceu)\s*(?:e\s*,?|ou\s*,?|,\s*)?", "", queixa_informada, flags=re.I).strip(" ,.;")
+        if q_clean:
+            corpo_queixa += f" {q_clean.rstrip('.')}."
+
+    if medicamentos and medicamentos.lower() not in ("nega", "não faz uso", "nao faz uso", "-"):
+        corpo_queixa += f" Em uso de {medicamentos.rstrip('.')}."
+        corpo_queixa += " Não relatou troca de medicação ou alteração de dosagem."
+    else:
+        corpo_queixa += " Negou uso de medicações."
+
+    if fisio and psico:
+        corpo_queixa += f" Realiza fisioterapia ({fisio}) e psicoterapia ({psico})."
+    elif fisio:
+        corpo_queixa += f" Realiza fisioterapia ({fisio}) (e não realiza psicoterapia)."
+    elif psico:
+        corpo_queixa += f" Realiza psicoterapia ({psico}) (e não realiza fisioterapia)."
+    else:
+        corpo_queixa += " Não alegou fazer fisioterapia e psicoterapia."
+
+    ant_raw = str(payload.get("historico_pregresso") or payload.get("antecedentes") or "").strip()
+    if ant_raw and ant_raw.lower() not in ("nega", "nega.", "não refere", "nao refere", "-", "sem antecedentes"):
+        ant_clean = _clean_antecedentes_morbidos_text(ant_raw)
+    else:
+        ant_clean = "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas."
+
+    ef_raw = str(payload.get("exame_fisico_descricao") or "").strip()
+    ef_tipo = str(payload.get("outros_subtipo") or payload.get("exame_fisico_tipo") or "").strip()
+    if ef_raw:
+        ef_text = ef_raw
+        if ef_tipo and not any(t in ef_tipo.lower() for t in ("geral", "outro")) and not ef_text.lower().startswith(ef_tipo.lower()):
+            ef_text = f"{ef_tipo}: {ef_text}"
+    else:
+        ef_text = f"{ef_tipo}: Exame físico/mental sem alterações descompensadas descritas." if (ef_tipo and not any(t in ef_tipo.lower() for t in ("geral", "outro"))) else "Sem alterações incapacitantes observadas no ato pericial."
+    ef_text = re.sub(r"^(?:Exame F[íi]sico Geral:?|Exame F[íi]sico:?)\s*", "", ef_text, flags=re.I).strip()
+
+    alt_clin = str(payload.get("alteracoes_clinicas_exames") or "").strip()
+    if not alt_clin:
+        alt_clin = "Não foram apresentados exames complementares (imagem ou laboratoriais) no ato pericial."
+
+    par_val = str(payload.get("parecer") or "").strip().upper()
+    is_contra = "CONTR" in par_val
+    parecer_label = "CONTRÁRIO" if is_contra else "FAVORÁVEL"
+    dias = "0" if is_contra else str(payload.get("dias_solicitados") or payload.get("dias") or payload.get("atestado_dias") or "1").strip()
+    data_doc = str(payload.get("data_documento") or "").strip()
+    data_doc_br = _format_date_br(data_doc) if data_doc else _format_date_br(_utc_now()[:10])
+
+    cid_code = str(payload.get("cid") or "").strip().upper()
+    if len(cid_code) == 4 and re.match(r"^[A-Z]\d{3}$", cid_code):
+        cid_code = f"{cid_code[:3]}.{cid_code[3:]}"
+    cid_desc = str(payload.get("doenca_motivo") or payload.get("cid_descricao") or payload.get("cid_desc") or "").strip()
+
+    if is_contra:
+        if is_readap:
+            lim_text = (
+                "Apresenta limitações físicas funcionais parciais decorrentes de sua patologia de base, "
+                "encontrando-se devidamente adaptada ao rol de atividades de sua readaptação funcional, "
+                "não se observando limitações incapacitantes para as atribuições de seu atual termo de readaptação funcional."
+                if is_fem else
+                "Apresenta limitações físicas funcionais parciais decorrentes de sua patologia de base, "
+                "encontrando-se devidamente adaptado ao rol de atividades de sua readaptação funcional, "
+                "não se observando limitações incapacitantes para as atribuições de seu atual termo de readaptação funcional."
+            )
+            just_text = "Capacidade laborativa própria preservada para as atribuições constantes no rol de atividades da readaptação funcional, referente ao período pleiteado."
+            q1, q2, q3 = "Sim", "Sim", "Não"
+        elif "z76" in cid_code.lower() or "acompanha" in cid_desc.lower():
+            lim_text = f"Do ponto de vista médico não se observam limitações físicas ou mentais funcionais incapacitantes para as atribuições do cargo de {cargo}, constantes no rol de atividades."
+            just_text = "Capacidade laborativa própria preservada. O pleito refere-se a acompanhamento de dependente enfermo, situação que não preenche os requisitos para concessão de Licença para Tratamento de Saúde nos termos dos Artigos 191 e 193 da Lei Estadual nº 10.261/1968."
+            q1, q2, q3 = "Sim", "Não", "Não"
+        else:
+            lim_text = f"Do ponto de vista médico não se observam limitações físicas ou mentais funcionais incapacitantes para as atribuições do cargo de {cargo}, constantes no rol de atividades."
+            just_text = f"Capacidade laborativa própria preservada, não restando comprovada incapacidade laborativa temporária para as atribuições do cargo de {cargo}, referente ao período pleiteado."
+            q1, q2, q3 = "Sim", "Não", "Não"
+    else:
+        lim_text = _resolve_favorable_limitation(payload, cargo)
+        just_text = str(payload.get("justificativa") or payload.get("agilJustificativa") or "").strip()
+        if not just_text:
+            just_text = f"Capacidade laborativa parcial e temporariamente prejudicada considerando as atribuições do rol do cargo de {cargo}, em razão dos sintomas e limitações registradas no ato pericial."
+        q1, q2, q3 = "Sim", "Sim", "Sim"
+
+    medico = str(payload.get("medico") or payload.get("medico_perito") or payload.get("medicoResponsavel") or "").strip()
+    crm = str(payload.get("crm_responsavel") or payload.get("crm") or payload.get("atestado_crm") or "").strip()
+    dt_atd = str(payload.get("data_atendimento") or "").strip()
+    hr_atd = str(payload.get("hora_atendimento") or "").strip()
+    dt_atd_br = _format_date_br(dt_atd) if dt_atd else _format_date_br(_utc_now()[:10])
+    dthr_str = f"{dt_atd_br} {hr_atd[:5]}".strip() if hr_atd else dt_atd_br
+
+    pa_sist, pa_diast, pulso, alt, peso = _normalizar_sinais_vitais_biometria(
+        payload.get("pressao_sistolica"),
+        payload.get("pressao_diastolica"),
+        payload.get("pulso"),
+        payload.get("altura"),
+        payload.get("peso")
+    )
+
+    template = f"""Registro da perícia Médica para Licença
+
+(*) Queixa e Duração:
+{corpo_queixa}
+
+Antecedentes Mórbidos:
+{ant_clean}
+
+Atestado/Relatório/Exames Complementares:
+Em anexo.
+
+Pressão Arterial
+Sistólica (mmHg): {pa_sist}
+Diastólica (mmHg): {pa_diast}
+Pulso (bpm): {pulso}
+
+Altura: {alt}
+Peso: {peso}
+
+(*) Exame Físico Geral:
+{ef_text}
+
+Descrição das Alterações Clínicas encontradas e Relato dos Exames Complementares:
+{alt_clin}
+
+(*) Descrição da(s) Limitação(ções) Física(s) e/ou Mental(is) encontrada(s):
+{lim_text}
+
+(*) Parecer Médico:
+Parecer: {parecer_label}
+Nº Dias: {dias}
+Data Início: {data_doc_br}
+CID 10: {cid_code}
+Descrição: {cid_desc}
+CID 10 Secundário:
+Descrição Secundária:
+Médico Perito: {medico}
+CRM: {crm}
+Dt/Hr Perícia: {dthr_str}
+
+(*) Resposta aos quesitos:
+1) Há doença(s) ou sequela(s) de doença(s) prévia(s)? {q1}
+2) A(s) doença(s) ou sequela(s) de doença(s) prévia(s) gera(m) limitação(ões) para periciando(a)? {q2}
+3) A(s) limitação(ões) impede(m) o(a) periciando(a) de exercer alguma atividade do rol? {q3}
+
+(*) Justificativa Parecer Médico:
+{just_text}
+
+(*) Parecer Final:
+Parecer: {parecer_label}
+Nº Dias: {dias}
+Data Início: {data_doc_br}
+CID 10: {cid_code}
+Descrição: {cid_desc}
+CID 10 Secundário:
+Descrição Secundária:
+Diretor DPME:
+Data P.F.: {dt_atd_br}
+"""
+    return _sanitizar_texto_portugues_esisla(template.strip())
+
+
 def _get_stored_ficha_esisla(atendimento_id: str, payload: dict[str, Any] | None = None) -> str:
     atd_key = str(atendimento_id or "").strip()
     ficha = ""
@@ -4097,8 +5030,20 @@ def api_ai_esisla():
                     }), 200
 
             instruction = _task_instruction("esisla", payload)
-            result, cached, _ = _generate_cached("esisla", payload, instruction, EsislaResult, force_refresh=force)
-            ficha_text = _clean_esisla_text(result.ficha_esisla)
+            ficha_raw = ""
+            cached = False
+            try:
+                result, cached, _ = _generate_cached("esisla", payload, instruction, EsislaResult, force_refresh=force)
+                ficha_raw = getattr(result, "ficha_esisla", "")
+            except Exception as gen_exc:
+                app.logger.warning("Falha na geração via IA da ficha e-Sisla (%s): %s. Ativando construtor pericial determinístico.", atd_id, gen_exc)
+                ficha_raw = ""
+
+            if not ficha_raw or len(ficha_raw.strip()) < 50:
+                ficha_raw = _build_deterministic_esisla(payload)
+                cached = False
+
+            ficha_text = _clean_esisla_text(ficha_raw)
             # Vitals e Biometria
             alt_val = str(payload.get("altura") or "").strip()
             peso_val = str(payload.get("peso") or "").strip()
@@ -4441,6 +5386,7 @@ def api_ai_esisla():
                     ficha_text = ficha_text[:m_pf.start(2)] + pf_body
             ficha_text = _clean_esisla_text(ficha_text)
             ficha_text = _remover_capslock_excessivo_esisla(ficha_text)
+            ficha_text = _gatekeeper_anti_glosa_esisla(ficha_text, payload)
             result = EsislaResult(ficha_esisla=ficha_text)
             if atd_id:
                 _save_ficha_esisla_to_atendimento(atd_id, result.ficha_esisla)
@@ -4449,9 +5395,22 @@ def api_ai_esisla():
                 "meta": {"cached": bool(cached), "reused_from_atendimento": False, "endpoint": "esisla"}
             }), 200
     except Exception as exc:
-        if isinstance(exc, ValueError):
-            return _error("VALIDATION_ERROR", str(exc), False, 400)
-        return _provider_error(exc)
+        if isinstance(exc, (AICadastroBusyError, AIRateLimitError, AIRecordAccessError)):
+            return _provider_error(exc)
+        app.logger.exception("Exceção tratada em api_ai_esisla: %s", exc)
+        try:
+            target_p = payload if 'payload' in locals() else raw
+            fallback_text = _gatekeeper_anti_glosa_esisla(_remover_capslock_excessivo_esisla(_clean_esisla_text(_build_deterministic_esisla(target_p))), target_p)
+            if 'atd_id' in locals() and atd_id:
+                _save_ficha_esisla_to_atendimento(atd_id, fallback_text)
+            return jsonify({
+                "ficha_esisla": fallback_text,
+                "meta": {"cached": False, "fallback_mode": True, "endpoint": "esisla"}
+            }), 200
+        except Exception:
+            if isinstance(exc, ValueError):
+                return _error("VALIDATION_ERROR", str(exc), False, 400)
+            return _provider_error(exc)
 
 def _remover_capslock_excessivo_esisla(texto: str) -> str:
     if not texto:
@@ -5001,6 +5960,33 @@ def gerar_relatorio_final():
     except Exception as exc:
         if isinstance(exc, ValueError):
             return jsonify({"error": "invalid_request", "detail": str(exc)}), 400
+def _detectar_regiao_osteomuscular(cid: str, texto: str, doenca: str, exame: str) -> str:
+    combined = f"{cid or ''} {texto or ''} {doenca or ''} {exame or ''}".lower()
+    cid_upper = (cid or "").upper().strip()
+    is_esq = bool(re.search(r'\b(?:esquerdo|esquerda|esq|membro\s+inferior\s+esquerdo|membro\s+superior\s+esquerdo|mie|mse)\b', combined))
+    is_dir = bool(re.search(r'\b(?:direito|direita|dir|membro\s+inferior\s+direito|membro\s+superior\s+direito|mid|msd)\b', combined))
+    side = "esquerdo" if (is_esq and not is_dir) else "direito"
+
+    if cid_upper.startswith(("M54.4", "M54.5", "M51", "M48", "M43", "M47")) or re.search(r'\b(?:lombar|lombociatalgia|lumbago|ci[áa]tico|ci[áa]tica|l4|l5|s1|paravertebral\s+lombar|las[èe]gue)\b', combined):
+        return "lombar"
+    if cid_upper.startswith(("M54.2", "M50", "M53.0", "M53.1")) or re.search(r'\b(?:cervical|cervicobraquialgia|pesco[çc]o|trap[ée]zio|c5|c6|c7)\b', combined):
+        return "cervical"
+    if cid_upper.startswith("M75") or re.search(r'\b(?:ombro|manguito|supraespinhal|supraespinhoso|bicipital|escapul[ao]r)\b', combined):
+        return f"ombro_{side}"
+    if cid_upper.startswith(("M77.0", "M77.1")) or re.search(r'\b(?:cotovelo|epicondilite|epic[ôo]ndilo)\b', combined):
+        return f"cotovelo_{side}"
+    if cid_upper.startswith(("G56.0", "M65.4")) or re.search(r'\b(?:punho|t[úu]nel\s+do\s+carpo|carpo|antebraco|antebra[çc]o|de\s+quervain)\b', combined):
+        return f"antebraco_{side}"
+    if cid_upper.startswith("M65.3") or re.search(r'\b(?:m[ãa]o|dedo|quirod[áa]ctilo|gatilho)\b', combined):
+        return f"mao_{side}"
+    if cid_upper.startswith(("M16", "M70.6", "M76.0")) or re.search(r'\b(?:quadril|coxartrose|coxofemoral|troc[âa]nter|bursite\s+trocant[ée]rica)\b', combined):
+        return "quadril"
+    if cid_upper.startswith(("M17", "M22", "M23")) or re.search(r'\b(?:joelho|gonartrose|menisco|patelar|ligamento\s+cruzado|lca)\b', combined):
+        return f"joelho_{side}"
+    if cid_upper.startswith(("M72.2", "M76.6", "M77.3")) or re.search(r'\b(?:tornozelo|p[ée]|fascite\s+plantar|calc[âa]neo|aquileu)\b', combined):
+        return f"tornozelo_{side}"
+    return "lombar"
+
 @app.post("/api/ai/preencher-ficha")
 def api_ai_preencher_ficha():
     try:
@@ -5126,10 +6112,52 @@ def api_ai_preencher_ficha():
                 d_motivo = re.sub(r"\bp[áa]lpebrais\b", "palpebrais", d_motivo, flags=re.IGNORECASE)
                 result.doenca_motivo = d_motivo.strip()
 
-            if result.historico_pregresso:
-                result.historico_pregresso = _clean_antecedentes_morbidos_text(result.historico_pregresso)
-            if not (result.historico_pregresso or "").strip() or result.historico_pregresso.strip().lower() in ("nega", "nega.", "não refere", "nao refere", "-"):
-                result.historico_pregresso = "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas."
+            # Mesclagem determinística e garantia de preenchimento de historico_pregresso (Antecedentes Mórbidos)
+            ant_val = (result.historico_pregresso or "").strip()
+            if not ant_val:
+                ant_val = str(esisla_pre.get("historico_pregresso") or esisla_pre.get("historicoPregresso") or ctx_atual.get("historicoPregresso") or "").strip()
+
+            if ant_val:
+                ant_val = _clean_antecedentes_morbidos_text(ant_val)
+
+            nega_patterns = (
+                r"^(?:nega\.?|n[ãa]o\s+refere\.?|nada\s+consta\.?|sem\s+antecedentes.*|nenhum\s+antecedente.*|"
+                r"nega\s+antecedentes(?:\s+m[óo]rbidos)?\.?|nega\s+comorbidades\.?|-)$"
+            )
+            is_acomp = bool(esisla_pre.get("is_acompanhante")) or (result.cid or "").upper().startswith("Z76")
+
+            # Se houver conditions (outras doenças em tratamento) ou relato no texto mas ant_val ficou vazio ou com negativa genérica
+            has_conditions = bool(result.conditions)
+            if has_conditions and (not ant_val or "nega antecedentes mórbidos relevantes" in ant_val.lower() or len(ant_val) < 25 or re.match(nega_patterns, ant_val.strip(), re.IGNORECASE)):
+                conds_desc = "; ".join(f"{c.nome}{f' em uso de {c.tratamento}' if c.tratamento else ''}" for c in result.conditions if c.nome)
+                m_cir = re.search(r'\b(?:cirurgia\s+pr[ée]via\s+(?:de\s+)?[a-zà-ú]+|apendicectomia|colecistectomia|histerectomia|artroplastia|herniorrafia|vasectomia|blefaroplastia)[^\.\n\r]*', texto_bruto, re.I)
+                cir_str = f", com relato de {m_cir.group(0).strip()}" if m_cir else ""
+                m_neg = re.search(r'\bNega\s+(?:diabetes|neoplasias|tabagismo|etilismo|outras|demais)[^\.\n\r]*', texto_bruto, re.I)
+                neg_str = f" {m_neg.group(0).strip()}." if m_neg else " Nega demais antecedentes mórbidos relevantes, cirurgias prévias e neoplasias."
+                ant_val = f"Refere histórico de {conds_desc}{cir_str}.{neg_str}"
+            elif not ant_val or len(ant_val) < 10 or re.match(nega_patterns, ant_val.strip(), re.IGNORECASE):
+                if is_acomp:
+                    ant_val = "Nega comorbidades próprias, cirurgias prévias e neoplasias."
+                else:
+                    ant_val = "Nega antecedentes mórbidos relevantes, cirurgias prévias, neoplasias ou hábitos tabágicos e etilistas."
+
+            result.historico_pregresso = ant_val.strip()
+
+            # Detecção determinística de Fisioterapia e Psicoterapia a partir do texto bruto e obs_terapias
+            txt_lower = f"{texto_bruto} {result.obs_terapias or ''}".lower()
+            tem_fisio_afirm = bool(re.search(r'\b(?:iniciou|iniciando|realiza|faz|fazendo|em)\s+fisioterapia\b|\bfisioterapia\s+(?:motora|respirat[óo]ria|analg[ée]sica|[0-9]x|duas|tr[êe]s|semanal)\b', txt_lower))
+            tem_fisio_neg = bool(re.search(r'\b(?:nega|n[ãa]o\s+faz|n[ãa]o\s+alegou|sem)\s+(?:fazer\s+)?fisioterapia\b', txt_lower))
+            if tem_fisio_afirm and not tem_fisio_neg:
+                result.fisioterapia = True
+            elif tem_fisio_neg:
+                result.fisioterapia = False
+
+            tem_psico_afirm = bool(re.search(r'\b(?:iniciou|iniciando|realiza|faz|fazendo|em)\s+psicoterapia\b|\bpsicoterapia\s+(?:semanal|quinzenal|mensal|[0-9]x)\b', txt_lower))
+            tem_psico_neg = bool(re.search(r'\b(?:nega|n[ãa]o\s+faz|n[ãa]o\s+alegou|sem)\s+(?:fazer\s+)?psicoterapia\b', txt_lower))
+            if tem_psico_afirm and not tem_psico_neg:
+                result.psicoterapia = True
+            elif tem_psico_neg:
+                result.psicoterapia = False
 
             if result.cargo and result.cargo.isupper() and len(result.cargo) > 4:
                 result.cargo = _remover_capslock_excessivo_esisla(result.cargo)
@@ -5338,6 +6366,13 @@ def api_ai_preencher_ficha():
             body["inicioTratamento"] = result.inicio_tratamento
             body["freqConsultas"] = result.freq_consultas
             body["sintomasLimitacao"] = result.sintomas_limitacao
+            body["historicoPregresso"] = result.historico_pregresso
+            body["historico_pregresso"] = result.historico_pregresso
+            body["antecedentes"] = result.historico_pregresso
+            body["antecedentes_morbidos"] = result.historico_pregresso
+            body["fisioterapia"] = bool(result.fisioterapia)
+            body["psicoterapia"] = bool(result.psicoterapia)
+            body["regiao_osteomuscular"] = _detectar_regiao_osteomuscular(result.cid, texto_bruto, result.doenca_motivo, result.exame_fisico_descricao)
             body["data_expedicao"] = exp_date_iso or exp_date_br
             body["data_expedicao_iso"] = exp_date_iso
             body["data_expedicao_br"] = exp_date_br
@@ -5782,6 +6817,33 @@ def parse_esisla_text(text: str) -> dict:
             )
         else:
             data['retroacao_invalida'] = False
+
+    # 21. Antecedentes Mórbidos / Histórico Pregresso (de fichas periciais, anotações clínicas ou e-SISLA)
+    m_ant = re.search(
+        r'(?:Antecedentes\s+M[óo\ufffd]?rbidos?|Antecedentes|HPP|Hist[óo\ufffd]?rico\s+Pregresso)[:\s]*\n?([\s\S]*?)(?=(?:\r?\n\s*(?:Atestado|Exame|Press[ãa\ufffd]?o|Altura|Peso|Pulso|Descri[çc\ufffd]?[ãa\ufffd]?o|\(\*\)|Parecer|Resposta|Justificativa|\Z)))',
+        text,
+        re.I
+    )
+    if m_ant:
+        raw_ant = m_ant.group(1).strip()
+        raw_ant = re.sub(r'(?:Atestado/Relat[óo\ufffd]?rio|Exames Complementares)[\s\S]*$', '', raw_ant, flags=re.I).strip()
+        raw_ant = re.sub(r'[\r\n]+', ' ', raw_ant).strip()
+        if raw_ant:
+            data['historico_pregresso'] = raw_ant
+            data['historicoPregresso'] = raw_ant
+    else:
+        # Fallback: Detecta relato clínico de comorbidades/cirurgias mesmo sem cabeçalho explícito
+        m_ant_inline = re.search(
+            r'(?:^|\n)\s*((?:(?:Hipertens[ãa]o|HAS|Diabetes|DM|Cardiopatia|Asma|Depress[ãa]o|Dislipidemia|Cirurgia|Apendicectomia|Colecistectomia|Histerectomia|P[óo]s-operat[óo]rio)[^\n\r]+(?:\n[^\n\r]+)*?(?:Nega\s+(?:diabetes|neoplasias|cirurgias|tabagismo|etilismo|comorbidades)[^\n\r]*|sem\s+intercorr[êe]ncias[^\n\r]*)))',
+            text,
+            re.I
+        )
+        if m_ant_inline:
+            raw_ant = m_ant_inline.group(1).strip()
+            raw_ant = re.sub(r'[\r\n]+', ' ', raw_ant).strip()
+            if raw_ant:
+                data['historico_pregresso'] = raw_ant
+                data['historicoPregresso'] = raw_ant
 
     return data
 

@@ -1736,8 +1736,8 @@ DIRETRIZES DE EXTRAÇÃO E REDAÇÃO:
   * NUNCA DEIXE ESTE CAMPO VAZIO quando houver menção a qualquer queixa, dor, sintoma, limitação ou enfermidade nas anotações.
 - medications: Lista de medicamentos em uso. Corrija sempre a grafia comercial/farmacológica ("Utrogestan", "Doxiciclina", "Clonazepam", "Amoxicilina", "Duloxetina", "Lítio", "Bupropiona", "Tramadol", "Dipirona"). Se informado nome informal ou sem dose (ex.: "dipirona"), padronize tecnicamente: medicamento "Dipirona", dosagem "1 g", frequencia "se dor até 6/6h", observacao "analgesia".
 - alteracao_med: "Não" (ou "Sim" se relatada troca recente).
-- psicoterapia: false ou true (OBRIGATÓRIO: se o texto relatar afirmativamente início ou realização de psicoterapia, marque true; se negar ou omitir, false).
-- fisioterapia: false ou true (OBRIGATÓRIO: se o texto relatar afirmativamente início ou realização de fisioterapia motora/respiratória, marque true; se negar ou omitir, false).
+- psicoterapia: false ou true (OBRIGATÓRIO: Se o texto relatar afirmativamente início, realização ou acompanhamento de psicoterapia, psicologia, psico, psicólogo/psicóloga ou terapia psicológica (ex: "faz psicoterapia", "faz psico", "psicóloga 1x por semana", "em terapia"), marque true; se negar explicitamente ("nega psicoterapia", "nega psico") ou omitir completamente, marque false).
+- fisioterapia: false ou true (OBRIGATÓRIO: Se o texto relatar afirmativamente início, realização, indicação ou sessões de fisioterapia motora/respiratória/analgésica ou fisio (ex: "iniciou fisioterapia", "faz fisio", "ta fazendo fisio motora", "sessões de reabilitação motora"), marque true; se negar explicitamente ("nega fisioterapia", "nega fisio", "não faz") ou omitir completamente, marque false).
 - obs_terapias: Redação formal pericial descrevendo as terapias realizadas ou negadas (ex.: "A periciada relata início recente de fisioterapia motora (2 vezes por semana) e nega realização de psicoterapia." ou "Não alegou fazer fisioterapia e psicoterapia.").
 - outras_doencas: "Sim" se houver outras patologias informadas, senão "Não".
 - conditions: Lista de comorbidades prévias estruturadas com tratamento.
@@ -5987,6 +5987,46 @@ def _detectar_regiao_osteomuscular(cid: str, texto: str, doenca: str, exame: str
         return f"tornozelo_{side}"
     return "lombar"
 
+def _detectar_terapias_texto(text: str, current_obs: str = "") -> tuple[bool, bool]:
+    combined = f"{text or ''} {current_obs or ''}".lower()
+
+    # Negativa explícita de Fisioterapia
+    neg_fisio = bool(re.search(
+        r'\b(?:nega|n[ãa]o\s+faz|n[ãa]o\s+realiza|n[ãa]o\s+alegou|sem|nunca\s+fez|recusa|n[ãa]o\s+iniciou|parou|suspendeu)\s+(?:de\s+)?(?:fazer\s+|realizar\s+)?(?:tratamento\s+de\s+|acompanhamento\s+de\s+)?(?:fisioterapia|fisio|cinesioterapia|reabilita[çc][ãa]o\s+motora)\b',
+        combined
+    ))
+
+    # Negativa explícita de Psicoterapia
+    neg_psico = bool(re.search(
+        r'\b(?:nega|n[ãa]o\s+faz|n[ãa]o\s+realiza|n[ãa]o\s+alegou|sem|nunca\s+fez|recusa|n[ãa]o\s+iniciou|parou|suspendeu)\s+(?:de\s+)?(?:fazer\s+|realizar\s+)?(?:tratamento\s+de\s+|acompanhamento\s+de\s+)?(?:psicoterapia|psico|psic[oó]log[ao]|terapia\s+psicol[óo]gica|acompanhamento\s+psicol[óo]gico)\b',
+        combined
+    ))
+
+    # Ambas negadas em conjunto (ex: "nega fazer psicoterapia ou fisioterapia", "sem fisio e psico")
+    neg_ambas = bool(re.search(
+        r'\b(?:nega|n[ãa]o\s+faz|sem)\s+(?:fazer\s+|realizar\s+)?(?:fisioterapia|fisio)\s+(?:e|ou)\s+(?:psicoterapia|psico)\b|\b(?:nega|n[ãa]o\s+faz|sem)\s+(?:fazer\s+|realizar\s+)?(?:psicoterapia|psico)\s+(?:e|ou)\s+(?:fisioterapia|fisio)\b',
+        combined
+    ))
+    if neg_ambas:
+        neg_fisio = True
+        neg_psico = True
+
+    # Afirmativa de Fisioterapia
+    afirm_fisio_action = bool(re.search(
+        r'\b(?:iniciou|inicia|iniciando|realiza|realizando|faz|fazendo|t[áa]\s+fazendo|est[áa]\s+fazendo|em|sess[õo]es\s+de|frequenta|frequentando|encaminhad[oa]\s+para|prescrit[oa]|indica[çc][ãa]o\s+de)\s+(?:de\s+)?(?:tratamento\s+de\s+)?(?:fisioterapia|fisio|cinesioterapia)\b|\b(?:fisioterapia|fisio)\s+(?:motora|respirat[óo]ria|analg[ée]sica|[0-9]x|duas|tr[êe]s|semanal|ambulatorial|di[áa]ria)\b',
+        combined
+    ))
+    afirm_fisio = (afirm_fisio_action or bool(re.search(r'\b(?:fisioterapia|fisio|cinesioterapia)\b', combined))) and not neg_fisio
+
+    # Afirmativa de Psicoterapia
+    afirm_psico_action = bool(re.search(
+        r'\b(?:iniciou|inicia|iniciando|realiza|realizando|faz|fazendo|t[áa]\s+fazendo|est[áa]\s+fazendo|em|sess[õo]es\s+de|frequenta|frequentando|encaminhad[oa]\s+para|prescrit[oa]|indica[çc][ãa]o\s+de)\s+(?:de\s+)?(?:tratamento\s+de\s+)?(?:psicoterapia|psico|terapia\s+psicol[óo]gica|psic[oó]log[ao]|acompanhamento\s+psicol[óo]gico)\b|\b(?:psicoterapia|psico)\s+(?:semanal|quinzenal|mensal|[0-9]x|ambulatorial)\b',
+        combined
+    ))
+    afirm_psico = (afirm_psico_action or bool(re.search(r'\b(?:psicoterapia|psico|psic[oó]log[ao]|acompanhamento\s+psicol[óo]gico)\b', combined))) and not neg_psico
+
+    return afirm_fisio, afirm_psico
+
 @app.post("/api/ai/preencher-ficha")
 def api_ai_preencher_ficha():
     try:
@@ -6143,22 +6183,22 @@ def api_ai_preencher_ficha():
 
             result.historico_pregresso = ant_val.strip()
 
-            # Detecção determinística de Fisioterapia e Psicoterapia a partir do texto bruto, esisla e obs_terapias
-            txt_lower = f"{texto_bruto} {result.obs_terapias or ''}".lower()
-            tem_fisio_afirm = bool(re.search(r'\b(?:iniciou|iniciando|realiza|realizando|faz|fazendo|em)\s+fisioterapia\b|\bfisioterapia\s+(?:motora|respirat[óo]ria|analg[ée]sica|[0-9]x|duas|tr[êe]s|semanal|ambulatorial)\b|\bfisioterapia\b', txt_lower))
-            tem_fisio_neg = bool(re.search(r'\b(?:nega|n[ãa]o\s+faz|n[ãa]o\s+alegou|sem)\s+(?:fazer\s+|realizar\s+)?fisioterapia\b', txt_lower))
-            if tem_fisio_afirm and not tem_fisio_neg:
+            # Detecção determinística e abrangente de Fisioterapia e Psicoterapia (incluindo termos informais como fisio e psico)
+            det_fisio, det_psico = _detectar_terapias_texto(texto_bruto, result.obs_terapias or "")
+            t_low_ctx = f"{texto_bruto} {result.obs_terapias or ''}".lower()
+            neg_fisio_expl = bool(re.search(r'\b(?:nega|n[ãa]o\s+faz|sem)\s+(?:fazer\s+|realizar\s+)?(?:fisioterapia|fisio)\b', t_low_ctx))
+            neg_psico_expl = bool(re.search(r'\b(?:nega|n[ãa]o\s+faz|sem)\s+(?:fazer\s+|realizar\s+)?(?:psicoterapia|psico)\b', t_low_ctx))
+
+            if det_fisio:
                 result.fisioterapia = True
-            elif tem_fisio_neg:
+            elif neg_fisio_expl:
                 result.fisioterapia = False
             elif esisla_pre.get('fisioterapia') is not None:
                 result.fisioterapia = bool(esisla_pre['fisioterapia'])
 
-            tem_psico_afirm = bool(re.search(r'\b(?:iniciou|iniciando|realiza|realizando|faz|fazendo|em)\s+psicoterapia\b|\bpsicoterapia\s+(?:semanal|quinzenal|mensal|[0-9]x)\b|\bpsicoterapia\b', txt_lower))
-            tem_psico_neg = bool(re.search(r'\b(?:nega|n[ãa]o\s+faz|n[ãa]o\s+alegou|sem)\s+(?:fazer\s+|realizar\s+)?psicoterapia\b', txt_lower))
-            if tem_psico_afirm and not tem_psico_neg:
+            if det_psico:
                 result.psicoterapia = True
-            elif tem_psico_neg:
+            elif neg_psico_expl:
                 result.psicoterapia = False
             elif esisla_pre.get('psicoterapia') is not None:
                 result.psicoterapia = bool(esisla_pre['psicoterapia'])
@@ -6849,20 +6889,20 @@ def parse_esisla_text(text: str) -> dict:
                 data['historico_pregresso'] = raw_ant
                 data['historicoPregresso'] = raw_ant
 
-    # 22. Fisioterapia e Psicoterapia (extração determinística)
+    # 22. Fisioterapia e Psicoterapia (extração determinística e abrangente)
+    det_fisio, det_psico = _detectar_terapias_texto(text)
     t_low = text.lower()
-    tem_fisio_afirm = bool(re.search(r'\b(?:iniciou|iniciando|realiza|realizando|faz|fazendo|em)\s+fisioterapia\b|\bfisioterapia\s+(?:motora|respirat[óo]ria|analg[ée]sica|[0-9]x|duas|tr[êe]s|semanal|ambulatorial)\b|\bfisioterapia\b', t_low))
-    tem_fisio_neg = bool(re.search(r'\b(?:nega|n[ãa]o\s+faz|n[ãa]o\s+alegou|sem)\s+(?:fazer\s+|realizar\s+)?fisioterapia\b', t_low))
-    if tem_fisio_afirm and not tem_fisio_neg:
+    neg_fisio_expl = bool(re.search(r'\b(?:nega|n[ãa]o\s+faz|sem)\s+(?:fazer\s+|realizar\s+)?(?:fisioterapia|fisio)\b', t_low))
+    neg_psico_expl = bool(re.search(r'\b(?:nega|n[ãa]o\s+faz|sem)\s+(?:fazer\s+|realizar\s+)?(?:psicoterapia|psico)\b', t_low))
+
+    if det_fisio:
         data['fisioterapia'] = True
-    elif tem_fisio_neg:
+    elif neg_fisio_expl:
         data['fisioterapia'] = False
 
-    tem_psico_afirm = bool(re.search(r'\b(?:iniciou|iniciando|realiza|realizando|faz|fazendo|em)\s+psicoterapia\b|\bpsicoterapia\s+(?:semanal|quinzenal|mensal|[0-9]x)\b', t_low))
-    tem_psico_neg = bool(re.search(r'\b(?:nega|n[ãa]o\s+faz|n[ãa]o\s+alegou|sem)\s+(?:fazer\s+|realizar\s+)?psicoterapia\b', t_low))
-    if tem_psico_afirm and not tem_psico_neg:
+    if det_psico:
         data['psicoterapia'] = True
-    elif tem_psico_neg:
+    elif neg_psico_expl:
         data['psicoterapia'] = False
 
     return data

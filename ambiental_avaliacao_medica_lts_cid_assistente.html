@@ -4942,8 +4942,12 @@ function applyState(){
   $("queixaDuracao") && ($("queixaDuracao").value=state.queixaDuracao||state.aux.queixaDuracao||"");
   $("exameFisicoTipo") && ($("exameFisicoTipo").value=state.exameFisicoTipo||"");
   $("exameFisicoDescricao") && ($("exameFisicoDescricao").value=state.exameFisicoDescricao||"");
-  $("alteracoesClinicasExames") && ($("alteracoesClinicasExames").value=state.alteracoesClinicasExames||"");
-  togglePanelsOnly(); updateLimitacaoStatus(); renderMedications();renderConditions();renderDocumentRecords();if(typeof ensureDefaultQuesitos==="function")ensureDefaultQuesitos();renderQuesitos();renderExam();renderSecondaryCIDs();renderParecerHint();applyFinalizedLock(); if($("cid").value)renderCIDAssist(findCID($("cid").value)||null); syncExtendedToAgil(); if(typeof atualizarBannerAcompanhante==="function")atualizarBannerAcompanhante();
+  togglePanelsOnly(); updateLimitacaoStatus(); renderMedications();renderConditions();renderDocumentRecords();if(typeof ensureDefaultQuesitos==="function")ensureDefaultQuesitos();renderQuesitos();renderExam();renderSecondaryCIDs();renderParecerHint();applyFinalizedLock(); if($("cid").value)renderCIDAssist(findCID($("cid").value)||null);
+  if ($("fisioterapia")) $("fisioterapia").checked = !!(state.fisioterapia || state.aux?.fisioterapia);
+  if ($("agilFisioterapia")) $("agilFisioterapia").checked = !!(state.fisioterapia || state.aux?.fisioterapia);
+  if ($("psicoterapia")) $("psicoterapia").checked = !!(state.psicoterapia || state.aux?.psicoterapia);
+  if ($("agilPsicoterapia")) $("agilPsicoterapia").checked = !!(state.psicoterapia || state.aux?.psicoterapia);
+  syncExtendedToAgil(); if(typeof atualizarBannerAcompanhante==="function")atualizarBannerAcompanhante();
   if (currentAttendanceMode === "agil") {
     document.body.classList.add("mode-agil-active");
   } else {
@@ -5135,6 +5139,16 @@ async function executarPreenchimentoIA() {
     }
     aplicarPreenchimentoIAResultado(dados);
     fecharModalPreenchimentoIA();
+    if ($("fisioterapia")) $("fisioterapia").checked = !!state.fisioterapia;
+    if ($("agilFisioterapia")) $("agilFisioterapia").checked = !!state.fisioterapia;
+    if ($("psicoterapia")) $("psicoterapia").checked = !!state.psicoterapia;
+    if ($("agilPsicoterapia")) $("agilPsicoterapia").checked = !!state.psicoterapia;
+    setTimeout(() => {
+      if ($("fisioterapia")) $("fisioterapia").checked = !!state.fisioterapia;
+      if ($("agilFisioterapia")) $("agilFisioterapia").checked = !!state.fisioterapia;
+      if ($("psicoterapia")) $("psicoterapia").checked = !!state.psicoterapia;
+      if ($("agilPsicoterapia")) $("agilPsicoterapia").checked = !!state.psicoterapia;
+    }, 60);
     toast("✨ Campos clínicos preenchidos com IA a partir das anotações do médico! Redação formal e robusta em Rascunho.");
   } catch (err) {
     console.error("Erro no preenchimento com IA:", err);
@@ -6175,24 +6189,40 @@ function aplicarPreenchimentoIAResultado(dados) {
     const rawTxtStr = String(dados.texto_bruto || dados.texto || $("txtPreenchimentoIABruto")?.value || "").toLowerCase();
     const allContextText = `${rawTxtStr} ${obsTerStr} ${String(dados.doenca_motivo || "")} ${String(dados.sintomas_limitacao || "")}`.toLowerCase();
 
+    // Negativa explícita de Fisioterapia
+    const negFisio = /\b(?:nega|n[ãa]o\s+faz|n[ãa]o\s+realiza|n[ãa]o\s+alegou|sem|nunca\s+fez|recusa|n[ãa]o\s+iniciou|parou|suspendeu)\s+(?:de\s+)?(?:fazer\s+|realizar\s+)?(?:tratamento\s+de\s+|acompanhamento\s+de\s+)?(?:fisioterapia|fisio|cinesioterapia|reabilita[çc][ãa]o\s+motora)\b/i.test(allContextText);
+
+    // Negativa explícita de Psicoterapia
+    const negPsico = /\b(?:nega|n[ãa]o\s+faz|n[ãa]o\s+realiza|n[ãa]o\s+alegou|sem|nunca\s+fez|recusa|n[ãa]o\s+iniciou|parou|suspendeu)\s+(?:de\s+)?(?:fazer\s+|realizar\s+)?(?:tratamento\s+de\s+|acompanhamento\s+de\s+)?(?:psicoterapia|psico|psic[óo]log[ao]|terapia\s+psicol[óo]gica|acompanhamento\s+psicol[óo]gico)\b/i.test(allContextText);
+
+    // Ambas negadas em conjunto (ex: "nega fazer psicoterapia ou fisioterapia", "sem fisio e psico")
+    const negAmbas = /\b(?:nega|n[ãa]o\s+faz|sem)\s+(?:fazer\s+|realizar\s+)?(?:fisioterapia|fisio)\s+(?:e|ou)\s+(?:psicoterapia|psico)\b|\b(?:nega|n[ãa]o\s+faz|sem)\s+(?:fazer\s+|realizar\s+)?(?:psicoterapia|psico)\s+(?:e|ou)\s+(?:fisioterapia|fisio)\b/i.test(allContextText);
+
+    const isFisioNeg = negFisio || negAmbas;
+    const isPsicoNeg = negPsico || negAmbas;
+
+    // Afirmativa de Fisioterapia
+    const afirmFisioAction = /\b(?:iniciou|inicia|iniciando|realiza|realizando|faz|fazendo|t[áa]\s+fazendo|est[áa]\s+fazendo|em|sess[õo]es\s+de|frequenta|frequentando|encaminhad[oa]\s+para|prescrit[oa]|indica[çc][ãa]o\s+de)\s+(?:de\s+)?(?:tratamento\s+de\s+)?(?:fisioterapia|fisio|cinesioterapia)\b|\b(?:fisioterapia|fisio)\s+(?:motora|respirat[óo]ria|analg[ée]sica|[0-9]x|duas|tr[êe]s|semanal|ambulatorial|di[áa]ria)\b/i.test(allContextText);
+    const hasFisioMention = /\b(?:fisioterapia|fisio|cinesioterapia)\b/i.test(allContextText);
+    const afirmFisio = (afirmFisioAction || hasFisioMention) && !isFisioNeg;
+
+    // Afirmativa de Psicoterapia
+    const afirmPsicoAction = /\b(?:iniciou|inicia|iniciando|realiza|realizando|faz|fazendo|t[áa]\s+fazendo|est[áa]\s+fazendo|em|sess[õo]es\s+de|frequenta|frequentando|encaminhad[oa]\s+para|prescrit[oa]|indica[çc][ãa]o\s+de)\s+(?:de\s+)?(?:tratamento\s+de\s+)?(?:psicoterapia|psico|terapia\s+psicol[óo]gica|psic[óo]log[ao]|acompanhamento\s+psicol[óo]gico)\b|\b(?:psicoterapia|psico)\s+(?:semanal|quinzenal|mensal|[0-9]x|ambulatorial)\b/i.test(allContextText);
+    const hasPsicoMention = /\b(?:psicoterapia|psico|psic[óo]log[ao]|acompanhamento\s+psicol[óo]gico)\b/i.test(allContextText);
+    const afirmPsico = (afirmPsicoAction || hasPsicoMention) && !isPsicoNeg;
+
     let fisio = parseBool(dados.fisioterapia);
     let psico = parseBool(dados.psicoterapia);
 
-    const temFisioAfirm = /\b(?:iniciou|iniciando|realiza|realizando|faz|fazendo|em)\s+fisioterapia\b|\bfisioterapia\s+(?:motora|respirat[óo]ria|analg[ée]sica|[0-9]x|duas|tr[êe]s|semanal|ambulatorial)\b|\bfisioterapia\b/i.test(allContextText);
-    const temFisioNeg = /\b(?:nega|n[ãa]o\s+faz|n[ãa]o\s+alegou|sem)\s+(?:fazer\s+|realizar\s+)?fisioterapia\b/i.test(allContextText);
-
-    if (temFisioAfirm && !temFisioNeg) {
+    if (afirmFisio) {
       fisio = true;
-    } else if (temFisioNeg) {
+    } else if (isFisioNeg) {
       fisio = false;
     }
 
-    const temPsicoAfirm = /\b(?:iniciou|iniciando|realiza|realizando|faz|fazendo|em)\s+psicoterapia\b|\bpsicoterapia\s+(?:semanal|quinzenal|mensal|[0-9]x)\b|\bpsicoterapia\b/i.test(allContextText);
-    const temPsicoNeg = /\b(?:nega|n[ãa]o\s+faz|n[ãa]o\s+alegou|sem)\s+(?:fazer\s+|realizar\s+)?psicoterapia\b/i.test(allContextText);
-
-    if (temPsicoAfirm && !temPsicoNeg) {
+    if (afirmPsico) {
       psico = true;
-    } else if (temPsicoNeg) {
+    } else if (isPsicoNeg) {
       psico = false;
     }
 
@@ -8788,8 +8818,10 @@ function syncExtendedToAgil() {
   setVal("agilDataAlteracaoMed", state.aux.dataAlteracaoMed || state.dataAlteracaoMed || $("dataAlteracaoMed")?.value || "");
   setVal("agilObsAlteracaoMed", state.aux.obsAlteracaoMed || state.obsAlteracaoMed || $("obsAlteracaoMed")?.value || "");
 
-  if ($("agilPsicoterapia")) $("agilPsicoterapia").checked = !!(state.psicoterapia || state.aux.psicoterapia || $("psicoterapia")?.checked);
+  if ($("fisioterapia")) $("fisioterapia").checked = !!(state.fisioterapia || state.aux.fisioterapia || $("agilFisioterapia")?.checked);
   if ($("agilFisioterapia")) $("agilFisioterapia").checked = !!(state.fisioterapia || state.aux.fisioterapia || $("fisioterapia")?.checked);
+  if ($("psicoterapia")) $("psicoterapia").checked = !!(state.psicoterapia || state.aux.psicoterapia || $("agilPsicoterapia")?.checked);
+  if ($("agilPsicoterapia")) $("agilPsicoterapia").checked = !!(state.psicoterapia || state.aux.psicoterapia || $("psicoterapia")?.checked);
   setVal("agilObsTerapias", state.aux.obsTerapias || state.obsTerapias || $("obsTerapias")?.value || "");
 
   const outras = state.outrasDoencas || state.aux.outrasDoencas || getRadio("outrasDoencas") || "";
